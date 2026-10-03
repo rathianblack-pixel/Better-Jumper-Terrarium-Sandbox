@@ -13,6 +13,7 @@
   const speciesPrice = (S) => S.starter ? STARTER_PRICE : S.price;
 
   const UI = JT.UI = {
+    MOBILE_MQ: '(max-width:820px) and (orientation:portrait), (max-width:560px), (max-height:500px) and (orientation:landscape)',
     tab: null, mode: null, place: null, obs: null, panelId: null, renaming: false, ptrType: 'mouse', _t: 0, _panelT: 0, _mistT: 0,
     init(game, R, settings) {
       this.game = game; this.R = R; this.set = settings; this.cv = $('view');
@@ -21,7 +22,7 @@
       const sp = game.hab.spider(game.selectedId); if (sp) this.showPanel(sp.id);
     },
     get hab() { return this.game.hab; },
-    isMobile() { return root.matchMedia && root.matchMedia('(max-width:820px) and (orientation:portrait), (max-width:560px)').matches; },
+    isMobile() { return root.matchMedia && root.matchMedia(UI.MOBILE_MQ).matches; },
 
     // ------------------------------------------------ binding
     bind() {
@@ -101,14 +102,24 @@
       $('coins').textContent = Math.floor(st.coins);
       const tabs = $('habTabs'); tabs.innerHTML = '';
       g.habs.forEach((h, i) => { const b = el('button', i === st.active ? 'on' : '', esc(h.data.name)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); });
-      $('habPicker').textContent = '🪴 ' + g.hab.data.name;
+      $('habPicker').textContent = g.hab.data.name;
       document.querySelectorAll('#cams button').forEach(b => b.classList.toggle('on', b.dataset.cam === this.R.cam.mode));
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
-      $('btnSound').textContent = this.set.muted ? '🔇' : '🔊';
+      $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
+      const fol = this.R.cam.mode === 'follow' && !this.obs; document.querySelectorAll('#dock button[data-dock="follow"]').forEach(b => b.classList.toggle('on', fol));
       document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('on', b.dataset.tool === this.tab || (b.dataset.tool === 'remove' && this.mode === 'remove')));
     },
-    updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' ☀' : ' 🌙') : ''); },
-    setCam(m) { this.R.setMode(m); this.refreshHeader(); if (m === 'follow' && !this.hab.spider(this.game.selectedId)) this.toast('Select a jumper to follow.'); },
+    updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
+    setCam(m) {
+      if (m === 'follow' && this.R.cam.mode !== 'follow') this._prevCam = this.R.cam.mode;
+      if (m === 'follow' && !this.hab.spider(this.game.selectedId)) { const s0 = this.hab.spiders[0]; if (s0) this.game.selectedId = s0.id; else { this.toast('No jumper here to follow yet.'); return; } }
+      this.R.setMode(m); this.refreshHeader(); if (this.panelId) this.renderPanel(true);
+    },
+    /** Start following a jumper (tap on it, or the Follow control). */
+    follow(id) { if (id) this.game.selectedId = id; if (this.R.cam.mode !== 'follow') this.setCam('follow'); else { this.refreshHeader(); } },
+    /** Stop following and ease back to the previous overview camera. */
+    unfollow() { if (this.R.cam.mode !== 'follow') return; const prev = this._prevCam && this._prevCam !== 'follow' ? this._prevCam : 'iso'; this.setCam(prev); },
+    toggleFollow() { if (this.R.cam.mode === 'follow') this.unfollow(); else this.follow(this.game.selectedId); },
     setTimeMode(m) { this.game.state.timeMode = m; this.refreshHeader(); this.updateClock(); A().sfx('click'); },
     switchHab(i) {
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); g.state.active = M.clamp(i, 0, g.habs.length - 1);
@@ -117,10 +128,11 @@
       if (this.obs) this.obs.sub = null;
       if (this.tab) this.openDrawer(this.tab); this.refreshHeader(); A().sfx('click');
     },
+    /** A small line of text that fades in and out (no boxes). */
     toast(text, cls, ms) {
       const t = el('div', 'toast ' + (cls || ''), text); $('toasts').appendChild(t);
-      while ($('toasts').children.length > 4) $('toasts').firstChild.remove();
-      setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 600); }, ms || 2600);
+      while ($('toasts').children.length > 3) $('toasts').firstChild.remove();
+      setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 900); }, ms || 2800);
     },
     bumpCoins() { const c = document.querySelector('.coins'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); $('coins').textContent = Math.floor(this.game.state.coins); },
 
@@ -130,8 +142,8 @@
       if (t === 'coins') { this.bumpCoins();  if (this.tab) this.refreshCardsAfford(); }
       else if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
-      else if (t === 'journal') { this.toast('<b>' + d.entry.icon + ' Journal: ' + esc(d.entry.title) + '</b>' + esc(d.entry.text), 'journal', 5200); A().sfx('journal'); }
-      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast('🌱 ' + esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
+      else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); }
+      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
       else if (t === 'toast') this.toast(d.text, d.cls, d.ms);
     },
 
@@ -152,6 +164,7 @@
       if (d === 'build') { if (this.tab && this.tab !== 'food') this.closeDrawer(); else { this.openDrawer('decor'); this.dockOn('build'); } }
       else if (d === 'food') { if (this.tab === 'food') this.closeDrawer(); else { this.openDrawer('food'); this.dockOn('food'); } }
       else if (d === 'jumpers') { this.closeDrawer(); this.collectionModal(); }
+      else if (d === 'follow') { this.closeDrawer(); this.toggleFollow(); }
       else if (d === 'observe') { this.closeDrawer(); this.toggleObserve(); }
       else if (d === 'more') { this.closeDrawer(); this.moreSheet(); }
     },
@@ -159,22 +172,22 @@
     doMist() {
       if (performance.now() - this._mistT < 1500) return; this._mistT = performance.now();
       this.hab.mist(); this.R.mistFx(this.hab); A().sfx('mist');
-      this.toast('💧 Misted — fresh droplets bead on leaves and stones.');
+      this.toast('Misted. Fresh droplets bead on leaves and stones.');
     },
     doClean() {
       const n = this.hab.clean(); A().sfx(n ? 'rustle' : 'click');
-      this.toast(n ? '🧹 Tidied away ' + n + ' leftover husk' + (n > 1 ? 's' : '') + '.' : '✨ Everything is already spotless — nothing to clean right now.');
+      this.toast(n ? 'Tidied away ' + n + ' leftover husk' + (n > 1 ? 's' : '') + '.' : 'Everything is already tidy.');
     },
 
     // ------------------------------------------------ drawer
     openDrawer(tab) {
       this.tab = tab; const d = $('drawer'); d.classList.remove('hidden');
       const tabs = $('drawerTabs'); tabs.innerHTML = '';
-      const list = tab === 'food' ? [['food', '🪰 Live Food']] : [['decor', '🪨 Decor'], ['walls', '🧱 Walls'], ['plants', '🌿 Plants'], ['substrate', '🟫 Substrate']];
+      const list = tab === 'food' ? [['food', 'Live food']] : [['decor', 'Decor'], ['walls', 'Walls'], ['plants', 'Plants'], ['substrate', 'Substrate']];
       for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => this.openDrawer(id); tabs.appendChild(b); }
-      if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', '✖ Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
+      if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', 'Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
-      $('drawerTitle').textContent = tab === 'food' ? 'Live food for ' + h.data.name + ' (' + h.livePreyCount() + '/' + JT.PREY_CAP + ')' : tab === 'substrate' ? 'Substrate & ground cover' : (tab === 'plants' ? 'Plants' : tab === 'walls' ? 'Back walls & wall mounts' : 'Decor') + (tab === 'walls' ? ' — walls stand at the back; mounts hang where you point on a wall' : ' — click a piece, then place it');
+      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Walls stand at the back; mounts hang where you point' : 'Choose a piece, then place it';
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
       if (tab === 'decor' || tab === 'plants' || tab === 'walls') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
       else if (tab === 'substrate') {
@@ -182,15 +195,17 @@
         body.appendChild(el('div', 'sect', 'Ground cover'));
         for (const d of JT.DECOR.filter(x => x.cat === 'ground')) body.appendChild(this.decorCard(d));
       } else if (tab === 'food') for (const p of JT.PREY) body.appendChild(this.preyCard(p));
-      this.refreshHeader();
+      this.refreshHeader(); this.syncDrawerSpace();
     },
-    closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
+    /** Toast lines sit just above the shop strip while it is open. */
+    syncDrawerSpace() { const d = $('drawer'); const open = !d.classList.contains('hidden'); document.body.classList.toggle('drawer-open', open); document.documentElement.style.setProperty('--drawerH', open ? Math.round(d.getBoundingClientRect().height) + 'px' : '0px'); },
+    closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); this.syncDrawerSpace(); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
     refreshCardsAfford() { document.querySelectorAll('#drawerBody .card[data-price]').forEach(c => c.classList.toggle('disabled', +c.dataset.price > this.game.state.coins)); },
     decorCard(d) {
       const c = el('div', 'card'); c.dataset.price = d.price; c.title = d.name + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
       c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112)));
-      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price + ' coins'));
-      const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers'].filter(Boolean).join(' · '); c.appendChild(el('div', 'tg', tg || '&nbsp;'));
+      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price + ''));
+      const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean).join(', '); if (tg) c.title += ' — ' + tg;
       if (d.price > this.game.state.coins) c.classList.add('disabled');
       c.onclick = () => { if (d.price > this.game.state.coins) { this.toast('Not enough coins for ' + esc(d.name) + '.'); A().sfx('error'); return; } this.startPlace(d.id); };
       return c;
@@ -201,8 +216,8 @@
       const cv = document.createElement('canvas'); cv.width = cv.height = 112; const g = cv.getContext('2d');
       const gr = g.createLinearGradient(0, 0, 0, 112); gr.addColorStop(0, S.top); gr.addColorStop(0.62, S.top); gr.addColorStop(0.63, S.mid); gr.addColorStop(1, S.dark); g.fillStyle = gr; g.fillRect(0, 0, 112, 112);
       const rng = JT.makeRng(JT.hashStr(id)); for (let i = 0; i < 260; i++) { g.fillStyle = S.speck[i % 2]; const x = rng() * 112, y = rng() * 70; g.fillRect(x, y, 1 + rng() * 2, 1 + rng() * 1.5); }
-      c.appendChild(cv); c.appendChild(el('div', 'nm', esc(S.name))); c.appendChild(el('div', 'pr', cur ? 'Current' : S.price ? S.price + ' coins' : 'Free'));
-      c.appendChild(el('div', 'tg', (S.burrow > 0.6 ? 'burrowable · ' : '') + (S.moist > 0.6 ? 'humid' : S.moist < 0.25 ? 'dry' : 'balanced')));
+      c.appendChild(cv); c.appendChild(el('div', 'nm', esc(S.name))); c.appendChild(el('div', 'pr', cur ? 'current' : S.price ? S.price + '' : 'free'));
+      c.title = S.name + ' — ' + (S.burrow > 0.6 ? 'burrowable, ' : '') + (S.moist > 0.6 ? 'humid' : S.moist < 0.25 ? 'dry' : 'balanced');
       c.onclick = () => {
         if (cur) return; if (!this.game.spend(S.price)) { this.toast('Not enough coins.'); A().sfx('error'); return; }
         h.data.substrate = id; this.R._speck = null; A().sfx('place'); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
@@ -213,15 +228,15 @@
       const c = el('div', 'card'); c.dataset.price = p.price;
       c.appendChild(cloneCanvas(this.R.preyPortrait(p.id, 112)));
       c.appendChild(el('div', 'nm', esc(p.name) + (p.count > 1 ? ' ×' + p.count : '')));
-      c.appendChild(el('div', 'pr', p.price + ' coins')); c.appendChild(el('div', 'tg', TAGS(p) || (p.huntable ? 'ground prey' : '&nbsp;')));
+      c.appendChild(el('div', 'pr', p.price + ''));
       if (p.price > this.game.state.coins) c.classList.add('disabled');
-      c.title = p.cleaner ? 'Cleanup crew: eats leftover husks, even on decor.' : 'Prey value ' + p.val + ' coins when caught.';
+      c.title = p.name + ' — ' + (TAGS(p) || 'ground prey') + (p.cleaner ? '. Cleanup crew: eats husks and shed skins, even up on decor.' : '. Worth ' + p.val + ' coins when caught.');
       c.onclick = () => {
         const h = this.hab; const n = p.count || 1;
         if (h.prey.length + n > JT.PREY_CAP) { this.toast('This habitat already has plenty of live food (' + JT.PREY_CAP + ' max).'); A().sfx('error'); return; }
         if (!this.game.spend(p.price)) { this.toast('Not enough coins.'); A().sfx('error'); return; }
         h.addPrey(p.id, n); A().sfx('rustle'); this.toast('Released ' + (n > 1 ? n + ' ' : 'a ') + esc(p.name) + '.');
-        $('drawerTitle').textContent = 'Live food for ' + h.data.name + ' (' + h.livePreyCount() + '/' + JT.PREY_CAP + ')';
+        $('drawerTitle').textContent = h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live';
       };
       return c;
     },
@@ -231,15 +246,15 @@
       this.cancelMode(); const d = JT.DECOR_BY_ID[type];
       this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false };
       this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.remove('hidden'); $('modeDone').classList.remove('hidden');
-      if (this.isMobile()) $('drawer').classList.add('hidden');
+      if (this.isMobile()) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); }
       // start the ghost in the middle so touch users see it immediately
       const r = this.cv.getBoundingClientRect(); this.updateGhost(r.width / 2, r.height * 0.55);
       this.setModeText(); void d;
     },
     setModeText() {
       const p = this.place; if (!p) return; const d = JT.DECOR_BY_ID[p.type]; const touch = this.ptrType !== 'mouse';
-      const st = p.ok ? '<span class="ok">✔ fits here</span>' : '<span class="bad">✗ ' + esc(p.reason || 'Not here') + '</span>';
-      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> (' + d.price + ') · ' + st + ' · <span class="muted" style="color:#c8b48a">' + (touch ? 'drag to move' : 'click to place · R rotate · Esc cancel') + '</span>';
+      const st = p.ok ? '<span class="ok">fits here</span>' : '<span class="bad">' + esc(p.reason || 'Not here') + '</span>';
+      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> ' + d.price + ' · ' + st + ' · <span class="hint">' + (touch ? 'drag to move' : 'click to place, R rotates, Esc cancels') + '</span>';
     },
     updateGhost(sx, sy) {
       const p = this.place; if (!p) return; const h = this.hab; const pt = this.R.placementPoint(sx, sy, h, p.type);
@@ -262,13 +277,13 @@
       this.toast('Placed ' + esc(d.name) + (inst.parent ? ' (stacked)' : '') + '.');
       p.seed = (JT.R() * 1e9) | 0;
       if (this.game.state.coins < d.price) this.cancelMode(); else { this.updateGhostAtCurrent(); }
-      if (this.isMobile()) { this.cancelMode(); if (this.tab) $('drawer').classList.remove('hidden'); }
+      if (this.isMobile()) { this.cancelMode(); if (this.tab) { $('drawer').classList.remove('hidden'); this.syncDrawerSpace(); } }
     },
     updateGhostAtCurrent() { const p = this.place; if (p && p.x != null) { const s = this.R.project([p.x, p.y || 0, p.z]); this.updateGhost(s[0], s[1]); } },
     startRemove() {
       this.cancelMode(); this.mode = 'remove'; this.cv.classList.add('removing'); $('modeBar').classList.remove('hidden');
       $('modeRotate').classList.add('hidden'); $('modeDone').classList.add('hidden');
-      $('modeText').innerHTML = '<b>Remove mode</b> · tap decor for a 50% refund, or tap live food / leftovers to remove them · Esc to finish';
+      $('modeText').innerHTML = '<b>Remove</b> · tap decor for a half refund, or live food and leftovers to take them out <span class="hint">· Esc to finish</span>';
       this.refreshHeader();
     },
     removeAt(sx, sy) {
@@ -300,10 +315,12 @@
       if (this.mode === 'place') { if (this.ptrType === 'mouse') { this.updateGhost(sx, sy); this.confirmPlace(); } else this.updateGhost(sx, sy); return; }
       if (this.mode === 'remove') { this.removeAt(sx, sy); return; }
       const hit = this.R.pick(sx, sy, {});
-      if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); A().sfx('click'); return; }
-      if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ' — part of the cleanup crew.' : '')); return; }
-      if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed exoskeleton (exuvia).' : 'Leftover husk — springtails and isopods will tidy it.'); return; }
-      if (hit && hit.kind === 'decor' && this.ptrType === 'mouse') return;
+      if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); this.follow(hit.ent.id); A().sfx('click'); return; }
+      if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
+      if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew.' : '.'), 'quiet'); return; }
+      if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed skin. The springtails will find it.' : 'Leftovers. The springtails will tidy them.', 'quiet'); return; }
+      // empty space (or scenery): stop following
+      if (this.R.cam.mode === 'follow') this.unfollow();
       if (this.isMobile() && this.panelId) $('spiderPanel').classList.remove('expanded');
     },
 
@@ -320,21 +337,21 @@
       const hl = AI.hungerLabel(sp.sat);
       const moltTxt = sp.stage >= 5 ? 'Fully grown' : molting ? 'Molting now…' : 'Next molt: ' + Math.min(sp.meals, need) + '/' + need + ' meals';
       const follow = this.R.cam.mode === 'follow';
-      const html = '<button class="x" id="pClose" title="Close">✖</button>' +
+      const line = AI.stateLine ? AI.stateLine(h, sp) : hl;
+      const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
+      const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
+      const html = '<button class="txt x" id="pClose" title="Close">Close</button>' +
         '<h3 id="pHead">' + (this.renaming ? '<input id="pName" maxlength="18" value="' + esc(sp.name) + '">' : esc(sp.name)) + '</h3>' +
-        '<div class="sci">' + esc(S.name) + ' — <i>' + esc(S.sci) + '</i></div>' +
-        '<div class="mini"><b>' + JT.STAGES[sp.stage] + '</b> · ' + hl + ' · <i>' + esc(sp.thought || '') + '</i> <button class="modal-btn" id="pMore">More</button></div>' +
+        '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
+        '<div class="state">' + esc(line) + '</div>' +
+        '<div class="mini"><span>' + JT.STAGES[sp.stage] + ' · ' + hl + '</span><button class="txt" id="pMore">More</button></div>' +
         '<div class="full">' +
-        '<div class="row"><span>Stage</span><b>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ' (soft after molt)' : '') + '</b></div>' +
-        '<div class="row"><span>Hunger</span><b>' + hl + '</b></div><div class="bar"><i style="width:' + Math.round(sp.sat * 100) + '%"></i></div>' +
-        '<div class="row"><span>Hydration</span><b>' + Math.round((sp.hyd != null ? sp.hyd : 1) * 100) + '%</b></div><div class="bar hyd"><i style="width:' + Math.round((sp.hyd != null ? sp.hyd : 1) * 100) + '%"></i></div>' +
-        '<div class="row"><span>Growth</span><b>' + moltTxt + '</b></div><div class="bar molt"><i style="width:' + (sp.stage >= 5 ? 100 : Math.round(Math.min(1, sp.meals / need) * 100)) + '%"></i></div>' +
-        '<div class="row"><span>Age</span><b>' + (sp.ageDays || 0).toFixed(1) + ' days</b></div>' +
-        '<div class="row"><span>Molts · Catches</span><b>' + (sp.molts || 0) + ' · ' + (sp.catches || 0) + '</b></div>' +
-        '<div class="row"><span>Size</span><b>' + size + ' mm</b></div>' +
-        '<div class="thought">“' + esc(sp.thought || '…') + '”</div>' +
-        '<div class="pers"><b>Personality:</b> ' + (desc ? desc.map(esc).join(', ') : '<i>Still learning about ' + esc(sp.name) + '… keep watching.</i>') + '</div>' +
-        '<div class="pbtns"><button class="btn" id="pRename">' + (this.renaming ? 'Save' : '✏️ Rename') + '</button><button class="btn' + (follow ? ' gold' : '') + '" id="pFollow">' + (follow ? 'Following' : '👁 Follow') + '</button><button class="btn" id="pRemove">Rehome</button></div>' +
+        '<div class="rule"></div>' +
+        meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
+        '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd></dl>' +
+        '<div class="thought">' + esc(sp.thought || '…') + '</div>' +
+        '<div class="pers">' + (desc ? desc.map(esc).join(', ') : 'Still learning about ' + esc(sp.name) + '. Keep watching.') + '</div>' +
+        '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">' + (follow ? 'Following' : 'Follow') + '</button><button class="txt" id="pRemove">Rehome</button></div>' +
         '</div>';
       P.innerHTML = html;
       $('pClose').onclick = (e) => { e.stopPropagation(); this.hidePanel(); };
@@ -344,7 +361,7 @@
         if (this.renaming) { const v = ($('pName').value || '').trim().slice(0, 18); if (v) sp.name = v; this.renaming = false; this.game.save(); this.renderPanel(true); }
         else { this.renaming = true; this.renderPanel(true); const i = $('pName'); i.focus(); i.select(); i.onkeydown = (e) => { if (e.key === 'Enter') $('pRename').click(); if (e.key === 'Escape') { this.renaming = false; this.renderPanel(true); } }; }
       };
-      $('pFollow').onclick = () => { this.game.selectedId = sp.id; this.setCam(follow ? 'iso' : 'follow'); this.renderPanel(true); };
+      $('pFollow').onclick = () => { this.game.selectedId = sp.id; if (follow) this.unfollow(); else this.follow(sp.id); this.renderPanel(true); };
       $('pRemove').onclick = () => {
         if (!root.confirm('Rehome ' + sp.name + ' outside the collection? This cannot be undone.')) return;
         h.removeEntity(sp, 'player'); const ref = Math.floor(speciesPrice(S) * 0.5); this.game.refund(ref); this.bumpCoins();
@@ -402,7 +419,7 @@
         const owned = mine.filter(m => m[0].species === S.id).length;
         e.insertAdjacentHTML('beforeend', (S.starter ? '<span class="badge">Starter</span>' : owned ? '<span class="badge">Owned ×' + owned + '</span>' : '') + '<h4>' + esc(S.name) + '</h4><div class="sci">' + esc(S.sci) + ' · ~' + S.len + ' mm adult</div><p>' + esc(S.desc) + '</p>' + this.traitBars(S.traits));
         const b = el('button', 'modal-btn gold');
-        if (lockedByCatches) { b.textContent = '🔒 Unlocks after ' + S.unlockCatches + ' catches (' + Math.min(st.catches, S.unlockCatches) + '/' + S.unlockCatches + ')'; b.disabled = true; }
+        if (lockedByCatches) { b.textContent = 'Unlocks after ' + S.unlockCatches + ' catches (' + Math.min(st.catches, S.unlockCatches) + '/' + S.unlockCatches + ')'; b.disabled = true; }
         else if (full) { b.textContent = 'Habitat full (' + h.dims.cap + ')'; b.disabled = true; }
         else { b.textContent = (unlocked || S.starter ? 'Add' : 'Adopt') + ' — ' + (price ? price + ' coins' : 'free'); b.disabled = st.coins < price; }
         b.onclick = () => {
@@ -419,28 +436,33 @@
     journalModal() {
       const st = this.game.state; const n = JT.JOURNAL.filter(j => st.journal[j.id]).length;
       let html = '<p class="muted">Only behaviours you actually witness are recorded. ' + n + ' of ' + JT.JOURNAL.length + ' observed.</p><div class="grid">';
-      for (const j of JT.JOURNAL) { const c = st.journal[j.id]; html += c ? '<div class="entry"><span class="badge">×' + c + '</span><h4>' + j.icon + ' ' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p></div>' : '<div class="entry locked"><h4>❓ Not yet witnessed</h4><p class="muted">Keep watching your jumpers…</p></div>'; }
+      for (const j of JT.JOURNAL) { const c = st.journal[j.id]; html += c ? '<div class="entry"><span class="badge">' + c + '×</span><h4>' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p></div>' : '<div class="entry locked"><h4>Not yet witnessed</h4><p class="muted">Keep watching your jumpers.</p></div>'; }
       this.openModal('Field Journal', html + '</div>');
     },
     habPickerModal() {
       const g = this.game; const w = el('div'); const list = el('div', 'sheet-list');
-      g.habs.forEach((h, i) => { const b = el('button', i === g.state.active ? 'on' : '', '<span>' + (h.data.type === 'jar' ? '🫙' : '🪴') + '</span>' + esc(h.data.name) + '<small class="muted">' + h.spiders.length + ' jumper(s)</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); }; list.appendChild(b); });
-      const m = el('button', '', '<span>🗂</span>Manage Habitats'); m.onclick = () => this.manageModal(); list.appendChild(m);
+      g.habs.forEach((h, i) => { const b = el('button', i === g.state.active ? 'on' : '', esc(h.data.name) + '<small class="muted">' + h.spiders.length + ' jumper(s)</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); }; list.appendChild(b); });
+      const m = el('button', '', 'Manage habitats'); m.onclick = () => this.manageModal(); list.appendChild(m);
       w.appendChild(list); this.openModal('Your Habitats', w);
     },
     moreSheet() {
       const w = el('div'); const list = el('div', 'sheet-list'); this.dockOn('more');
-      const add = (ic, lab, fn, on) => { const b = el('button', on ? 'on' : '', '<span>' + ic + '</span>' + lab); b.onclick = fn; list.appendChild(b); };
-      add('📖', 'Journal', () => this.journalModal());
-      add('💧', 'Mist', () => { this.closeModal(); this.doMist(); });
-      add('🧹', 'Clean', () => { this.closeModal(); this.doClean(); });
-      add('✖', 'Remove', () => { this.closeModal(); this.startRemove(); });
-      add('🗂', 'Habitats', () => this.manageModal());
-      add('⚙', 'Settings', () => this.settingsModal());
-      for (const [m, ic] of [['iso', '🧊'], ['observer', '👀'], ['follow', '🎯'], ['reverse', '🔄']]) add(ic, JT.CAMS[m].label + ' cam', () => { this.closeModal(); this.setCam(m); }, this.R.cam.mode === m);
-      for (const [m, ic, lab] of [['auto', '🌗', 'Auto time'], ['day', '☀', 'Always day'], ['night', '🌙', 'Always night']]) add(ic, lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
-      add(this.set.muted ? '🔇' : '🔊', 'Sound', () => { this.closeModal(); this.soundPopover(); });
-      add('❓', 'Help', () => this.helpModal());
+      const add = (lab, fn, on) => { const b = el('button', on ? 'on' : '', lab); b.onclick = fn; list.appendChild(b); };
+      const sect = (t) => list.appendChild(el('div', 'sect', t));
+      sect('Care');
+      add('Mist', () => { this.closeModal(); this.doMist(); });
+      add('Clean', () => { this.closeModal(); this.doClean(); });
+      add('Remove', () => { this.closeModal(); this.startRemove(); });
+      add('Journal', () => this.journalModal());
+      sect('Camera');
+      for (const m of ['iso', 'observer', 'follow', 'reverse']) add(JT.CAMS[m].label, () => { this.closeModal(); if (m === 'follow') this.follow(this.game.selectedId); else this.setCam(m); }, this.R.cam.mode === m);
+      sect('Time');
+      for (const [m, lab] of [['auto', 'Natural'], ['day', 'Always day'], ['night', 'Always night']]) add(lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
+      sect('Settings');
+      add('Habitats', () => this.manageModal());
+      add('Settings', () => this.settingsModal());
+      add(this.set.muted ? 'Sound (muted)' : 'Sound', () => { this.closeModal(); this.soundPopover(); });
+      add('Help', () => this.helpModal());
       w.appendChild(list); this.openModal('More', w);
     },
     manageModal() {
@@ -465,7 +487,7 @@
         const r3 = el('div', 'form-row'); r3.appendChild(el('label', '', 'Preset layout'));
         const ps = el('select'); const opts = JT.Presets.forType(h.data.type);
         opts.forEach((p, k) => { const o = el('option', '', esc(p.name)); o.value = 't:' + p.theme; ps.appendChild(o); });
-        (st.customPresets || []).forEach((p, k) => { const o = el('option', '', '★ ' + esc(p.name)); o.value = 'c:' + k; ps.appendChild(o); });
+        (st.customPresets || []).forEach((p, k) => { const o = el('option', '', 'Custom: ' + esc(p.name)); o.value = 'c:' + k; ps.appendChild(o); });
         const ap = el('button', 'modal-btn', 'Apply / Regenerate'); ap.onclick = () => {
           if (!root.confirm('Replace all decor in ' + h.data.name + ' with this layout? Current decor is removed (no refund for preset pieces).')) return;
           let refund = 0; for (const d of h.decor) if (!d.preset) refund += Math.floor(JT.DECOR_BY_ID[d.type].price * 0.5);
@@ -485,7 +507,7 @@
           const b = el('button', 'modal-btn gold', 'Build habitat'); b.onclick = () => { const h = g.createHabitat(sel.value); if (!h) { this.toast('Not enough coins.'); return; } h.decor.forEach(d => { d.preset = true; }); this.refreshHeader(); this.manageModal(); this.toast('Built ' + esc(h.data.name) + '.'); };
           r.appendChild(sel); r.appendChild(b); c.appendChild(r);
         } else {
-          const price = JT.SLOT_PRICES[i]; c.innerHTML = '<h4>🔒 Shelf slot ' + (i + 1) + '</h4>';
+          const price = JT.SLOT_PRICES[i]; c.innerHTML = '<h4>Shelf slot ' + (i + 1) + ' <span class="muted">locked</span></h4>';
           if (i === st.slots) { const b = el('button', 'modal-btn gold', 'Buy slot — ' + price + ' coins'); b.disabled = st.coins < price; b.onclick = () => { if (g.buySlot()) { this.bumpCoins(); this.manageModal(); } else this.toast('Not enough coins.'); }; c.appendChild(b); }
           else c.appendChild(el('div', 'muted', 'Unlock earlier slots first.'));
         }
@@ -521,17 +543,25 @@
       p.classList.remove('hidden');
     },
     helpModal() {
+      const e = (h, p) => '<div class="entry"><h4>' + h + '</h4><p>' + p + '</p></div>';
       this.openModal('How to Keep Jumpers', '<div class="grid">' +
-        '<div class="entry"><h4>🕷 Your jumpers</h4><p>Click or tap a jumper to see its card: hunger, hydration, growth, thoughts and personality. Rename, follow or rehome it there.</p></div>' +
-        '<div class="entry"><h4>🪰 Feeding</h4><p>Buy Live Food. Hungry jumpers hunt on their own — stalking, ambushing from perches and pouncing. Every catch earns coins.</p></div>' +
-        '<div class="entry"><h4>🌱 Growth</h4><p>After enough meals a jumper climbs to a high sheltered spot, spins a silk retreat and molts. It stays soft and pale for a while afterwards.</p></div>' +
-        '<div class="entry"><h4>🪴 Building</h4><p>Decor, Plants and Substrate open shop drawers. Pick a piece and place it — green means it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>Esc</kbd> cancels. Remove refunds 50%.</p></div>' +
-        '<div class="entry"><h4>💧 Care</h4><p>Mist to leave droplets for drinking. Springtails and isopods clean leftovers; the Clean button tidies husks too.</p></div>' +
-        '<div class="entry"><h4>📹 Observe</h4><p>Observation Mode (<kbd>O</kbd>) hides the interface and follows the most interesting jumper. <kbd>Esc</kbd> exits.</p></div>' +
-        '<div class="entry"><h4>🎥 Camera</h4><p><kbd>1</kbd> Isometric · <kbd>2</kbd> Observer · <kbd>3</kbd> Follow · <kbd>4</kbd> Reverse. Scroll or pinch to zoom, drag to pan, <kbd>0</kbd> resets.</p></div>' +
-        '<div class="entry"><h4>📖 Journal & unlocks</h4><p>Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Earn coins for more shelf slots and enclosures.</p></div></div>');
+        e('Your jumpers', 'Tap a jumper to follow it and see its card: one line on what it is doing, hunger, water, growth and personality. Tap empty space, or Follow again, to stop following.') +
+        e('Feeding', 'Buy live food. Hungry jumpers hunt on their own. When the food runs out they patrol their perches, climb high to scan and lunge at anything that moves. The Food control gently glows while someone is waiting.') +
+        e('Growth', 'After enough meals a jumper climbs somewhere high and sheltered, spins a silk retreat and molts. It stays soft and pale for a while afterwards.') +
+        e('Building', 'Decor, Plants and Substrate open the shop strip. Pick a piece and place it; it shows whether it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>Esc</kbd> cancels. Removing refunds half.') +
+        e('Warmth', 'A Basking Lamp throws a warm pool of light. Jumpers bask there in the morning, when it is cool and after a meal. Tap the lamp to switch it on or off. At night it draws moths and flies.') +
+        e('Care', 'Mist to leave droplets for drinking. Springtails and isopods seek out husks and shed skins and nibble them away; more springtails clean faster. Clean tidies husks at once.') +
+        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Observer, <kbd>3</kbd> Follow, <kbd>4</kbd> Reverse. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
+        e('Journal', 'Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Coins buy more shelf slots and enclosures.') + '</div>');
     },
 
+    /** The Food control gently breathes while a hungry jumper has nothing left to hunt (no badge, no icon). */
+    updateWanting() {
+      const h = this.hab; const AI = JT.SpiderAI;
+      const want = h.spiders.some(s => s.sat < 0.4 && !s.hold && !(AI.preyAvailable && AI.preyAvailable(h, s)));
+      if (want === this._want) return; this._want = want;
+      document.querySelectorAll('#toolbar button[data-tool="food"], #dock button[data-dock="food"]').forEach(b => b.classList.toggle('wanting', want));
+    },
     // ------------------------------------------------ per-frame
     update(dt) {
       this._t += dt; this._panelT += dt;
@@ -539,7 +569,7 @@
       if (this.obs) this.updateObs(dt);
       // the player "watches" the selected jumper -> personality is discovered over time
       if (g.viewing) for (const s of h.spiders) s.obsT = (s.obsT || 0) + dt * (s.id === g.selectedId && (this.panelId === s.id || this.obs || this.R.cam.mode === 'follow') ? 1 : 0.2);
-      if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); $('coins').textContent = Math.floor(g.state.coins); }
+      if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); $('coins').textContent = Math.floor(g.state.coins); this.updateWanting(); }
       if (this.mode === 'place' && this.place && this._t > 0.5) { this._t = 0; this.updateGhostAtCurrent(); }
     },
   };

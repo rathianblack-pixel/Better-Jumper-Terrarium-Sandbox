@@ -233,17 +233,25 @@
 
   // -------------------- Remains / droplets / silk --------------------
   D.remains = function (ctx, V, r, fr, o) {
-    const k = Math.max(0.2, r.clean);
-    if (r.cat === 'exuvia') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.5 }, fr, { len: r.len || 5, ghost: true, alpha: 0.55, noShadow: true }); return; }
-    if (r.cat === 'spider') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.2 }, fr, { len: (r.len || 5) * 0.9, curled: true, alpha: 0.7 * k, palette: { ceph: '#3a3028', abd: '#2e2620', mark: '#5a4a3a', leg: '#3a3028', chel: '#3a3028', hair: '#4a4038', belly: '#4a4038' }, noShadow: true }); return; }
-    const d = JT.PREY_BY_ID[r.kind] || { len: 4, col: '#7a6a5a' }; const L = d.len * 0.5 * (0.5 + 0.5 * k);
-    const p = V.P(fr.p); const rr = Math.max(1.2, L * V.s * 0.5);
-    ctx.globalAlpha = 0.85 * (0.4 + 0.6 * k);
+    const k = M.clamp(r.clean, 0, 1); if (k <= 0.01) return; const fade = Math.min(1, k * 2.2); // shrink, then fade out at the end
+    if (r.cat === 'exuvia') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.5 }, fr, { len: (r.len || 5) * (0.55 + 0.45 * k), ghost: true, alpha: 0.55 * fade, noShadow: true }); return; }
+    if (r.cat === 'spider') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.2 }, fr, { len: (r.len || 5) * 0.9 * (0.6 + 0.4 * k), curled: true, alpha: 0.7 * fade, palette: { ceph: '#3a3028', abd: '#2e2620', mark: '#5a4a3a', leg: '#3a3028', chel: '#3a3028', hair: '#4a4038', belly: '#4a4038' }, noShadow: true }); return; }
+    const d = JT.PREY_BY_ID[r.kind] || { len: 4, col: '#7a6a5a' }; const L = d.len * 0.5 * (0.3 + 0.7 * k);
+    const p = V.P(fr.p); const rr = Math.max(0.6, L * V.s * 0.5);
+    ctx.globalAlpha = 0.85 * fade;
     ctx.fillStyle = sh(d.col || '#7a6a5a', -0.45); ctx.beginPath(); ctx.ellipse(p[0], p[1], rr, rr * 0.55, r.ang || 0, 0, 6.283); ctx.fill();
     ctx.fillStyle = sh(d.col || '#7a6a5a', -0.15); ctx.beginPath(); ctx.ellipse(p[0] - rr * 0.2, p[1] - rr * 0.15, rr * 0.5, rr * 0.3, r.ang || 0, 0, 6.283); ctx.fill();
     ctx.strokeStyle = sh(d.col || '#7a6a5a', -0.5); ctx.lineWidth = Math.max(0.5, rr * 0.12);
     for (let i = 0; i < 3; i++) { const a = (r.ang || 0) + i * 2.1; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0] + Math.cos(a) * rr * 1.5, p[1] + Math.sin(a) * rr * 0.8); ctx.stroke(); }
     ctx.globalAlpha = 1;
+  };
+  /** A small leaf fragment drifting down from a plant, resting a while, then fading. */
+  D.leafBit = function (ctx, V, lf) {
+    const p = V.P(lf.pos); const r = Math.max(1, 1.3 * V.s); const a = lf.falling ? 0.9 : 0.9 * M.clamp(1 - (lf.rest - 9) / 5, 0, 1); if (a <= 0) return;
+    const col = lf.hue < 0.5 ? '#8a9a4a' : lf.hue < 0.8 ? '#a8843e' : '#6e7a3a';
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(p[0], p[1]); ctx.rotate(lf.ang); ctx.scale(1, lf.falling ? 0.45 + 0.4 * Math.abs(Math.sin(lf.t * 2.3 + lf.seed)) : Math.max(0.3, V.sp));
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-r, 0); ctx.quadraticCurveTo(0, -r * 0.7, r, 0); ctx.quadraticCurveTo(0, r * 0.7, -r, 0); ctx.fill();
+    ctx.strokeStyle = sh(col, -0.35); ctx.lineWidth = Math.max(0.4, r * 0.1); ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.stroke(); ctx.restore();
   };
   D.drop = function (ctx, V, w, pos) {
     const p = V.P(pos); const r = Math.max(1.2, w.r * V.s);

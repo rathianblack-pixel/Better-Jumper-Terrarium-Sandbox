@@ -179,7 +179,29 @@
       this.data.drops = this.data.drops.filter(d => Nav.validSup(this, d.sup));
       this.data.drops.forEach(d => { d.pos = Nav.supPos(this, d.sup, d.pos); });
       this.data.silk = this.data.silk.filter(s => !s.decor || this.geoms[s.decor]);
+      for (const s of this.data.spiders) if (s.home && (!M.finite3(s.home.pos) || !Nav.validSup(this, s.home.sup))) s.home = null;
+      if (this._leaves) this._leaves = this._leaves.filter(l => !l.decor || this.geoms[l.decor]);
     }
+
+    // ---------------- lamps & warmth ----------------
+    /** Basking lamps currently switched on: [{inst, head, pool, r}]. */
+    lampsOn() {
+      const out = [];
+      for (const inst of this.data.decor) { if (inst.type !== 'heatlamp' || inst.on === false) continue; const g = this.geoms[inst.id]; if (g && g.lamp) out.push({ inst, head: g.lamp.head, pool: g.lamp.pool, r: g.lamp.r }); }
+      return out;
+    }
+    /** 0..1 radiant warmth at a point (strongest directly under a lit lamp head). */
+    warmthAt(pos) {
+      let w = 0;
+      for (const L of this.lampsOn()) {
+        if (pos[1] > L.head[1] - 1) continue;
+        const dh = Math.hypot(pos[0] - L.pool[0], pos[2] - L.pool[2]); const dv = L.head[1] - pos[1];
+        const R = L.r * (0.6 + 0.4 * M.clamp(dv / 40, 0, 1.4));
+        if (dh < R) w = Math.max(w, (1 - dh / R) * M.clamp(1.2 - dv / 150, 0.6, 1));
+      }
+      return w;
+    }
+    toggleLamp(id) { const inst = this.decorById(id); if (!inst || inst.type !== 'heatlamp') return null; inst.on = inst.on === false; const g = this.geoms[id]; if (g) { g.lampOn = inst.on; g._spr = null; } return inst.on; }
 
     // ---------------- entities ----------------
     randomFloorPoint(rng) {
@@ -247,7 +269,7 @@
     // ---------------- maintenance ----------------
     mist() {
       this.data.humidity = Math.min(1, this.data.humidity + 0.28);
-      const nav = this.nav; const cands = nav.nodes.filter(n => n.kind !== 'face' && !n.landing && (n.kind !== 'floor' || JT.R() < 0.25));
+      const nav = this.nav; const cands = nav.nodes.filter(n => (n.kind !== 'face' || (n.pos[1] > 4 && JT.R() < 0.35)) && !n.landing && (n.kind !== 'floor' || JT.R() < 0.25));
       const n = 8 + Math.floor(JT.R() * 7);
       for (let i = 0; i < n && cands.length; i++) {
         const node = cands[Math.floor(JT.R() * cands.length)];
@@ -277,9 +299,79 @@
       JT.SpiderAI.updateNests(this, dt);
       for (const s of d.silk) s.age += dt;
       d.silk = d.silk.filter(s => s.age < (s.kind === 'retreat' ? 1800 : 600));
-      for (const r of d.remains) r.age += dt;
+      this.updateRemains(dt);
+      this.updateCleaners(dt);
+      this.updateLeaves(dt);
+      this.updateDew(dt);
       for (const inst of d.decor) { const sw = inst._sw; if (sw) { sw.vx += (-sw.x * 26 - sw.vx * 5.5) * dt; sw.vz += (-sw.z * 26 - sw.vz * 5.5) * dt; sw.x += sw.vx * dt; sw.z += sw.vz * dt; if (Math.abs(sw.x) + Math.abs(sw.z) + Math.abs(sw.vx) + Math.abs(sw.vz) < 1e-3) inst._sw = null; } }
       this._valT = (this._valT || 0) + dt; if (this._valT > 1) { this._valT = 0; this.validateRefs(); }
+    }
+    /** Remains slowly decay on their own (damp speeds it); springtails speed it up a lot (prey.js). */
+    updateRemains(dt) {
+      const d = this.data; let gone = false;
+      for (const r of d.remains) {
+        r.age += dt; if (r.clean == null || !isFinite(r.clean)) r.clean = 1;
+        const base = r.cat === 'exuvia' ? 1 / 1500 : r.cat === 'spider' ? 1 / 2400 : 1 / 900;
+        r.clean -= dt * base * (0.5 + d.humidity);
+        if (r.clean <= 0) gone = true;
+      }
+      if (gone) d.remains = d.remains.filter(r => r.clean > 0);
+    }
+    /** Small self-sustaining springtail colony: breeds when there is food or moisture, thins out when dry and bare. */
+    updateCleaners(dt) {
+      const d = this.data; this._brT = (this._brT || 0) + dt; if (this._brT < 15) return; this._brT = 0;
+      const sts = d.prey.filter(p => p.type === 'springtail' && !p.owner); const n = sts.length; if (n < 2) return;
+      const food = d.remains.length; const moist = d.humidity > 0.45;
+      const target = food ? Math.min(12, 6 + food) : moist ? 6 : 3;
+      if (n < target && (food || moist) && JT.R() < 0.35 && d.prey.length < JT.PREY_CAP - 2) {
+        const par = sts[Math.floor(JT.R() * n)]; const p = JT.PreyAI.create(this, 'springtail');
+        const b = Nav.supportBelow(this, [par.pos[0] + (JT.R() - 0.5) * 2, par.pos[1] + 0.5, par.pos[2] + (JT.R() - 0.5) * 2]);
+        p.pos = b.pos; p.sup = b.sup; p.young = true; d.prey.push(p);
+      } else if (!food && !moist && n > 3 && JT.R() < 0.2) {
+        const v = sts.find(p => p.state === 'idle' || p.state === 'buried') || null; if (v) this.removeEntity(v, 'natural');
+      }
+    }
+    /** Transient falling leaf bits / debris from plants: something moving that a hungry jumper may lunge at. */
+    updateLeaves(dt) {
+      const L = this._leaves || (this._leaves = []);
+      this._leafT = (this._leafT == null ? 6 + JT.R() * 10 : this._leafT) - dt;
+      if (this._leafT <= 0) {
+        this._leafT = 8 + JT.R() * 14;
+        const plants = this.data.decor.filter(i => { const g = this.geoms[i.id]; return g && g.def && g.def.cat === 'plants' && g.height > 10; });
+        if (plants.length && L.length < 4) {
+          const inst = plants[Math.floor(JT.R() * plants.length)]; const g = this.geoms[inst.id];
+          const a = JT.R() * 6.28, rr = JT.R() * Math.max(2, g.coverR * 0.8);
+          const x = g.center[0] + Math.cos(a) * rr, z = g.center[2] + Math.sin(a) * rr;
+          if (Nav.inside(this, x, z, 3)) {
+            const y = g.baseY + g.height * (0.55 + JT.R() * 0.4); const b = Nav.supportBelow(this, [x, y, z]);
+            L.push({ id: JT.newId('l'), pos: [x, y, z], y0: b.pos[1], falling: true, t: 0, rest: 0, ang: JT.R() * 6.28, seed: JT.R() * 100, decor: b.sup.d || null, hue: JT.R() });
+          }
+        }
+      }
+      for (const l of L) {
+        l.t += dt;
+        if (l.falling) {
+          l.pos[1] -= dt * (3.2 + Math.sin(l.t * 2.1 + l.seed) * 1.2);
+          l.pos[0] += Math.sin(l.t * 1.7 + l.seed) * dt * 2.2; l.pos[2] += Math.cos(l.t * 1.3 + l.seed) * dt * 1.6; l.ang += dt * 1.5;
+          const c = Nav.clampInside(this, l.pos[0], l.pos[2], 2); l.pos[0] = c[0]; l.pos[2] = c[1];
+          if (l.pos[1] <= l.y0 + 0.15 || l.t > 40) { l.pos[1] = l.y0 + 0.1; l.falling = false; }
+        } else l.rest += dt;
+      }
+      this._leaves = L.filter(l => l.rest < 14);
+    }
+    /** Morning dew: a few droplets condense on leaves and walls around dawn when humid enough. */
+    updateDew(dt) {
+      if (!this.game) return; const tod = this.game.tod ? this.game.tod() : null; if (tod == null) return;
+      const day = Math.floor(this.game.state.time / (JT.DAY || 480));
+      if (tod > 0.2 && tod < 0.3 && this.data.humidity > 0.5 && this.data.dewDay !== day) {
+        this.data.dewDay = day;
+        const cands = this.nav.nodes.filter(n => !n.landing && n.kind !== 'floor' && n.pos[1] > 3);
+        for (let i = 0; i < 5 && cands.length; i++) {
+          const node = cands[Math.floor(JT.R() * cands.length)];
+          if (this.data.drops.some(w => M.dist(w.pos, node.pos) < 3)) continue;
+          this.data.drops.push({ id: JT.newId('w'), pos: node.pos.slice(), sup: JT.deepClone(node.sup), decor: node.decor || null, life: 120 + JT.R() * 120, r: 0.6 + JT.R() * 0.5 });
+        }
+      }
     }
     /** Small damped-spring impulse on flexible vegetation. */
     nudge(decorId, ix, iz) {

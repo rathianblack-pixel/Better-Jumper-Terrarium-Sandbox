@@ -10,12 +10,21 @@ Pure HTML/CSS/JavaScript: no frameworks, no build step, no external assets. All 
 ## Controls
 | Action | Desktop | Touch |
 |---|---|---|
-| Select a jumper | click it | tap it |
+| Follow a jumper | click it (or Follow / `3`) · click empty space or Follow again to stop | tap it (or Follow in the dock) · tap empty space to stop |
+| Orbit while following | drag (auto-framing resumes after a few quiet seconds) | drag |
 | Pan / zoom | drag · mouse wheel · `+` `-` `0` | drag · pinch |
-| Cameras | `1` Iso · `2` Observer · `3` Follow · `4` Reverse | More ▸ cams |
-| Observation Mode | `O` / 📹 Observe · `Esc` exits | Observe button |
-| Place decor | click a card, then click · `R` rotate · `Esc` cancel | drag the ghost · Rotate / Done |
-| Mist | toolbar or `M` | More ▸ Mist |
+| Cameras | `1` Iso · `2` Observer · `3` Follow · `4` Reverse | More, then Camera |
+| Observation Mode | `O` or Observe · `Esc` exits | Observe |
+| Place decor | pick a piece, then click · `R` rotate · `Esc` cancel | drag the ghost · Rotate / Done |
+| Basking lamp | click the lamp to switch it on or off | tap the lamp |
+| Mist | toolbar or `M` | More, then Mist |
+
+## What to watch for
+- **Follow camera** (`js/camera.js`): frames the upper body from the side the jumper's back faces — from above at an angle on the floor, facing the wall on a wall, round to the visible side under ledges. Damped springs, capped and shortest-way yaw, dead-bands so it can come to rest, a lead toward the landing (and a slightly wider view) during jumps, clamped to the habitat and to a pitch range where floor or wall never fill the screen.
+- **When the food runs out** there are no badges or pop-ups: hungry jumpers patrol their perches in turn, climb high to scan with stepwise head turns and lunge at anything moving (springtails, falling leaf bits, other jumpers). Very hungry ones are more restless and wander further. The abdomen slims when hungry and fills out after a meal. The Food control slowly breathes warm, and the jumper panel shows one short state line.
+- **Small behaviours**: eye and palp cleaning, palp flicks, looking around in steps, a curious head tilt toward a close and still camera, a stretch after waking, sideways scuttles, a brief dangle on silk from a ledge, drinking droplets (mist and morning dew) on leaves and walls, a silk safety line dabbed before jumps, and a favourite home spot to rest in.
+- **Basking Lamp** (Decor): a warm pool of light on the surfaces below, warm highlights and longer shadows thrown away from it, a visible glow at night. Jumpers seek it in the morning, when it is cool and after a meal, and bask pressed flat. At night moths and flies circle it and settle in its light.
+- **Clean-up crew**: springtails and isopods seek out prey husks *and* molt skins, gather round and nibble them until they shrink and fade away; more springtails clean faster. A small colony keeps breeding while there is food or moisture. Jumpers ignore springtails unless starving. Remains with no cleaners slowly decay.
 
 ## Structure
 ```
@@ -31,6 +40,7 @@ js/presets.js      adaptive themed layouts, custom presets, starter terrarium
 js/game.js         shelf of habitats, economy, unlocks, time, persistence + migrations, settings
 js/render*.js, draw-*.js   camera, backgrounds, depth-sorted scene, post FX, picking, thumbnails
 js/audio.js        procedural WebAudio music / ambience / effects
+js/camera.js       smart follow camera (pure maths, unit tested)
 js/ui.js, main.js  interface, input, mobile dock, main loop
 tests/             headless simulation tests (Node) + browser screenshot scripts (Playwright)
 build.js           bundles everything into dist/jumper-terrarium.html
@@ -40,5 +50,9 @@ build.js           bundles everything into dist/jumper-terrarium.html
 ```
 node tests/run-tests.js   # deterministic simulation tests (navigation, hunting, feeding, molting, cleanup, save/load, long run)
 node build.js             # rebuild the single-file version
+node tests/interaction.js # browser: tap-to-follow, orbit + pause, lamp toggle, no emoji, 44px targets, no console errors
+node tests/feature-shots.js                                              # screenshots: desktop, phone portrait, phone landscape
+URL=file://$PWD/dist/jumper-terrarium.html node tests/feature-shots.js   # same against the single-file build
 ```
+Saves are versioned (v3 adds lamp on/off and home spots); older saves migrate on load.
 Debug overlay (nav graph, routes, states, targets): Settings ▸ Debug overlay.

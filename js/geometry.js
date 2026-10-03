@@ -103,6 +103,16 @@
     for (let i = 0; i < 3; i++) { const a = i * 2.1; B.water.push({ local: [Math.cos(a) * p.r * 0.55, p.h, Math.sin(a) * p.r * 0.55], top: ti, permanent: true }); }
     B.height = p.h; B.coverR = p.r;
   };
+  /** Basking lamp: weighted foot, brass pole and arm, a small dome shade that throws a warm pool of light below. */
+  ARCH.lamp = function (B, p, sc) {
+    const H = Math.max(22, p.h * sc), R = p.reach;
+    const foot = G.circlePoly(0, 0, 4.2, 4.2, 12); B.solids.push(foot);
+    B.prim({ t: 'lampfoot', o: [0, 0, 0], r: 4.2 });
+    B.prim({ t: 'tube', pts: [[0, 0.8, 0], [0, H * 0.5, 0], [0, H, 0]], r0: 0.55, r1: 0.5, col: '#8c7650', style: 'rod' });
+    B.prim({ t: 'tube', pts: bez([0, H, 0], [R * 0.45, H + 4, 0], [R, H + 1, 0], 6), r0: 0.45, r1: 0.42, col: '#8c7650', style: 'rod' });
+    B.prim({ t: 'lamp', o: [R, H - 1.5, 0], r: 4.6 });
+    B.lampLocal = [R, H - 3, 0]; B.height = H + 4; B.coverR = 6;
+  };
   ARCH.log = function (B, p) {
     const L = p.L, r = p.r, half = !!p.half;
     const hh = half ? r : r * 2;
@@ -625,6 +635,7 @@
     g.center = [inst.x, baseY, inst.z];
     if (B.front) { g.front = B.front.map(X.P2); g.out = X.V([0, 0, -1]); g.wallH = B.height - 4; }
     if (def.arche === 'wallmount') { g.center = [inst.x, inst.my || 40, inst.z]; g.foot = G.circlePoly(inst.x, inst.z, (def.p.w || 14) / 2, 3, 8); }
+    if (B.lampLocal) { const hd = X.P(B.lampLocal); g.lamp = { head: hd, pool: [hd[0], baseY, hd[2]], r: def.p.pool || 24 }; g.lampOn = inst.on !== false; }
     g.flexible = g.paths.some(p => p.flex > 0.2) || def.cat === 'plants';
     return g;
   };

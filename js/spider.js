@@ -10,8 +10,9 @@
   const JT = root.JT, M = JT.M, Nav = JT.Nav, Loco = JT.Loco;
   const AI = JT.SpiderAI = {};
   const DAY = 480;
-  const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 2, watch: 4, display: 20, social: 20, avoid: 22,
+  const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 34, watch: 4, display: 20, social: 20, avoid: 22,
     investigate: 15, inspect: 15, postFeed: 10, search: 35, sleepSeek: 30, sleep: 30,
+    cleanEyes: 3, look: 3, scuttle: 3, stretch: 5, homeSeek: 3, baskSeek: 12, bask: 12, dangle: 45, scan: 34, lunge: 36,
     notice: 40, assess: 40, stalk: 40, creep: 41, crouch: 42, track: 40,
     drinkSeek: 50, drink: 50, flee: 60, pounce: 75, fall: 75, subdue: 70, carry: 70, feed: 70,
     moltSeek: 80, moltSilk: 85, premolt: 90, molting: 95, postMolt: 85, emerge: 86 };
@@ -29,6 +30,13 @@
   AI.caps = (sp, carry) => ({ jump: AI.jump(sp) * (carry ? 0.6 : 1), climb: true, drop: true, carry: !!carry });
   AI.hungerLabel = (s) => s > 0.85 ? 'Full & Round' : s > 0.6 ? 'Content' : s > 0.35 ? 'Peckish' : 'Hungry';
   AI.moltNeed = (sp) => 3 + sp.stage;
+  AI.STARVING = 0.15;
+  /** Live food this jumper will actually go after. Cleanup crew is ignored unless the jumper is starving. */
+  AI.huntableFor = (sp, d) => !!d && (d.huntable || (d.id === 'springtail' && sp.sat < AI.STARVING));
+  AI.nutOf = (d) => d ? (d.nut || (d.id === 'springtail' ? 0.05 : 0)) : 0;
+  /** Is there anything left in the habitat this jumper could eat? */
+  AI.preyAvailable = (hab, sp) => hab.data.prey.some(p => !p.owner && !p.buried && !p.dead && AI.huntableFor(sp, JT.PREY_BY_ID[p.type]));
+  AI.hungerLevel = (sp) => sp.sat < 0.2 ? 2 : sp.sat < 0.4 ? 1 : 0;
 
   function usedNames() { const s = new Set(); if (JT.game) for (const h of JT.game.habs) for (const x of h.data.spiders) s.add(x.name); return s; }
   AI.create = function (hab, speciesId, o) {
@@ -109,7 +117,7 @@
       if (e.sup && e.sup.k === 'air') p *= 0.8;
       if (JT.R() < p) { if (!seen[e.id]) sp._noticedAt = now; seen[e.id] = now; }
     };
-    for (const p of hab.data.prey) { if (p.owner || p.buried || p.dead) continue; const d = JT.PREY_BY_ID[p.type]; if (!d.huntable) continue; consider(p); }
+    for (const p of hab.data.prey) { if (p.owner || p.buried || p.dead) continue; const d = JT.PREY_BY_ID[p.type]; if (!AI.huntableFor(sp, d)) continue; consider(p); }
     if (sp.sat < 0.32 && sp.pers.cannibal > 0.5) for (const o of hab.data.spiders) if (o !== sp && !MOLT.has(o.state) || (o !== sp && o.soft > 0)) consider(o, true);
   }
   function scoreTarget(hab, sp, e, isSpider) {
@@ -118,13 +126,14 @@
     const hungry = sp.sat < 0.35; const starving = sp.sat < 0.18;
     const maxR = 0.9 + sp.traits.bold * 0.8 + (hungry ? 0.3 : 0) + (starving ? 0.2 : 0);
     if (ratio > maxR) return -1;
-    if (ratio < 0.08 && L > 6) return -1;
+    const crumbs = !isSpider && !def.huntable; // springtails: only worth it when starving
+    if (ratio < 0.08 && L > 6 && !crumbs) return -1;
     let danger = (isSpider ? 0.4 : def.danger) * ratio; if (isSpider && e.soft > 0) danger *= 0.3;
     if (danger > sp.traits.bold * 0.8 + (hungry ? 0.3 : 0)) return -1;
     if (isSpider) { const el = AI.len(e); if (!(L > el * 1.35 || (e.soft > 0 && L > el * 0.95))) return -1; }
     const d = M.dist(sp.pos, e.pos);
-    const nut = isSpider ? 0.6 : def.nut;
-    let s = nut * 10 - d * 0.04 - danger * 5 + (ratio > 0.25 && ratio < 1 ? 2 : 0);
+    const nut = isSpider ? 0.6 : AI.nutOf(def);
+    let s = nut * 10 - d * 0.04 - danger * 5 + (ratio > 0.25 && ratio < 1 ? 2 : 0) + (crumbs ? 2.5 : 0);
     const v = e._vel ? M.len(e._vel) : 0; if (v > 1) s += 1;
     if (sp.mem.ignore[e.id] && !starving) s -= 8;
     if (e.sup && e.sup.k === 'air') s -= 1.5;
@@ -173,13 +182,17 @@
     if (canHunt && cur < 40) {
       const t = chooseTarget(hab, sp);
       if (t) { startNotice(hab, sp, t); return; }
-      const hungryPrey = sp.sat < 0.4 && hab.data.prey.some(p => !p.owner && !p.buried && JT.PREY_BY_ID[p.type].huntable);
-      if (hungryPrey && cur < 35 && !(sp._searchCD > hab.time)) { startSearch(hab, sp); return; }
+      if (sp.sat < 0.4) {
+        const avail = AI.preyAvailable(hab, sp);
+        if (avail && cur < 35 && !(sp._searchCD > hab.time)) { startSearch(hab, sp); return; }
+        if (!avail && cur < 34 && !(sp._patrolCD > hab.time) && !(sp.state === 'sleep' && sp.st < 20)) { if (startPatrol(hab, sp)) return; }
+      }
     }
     if (cur >= 35) return;
     const dl = hab.daylight();
     if (dl < 0.2 && sp.sat > 0.3 && cur < 30 && sp.state !== 'sleep') { startSleep(hab, sp); return; }
     if (cur >= 30) return;
+    if (cur < 12 && AI.wantsWarmth(hab, sp) && startBask(hab, sp)) return;
     if (cur < 20 && social(hab, sp)) return;
     if (cur < 15 && curiosity(hab, sp)) return;
     if (sp.state === 'idle') pickIdle(hab, sp);
@@ -209,7 +222,22 @@
     sp._crouch = M.lerp(sp._crouch || 0, sp.state === 'crouch' ? 1 : sneak ? (sp._low ? 0.85 : 0.35) : 0, Math.min(1, dt * 4));
     const raise = (HUNT.has(sp.state) && sp.state !== 'assess') || sp.state === 'display' || sp.state === 'inspect' || sp.state === 'watch' ? 1 : 0;
     sp._legRaise = M.lerp(sp._legRaise || 0, raise, Math.min(1, dt * 5));
-    sp._gazeT = (sp._gazeT || 0) - dt; if (sp._gazeT <= 0) { sp._gazeT = 0.6 + JT.R() * 2.5; sp._gaze = (JT.R() - 0.5) * 0.7 * (1 - (sp._legRaise || 0)); }
+    if (sp.state === 'lunge' && sp.st < 0.3) sp._crouch = M.lerp(sp._crouch, 1, Math.min(1, dt * 10));
+    if (sp._prepT > 0) sp._crouch = M.lerp(sp._crouch, 0.55, Math.min(1, dt * 8));
+    if (sp.state === 'scan' || sp.state === 'lunge') sp._legRaise = M.lerp(sp._legRaise, sp.state === 'lunge' ? 1 : 0.45, Math.min(1, dt * 5));
+    // body condition: the abdomen slims down when hungry and plumps up after a meal (eased, never pops)
+    const fatT = M.clamp(0.68 + Math.min(1.05, sp.sat) * 0.55, 0.68, 1.26);
+    sp._fatNow = sp._fatNow == null ? fatT : M.lerp(sp._fatNow, fatT, Math.min(1, dt * 0.5));
+    sp._flat = M.lerp(sp._flat || 0, sp.state === 'bask' ? 1 : 0, Math.min(1, dt * 1.6));
+    sp._stretchK = M.lerp(sp._stretchK || 0, sp.state === 'stretch' ? 1 : 0, Math.min(1, dt * 3));
+    sp._wipe = M.lerp(sp._wipe || 0, sp.state === 'cleanEyes' ? 1 : 0, Math.min(1, dt * 4));
+    sp._dangleVis = M.lerp(sp._dangleVis || 0, sp.state === 'dangle' ? (sp._dangleK || 0) : 0, Math.min(1, dt * (sp.state === 'dangle' ? 6 : 2.5)));
+    if (sp.state !== 'dangle' && sp._dangleVis < 0.01) sp._dangleOff = null;
+    // palp flicks: little twitches, more often while alert
+    sp._flickT = (sp._flickT == null ? JT.R() * 4 : sp._flickT) - dt;
+    if (sp._flickT <= 0) { sp._flickT = (HUNT.has(sp.state) || sp.state === 'scan' ? 0.8 : 2.5) + JT.R() * 5; if (!NEST_STATES.has(sp.state) && sp.state !== 'feed') sp._flick = 1; }
+    sp._flick = Math.max(0, (sp._flick || 0) - dt * 2.6);
+    if (sp.state !== 'scan' && sp.state !== 'look') sp._gazeT = (sp._gazeT || 0) - dt; if (sp._gazeT <= 0) { sp._gazeT = 0.6 + JT.R() * 2.5; sp._gaze = (JT.R() - 0.5) * 0.7 * (1 - (sp._legRaise || 0)); }
     sp._gazeNow = M.lerp(sp._gazeNow || 0, sp._gaze || 0, Math.min(1, dt * 8));
   };
   AI.mouth = function (hab, sp) {
@@ -217,7 +245,14 @@
     return M.add(M.add(sp.pos, M.mul(sp.fwd || [1, 0, 0], L * 0.55)), M.mul(fr.n, L * 0.08));
   };
 
-  function move(hab, sp, dt, mult) {
+  function move(hab, sp, dt, mult, urgent) {
+    // a short pause to dab a silk safety line onto the surface before each jump along a route
+    const R = sp._route;
+    if (!urgent && R && !sp._air && R.steps[R.i] && R.steps[R.i].mode === 'jump') {
+      const st = R.steps[R.i];
+      if (sp._prepStep !== st) { sp._prepStep = st; sp._prepT = 0.28 + JT.R() * 0.22; sp._routeStart = (sp._routeStart || hab.time) + sp._prepT; }
+      if (sp._prepT > 0) { sp._prepT -= dt; faceToward(sp, st.pos, dt, 6); return 'moving'; }
+    } else sp._prepT = 0;
     return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1), {
       onLaunch: (st) => { if (st.mode === 'jump') { sp._anchor = sp.pos.slice(); hab.event('jump', { sp }); } },
       onLand: (st) => { if (sp._anchor) { hab.addSilk(sp._anchor, sp.pos, 'drag'); sp._anchor = null; hab.event('journal', { id: 'safety', sp, soft: true }); } },
@@ -231,11 +266,32 @@
   const H = AI.H = {};
   H.idle = function (hab, sp, dt) { if (sp.st > 0.8 + sp.traits.patience) pickIdle(hab, sp); };
   function pickIdle(hab, sp) {
-    const S = sp_(sp); const r = JT.R();
+    const S = sp_(sp); let r = JT.R();
     const act = sp.pers.activity, pat = sp.traits.patience;
+    const restless = AI.hungerLevel(sp) >= 2;
+    if (restless) r = 0.3 + r * 0.7; // very hungry: little grooming or resting, more wandering
+    if (sp.hyd < 0.72 && hab.data.drops.length && JT.R() < 0.4 && !(sp._drinkFail > hab.time) && startDrink(hab, sp, 140)) return;
     if (S.prefs.display > 0.7 && r < 0.08) { setState(sp, 'display', 'Performing a little leg-waving dance.'); sp.stats.displays++; hab.event('journal', { id: 'display', sp }); return; }
-    if (r < 0.18 + (1 - act) * 0.1) { setState(sp, 'groom', JT.R() < 0.5 ? 'Cleaning its palps and big front eyes.' : 'Grooming its legs, one at a time.'); return; }
-    if (r < 0.32 + pat * 0.15) { setState(sp, 'rest', pat > 0.6 ? 'Sitting perfectly still, watching.' : 'Pausing for a moment.'); sp.stats.rests++; return; }
+    if (r < 0.18 + (1 - act) * 0.1) {
+      if (JT.R() < 0.5) setState(sp, 'cleanEyes', 'Wiping its big front eyes with its front legs.');
+      else setState(sp, 'groom', JT.R() < 0.5 ? 'Cleaning its palps.' : 'Grooming its legs, one at a time.');
+      return;
+    }
+    if (r < 0.36) {
+      const k = JT.R();
+      if (k < 0.18 && startDangle(hab, sp)) return;
+      if (k < 0.5 && startScuttle(hab, sp)) return;
+      startLook(hab, sp); return;
+    }
+    if (r < 0.42 + pat * 0.15 && !restless) {
+      if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
+      if (sp.home && M.dist(sp.home.pos, sp.pos) > 14 && JT.R() < 0.35 + sp.pers.routine * 0.4) {
+        const r3 = routeTo(hab, sp, sp.home.sup, sp.home.pos); if (r3) { setState(sp, 'homeSeek', 'Heading back to its favourite spot.'); return; }
+      }
+      if (!sp.home && Nav.coverAt(hab, sp.pos) > 0.35 && sp.sup.k !== 'air') AI.setHome(hab, sp);
+      const atHome = sp.home && M.dist(sp.home.pos, sp.pos) < 6;
+      setState(sp, 'rest', atHome ? 'Resting at its favourite spot.' : pat > 0.6 ? 'Sitting perfectly still, watching.' : 'Pausing for a moment.'); sp.stats.rests++; return;
+    }
     // explore / lookout: choose a reachable destination weighted by species/individual preferences
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
     const nodes = hab.nav.nodes; let best = null, bs = -1e9; const H0 = hab.dims.h;
@@ -260,9 +316,9 @@
     else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
   };
   H.patrol = H.explore;
-  H.lookout = function (hab, sp, dt) { if (sp.st > 3 + sp.traits.patience * 7) setState(sp, 'idle'); };
+  H.lookout = function (hab, sp, dt) { if (sp.st > (3 + sp.traits.patience * 7) * (AI.hungerLevel(sp) >= 2 ? 0.4 : 1)) setState(sp, 'idle'); };
   H.groom = function (hab, sp, dt) { if (sp.st > 2 + JT.R() * 0.02 + sp.pers.routine * 2) setState(sp, 'idle'); };
-  H.rest = function (hab, sp, dt) { if (sp.st > 2 + sp.traits.patience * 6) setState(sp, 'idle'); };
+  H.rest = function (hab, sp, dt) { const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6; if (sp.st > (2 + sp.traits.patience * 6) * (home ? 2.2 : 1)) setState(sp, 'idle'); };
   H.watch = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 2.5) setState(sp, 'idle'); };
   H.display = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 3.5) { setState(sp, 'idle'); sp._watchPos = null; } };
   H.postFeed = function (hab, sp, dt) { if (sp.st > 6 + sp.traits.patience * 8) setState(sp, 'groom', 'Cleaning up after its meal.'); };
@@ -577,7 +633,7 @@
       let s;
       if (mode === 'feed') s = hgt * 6 * (0.6 + S.prefs.height) + (plant ? 3 : 0) + (g && !plant ? 1 : 0) + cover * 3 + quiet * 0.04 + traffic * 0.03 - c * 0.025;
       else if (mode === 'molt') s = hgt * 12 + (plant ? 3.5 : 0) + (g && !plant ? 1.5 : 0) + cover * 4 + (n.perch ? 0.5 : 0) + quiet * 0.06 + traffic * 0.02 - c * 0.012;
-      else s = hgt * 3 * (0.5 + S.prefs.height) + (plant ? 1.5 : 0) + cover * 5 + quiet * 0.05 - c * 0.02;
+      else s = hgt * 3 * (0.5 + S.prefs.height) + (plant ? 1.5 : 0) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0);
       for (const o of others) if (o.retreat && o.retreat.pos && M.dist(o.retreat.pos, n.pos) < 10) s -= 4;
       if (s > bs) { bs = s; best = n; }
     }
@@ -604,7 +660,7 @@
   function startFeed(hab, sp) {
     sp._route = null; const p = hab.preyById(sp.hold); if (!p) { setState(sp, 'idle'); return; }
     const def = JT.PREY_BY_ID[p.type];
-    sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : def.nut;
+    sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def);
     setState(sp, 'feed', 'Feeding on the ' + (p.type === 'jumperMeal' ? 'unlucky jumper' : preyName(def)) + '.');
   }
   H.feed = function (hab, sp, dt) {
@@ -619,20 +675,21 @@
     sp.catches++; sp.meals++;
     hab.event('meal', { sp, value: def.val || 10 });
     hab.event('journal', { id: 'firstHunt', sp });
+    sp._afterMeal = hab.time; sp._patrolCD = 0;
     setState(sp, 'postFeed', 'Full and resting after its meal.');
   }
 
   // ---- thirst ----
-  function startDrink(hab, sp) {
+  function startDrink(hab, sp, maxCost) {
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
-    const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor })).concat(hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
-    let best = null, bc = 260;
+    const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor })).concat(maxCost ? [] : hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
+    let best = null, bc = maxCost || 260;
     for (const s of srcs) { const gc = Nav.goalCost(hab, dj, s.sup, s.pos); if (gc && gc.cost < bc) { bc = gc.cost; best = s; } }
-    if (!best) { sp._drinkFail = hab.time + 30; return false; }
+    if (!best) { sp._drinkFail = hab.time + (maxCost ? 12 : 30); return false; }
     const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) { sp._drinkFail = hab.time + 30; return false; }
     sp._route = r; sp._routeStart = hab.time; sp._drink = best; AI.dropTarget(hab, sp);
     const dn = decorName(hab, best.decor);
-    setState(sp, 'drinkSeek', 'Thirsty — heading for ' + (best.id ? 'a droplet' : 'water') + (dn ? ' on the ' + dn : '') + '.');
+    setState(sp, 'drinkSeek', (maxCost ? 'Off to sip ' : 'Thirsty — heading for ') + (best.id ? 'a droplet' : 'water') + (dn ? ' on the ' + dn : '') + '.');
     return true;
   }
   H.drinkSeek = function (hab, sp, dt) {
@@ -731,7 +788,7 @@
       setState(sp, 'postMolt', 'Freshly molted — pale and soft, resting while the new skin hardens.');
     }
   };
-  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; startEmerge(hab, sp, 'rest', 'Stretching its new legs carefully.'); } };
+  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; startEmerge(hab, sp, 'stretch', 'Stretching its new legs carefully.'); } };
 
   // ---- sleep ----
   function startSleep(hab, sp) {
@@ -741,10 +798,10 @@
   }
   H.sleepSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.7);
-    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); if (!sp.home || JT.R() < 0.25) AI.setHome(hab, sp); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
   };
   H.sleep = function (hab, sp, dt) {
-    if (hab.daylight() > 0.35) startEmerge(hab, sp, 'groom', 'Waking up and stretching.');
+    if (hab.daylight() > 0.35) startEmerge(hab, sp, 'stretch', 'Waking up and stretching.');
     else if (sp.sat < 0.25 && sp.st > 20) startEmerge(hab, sp, 'idle', 'Too hungry to sleep.');
   };
 
@@ -759,7 +816,7 @@
   }
   AI.escapeFrom = function (hab, sp, hunter) { if ((PRI[sp.state] || 0) < 60) { startFlee(hab, sp, hunter); } };
   H.flee = function (hab, sp, dt) {
-    const r = move(hab, sp, dt, 1.5);
+    const r = move(hab, sp, dt, 1.5, true);
     if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'watch', 'Keeping a wary eye out.'); }
   };
   H.avoid = function (hab, sp, dt) { const r = move(hab, sp, dt, 1.0); if (r !== 'moving' || stuck(hab, sp)) { sp._route = null; setState(sp, 'watch', 'Keeping its distance.'); } };
@@ -822,6 +879,210 @@
     if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'lookout', 'Scanning hungrily for movement.'); }
   };
 
+  // ---------------- small natural behaviours ----------------
+  AI.setHome = function (hab, sp) { if (!sp.sup || sp.sup.k === 'air') return; sp.home = { pos: sp.pos.slice(), sup: JT.deepClone(sp.sup) }; };
+  /** One short line describing what the jumper is doing (used by the info panel). */
+  AI.stateLine = function (hab, sp) {
+    const lvl = AI.hungerLevel(sp); const st = sp.state;
+    const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6;
+    const L = {
+      notice: 'Has spotted prey', assess: 'Sizing up prey', stalk: 'Stalking prey', creep: 'Creeping closer', crouch: 'About to pounce', track: 'Tracking a flyer', pounce: 'Pouncing',
+      subdue: 'Holding its catch', carry: 'Carrying its catch', feed: 'Feeding', postFeed: 'Resting after a meal', fall: 'Dropping down',
+      drinkSeek: 'Going for a drink', drink: 'Drinking a droplet', sleepSeek: 'Heading to bed', sleep: 'Asleep in its retreat',
+      moltSeek: 'Looking for a molting spot', moltSilk: 'Spinning a molting hammock', premolt: 'Waiting to molt', molting: 'Molting', postMolt: 'Hardening after a molt', emerge: 'Leaving its retreat',
+      flee: 'Fleeing', avoid: 'Keeping its distance', display: 'Displaying', watch: 'Watching warily', investigate: 'Investigating', inspect: 'Inspecting something new',
+      groom: 'Grooming', cleanEyes: 'Cleaning its eyes', look: 'Looking around', scuttle: 'Scuttling sideways', stretch: 'Stretching', dangle: 'Dangling on a silk line',
+      baskSeek: 'Heading for the warm spot', bask: 'Basking under the lamp', homeSeek: 'Heading home', lunge: 'Lunged at a movement',
+      explore: 'Exploring', lookout: 'Keeping a lookout', search: 'Searching for prey', rest: home ? 'Resting at home' : 'Resting', idle: 'Settling',
+    };
+    if (st === 'patrol' || st === 'scan') return lvl >= 2 ? 'Very hungry · wandering restlessly' : st === 'scan' ? 'Hungry · scanning for movement' : 'Hungry · patrolling for prey';
+    const base = L[st] || 'Settling';
+    if (lvl >= 2 && !HUNT.has(st) && !['feed', 'subdue', 'carry', 'pounce', 'lunge'].includes(st) && !MOLT.has(st)) return 'Very hungry · ' + base.toLowerCase();
+    if (lvl === 1 && !AI.preyAvailable(hab, sp) && !MOLT.has(st) && st !== 'feed') return 'Hungry · ' + base.toLowerCase();
+    return base;
+  };
+  function regionStep(hab, sp, dir, step) {
+    const key = Nav.regionKey(sp.sup); if (!key) return false; const r = hab.nav.regions[key]; if (!r) return false;
+    const np = [sp.pos[0] + dir[0] * step, sp.pos[1], sp.pos[2] + dir[2] * step];
+    const ok = key === 'F' ? Nav.inside(hab, np[0], np[2], 3) : JT.G.pointInPoly(np[0], np[2], JT.G.scalePoly(r.poly, 0.92));
+    if (!ok || r.obstacles.some(o => JT.G.pointInPoly(np[0], np[2], o))) return false;
+    sp.pos = np; return true;
+  }
+  H.cleanEyes = function (hab, sp, dt) { if (sp.st > 2.4 + sp.pers.routine * 1.5) { if (JT.R() < 0.5) sp._flick = 1; setState(sp, 'idle'); } };
+  H.stretch = function (hab, sp, dt) { if (sp.st > 2.8) setState(sp, JT.R() < 0.5 ? 'cleanEyes' : 'idle', 'Tidying up after a good stretch.'); };
+  function startLook(hab, sp) { sp._lookN = 3 + Math.floor(JT.R() * 3); sp._lookStepT = 0; setState(sp, 'look', 'Looking around, a few degrees at a time.'); }
+  /** Look around in steps: quick turns separated by still pauses; the head leads each turn. */
+  H.look = function (hab, sp, dt) {
+    sp._gazeT = 0.5; sp._lookStepT -= dt;
+    if (sp._lookStepT <= 0) {
+      if (sp._lookN-- <= 0) { sp._gaze = 0; setState(sp, 'idle'); return; }
+      const f = sp.fwd || [1, 0, 0]; const a = Math.atan2(f[2], f[0]) + (JT.R() < 0.5 ? -1 : 1) * (0.4 + JT.R() * 0.5);
+      sp._lookTo = [Math.cos(a), 0, Math.sin(a)]; sp._gaze = (a - Math.atan2(f[2], f[0])) > 0 ? 0.6 : -0.6; sp._lookStepT = 0.55 + JT.R() * 0.5;
+    }
+    if (sp._lookTo && sp.sup.k !== 'path') { faceToward(sp, M.add(sp.pos, sp._lookTo), dt, 9); }
+    if (sp._lookStepT < 0.3) sp._gaze = M.lerp(sp._gaze || 0, 0, Math.min(1, dt * 6));
+  };
+  function startScuttle(hab, sp) {
+    if (!Nav.regionKey(sp.sup)) return false;
+    const f = horiz(sp.fwd || [1, 0, 0]); const sd = JT.R() < 0.5 ? 1 : -1; const dir = [-f[2] * sd, 0, f[0] * sd];
+    const probe = { pos: sp.pos.slice(), sup: sp.sup }; if (!regionStep(hab, probe, dir, AI.len(sp) * 1.5)) return false;
+    sp._scutDir = dir; sp._scutDur = 0.45 + JT.R() * 0.4; setState(sp, 'scuttle', 'A quick sideways scuttle.'); return true;
+  }
+  H.scuttle = function (hab, sp, dt) {
+    if (sp.st < sp._scutDur) { if (!regionStep(hab, sp, sp._scutDir, AI.speed(sp) * 0.95 * dt)) sp.st = sp._scutDur; return; }
+    if (sp.st > sp._scutDur + 0.5) setState(sp, JT.R() < 0.5 ? 'idle' : 'lookout');
+  };
+  AI.startDangle = startDangle;
+  function startDangle(hab, sp) {
+    const L = AI.len(sp); let point = sp.pos.slice(), exclude = null;
+    if (sp.sup.k === 'path') {
+      const fr = Nav.supFrame(hab, sp.sup); if (!fr.tan || Math.abs(fr.tan[1]) > 0.55 || fr.n[1] < 0.55) return false;
+    } else if (sp.sup.k === 'top') {
+      const t = hab.geoms[sp.sup.d] && hab.geoms[sp.sup.d].tops[sp.sup.i]; if (!t) return false; exclude = sp.sup.d;
+      let best = null, bd = 1e9; const poly = t.poly;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const a = poly[j], b = poly[i]; const ex = b[0] - a[0], ez = b[1] - a[1]; const l2 = ex * ex + ez * ez || 1;
+        const u = M.clamp(((sp.pos[0] - a[0]) * ex + (sp.pos[2] - a[1]) * ez) / l2, 0, 1); const q = [a[0] + ex * u, a[1] + ez * u]; const d = Math.hypot(q[0] - sp.pos[0], q[1] - sp.pos[2]);
+        if (d < bd) { bd = d; best = q; }
+      }
+      if (!best || bd > L * 1.8) return false;
+      const c = JT.G.centroid(poly); const o = M.norm([best[0] - c[0], 0, best[1] - c[1]]);
+      point = [best[0] + o[0] * Math.max(1.2, L * 0.3), sp.pos[1], best[1] + o[2] * Math.max(1.2, L * 0.3)];
+    } else return false;
+    if (sp.pos[1] < 10 || !Nav.inside(hab, point[0], point[2], 3)) return false;
+    const below = Nav.supportBelow(hab, [point[0], sp.pos[1] - 0.8, point[2]], exclude);
+    const clear = sp.pos[1] - below.pos[1]; if (clear < 9) return false;
+    sp._dangleOff = { dx: point[0] - sp.pos[0], dz: point[2] - sp.pos[2], depth: M.clamp(clear * 0.45, 4, Math.min(16, L * 3.2)), anchor: point };
+    sp._dangleHold = 1.6 + JT.R() * 2.2; sp._dangleK = 0;
+    setState(sp, 'dangle', 'Dropping on a silk line for a look around, then climbing back up.'); hab.event('journal', { id: 'dangle', sp, soft: true }); return true;
+  }
+  H.dangle = function (hab, sp, dt) {
+    const down = 1.3, hold = sp._dangleHold || 2, up = 2.2; const t = sp.st;
+    sp._dangleK = t < down ? M.smooth(t / down) : t < down + hold ? 1 : Math.max(0, 1 - M.smooth((t - down - hold) / up));
+    if (t > down + hold + up) { sp._dangleK = 0; setState(sp, 'lookout', 'Back up after a little dangle.'); }
+  };
+  H.homeSeek = function (hab, sp, dt) {
+    const r = move(hab, sp, dt, 0.7);
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'rest', 'Resting at its favourite spot.'); }
+  };
+
+  // ---------------- warmth: basking under the lamp ----------------
+  AI.wantsWarmth = function (hab, sp) {
+    if (sp._baskCD > hab.time || sp.sat < 0.12 || sp.soft > 60 || sp.hold) return false;
+    if (!hab.lampsOn || !hab.lampsOn().length) return false;
+    const tod = hab.game ? hab.game.tod() : 0.3; const morning = tod > 0.2 && tod < 0.45;
+    const cool = hab.daylight() < 0.6;
+    const fed = sp._afterMeal != null && hab.time - sp._afterMeal < 300;
+    return morning || cool || fed;
+  };
+  function startBask(hab, sp) {
+    sp._baskCD = hab.time + 30;
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = -1e9;
+    for (const n of hab.nav.nodes) {
+      if (n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
+      const w = hab.warmthAt(n.pos); if (w < 0.4) continue;
+      let s = w * 3 - dj.dist[n.id] * 0.01 + (n.kind === 'top' ? 0.3 : 0);
+      for (const o of hab.data.spiders) if (o !== sp && M.dist(o.pos, n.pos) < 6) s -= 1.5;
+      if (s > bs) { bs = s; best = n; }
+    }
+    if (!best) return false;
+    const fed = sp._afterMeal != null && hab.time - sp._afterMeal < 300;
+    if (M.dist(best.pos, sp.pos) < 3) { beginBask(hab, sp); return true; }
+    const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) return false;
+    sp._route = r; sp._routeStart = hab.time;
+    setState(sp, 'baskSeek', fed ? 'Full — heading for the warm spot to digest.' : 'A little cool — heading for the warm light.');
+    return true;
+  }
+  AI.startBask = startBask;
+  function beginBask(hab, sp) { sp._baskDur = 22 + JT.R() * 26; setState(sp, 'bask', 'Basking in the warm light, body pressed flat.'); hab.event('journal', { id: 'bask', sp, soft: true }); }
+  H.baskSeek = function (hab, sp, dt) {
+    const r = move(hab, sp, dt, 0.75);
+    if (r === 'done' || r === 'none') { sp._route = null; if (hab.warmthAt(sp.pos) > 0.25) beginBask(hab, sp); else setState(sp, 'idle'); }
+    else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
+  };
+  H.bask = function (hab, sp, dt) {
+    if (hab.warmthAt(sp.pos) < 0.2) { sp._afterMeal = null; setState(sp, 'idle', 'The warmth faded.'); return; }
+    if (sp.st > (sp._baskDur || 30)) { sp._baskCD = hab.time + 120 + JT.R() * 160; sp._afterMeal = null; setState(sp, 'groom', 'Warmed through. Tidying its legs.'); }
+  };
+
+  // ---------------- hunger with no prey: patrol perches, scan from high, lunge at movement ----------------
+  function startPatrol(hab, sp) {
+    const lvl = AI.hungerLevel(sp); const far = lvl >= 2;
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const H0 = hab.dims.h;
+    const vis = sp._pvisit || (sp._pvisit = []);
+    let best = null, bs = -1e9;
+    for (const n of hab.nav.nodes) {
+      if (n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
+      if (M.dist(n.pos, sp.pos) < 10) continue;
+      const c = dj.dist[n.id];
+      let s = n.y / H0 * 7 + (n.perch ? 1.5 : 0) + (n.kind === 'floor' ? -2 : 0) + JT.R() * 2;
+      s -= far ? Math.abs(c - 110) * 0.018 : Math.abs(c - 45) * 0.03;
+      for (const v of vis) if (M.dist(v, n.pos) < 18) s -= 5; // perches in turn: skip the last few visited
+      if (s > bs) { bs = s; best = n; }
+    }
+    sp._patrolCD = hab.time + 4;
+    if (!best) { startScan(hab, sp); return true; }
+    const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) return false;
+    sp._route = r; sp._routeStart = hab.time; vis.push(best.pos.slice()); while (vis.length > 4) vis.shift();
+    setState(sp, 'patrol', far ? 'Very hungry — wandering restlessly in search of food.' : (best.y > 18 ? 'Hungry — climbing high to scan for prey.' : 'Hungry — patrolling its perches for prey.'));
+    return true;
+  }
+  AI.startPatrol = startPatrol;
+  function startScan(hab, sp) {
+    const far = AI.hungerLevel(sp) >= 2;
+    sp._scanDur = far ? 2 + JT.R() * 1.8 : 4 + JT.R() * 3.5; sp._peerT = 0;
+    setState(sp, 'scan', far ? 'Very hungry — peering around, restless.' : 'Peering around for any movement.');
+  }
+  /** Anything moving within reach: prey of any kind (incl. springtails), falling leaves, other jumpers. */
+  function moverNear(hab, sp) {
+    const R0 = Math.max(14, AI.jump(sp) * 0.85); let best = null, bd = R0; const f = horiz(sp.fwd || [1, 0, 0]);
+    const test = (pos, speed, id, kind) => {
+      if (speed < 1.2) return; const d = M.dist(pos, sp.pos); if (d > bd || d < 1.5) return;
+      const to = horiz(M.sub(pos, sp.pos)); if (M.dot(f, to) < -0.35) return;
+      best = { pos: pos.slice(), id, kind }; bd = d;
+    };
+    for (const p of hab.data.prey) if (!p.owner && !p.buried) test(p.pos, p._vel ? M.len(p._vel) : 0, p.id, p.type);
+    for (const lf of hab._leaves || []) if (lf.falling) test(lf.pos, 3, lf.id, 'leaf');
+    for (const o of hab.data.spiders) if (o !== sp && o._moving) test(o.pos, 3, o.id, 'spider');
+    return best;
+  }
+  function maybeLunge(hab, sp, dt) {
+    sp._mvT = (sp._mvT || 0) - dt; if (sp._mvT > 0 || sp._air || sp._lungeCD > hab.time) return false; sp._mvT = 0.3;
+    const m = moverNear(hab, sp); if (!m || JT.R() > 0.55) return false;
+    sp._route = null; sp._lunge = m; sp._lungeGone = 0;
+    const what = m.kind === 'leaf' ? 'a falling leaf' : m.kind === 'springtail' ? 'a springtail' : m.kind === 'spider' ? 'a moving jumper' : 'a flicker of movement';
+    setState(sp, 'lunge', 'Lunged at ' + what + '.'); hab.event('journal', { id: 'restless', sp, soft: true }); return true;
+  }
+  H.patrol = function (hab, sp, dt) {
+    if (maybeLunge(hab, sp, dt)) return;
+    const r = move(hab, sp, dt, AI.hungerLevel(sp) >= 2 ? 1.05 : 0.8);
+    if (r === 'done' || r === 'none') { sp._route = null; startScan(hab, sp); }
+    else if (stuck(hab, sp) && !sp._air) { sp._route = null; startScan(hab, sp); }
+  };
+  H.scan = function (hab, sp, dt) {
+    sp._gazeT = 0.5;
+    if (maybeLunge(hab, sp, dt)) return;
+    sp._peerT -= dt;
+    if (sp._peerT <= 0) { // peering head turns: snap to a new bearing, hold still, repeat
+      const opts = [-0.75, -0.4, 0, 0.4, 0.75]; let g = opts[Math.floor(JT.R() * opts.length)]; if (Math.abs(g - (sp._gaze || 0)) < 0.2) g = -g || 0.6;
+      sp._gaze = g; sp._peerT = 0.6 + JT.R() * 0.7;
+      if (JT.R() < 0.35 && sp.sup.k !== 'path') { const f = sp.fwd || [1, 0, 0]; const a = Math.atan2(f[2], f[0]) + g * 1.4; sp._lookTo = [Math.cos(a), 0, Math.sin(a)]; }
+    }
+    if (sp._lookTo && sp.sup.k !== 'path') faceToward(sp, M.add(sp.pos, sp._lookTo), dt, 7);
+    if (sp.st > sp._scanDur) { sp._lookTo = null; sp._gaze = 0; sp._patrolCD = hab.time + (AI.hungerLevel(sp) >= 2 ? 0.3 : 1.5); setState(sp, 'idle'); }
+  };
+  H.lunge = function (hab, sp, dt) {
+    const m = sp._lunge; if (!m) { setState(sp, 'idle'); return; }
+    const e = hab.preyById(m.id) || hab.spider(m.id) || (hab._leaves || []).find(l => l.id === m.id); if (e && e.pos) m.pos = e.pos.slice();
+    faceToward(sp, m.pos, dt, 10);
+    if (sp.st > 0.28 && sp.st < 0.46) { // the dart: a short burst forward, never airborne
+      const L = AI.len(sp); const d = M.dist2(sp.pos, m.pos); sp._lungeGone = sp._lungeGone || 0;
+      const step = Math.min(L * 9 * dt, Math.max(0, Math.min(L * 1.4, d - L * 0.6) - sp._lungeGone));
+      if (step > 0 && regionStep(hab, sp, horiz(M.sub(m.pos, sp.pos)), step)) sp._lungeGone += step;
+    }
+    if (sp.st > 1.2) { sp._lungeCD = hab.time + 3 + JT.R() * 4; sp._lunge = null; if (AI.hungerLevel(sp) >= 1) startScan(hab, sp); else setState(sp, 'idle'); }
+  };
+
   // ---------------- off-screen lightweight simulation ----------------
   AI.liteUpdate = function (hab, dt) {
     for (const sp of hab.data.spiders) {
@@ -838,7 +1099,7 @@
 
   /** Observation-mode interest of what a spider is doing right now. */
   AI.interest = function (sp) {
-    const m = { pounce: 100, fall: 90, subdue: 90, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35 };
+    const m = { pounce: 100, fall: 90, subdue: 90, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35, lunge: 55, dangle: 58, bask: 30, scan: 26, patrol: 28, scuttle: 20, cleanEyes: 22, stretch: 24 };
     return m[sp.state] || 8;
   };
   /** Discoverable personality descriptors (revealed as the player watches). */
@@ -857,11 +1118,12 @@
     // transient plans don't persist; resume safely from saved biological state
     sp._route = null; sp._air = null; sp._plan = null;
     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }
-    if (HUNT.has(sp.state) || ['explore', 'patrol', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
+    if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
     if (sp.state === 'carry') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
     if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type]; sp._feedDur = 6 + (def.nut || 0.5) * 28; sp._feedNut = def.nut || 0.5; } else sp.state = 'idle'; }
     if (sp.state === 'subdue') sp._subdueDur = sp._subdueDur || 1;
     if (sp.state === 'moltSeek') sp.state = 'idle';
     if (sp.state === 'crouch') sp.state = 'idle';
+    if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
   };
 })(typeof window !== 'undefined' ? window : globalThis);

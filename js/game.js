@@ -3,7 +3,7 @@
   'use strict';
   const JT = root.JT, M = JT.M;
   const DAY = JT.DAY = 480;
-  const SAVE_KEY = 'jumperTerrarium.save', SET_KEY = 'jumperTerrarium.settings', VERSION = 2;
+  const SAVE_KEY = 'jumperTerrarium.save', SET_KEY = 'jumperTerrarium.settings', VERSION = 3;
 
   // localStorage can throw in privacy modes: every access is wrapped.
   const Store = JT.Store = {
@@ -67,9 +67,13 @@
     static migrate(d) {
       d.v = d.v || 1;
       if (d.v < 2) { d.customPresets = d.customPresets || []; d.timeMode = d.timeMode || 'auto'; d.v = 2; }
+      if (d.v < 3) { // v3: basking lamps (on/off), spider home spots, remains decay — all optional fields with safe defaults
+        for (const h of d.habitats || []) { for (const x of h.decor || []) if (x.type === 'heatlamp' && x.on == null) x.on = true; for (const r of h.remains || []) if (!isFinite(r.clean)) r.clean = 1; }
+        d.v = 3;
+      }
       d.coins = isFinite(d.coins) ? d.coins : 400; d.journal = d.journal || {}; d.species = d.species || ['bold', 'regal', 'canopy'];
       d.slots = M.clamp(d.slots || 3, 1, 8); d.nextId = d.nextId || 1000;
-      for (const h of d.habitats || []) { if (!JT.HABITATS[h.type]) h.type = 'standard'; if (!JT.SUBSTRATES[h.substrate]) h.substrate = 'coco'; if (!JT.BACKGROUNDS[h.bg]) h.bg = 'mossy'; h.decor = (h.decor || []).filter(x => JT.DECOR_BY_ID[x.type]); h.spiders = (h.spiders || []).filter(s => JT.SPECIES_BY_ID[s.species]); h.prey = (h.prey || []).filter(p => JT.PREY_BY_ID[p.type]); h.remains = h.remains || []; h.drops = h.drops || []; h.silk = h.silk || []; }
+      for (const h of d.habitats || []) { if (!JT.HABITATS[h.type]) h.type = 'standard'; if (!JT.SUBSTRATES[h.substrate]) h.substrate = 'coco'; if (!JT.BACKGROUNDS[h.bg]) h.bg = 'mossy'; h.decor = (h.decor || []).filter(x => JT.DECOR_BY_ID[x.type]); h.spiders = (h.spiders || []).filter(s => JT.SPECIES_BY_ID[s.species]); h.prey = (h.prey || []).filter(p => JT.PREY_BY_ID[p.type]); h.remains = (h.remains || []).filter(r => r && r.pos); for (const r of h.remains) if (!isFinite(r.clean)) r.clean = 1; h.drops = h.drops || []; h.silk = h.silk || []; }
       return d;
     }
     serialize() { return JSON.stringify(Object.assign({}, this.state, { habitats: this.habs.map(h => h.data) }), replacer); }
@@ -92,7 +96,7 @@
       if (this._lite >= 1) { for (const h of this.habs) if (h !== active) h.update(this._lite, false); this._lite = 0; }
       for (const h of this.habs) h.data.age = (h.data.age || 0) + dt / DAY;
       this._saveT = (this._saveT || 0) + dt; if (this._saveT > 20) { this._saveT = 0; this.save(); }
-      if (!this.state.species.includes('portia') && this.state.catches >= 30) { this.state.species.push('portia'); this.emit('toast', { text: '🕷 Portia unlocked — 30 successful catches!' }); }
+      if (!this.state.species.includes('portia') && this.state.catches >= 30) { this.state.species.push('portia'); this.emit('toast', { text: 'Portia unlocked after 30 successful catches.' }); }
     }
 
     // ---------------- events from simulation ----------------

@@ -12,74 +12,76 @@
   <canvas id="view" aria-label="Terrarium view"></canvas>
 
   <header id="top">
-    <div class="brand"><span class="logo">🕷</span><span class="brand-name">Jumper Terrarium</span></div>
-    <div class="coins" title="Coins"><span class="coin">●</span><span id="coins">0</span></div>
-    <nav id="habTabs" class="tabs"></nav>
-    <button id="habPicker" class="mobile-only habpick"></button>
+    <div class="brand"><span class="brand-name">Jumper Terrarium</span></div>
+    <div class="coins" title="Coins"><span id="coins">0</span><span class="unit">coins</span></div>
+    <nav id="habTabs" class="tabs" aria-label="Habitats"></nav>
+    <button id="habPicker" class="mobile-only habpick txt"></button>
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
-    <div id="cams" class="seg desktop-only">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="follow" title="Follow (3)">Follow</button><button data-cam="reverse" title="Reverse (4)">Reverse</button>
+    <div id="cams" class="seg desktop-only" aria-label="Camera">
+      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="follow" title="Follow the selected jumper (3)">Follow</button><button data-cam="reverse" title="Reverse (4)">Reverse</button>
     </div>
-    <button id="btnObserve" class="btn gold desktop-only" title="Observation Mode (O)">📹 Observe</button>
-    <div id="timeMode" class="seg desktop-only">
-      <button data-tm="auto" title="Natural day/night">Auto</button><button data-tm="day">☀ Day</button><button data-tm="night">🌙 Night</button>
+    <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
+    <div id="timeMode" class="seg desktop-only" aria-label="Time of day">
+      <button data-tm="auto" title="Natural day/night">Auto</button><button data-tm="day">Day</button><button data-tm="night">Night</button>
     </div>
-    <button id="btnSound" class="icon desktop-only" title="Sound">🔊</button>
-    <button id="btnSettings" class="icon desktop-only" title="Settings">⚙</button>
-    <button id="btnHelp" class="icon desktop-only" title="Help">?</button>
-    <button id="btnManage" class="btn desktop-only">Manage Habitats</button>
+    <button id="btnSound" class="txt desktop-only" title="Sound">Sound</button>
+    <button id="btnSettings" class="txt desktop-only" title="Settings">Settings</button>
+    <button id="btnHelp" class="txt desktop-only" title="Help">Help</button>
+    <button id="btnManage" class="txt desktop-only">Habitats</button>
   </header>
 
   <div id="toolbar" class="desktop-only">
-    <button data-tool="decor">🪨<span>Decor</span></button>
-    <button data-tool="plants">🌿<span>Plants</span></button>
-    <button data-tool="substrate">🟫<span>Substrate</span></button>
-    <button data-tool="food">🪰<span>Live Food</span></button>
-    <button data-tool="jumpers">🕷<span>Jumpers</span></button>
-    <button data-tool="journal">📖<span>Journal</span></button>
-    <button data-tool="mist">💧<span>Mist</span></button>
-    <button data-tool="clean">🧹<span>Clean</span></button>
-    <button data-tool="remove">✖<span>Remove</span></button>
+    <button data-tool="decor">Decor</button>
+    <button data-tool="plants">Plants</button>
+    <button data-tool="substrate">Substrate</button>
+    <button data-tool="food">Food</button>
+    <button data-tool="jumpers">Jumpers</button>
+    <button data-tool="journal">Journal</button>
+    <button data-tool="mist">Mist</button>
+    <button data-tool="clean">Clean</button>
+    <button data-tool="remove">Remove</button>
   </div>
 
-  <section id="drawer" class="hidden" aria-label="Shop drawer">
-    <div class="drawer-head"><div id="drawerTabs" class="seg small"></div><div id="drawerTitle"></div><button class="icon close" id="drawerClose" title="Close">✖</button></div>
+  <section id="drawer" class="hidden" aria-label="Shop">
+    <div class="drawer-head"><div id="drawerTabs" class="seg small"></div><div id="drawerTitle"></div><button class="txt close" id="drawerClose" title="Close">Close</button></div>
     <div id="drawerBody" class="cards"></div>
   </section>
 
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="zoomCtl">
-    <button id="zoomIn" title="Zoom in (+)">+</button><button id="zoomOut" title="Zoom out (−)">−</button><button id="zoomReset" title="Reset view (0)" style="font-size:12px">Fit</button>
+    <button id="zoomIn" title="Zoom in (+)">In</button><button id="zoomOut" title="Zoom out (-)">Out</button><button id="zoomReset" title="Reset view (0)">Fit</button>
   </div>
 
   <div id="modeBar" class="hidden">
     <span id="modeText"></span>
-    <button id="modeRotate" class="btn">🔄 Rotate</button>
-    <button id="modeDone" class="btn gold">Done</button>
-    <button id="modeCancel" class="btn">Cancel</button>
+    <button id="modeRotate" class="txt">Rotate</button>
+    <button id="modeDone" class="txt strong">Done</button>
+    <button id="modeCancel" class="txt">Cancel</button>
   </div>
 
   <div id="obsHud" class="hidden">
-    <div class="obs-tag">📹 Observing</div>
+    <div class="obs-tag">Observing</div>
     <div id="obsName"></div>
     <div id="obsThought"></div>
-    <button id="obsExit" class="btn">Exit <kbd>Esc</kbd></button>
+    <button id="obsExit" class="txt">Exit<kbd>Esc</kbd></button>
   </div>
 
   <div id="toasts" aria-live="polite"></div>
 
-  <nav id="dock" class="mobile-only">
-    <button data-dock="build"><span>🪴</span>Build</button>
-    <button data-dock="food"><span>🪰</span>Food</button>
-    <button data-dock="jumpers"><span>🕷</span>Jumpers</button>
-    <button data-dock="observe"><span>📹</span>Observe</button>
-    <button data-dock="more"><span>⋯</span>More</button>
+  <nav id="dock" class="mobile-only" aria-label="Main">
+    <button data-dock="build">Build</button>
+    <button data-dock="food">Food</button>
+    <button data-dock="follow">Follow</button>
+    <button data-dock="jumpers">Jumpers</button>
+    <button data-dock="observe">Observe</button>
+    <button data-dock="more">More</button>
   </nav>
 
-  <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2 id="modalTitle"></h2><button class="icon close" id="modalClose" title="Close">✖</button></div><div id="modalBody"></div></div></div>
+  <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2 id="modalTitle"></h2><button class="txt close" id="modalClose" title="Close">Close</button></div><div id="modalBody"></div></div></div>
   <div id="popover" class="hidden"></div>
 </div>
+
 <script src="js/core.js"></script>
 <script src="js/data.js"></script>
 <script src="js/geometry.js"></script>
@@ -90,6 +92,7 @@
 <script src="js/presets.js"></script>
 <script src="js/game.js"></script>
 <script src="js/render-view.js"></script>
+<script src="js/camera.js"></script>
 <script src="js/draw-decor.js"></script>
 <script src="js/draw-animals.js"></script>
 <script src="js/draw-critters.js"></script>

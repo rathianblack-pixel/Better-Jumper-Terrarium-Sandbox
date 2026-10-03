@@ -6,172 +6,263 @@
 <meta name="theme-color" content="#1c120a">
 <title>Jumper Terrarium</title>
 <style>
-:root{--wood0:#140c06;--wood1:#24160c;--wood2:#3a2414;--wood3:#5a3a20;--gold:#c9a25c;--gold2:#e8c87a;--parch:#efe3c4;--parch2:#d9c79c;--ink:#2a1c10;--green:#7fb36a;--red:#d0604c;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);--serif:Georgia,"Times New Roman",serif}
+/* Jumper Terrarium — calm, type-led interface. No boxes, cards, borders, emoji or icons:
+   serif headings, small caps, thin rules, generous spacing and soft translucent scrims only where text needs contrast. */
+:root{
+  --ink:#f3ecdd;--dim:rgba(243,236,221,.7);--faint:rgba(243,236,221,.45);--rule:rgba(243,236,221,.22);--accent:#ecd08f;--warm:#f1b46a;--ok:#b9dca0;--bad:#f2a291;
+  --scrim:rgba(12,8,4,.62);--scrim2:rgba(12,8,4,.38);
+  --shadow:0 1px 2px rgba(0,0,0,.6),0 0 14px rgba(0,0,0,.35);
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --tap:44px;
+}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--wood0);color:var(--parch);font-family:var(--serif);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#120c07;color:var(--ink);font-family:var(--serif);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-font-smoothing:antialiased}
 #app{position:fixed;inset:0}
 #view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:default}
 #view.placing{cursor:crosshair}#view.removing{cursor:not-allowed}
-button{font-family:var(--serif);color:var(--parch);cursor:pointer}
 .hidden{display:none!important}
-.btn{background:linear-gradient(#4a2e18,#2e1c0e);border:1px solid var(--gold);border-radius:7px;padding:6px 12px;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,220,150,.15),0 2px 6px rgba(0,0,0,.4)}
-.btn:hover{border-color:var(--gold2);color:#fff6dc}
-.btn.gold{background:linear-gradient(#b48a42,#7a5524);color:#1c1006;font-weight:700;border-color:#f0d590}
-.btn:disabled{opacity:.45;cursor:default}
-.icon{background:rgba(40,24,12,.8);border:1px solid rgba(201,162,92,.6);border-radius:50%;width:34px;height:34px;font-size:16px;display:inline-flex;align-items:center;justify-content:center;padding:0}
-.seg{display:inline-flex;border:1px solid rgba(201,162,92,.7);border-radius:8px;overflow:hidden;background:rgba(30,18,8,.7)}
-.seg button{background:none;border:0;padding:6px 10px;font-size:13px;border-right:1px solid rgba(201,162,92,.3)}
-.seg button:last-child{border-right:0}
-.seg button.on{background:linear-gradient(#b48a42,#7a5524);color:#1c1006;font-weight:700}
-.seg.small button{padding:4px 9px;font-size:12px}
-kbd{font-family:monospace;font-size:11px;border:1px solid rgba(201,162,92,.6);border-radius:3px;padding:0 4px;margin-left:4px}
-/* header */
-#top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:8px 12px;padding-top:calc(8px + var(--sat));padding-left:calc(12px + var(--sal));padding-right:calc(12px + var(--sar));background:linear-gradient(rgba(28,17,8,.96),rgba(28,17,8,.82));border-bottom:1px solid rgba(201,162,92,.55);box-shadow:0 4px 18px rgba(0,0,0,.45);z-index:10;flex-wrap:nowrap}
-.brand-name{}
-@media (max-width:1600px){.brand-name{display:none}}
-.brand{display:flex;align-items:center;gap:6px;color:var(--gold2);font-size:18px;letter-spacing:.5px;white-space:nowrap;font-variant:small-caps}
-.logo{font-size:20px}
-.coins{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);border:1px solid var(--gold);border-radius:18px;padding:4px 12px;font-weight:700;color:var(--gold2);font-size:16px;min-width:76px}
-.coin{color:#f0c850;text-shadow:0 0 6px rgba(240,200,80,.6)}
-.coins.bump{animation:bump .5s}
-@keyframes bump{30%{transform:scale(1.15)}}
-.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:60px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{background:rgba(50,30,14,.8);border:1px solid rgba(201,162,92,.4);border-radius:8px 8px 3px 3px;padding:5px 10px;font-size:13px;white-space:nowrap}
-.tabs button.on{border-color:var(--gold2);background:linear-gradient(#6a4422,#3a2410);color:#fff2cc}
-.clock{display:flex;flex-direction:column;align-items:center;line-height:1.1;font-size:12px;color:var(--parch2);white-space:nowrap}
-.clock #dayLbl{font-weight:700;color:var(--gold2);font-size:14px}
-/* toolbar */
-#toolbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(12px + var(--sab));display:flex;gap:4px;padding:6px;background:linear-gradient(#3a2414,#1e120a);border:1px solid var(--gold);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.55);z-index:9}
-#toolbar button{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:1px solid transparent;border-radius:8px;padding:5px 9px;font-size:18px;min-width:62px}
-#toolbar button span{font-size:11.5px;color:var(--parch2)}
-#toolbar button:hover{background:rgba(201,162,92,.12)}
-#toolbar button.on{border-color:var(--gold2);background:rgba(201,162,92,.22)}
-/* drawer */
-#drawer{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + var(--sab));width:min(1100px,96vw);background:linear-gradient(#2e1c0e,#1a0f07);border:1px solid var(--gold);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.6);z-index:9;padding:8px 10px 10px}
-.drawer-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-#drawerTitle{flex:1;color:var(--gold2);font-size:15px}
-.cards{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}
-.card{flex:0 0 auto;width:118px;background:linear-gradient(#f3e8cc,#dccb9f);color:var(--ink);border:1px solid #a8844a;border-radius:9px;padding:5px;text-align:center;cursor:pointer;position:relative;scroll-snap-align:start;box-shadow:0 2px 5px rgba(0,0,0,.35)}
-.card:hover{transform:translateY(-2px);border-color:#6a4a1a}
-.card.disabled{opacity:.5;cursor:default;transform:none}
-.card.cur{outline:2px solid #3d7a2a}
-.card canvas,.card .sw{width:100%;aspect-ratio:1;display:block;border-radius:6px;background:radial-gradient(circle at 50% 60%,#fff8e4,#d8c69a)}
-.card .nm{font-size:12px;font-weight:700;line-height:1.15;margin-top:3px;min-height:28px;display:flex;align-items:center;justify-content:center}
-.card .pr{font-size:12px;color:#6a4410;font-weight:700}
-.card .tg{font-size:10px;color:#5a4a30;font-style:italic}
-.cards .sect{flex:0 0 auto;writing-mode:vertical-rl;transform:rotate(180deg);color:var(--gold);font-size:12px;letter-spacing:1px;text-align:center;padding:4px 2px;border-left:1px solid rgba(201,162,92,.4)}
-/* spider panel */
-#spiderPanel{position:absolute;right:calc(12px + var(--sar));top:calc(70px + var(--sat));width:290px;background:linear-gradient(#f3e8cc,#e0cfa4);color:var(--ink);border:1px solid #8a6a34;border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.55);z-index:8;padding:10px 12px;font-size:13px}
-#spiderPanel h3{margin:0;font-size:19px;display:flex;align-items:center;gap:6px}
-#spiderPanel h3 input{font:inherit;width:150px;border:1px solid #8a6a34;border-radius:4px;background:#fff8e8;padding:1px 4px}
-#spiderPanel .sci{font-style:italic;color:#5a4426;font-size:12px;margin-bottom:6px}
-#spiderPanel .row{display:flex;justify-content:space-between;gap:8px;margin:3px 0}
-#spiderPanel .row b{font-weight:700}
-.bar{height:7px;background:rgba(60,40,20,.2);border-radius:4px;overflow:hidden;margin:2px 0 5px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#c48a3a,#e8b85a);border-radius:4px}
-.bar.hyd i{background:linear-gradient(90deg,#5a8ab8,#8ac0e8)}
-.bar.molt i{background:linear-gradient(90deg,#7a9a4a,#a8c86a)}
-.thought{font-style:italic;background:rgba(255,255,255,.45);border-left:3px solid #a8844a;padding:5px 8px;border-radius:4px;margin:6px 0;min-height:34px}
-.pers{font-size:12px;color:#4a3a20}
-.pbtns{display:flex;gap:6px;margin-top:8px}
-.pbtns .btn{flex:1;padding:5px 4px;font-size:13px}
-#spiderPanel .x{position:absolute;right:8px;top:8px;background:none;border:0;color:#5a4426;font-size:16px}
-#spiderPanel .mini{display:none}
-/* zoom */
-#zoomCtl{position:absolute;left:calc(12px + var(--sal));bottom:calc(90px + var(--sab));display:flex;flex-direction:column;gap:4px;z-index:7}
-#zoomCtl button{width:36px;height:36px;border-radius:8px;background:rgba(40,24,12,.85);border:1px solid rgba(201,162,92,.6);font-size:18px}
-/* mode bar */
-#modeBar{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + var(--sat));display:flex;align-items:center;gap:8px;background:rgba(28,17,8,.92);border:1px solid var(--gold);border-radius:10px;padding:6px 10px;z-index:11;font-size:14px;max-width:96vw}
-#modeText{color:var(--parch)}#modeText .bad{color:#f08a7a}#modeText .ok{color:#a8e090}
-/* observation */
-body.observe #top,body.observe #toolbar,body.observe #drawer,body.observe #spiderPanel,body.observe #zoomCtl,body.observe #dock{display:none!important}
-#obsHud{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(18px + var(--sab));background:rgba(20,12,6,.72);border:1px solid rgba(201,162,92,.55);border-radius:12px;padding:8px 14px;text-align:center;z-index:12;max-width:min(560px,94vw);backdrop-filter:blur(3px)}
-.obs-tag{font-size:12px;color:var(--gold2);opacity:.85;letter-spacing:.5px}
-#obsName{font-size:17px;color:var(--gold2)}
-#obsThought{font-style:italic;font-size:14px;margin:3px 0 6px;color:var(--parch)}
-/* toasts */
-#toasts{position:absolute;left:50%;transform:translateX(-50%);top:calc(70px + var(--sat));display:flex;flex-direction:column;align-items:center;gap:6px;z-index:20;pointer-events:none;width:min(460px,92vw)}
-.toast{background:linear-gradient(#f3e8cc,#dccb9f);color:var(--ink);border:1px solid #8a6a34;border-radius:10px;padding:7px 14px;box-shadow:0 6px 18px rgba(0,0,0,.5);font-size:14px;animation:tin .35s ease-out;text-align:center}
-.toast.journal{border:2px solid var(--gold);background:linear-gradient(#fbf2d8,#e6d2a0)}
-.toast.journal b{display:block;font-size:15px}
-.toast.out{opacity:0;transition:opacity .5s}
-@keyframes tin{from{transform:translateY(-10px);opacity:0}}
-/* modal */
-#modalWrap{position:absolute;inset:0;background:rgba(8,4,0,.55);display:flex;align-items:center;justify-content:center;z-index:30}
-#modal{width:min(980px,94vw);max-height:86vh;display:flex;flex-direction:column;background:linear-gradient(#f3e8cc,#e2d1a6);color:var(--ink);border:2px solid #8a6a34;border-radius:14px;box-shadow:0 14px 50px rgba(0,0,0,.7)}
-.modal-head{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(138,106,52,.5);background:linear-gradient(#3a2414,#24160c);border-radius:12px 12px 0 0}
-.modal-head h2{flex:1;margin:0;font-size:20px;color:var(--gold2);font-weight:400;font-variant:small-caps;letter-spacing:.5px}
-#modalBody{overflow:auto;padding:14px 16px;user-select:text}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-.entry{background:rgba(255,255,255,.4);border:1px solid rgba(138,106,52,.5);border-radius:10px;padding:8px;position:relative}
-.entry.locked{opacity:.6}
-.entry h4{margin:2px 0;font-size:15px}
-.entry .sci{font-style:italic;font-size:12px;color:#5a4426}
-.entry p{font-size:12.5px;margin:4px 0;line-height:1.35}
-.entry canvas{width:100%;max-width:150px;aspect-ratio:1;display:block;margin:0 auto;background:radial-gradient(circle,#fff8e4,#d8c69a);border-radius:8px}
-.entry .btn{width:100%;margin-top:4px}
-.traits{display:grid;grid-template-columns:auto 1fr;gap:1px 6px;font-size:11px;align-items:center}
-.traits .bar{height:5px;margin:0}
-.badge{position:absolute;right:8px;top:8px;font-size:11px;background:#3a2414;color:var(--gold2);border-radius:9px;padding:1px 7px}
-.form-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
-.form-row label{min-width:110px;font-weight:700;font-size:13px}
-.form-row input[type=text],.form-row select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid #8a6a34;border-radius:5px;background:#fff8e8;color:var(--ink)}
-input[type=range]{accent-color:#a8742a}
-.modal-btn{background:linear-gradient(#4a2e18,#2e1c0e);border:1px solid var(--gold);border-radius:6px;padding:4px 10px;font-size:13px;color:var(--parch)}
-.modal-btn.gold{background:linear-gradient(#b48a42,#7a5524);color:#1c1006;font-weight:700}
-.modal-btn:disabled{opacity:.45}
-.hab-card{background:rgba(255,255,255,.4);border:1px solid rgba(138,106,52,.5);border-radius:10px;padding:10px;margin-bottom:10px}
-.hab-card.active{border:2px solid #8a6a34}
-.hab-card h4{margin:0 0 4px;font-size:16px}
-.muted{color:#6a5434;font-size:12px}
-.bgs{display:flex;gap:8px;flex-wrap:wrap}
-.bgs button{width:104px;height:64px;border-radius:8px;border:2px solid transparent;font-size:11px;color:#fff;text-shadow:0 1px 3px #000;display:flex;align-items:flex-end;justify-content:center;padding:4px}
-.bgs button.on{border-color:#2a1c10;box-shadow:0 0 0 2px var(--gold)}
-#popover{position:absolute;right:calc(60px + var(--sar));top:calc(56px + var(--sat));background:linear-gradient(#f3e8cc,#e0cfa4);color:var(--ink);border:1px solid #8a6a34;border-radius:10px;padding:10px 14px;z-index:25;width:250px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-#popover .form-row label{min-width:80px}
-/* mobile dock */
 .mobile-only{display:none!important}
-#dock{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:6px 6px calc(6px + var(--sab));padding-left:calc(6px + var(--sal));padding-right:calc(6px + var(--sar));background:linear-gradient(#3a2414,#1a0f07);border-top:1px solid var(--gold);z-index:15}
-#dock button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--parch2);gap:1px;padding:3px 0;min-height:48px}
-#dock button span{font-size:21px}
-#dock button.on{color:var(--gold2)}
-.habpick{background:rgba(50,30,14,.85);border:1px solid rgba(201,162,92,.6);border-radius:8px;padding:5px 9px;font-size:13px;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sheet-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.sheet-list button{background:rgba(255,255,255,.45);border:1px solid rgba(138,106,52,.6);border-radius:10px;padding:10px 4px;color:var(--ink);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:64px}
-.sheet-list button span{font-size:22px}
-.sheet-list button.on{background:rgba(201,162,92,.5)}
-@media (max-width:820px) and (orientation:portrait),(max-width:560px){
-  .desktop-only{display:none!important}
-  .mobile-only{display:flex!important}
-  #top{gap:8px;padding:6px 10px;padding-top:calc(6px + var(--sat))}
-  .brand-name{display:none}
-  .tabs{display:none}
-  .coins{font-size:14px;padding:3px 10px;min-width:0}
-  .clock{margin-left:auto}
-  #drawer{left:0;right:0;transform:none;width:auto;bottom:calc(62px + var(--sab));border-radius:16px 16px 0 0;max-height:55vh;display:flex;flex-direction:column}
-  #drawer .cards{flex-wrap:nowrap}
-  .card{width:104px}
-  #spiderPanel{left:calc(8px + var(--sal));right:calc(8px + var(--sar));width:auto;top:calc(50px + var(--sat));padding:8px 10px}
-  #spiderPanel:not(.expanded) .full{display:none}
-  #spiderPanel:not(.expanded) .mini{display:flex;gap:8px;align-items:center;font-size:12px;flex-wrap:wrap}
-  #spiderPanel h3{font-size:16px}
-  #spiderPanel .x{top:6px}
-  #zoomCtl{bottom:calc(74px + var(--sab));left:calc(8px + var(--sal))}
-  #zoomCtl button{width:34px;height:34px}
-  #modeBar{top:auto;bottom:calc(70px + var(--sab));flex-wrap:wrap;justify-content:center}
-  #modalWrap{align-items:flex-end}
-  #modal{width:100vw;max-height:88vh;border-radius:16px 16px 0 0;padding-bottom:var(--sab)}
-  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
-  #toasts{top:calc(178px + var(--sat))}
-  #drawerTitle{display:none}
-  .drawer-head .seg{flex:1}
-  #popover{left:8px;right:8px;width:auto;top:auto;bottom:calc(70px + var(--sab))}
-  #obsHud{bottom:calc(12px + var(--sab))}
+b{font-weight:600}
+kbd{font-family:var(--serif);font-size:.82em;font-variant:small-caps;letter-spacing:.06em;color:var(--dim);margin-left:.45em;border-bottom:1px solid var(--rule)}
+
+/* ---------- text buttons: underline / highlight on hover and press ---------- */
+button{font-family:var(--serif);color:var(--dim);cursor:pointer;background:none;border:0;padding:0 .7em;min-height:var(--tap);min-width:var(--tap);font-size:15px;letter-spacing:.04em;position:relative;text-shadow:var(--shadow);transition:color .25s ease}
+button::after{content:"";position:absolute;left:.7em;right:.7em;bottom:9px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:center;transition:transform .3s ease,opacity .3s ease;opacity:.8}
+button:hover{color:var(--ink)}
+button:hover::after,button:focus-visible::after{transform:scaleX(1)}
+button:active{color:var(--accent)}
+button.on{color:var(--accent)}
+button.on::after{transform:scaleX(1)}
+button:disabled{opacity:.4;cursor:default}
+button:disabled::after{display:none}
+button:focus{outline:none}
+button:focus-visible{outline:1px dotted var(--faint);outline-offset:-6px}
+.txt.strong,.modal-btn.gold{color:var(--accent)}
+.seg{display:inline-flex;align-items:center}
+.seg button{font-variant:small-caps;letter-spacing:.08em;font-size:15px;padding:0 .55em}
+.seg button::after{left:.55em;right:.55em}
+.seg.small button{font-size:14px}
+
+/* ---------- header ---------- */
+#top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:6px;padding:4px 14px 18px;padding-top:calc(4px + var(--sat));padding-left:calc(16px + var(--sal));padding-right:calc(12px + var(--sar));background:linear-gradient(rgba(12,8,4,.66),rgba(12,8,4,.32) 60%,rgba(12,8,4,0));z-index:10;pointer-events:none}
+#top>*{pointer-events:auto}
+.brand{font-size:19px;letter-spacing:.12em;font-variant:small-caps;color:var(--ink);white-space:nowrap;text-shadow:var(--shadow);margin-right:14px}
+.coins{display:flex;align-items:baseline;gap:.35em;font-size:18px;color:var(--accent);text-shadow:var(--shadow);min-width:84px;white-space:nowrap}
+.coins .unit{font-variant:small-caps;letter-spacing:.08em;font-size:14px;color:var(--dim)}
+.coins.bump #coins{animation:bump 1.2s ease}
+@keyframes bump{0%{color:var(--ink)}30%{color:#fff2c8;text-shadow:0 0 14px rgba(255,220,150,.6)}100%{color:var(--accent)}}
+.tabs{display:flex;gap:0;overflow-x:auto;flex:1;min-width:60px;scrollbar-width:none;padding-left:8px;border-left:1px solid var(--rule);margin-left:4px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;font-size:15px;flex:0 0 auto;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.clock{display:flex;flex-direction:column;align-items:center;line-height:1.15;white-space:nowrap;text-shadow:var(--shadow);padding:0 10px;min-width:84px}
+.clock #dayLbl{font-variant:small-caps;letter-spacing:.1em;font-size:14px;color:var(--dim)}
+.clock #timeLbl{font-size:15px;color:var(--ink);font-style:italic}
+#cams,#timeMode{padding:0 6px;border-left:1px solid var(--rule)}
+#btnObserve{font-variant:small-caps;letter-spacing:.08em}
+#btnSound,#btnSettings,#btnHelp,#btnManage{font-variant:small-caps;letter-spacing:.08em;font-size:14px;padding:0 .5em}
+#btnSound::after,#btnSettings::after,#btnHelp::after,#btnManage::after{left:.5em;right:.5em}
+#btnSound{border-left:1px solid var(--rule);padding-left:.9em}
+#btnSound::after{left:.9em}
+
+/* ---------- bottom toolbar (desktop) ---------- */
+#toolbar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:4px;padding:34px 12px calc(8px + var(--sab));background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.34) 45%,rgba(12,8,4,.62));z-index:9;pointer-events:none}
+#toolbar button{pointer-events:auto;font-variant:small-caps;letter-spacing:.1em;font-size:16px;padding:0 .9em;color:var(--dim)}
+#toolbar button::after{left:.9em;right:.9em}
+#toolbar button.on{color:var(--accent)}
+#toolbar button[data-tool="mist"]{margin-left:22px}
+#toolbar button[data-tool="mist"]::before{content:"";position:absolute;left:-12px;top:14px;bottom:14px;width:1px;background:var(--rule)}
+/* hungry jumper, nothing to hunt: the Food label slowly breathes warm — no badge, no icon */
+button.wanting{animation:wanting 3.6s ease-in-out infinite}
+@keyframes wanting{0%,100%{color:var(--dim);text-shadow:var(--shadow)}50%{color:var(--warm);text-shadow:0 0 12px rgba(241,180,106,.45),var(--shadow)}}
+
+/* ---------- shop strip ---------- */
+#drawer{position:absolute;left:0;right:0;bottom:calc(52px + var(--sab));padding:30px max(16px,calc((100vw - 1180px)/2)) 6px;background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.5) 30%,rgba(12,8,4,.62));z-index:9}
+.drawer-head{display:flex;align-items:center;gap:14px;margin-bottom:2px}
+#drawerTitle{flex:1;color:var(--faint);font-size:14px;font-style:italic;text-shadow:var(--shadow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#drawerClose{font-variant:small-caps;letter-spacing:.08em;font-size:14px}
+.cards{display:flex;gap:2px;overflow-x:auto;padding:2px 0 4px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
+.card{flex:0 0 auto;width:112px;padding:4px 6px 6px;text-align:center;cursor:pointer;scroll-snap-align:start;transition:opacity .25s ease,transform .25s ease;position:relative}
+.card canvas,.card .sw{width:84px;height:84px;display:block;margin:0 auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45));transition:transform .3s ease}
+.card:hover canvas{transform:translateY(-3px)}
+.card .nm{font-size:13.5px;line-height:1.2;color:var(--ink);margin-top:2px;min-height:33px;display:flex;align-items:flex-start;justify-content:center;text-shadow:var(--shadow)}
+.card .pr{font-size:13px;color:var(--accent);font-variant:small-caps;letter-spacing:.06em;text-shadow:var(--shadow)}
+.card .nm::after{content:"";position:absolute;left:22px;right:22px;bottom:2px;height:1px;background:var(--accent);transform:scaleX(0);transition:transform .3s ease}
+.card:hover .nm::after,.card.cur .nm::after{transform:scaleX(1)}
+.card.disabled{opacity:.42;cursor:default}
+.card.disabled:hover canvas{transform:none}
+.card.cur .pr{color:var(--ok)}
+.cards .sect{flex:0 0 auto;writing-mode:vertical-rl;transform:rotate(180deg);color:var(--faint);font-variant:small-caps;letter-spacing:.12em;font-size:13px;text-align:center;padding:6px 10px;border-right:1px solid var(--rule);margin:8px 6px}
+
+/* ---------- jumper panel: unboxed text over a soft gradient ---------- */
+#spiderPanel{position:absolute;right:0;top:0;bottom:0;width:360px;padding:calc(72px + var(--sat)) calc(26px + var(--sar)) 80px 70px;background:linear-gradient(to left,rgba(12,8,4,.66),rgba(12,8,4,.5) 55%,rgba(12,8,4,0));z-index:8;font-size:14px;color:var(--ink);text-shadow:var(--shadow);pointer-events:none;overflow:hidden}
+#spiderPanel>*{pointer-events:auto}
+#spiderPanel h3{margin:0;font-size:30px;font-weight:400;letter-spacing:.02em;line-height:1.1;padding-right:56px}
+#spiderPanel h3 input{font:inherit;width:190px;border:0;border-bottom:1px solid var(--accent);background:transparent;color:var(--ink);padding:0;outline:none}
+#spiderPanel .sci{font-size:13.5px;color:var(--dim);margin:4px 0 12px}
+#spiderPanel .state{font-size:16px;font-style:italic;color:var(--accent);line-height:1.35;min-height:22px}
+#spiderPanel .x{position:absolute;right:calc(14px + var(--sar));top:calc(64px + var(--sat));font-variant:small-caps;letter-spacing:.08em;font-size:14px}
+#spiderPanel .mini{display:none}
+.rule{height:1px;background:linear-gradient(90deg,var(--rule),rgba(243,236,221,0));margin:14px 0 12px}
+.meter{display:grid;grid-template-columns:1fr auto;align-items:baseline;margin:0 0 10px}
+.meter .ml{font-variant:small-caps;letter-spacing:.1em;font-size:13.5px;color:var(--dim)}
+.meter .mv{font-size:14px;color:var(--ink)}
+.meter i{grid-column:1/3;display:block;height:2px;margin-top:4px;--c:var(--warm);background:linear-gradient(90deg,var(--c) var(--v),var(--rule) var(--v));border-radius:1px;opacity:.9}
+.meter.hyd i{--c:#9cc4e4}.meter.molt i{--c:#b6d08a}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;margin:14px 0 10px;font-size:14px}
+.facts dt{font-variant:small-caps;letter-spacing:.1em;color:var(--dim);font-size:13.5px}
+.facts dd{margin:0;color:var(--ink)}
+.thought{font-style:italic;color:var(--ink);margin:12px 0 8px;line-height:1.4;padding-top:10px;border-top:1px solid var(--rule)}
+.thought::before{content:"\201C"}.thought::after{content:"\201D"}
+.pers{font-size:13.5px;color:var(--dim);line-height:1.4;font-style:italic}
+.pbtns{display:flex;gap:0;margin:12px 0 0 -.7em;flex-wrap:wrap}
+.pbtns button{font-variant:small-caps;letter-spacing:.08em;font-size:15px}
+
+/* ---------- zoom ---------- */
+#zoomCtl{position:absolute;left:calc(8px + var(--sal));bottom:calc(70px + var(--sab));display:flex;flex-direction:column;z-index:7}
+#zoomCtl button{font-size:14px;color:var(--dim);font-variant:small-caps;letter-spacing:.08em}
+
+/* ---------- placement bar ---------- */
+#modeBar{position:absolute;left:50%;transform:translateX(-50%);top:calc(60px + var(--sat));display:flex;align-items:center;gap:4px;padding:6px 46px;background:radial-gradient(ellipse at center,rgba(12,8,4,.66),rgba(12,8,4,.4) 55%,rgba(12,8,4,0) 75%);z-index:11;font-size:15px;max-width:96vw;text-shadow:var(--shadow);white-space:nowrap}
+#modeText{color:var(--ink);overflow:hidden;text-overflow:ellipsis}
+#modeText .bad{color:var(--bad);font-style:italic}#modeText .ok{color:var(--ok);font-style:italic}
+#modeText .hint{color:var(--faint);font-style:italic}
+#modeBar button{font-variant:small-caps;letter-spacing:.08em}
+
+/* ---------- observation ---------- */
+body.observe #top,body.observe #toolbar,body.observe #drawer,body.observe #spiderPanel,body.observe #zoomCtl,body.observe #dock{display:none!important}
+#obsHud{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(8px + var(--sab));padding:26px 70px 6px;background:radial-gradient(ellipse at 50% 70%,rgba(12,8,4,.6),rgba(12,8,4,.3) 50%,rgba(12,8,4,0) 72%);text-align:center;z-index:12;width:min(640px,100vw);text-shadow:var(--shadow)}
+.obs-tag{font-size:13px;color:var(--faint);font-variant:small-caps;letter-spacing:.16em}
+#obsName{font-size:21px;color:var(--ink);margin-top:2px}
+#obsThought{font-style:italic;font-size:15px;margin:4px 0 0;color:var(--accent)}
+#obsExit{font-variant:small-caps;letter-spacing:.08em;font-size:14px}
+
+/* ---------- toasts: small fading lines of text ---------- */
+#toasts{position:absolute;left:50%;transform:translateX(-50%);top:calc(62px + var(--sat));display:flex;flex-direction:column;align-items:center;gap:2px;z-index:20;pointer-events:none;width:min(560px,92vw);padding:8px 40px 14px;background:radial-gradient(ellipse at center,rgba(12,8,4,.5),rgba(12,8,4,.2) 55%,rgba(12,8,4,0) 75%)}
+#toasts:empty{display:none}
+.toast{color:var(--ink);font-size:15px;line-height:1.4;text-align:center;text-shadow:var(--shadow);animation:tin 1s ease both;transition:opacity .9s ease,transform .9s ease}
+.toast.quiet{color:var(--dim);font-style:italic;font-size:14px}
+.toast .sc{font-variant:small-caps;letter-spacing:.14em;color:var(--accent);margin-right:.35em}
+.toast .sub{display:block;font-size:13.5px;font-style:italic;color:var(--dim)}
+.toast.out{opacity:0;transform:translateY(-4px)}
+@keyframes tin{from{opacity:0;transform:translateY(4px)}}
+
+body.drawer-open #toasts{top:auto;bottom:calc(var(--drawerH,0px) + 52px + var(--sab))}
+/* ---------- modal: a quiet page of text over a soft scrim ---------- */
+#modalWrap{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(12,8,4,.84),rgba(12,8,4,.92));display:flex;align-items:flex-start;justify-content:center;z-index:30;padding-top:calc(5vh + var(--sat));-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#modal{width:min(960px,92vw);max-height:88vh;display:flex;flex-direction:column;color:var(--ink);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:baseline;padding:4px 0 10px;border-bottom:1px solid var(--rule)}
+.modal-head h2{flex:1;margin:0;font-size:30px;font-weight:400;letter-spacing:.03em}
+.modal-head button{font-variant:small-caps;letter-spacing:.08em;font-size:15px}
+#modalBody{overflow:auto;padding:18px 2px 30px;user-select:text;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
+#modalBody h4{font-weight:400;font-variant:small-caps;letter-spacing:.12em;font-size:16px;color:var(--accent);margin:18px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px 34px}
+.entry{position:relative;padding-top:12px;border-top:1px solid var(--rule)}
+.entry.locked{opacity:.5}
+.entry h4{margin:0 0 4px!important;font-size:19px!important;font-variant:normal!important;letter-spacing:.01em!important;color:var(--ink)!important}
+.entry .sci{font-style:italic;font-size:13.5px;color:var(--dim)}
+.entry p{font-size:14.5px;margin:6px 0;line-height:1.5;color:var(--dim)}
+.entry canvas{width:100%;max-width:150px;aspect-ratio:1;display:block;margin:0 auto 4px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.4))}
+.entry .modal-btn{margin-left:-.7em}
+.traits{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;align-items:center;margin:8px 0;font-variant:small-caps;letter-spacing:.08em;color:var(--dim)}
+.traits .bar{height:2px;background:var(--rule)}
+.traits .bar i{display:block;height:100%;background:var(--accent);opacity:.8}
+.badge{position:absolute;right:0;top:12px;font-size:13px;color:var(--accent);font-variant:small-caps;letter-spacing:.08em}
+.form-row{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.form-row label{min-width:120px;font-variant:small-caps;letter-spacing:.1em;font-size:14px;color:var(--dim)}
+.form-row input[type=text],.form-row select{font:inherit;font-size:15px;padding:8px 2px;min-height:var(--tap);border:0;border-bottom:1px solid var(--rule);border-radius:0;background:transparent;color:var(--ink);outline:none}
+.form-row select option{background:#20160d;color:var(--ink)}
+.form-row input[type=checkbox]{width:20px;height:20px;accent-color:#c9a25c}
+input[type=range]{accent-color:#c9a25c;width:140px}
+.modal-btn{font-variant:small-caps;letter-spacing:.08em;font-size:15px}
+.hab-card{padding:14px 0 6px;border-top:1px solid var(--rule)}
+.hab-card.active h4{color:var(--accent)!important}
+.hab-card h4{margin:0 0 4px!important;font-size:20px!important;font-variant:normal!important;letter-spacing:.01em!important;color:var(--ink)!important}
+.muted{color:var(--faint);font-size:13.5px;font-style:italic}
+.bgs{display:flex;gap:12px;flex-wrap:wrap}
+.bgs button{width:104px;height:62px;border-radius:2px;font-size:13px;color:#fff;display:flex;align-items:flex-end;justify-content:center;padding:4px;opacity:.75}
+.bgs button.on,.bgs button:hover{opacity:1}
+#popover{position:absolute;right:calc(130px + var(--sar));top:calc(52px + var(--sat));padding:18px 34px 22px;background:radial-gradient(ellipse at center,rgba(12,8,4,.86),rgba(12,8,4,.7) 60%,rgba(12,8,4,0) 100%);color:var(--ink);z-index:25;width:330px;text-shadow:var(--shadow)}
+#popover>b{font-weight:400;font-variant:small-caps;letter-spacing:.12em;color:var(--accent)}
+#popover .form-row label{min-width:86px}
+.sheet-list{display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px}
+.sheet-list .sect{grid-column:1/-1;font-variant:small-caps;letter-spacing:.14em;font-size:13px;color:var(--faint);padding:14px 0 2px;border-bottom:1px solid var(--rule);margin-bottom:2px}
+.sheet-list .sect:first-child{padding-top:0}
+.sheet-list button{text-align:left;font-size:17px;color:var(--ink);padding:0 .1em;min-height:48px}
+.sheet-list button::after{left:.1em;right:auto;width:2.5em;bottom:10px;transform-origin:left}
+.sheet-list button.on{color:var(--accent)}
+.sheet-list button small{display:block;font-size:13px}
+
+/* ---------- mobile dock: text labels ---------- */
+#dock{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:22px 4px calc(2px + var(--sab));padding-left:calc(4px + var(--sal));padding-right:calc(4px + var(--sar));background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.45) 40%,rgba(12,8,4,.7));z-index:15;pointer-events:none}
+#dock button{pointer-events:auto;flex:1;font-variant:small-caps;letter-spacing:.08em;font-size:15px;min-height:48px;padding:0 2px;color:var(--dim)}
+#dock button::after{left:22%;right:22%}
+#dock button.on{color:var(--accent)}
+.habpick{align-items:center;justify-content:center;font-size:15px;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-style:italic}
+
+/* ---------- narrower desktops ---------- */
+@media (max-width:1500px){.brand{display:none}}
+@media (max-width:1320px){.seg button{font-size:14px;padding:0 .4em}.seg button::after{left:.4em;right:.4em}#btnSound,#btnSettings,#btnHelp,#btnManage{font-size:13.5px;padding:0 .4em}.tabs button{max-width:130px;font-size:14px}}
+@media (max-width:1180px) and (min-width:561px) and (min-height:501px){#top{flex-wrap:wrap;row-gap:0}.tabs{order:10;flex-basis:100%;border-left:0;margin-left:0;padding-left:0}#spiderPanel{padding-top:calc(116px + var(--sat))}#spiderPanel .x{top:calc(108px + var(--sat))}#toasts{top:calc(104px + var(--sat))}#modeBar{top:calc(100px + var(--sat))}}
+
+/* ---------- phones & small tablets, portrait ---------- */
+@media (max-width:820px) and (orientation:portrait),(max-width:560px),(max-height:500px) and (orientation:landscape){
+ .desktop-only{display:none!important}
+ .mobile-only{display:flex!important}
+ #top{gap:2px;padding:2px 8px 16px;padding-top:calc(2px + var(--sat));padding-left:calc(10px + var(--sal))}
+ .brand,.tabs{display:none}
+ .coins{font-size:16px;min-width:0}
+ .clock{margin-left:auto;min-width:0}
+ #drawer{padding:24px 10px 4px;bottom:calc(48px + var(--sab));max-height:55vh;display:flex;flex-direction:column}
+ .drawer-head{gap:4px;flex-wrap:nowrap}
+ .drawer-head .seg{flex:1;overflow-x:auto;scrollbar-width:none}
+ .drawer-head .seg::-webkit-scrollbar{display:none}
+ #drawerTitle{display:none}
+ .card{width:98px;padding:4px 3px 6px}
+ .card canvas{width:72px;height:72px}
+ .card .nm{font-size:13px}
+ #spiderPanel{left:0;right:0;bottom:auto;width:auto;max-height:68vh;overflow:auto;padding:calc(50px + var(--sat)) calc(14px + var(--sar)) 34px calc(16px + var(--sal));background:linear-gradient(rgba(12,8,4,.72),rgba(12,8,4,.58) 70%,rgba(12,8,4,0));scrollbar-width:none}
+ #spiderPanel h3{font-size:24px;padding-right:70px}
+ #spiderPanel .sci{margin:2px 0 6px;font-size:13px}
+ #spiderPanel .state{font-size:15px}
+ #spiderPanel .x{top:calc(42px + var(--sat));right:calc(4px + var(--sar))}
+ #spiderPanel:not(.expanded) .full{display:none}
+ #spiderPanel:not(.expanded) .mini{display:flex;gap:4px;align-items:center;font-size:13.5px;color:var(--dim);margin-top:0}
+ #spiderPanel:not(.expanded) .mini button{font-variant:small-caps;letter-spacing:.08em;font-size:14px}
+ #zoomCtl{bottom:calc(60px + var(--sab));left:calc(2px + var(--sal))}
+ #modeBar{top:auto;bottom:calc(56px + var(--sab));flex-wrap:wrap;justify-content:center;white-space:normal;padding:16px 20px 4px;width:100vw;max-width:none;background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.6) 40%,rgba(12,8,4,.7));text-align:center}
+ #modeText{flex-basis:100%;font-size:14px}
+ #modalWrap{padding-top:calc(10px + var(--sat))}
+ #modal{width:100vw;max-height:calc(100vh - 10px - var(--sat));padding:0 18px var(--sab)}
+ .modal-head h2{font-size:24px}
+ .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 20px}
+ #toasts{top:auto;bottom:calc(64px + var(--sab));padding:8px 10px;width:min(72vw,520px)}
+ body.drawer-open #toasts{bottom:calc(var(--drawerH,0px) + 48px + var(--sab))}
+ body.drawer-open #zoomCtl{display:none}
+ .toast{font-size:14px}
+ #dock button{font-size:14px;letter-spacing:.03em}
+ #popover{left:0;right:0;width:auto;top:auto;bottom:calc(52px + var(--sab));padding:26px 26px 14px;background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.82) 30%,rgba(12,8,4,.9))}
+ #obsHud{bottom:calc(4px + var(--sab));padding:26px 20px 4px}
 }
-.tabs button{max-width:160px;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:1400px){.seg button{padding:5px 7px;font-size:12px}#btnManage{font-size:12px;padding:5px 8px}.tabs button{max-width:120px}}
-@media (max-width:1180px) and (min-width:561px) and (orientation:landscape),(max-width:1180px) and (min-width:821px){#top{flex-wrap:wrap;row-gap:6px}.tabs{order:10;flex-basis:100%}#spiderPanel{top:calc(104px + var(--sat))}#toasts{top:calc(104px + var(--sat))}#modeBar{top:calc(100px + var(--sat))}}
+/* phones held sideways: dock becomes a quiet column of words on the left; panel to the right */
+@media (max-height:500px) and (orientation:landscape){
+ #top{padding-left:calc(14px + var(--sal));padding-bottom:10px}
+ #dock{top:calc(40px + var(--sat));bottom:0;right:auto;width:calc(104px + var(--sal));flex-direction:column;justify-content:center;padding:0 0 var(--sab) var(--sal);background:linear-gradient(to right,rgba(12,8,4,.62),rgba(12,8,4,.35) 70%,rgba(12,8,4,0))}
+ #dock button{flex:0 0 auto;min-height:44px;text-align:left;padding-left:14px}
+ #dock button::after{left:14px;right:auto;width:2.6em;transform-origin:left}
+ #drawer{left:calc(104px + var(--sal));bottom:0;padding:18px 10px calc(2px + var(--sab));max-height:62vh}
+ .card{width:90px}.card canvas{width:60px;height:60px}.card .nm{min-height:30px;font-size:12.5px}
+ #spiderPanel{left:auto;right:0;top:0;bottom:0;width:300px;max-height:none;padding:calc(46px + var(--sat)) calc(12px + var(--sar)) 12px 44px;background:linear-gradient(to left,rgba(12,8,4,.72),rgba(12,8,4,.55) 70%,rgba(12,8,4,0))}
+ #spiderPanel h3{font-size:22px}
+ #spiderPanel .x{top:calc(38px + var(--sat))}
+ #zoomCtl{display:none}
+ #toasts{top:calc(40px + var(--sat));bottom:auto;left:calc(104px + (100vw - 404px) / 2);width:min(420px,calc(100vw - 420px))}
+ body.drawer-open #toasts{top:calc(40px + var(--sat));bottom:auto}
+ #modeBar{left:calc(104px + var(--sal));width:auto;right:0;bottom:0}
+ #popover{left:calc(104px + var(--sal));bottom:0}
+ #modal{padding-left:calc(18px + var(--sal));padding-right:calc(18px + var(--sar))}
+ .sheet-list{grid-template-columns:repeat(4,1fr)}
+}
 
 </style>
 </head>
@@ -180,74 +271,76 @@ input[type=range]{accent-color:#a8742a}
   <canvas id="view" aria-label="Terrarium view"></canvas>
 
   <header id="top">
-    <div class="brand"><span class="logo">🕷</span><span class="brand-name">Jumper Terrarium</span></div>
-    <div class="coins" title="Coins"><span class="coin">●</span><span id="coins">0</span></div>
-    <nav id="habTabs" class="tabs"></nav>
-    <button id="habPicker" class="mobile-only habpick"></button>
+    <div class="brand"><span class="brand-name">Jumper Terrarium</span></div>
+    <div class="coins" title="Coins"><span id="coins">0</span><span class="unit">coins</span></div>
+    <nav id="habTabs" class="tabs" aria-label="Habitats"></nav>
+    <button id="habPicker" class="mobile-only habpick txt"></button>
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
-    <div id="cams" class="seg desktop-only">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="follow" title="Follow (3)">Follow</button><button data-cam="reverse" title="Reverse (4)">Reverse</button>
+    <div id="cams" class="seg desktop-only" aria-label="Camera">
+      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="follow" title="Follow the selected jumper (3)">Follow</button><button data-cam="reverse" title="Reverse (4)">Reverse</button>
     </div>
-    <button id="btnObserve" class="btn gold desktop-only" title="Observation Mode (O)">📹 Observe</button>
-    <div id="timeMode" class="seg desktop-only">
-      <button data-tm="auto" title="Natural day/night">Auto</button><button data-tm="day">☀ Day</button><button data-tm="night">🌙 Night</button>
+    <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
+    <div id="timeMode" class="seg desktop-only" aria-label="Time of day">
+      <button data-tm="auto" title="Natural day/night">Auto</button><button data-tm="day">Day</button><button data-tm="night">Night</button>
     </div>
-    <button id="btnSound" class="icon desktop-only" title="Sound">🔊</button>
-    <button id="btnSettings" class="icon desktop-only" title="Settings">⚙</button>
-    <button id="btnHelp" class="icon desktop-only" title="Help">?</button>
-    <button id="btnManage" class="btn desktop-only">Manage Habitats</button>
+    <button id="btnSound" class="txt desktop-only" title="Sound">Sound</button>
+    <button id="btnSettings" class="txt desktop-only" title="Settings">Settings</button>
+    <button id="btnHelp" class="txt desktop-only" title="Help">Help</button>
+    <button id="btnManage" class="txt desktop-only">Habitats</button>
   </header>
 
   <div id="toolbar" class="desktop-only">
-    <button data-tool="decor">🪨<span>Decor</span></button>
-    <button data-tool="plants">🌿<span>Plants</span></button>
-    <button data-tool="substrate">🟫<span>Substrate</span></button>
-    <button data-tool="food">🪰<span>Live Food</span></button>
-    <button data-tool="jumpers">🕷<span>Jumpers</span></button>
-    <button data-tool="journal">📖<span>Journal</span></button>
-    <button data-tool="mist">💧<span>Mist</span></button>
-    <button data-tool="clean">🧹<span>Clean</span></button>
-    <button data-tool="remove">✖<span>Remove</span></button>
+    <button data-tool="decor">Decor</button>
+    <button data-tool="plants">Plants</button>
+    <button data-tool="substrate">Substrate</button>
+    <button data-tool="food">Food</button>
+    <button data-tool="jumpers">Jumpers</button>
+    <button data-tool="journal">Journal</button>
+    <button data-tool="mist">Mist</button>
+    <button data-tool="clean">Clean</button>
+    <button data-tool="remove">Remove</button>
   </div>
 
-  <section id="drawer" class="hidden" aria-label="Shop drawer">
-    <div class="drawer-head"><div id="drawerTabs" class="seg small"></div><div id="drawerTitle"></div><button class="icon close" id="drawerClose" title="Close">✖</button></div>
+  <section id="drawer" class="hidden" aria-label="Shop">
+    <div class="drawer-head"><div id="drawerTabs" class="seg small"></div><div id="drawerTitle"></div><button class="txt close" id="drawerClose" title="Close">Close</button></div>
     <div id="drawerBody" class="cards"></div>
   </section>
 
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="zoomCtl">
-    <button id="zoomIn" title="Zoom in (+)">+</button><button id="zoomOut" title="Zoom out (−)">−</button><button id="zoomReset" title="Reset view (0)" style="font-size:12px">Fit</button>
+    <button id="zoomIn" title="Zoom in (+)">In</button><button id="zoomOut" title="Zoom out (-)">Out</button><button id="zoomReset" title="Reset view (0)">Fit</button>
   </div>
 
   <div id="modeBar" class="hidden">
     <span id="modeText"></span>
-    <button id="modeRotate" class="btn">🔄 Rotate</button>
-    <button id="modeDone" class="btn gold">Done</button>
-    <button id="modeCancel" class="btn">Cancel</button>
+    <button id="modeRotate" class="txt">Rotate</button>
+    <button id="modeDone" class="txt strong">Done</button>
+    <button id="modeCancel" class="txt">Cancel</button>
   </div>
 
   <div id="obsHud" class="hidden">
-    <div class="obs-tag">📹 Observing</div>
+    <div class="obs-tag">Observing</div>
     <div id="obsName"></div>
     <div id="obsThought"></div>
-    <button id="obsExit" class="btn">Exit <kbd>Esc</kbd></button>
+    <button id="obsExit" class="txt">Exit<kbd>Esc</kbd></button>
   </div>
 
   <div id="toasts" aria-live="polite"></div>
 
-  <nav id="dock" class="mobile-only">
-    <button data-dock="build"><span>🪴</span>Build</button>
-    <button data-dock="food"><span>🪰</span>Food</button>
-    <button data-dock="jumpers"><span>🕷</span>Jumpers</button>
-    <button data-dock="observe"><span>📹</span>Observe</button>
-    <button data-dock="more"><span>⋯</span>More</button>
+  <nav id="dock" class="mobile-only" aria-label="Main">
+    <button data-dock="build">Build</button>
+    <button data-dock="food">Food</button>
+    <button data-dock="follow">Follow</button>
+    <button data-dock="jumpers">Jumpers</button>
+    <button data-dock="observe">Observe</button>
+    <button data-dock="more">More</button>
   </nav>
 
-  <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2 id="modalTitle"></h2><button class="icon close" id="modalClose" title="Close">✖</button></div><div id="modalBody"></div></div></div>
+  <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2 id="modalTitle"></h2><button class="txt close" id="modalClose" title="Close">Close</button></div><div id="modalBody"></div></div></div>
   <div id="popover" class="hidden"></div>
 </div>
+
 <script>
 /* Jumper Terrarium — core: namespace, math, RNG, geometry helpers.
    No DOM access. Shared by simulation, renderer and headless tests. */
@@ -551,6 +644,7 @@ input[type=range]{accent-color:#a8742a}
     D('slatestack', 'Slate Stack', 'decor', 45, 'rock', { w: 40, d: 30, h: 22, style: 'slate', layers: 4 }, { platform: true, cover: .2 }),
     D('bonsai', 'Mini Bonsai', 'plants', 70, 'tree', { kind: 'bonsai', h: 34, r: 2.6, spread: 30, leaf: '#4f7a2e', pot: true }, { stack: true, cover: .45 }),
     D('waterdish', 'Water Dish', 'decor', 15, 'dish', { r: 9, h: 4 }, { small: true, water: true }),
+    D('heatlamp', 'Basking Lamp', 'decor', 45, 'lamp', { h: 78, reach: 16, pool: 24 }, { small: true, lamp: true }),
     D('corktube', 'Cork Tube', 'decor', 45, 'log', { L: 52, r: 9, style: 'cork', hollow: true }, { platform: false, cover: .7 }),
     D('corkround', 'Cork Round', 'decor', 35, 'tower', { r: 15, h: 16, style: 'cork' }, { platform: true, cover: .1, small: true }),
     D('corkslab', 'Cork Slab', 'decor', 40, 'rock', { w: 34, d: 12, h: 44, style: 'cork' }, { platform: false, cover: .35 }),
@@ -648,26 +742,29 @@ input[type=range]{accent-color:#a8742a}
 
   // ---------------- Field journal ----------------
   JT.JOURNAL = [
-    { id: 'firstHunt', title: 'First Successful Hunt', icon: '🎯', text: 'A jumper stalked, pounced and secured its first meal in your habitat.' },
-    { id: 'ambushHigh', title: 'Ambush from Above', icon: '🦅', text: 'A jumper used an elevated perch to strike prey below.' },
-    { id: 'ambushCover', title: 'Ambush from Cover', icon: '🌿', text: 'A jumper approached unseen from behind cover or from the rear.' },
-    { id: 'stepping', title: 'Stepping Stones', icon: '🪨', text: 'A jumper chained several habitat surfaces together to reach prey.' },
-    { id: 'safeMeal', title: 'A Safe Place to Eat', icon: '🍃', text: 'A jumper carried its catch to a sheltered perch before feeding.' },
-    { id: 'drink', title: 'Sipping a Droplet', icon: '💧', text: 'A thirsty jumper sought out a mist droplet and drank.' },
-    { id: 'molt', title: 'Successful Molt', icon: '🦋', text: 'A jumper shed its old exoskeleton and grew a stage.' },
-    { id: 'retreat', title: 'Silk Retreat', icon: '🕸️', text: 'A jumper wove a silk retreat to sleep or molt inside.' },
-    { id: 'safety', title: 'Safety Silk', icon: '🧵', text: 'A jumper anchored a dragline before leaping.' },
-    { id: 'investigate', title: 'Curious Inspection', icon: '🔍', text: 'A jumper went to investigate something newly placed in its habitat.' },
-    { id: 'territorial', title: 'Territorial Display', icon: '⚔️', text: 'Two jumpers faced off with raised legs and posturing.' },
-    { id: 'cannibal', title: 'Cannibalism', icon: '🕷️', text: 'A jumper hunted another jumper. Nature is not always cozy.' },
-    { id: 'tinyEscape', title: 'Tiny Jumper Escape', icon: '💨', text: 'A tiny jumper sensed danger and leapt away just in time.' },
-    { id: 'tinyCatch', title: 'Jumper vs Jumper', icon: '🕸', text: 'A jumper caught a tiny live-food jumper.' },
-    { id: 'softMolt', title: 'Fresh-molt Vulnerability', icon: '🫧', text: 'A freshly molted jumper rested pale and soft while its new skin hardened.' },
-    { id: 'adult', title: 'Reaching Adulthood', icon: '⭐', text: 'A jumper completed its final molt into an adult.' },
-    { id: 'veteran', title: 'Seasoned Adult', icon: '🏅', text: 'A jumper has lived a long, full adult life in your care.' },
-    { id: 'display', title: 'Courtship Dance', icon: '💃', text: 'A display-oriented jumper performed its leg-waving dance.' },
-    { id: 'intercept', title: 'Reading the Prey', icon: '🧠', text: 'A jumper predicted where moving prey was heading and intercepted it.' },
-    { id: 'cleanup', title: 'Cleanup Crew', icon: '🧹', text: 'Springtails or isopods found and cleaned up feeder remains.' },
+    { id: 'firstHunt', title: 'First Successful Hunt', icon: '', text: 'A jumper stalked, pounced and secured its first meal in your habitat.' },
+    { id: 'ambushHigh', title: 'Ambush from Above', icon: '', text: 'A jumper used an elevated perch to strike prey below.' },
+    { id: 'ambushCover', title: 'Ambush from Cover', icon: '', text: 'A jumper approached unseen from behind cover or from the rear.' },
+    { id: 'stepping', title: 'Stepping Stones', icon: '', text: 'A jumper chained several habitat surfaces together to reach prey.' },
+    { id: 'safeMeal', title: 'A Safe Place to Eat', icon: '', text: 'A jumper carried its catch to a sheltered perch before feeding.' },
+    { id: 'drink', title: 'Sipping a Droplet', icon: '', text: 'A thirsty jumper sought out a mist droplet and drank.' },
+    { id: 'molt', title: 'Successful Molt', icon: '', text: 'A jumper shed its old exoskeleton and grew a stage.' },
+    { id: 'retreat', title: 'Silk Retreat', icon: '', text: 'A jumper wove a silk retreat to sleep or molt inside.' },
+    { id: 'safety', title: 'Safety Silk', icon: '', text: 'A jumper anchored a dragline before leaping.' },
+    { id: 'investigate', title: 'Curious Inspection', icon: '', text: 'A jumper went to investigate something newly placed in its habitat.' },
+    { id: 'territorial', title: 'Territorial Display', icon: '', text: 'Two jumpers faced off with raised legs and posturing.' },
+    { id: 'cannibal', title: 'Cannibalism', icon: '', text: 'A jumper hunted another jumper. Nature is not always cozy.' },
+    { id: 'tinyEscape', title: 'Tiny Jumper Escape', icon: '', text: 'A tiny jumper sensed danger and leapt away just in time.' },
+    { id: 'tinyCatch', title: 'Jumper vs Jumper', icon: '', text: 'A jumper caught a tiny live-food jumper.' },
+    { id: 'softMolt', title: 'Fresh-molt Vulnerability', icon: '', text: 'A freshly molted jumper rested pale and soft while its new skin hardened.' },
+    { id: 'adult', title: 'Reaching Adulthood', icon: '', text: 'A jumper completed its final molt into an adult.' },
+    { id: 'veteran', title: 'Seasoned Adult', icon: '', text: 'A jumper has lived a long, full adult life in your care.' },
+    { id: 'display', title: 'Courtship Dance', icon: '', text: 'A display-oriented jumper performed its leg-waving dance.' },
+    { id: 'intercept', title: 'Reading the Prey', icon: '', text: 'A jumper predicted where moving prey was heading and intercepted it.' },
+    { id: 'bask', title: 'Basking', icon: '', text: 'A jumper pressed itself flat in the warm pool of a basking lamp.' },
+    { id: 'dangle', title: 'A Line of Silk', icon: '', text: 'A jumper dropped from a ledge on its dragline, hung a moment, then climbed back up.' },
+    { id: 'restless', title: 'Restless Patrol', icon: '', text: 'With nothing left to hunt, a hungry jumper patrolled its perches and lunged at the smallest movement.' },
+    { id: 'cleanup', title: 'Cleanup Crew', icon: '', text: 'Springtails or isopods found and cleaned up feeder remains.' },
   ];
 
   // ---------------- Presets ----------------
@@ -819,6 +916,16 @@ input[type=range]{accent-color:#a8742a}
     addFaces(B, base, G.scalePoly(base, 0.8), 0, p.h, ti, 3);
     for (let i = 0; i < 3; i++) { const a = i * 2.1; B.water.push({ local: [Math.cos(a) * p.r * 0.55, p.h, Math.sin(a) * p.r * 0.55], top: ti, permanent: true }); }
     B.height = p.h; B.coverR = p.r;
+  };
+  /** Basking lamp: weighted foot, brass pole and arm, a small dome shade that throws a warm pool of light below. */
+  ARCH.lamp = function (B, p, sc) {
+    const H = Math.max(22, p.h * sc), R = p.reach;
+    const foot = G.circlePoly(0, 0, 4.2, 4.2, 12); B.solids.push(foot);
+    B.prim({ t: 'lampfoot', o: [0, 0, 0], r: 4.2 });
+    B.prim({ t: 'tube', pts: [[0, 0.8, 0], [0, H * 0.5, 0], [0, H, 0]], r0: 0.55, r1: 0.5, col: '#8c7650', style: 'rod' });
+    B.prim({ t: 'tube', pts: bez([0, H, 0], [R * 0.45, H + 4, 0], [R, H + 1, 0], 6), r0: 0.45, r1: 0.42, col: '#8c7650', style: 'rod' });
+    B.prim({ t: 'lamp', o: [R, H - 1.5, 0], r: 4.6 });
+    B.lampLocal = [R, H - 3, 0]; B.height = H + 4; B.coverR = 6;
   };
   ARCH.log = function (B, p) {
     const L = p.L, r = p.r, half = !!p.half;
@@ -1342,6 +1449,7 @@ input[type=range]{accent-color:#a8742a}
     g.center = [inst.x, baseY, inst.z];
     if (B.front) { g.front = B.front.map(X.P2); g.out = X.V([0, 0, -1]); g.wallH = B.height - 4; }
     if (def.arche === 'wallmount') { g.center = [inst.x, inst.my || 40, inst.z]; g.foot = G.circlePoly(inst.x, inst.z, (def.p.w || 14) / 2, 3, 8); }
+    if (B.lampLocal) { const hd = X.P(B.lampLocal); g.lamp = { head: hd, pool: [hd[0], baseY, hd[2]], r: def.p.pool || 24 }; g.lampOn = inst.on !== false; }
     g.flexible = g.paths.some(p => p.flex > 0.2) || def.cat === 'plants';
     return g;
   };
@@ -1885,7 +1993,29 @@ input[type=range]{accent-color:#a8742a}
       this.data.drops = this.data.drops.filter(d => Nav.validSup(this, d.sup));
       this.data.drops.forEach(d => { d.pos = Nav.supPos(this, d.sup, d.pos); });
       this.data.silk = this.data.silk.filter(s => !s.decor || this.geoms[s.decor]);
+      for (const s of this.data.spiders) if (s.home && (!M.finite3(s.home.pos) || !Nav.validSup(this, s.home.sup))) s.home = null;
+      if (this._leaves) this._leaves = this._leaves.filter(l => !l.decor || this.geoms[l.decor]);
     }
+
+    // ---------------- lamps & warmth ----------------
+    /** Basking lamps currently switched on: [{inst, head, pool, r}]. */
+    lampsOn() {
+      const out = [];
+      for (const inst of this.data.decor) { if (inst.type !== 'heatlamp' || inst.on === false) continue; const g = this.geoms[inst.id]; if (g && g.lamp) out.push({ inst, head: g.lamp.head, pool: g.lamp.pool, r: g.lamp.r }); }
+      return out;
+    }
+    /** 0..1 radiant warmth at a point (strongest directly under a lit lamp head). */
+    warmthAt(pos) {
+      let w = 0;
+      for (const L of this.lampsOn()) {
+        if (pos[1] > L.head[1] - 1) continue;
+        const dh = Math.hypot(pos[0] - L.pool[0], pos[2] - L.pool[2]); const dv = L.head[1] - pos[1];
+        const R = L.r * (0.6 + 0.4 * M.clamp(dv / 40, 0, 1.4));
+        if (dh < R) w = Math.max(w, (1 - dh / R) * M.clamp(1.2 - dv / 150, 0.6, 1));
+      }
+      return w;
+    }
+    toggleLamp(id) { const inst = this.decorById(id); if (!inst || inst.type !== 'heatlamp') return null; inst.on = inst.on === false; const g = this.geoms[id]; if (g) { g.lampOn = inst.on; g._spr = null; } return inst.on; }
 
     // ---------------- entities ----------------
     randomFloorPoint(rng) {
@@ -1953,7 +2083,7 @@ input[type=range]{accent-color:#a8742a}
     // ---------------- maintenance ----------------
     mist() {
       this.data.humidity = Math.min(1, this.data.humidity + 0.28);
-      const nav = this.nav; const cands = nav.nodes.filter(n => n.kind !== 'face' && !n.landing && (n.kind !== 'floor' || JT.R() < 0.25));
+      const nav = this.nav; const cands = nav.nodes.filter(n => (n.kind !== 'face' || (n.pos[1] > 4 && JT.R() < 0.35)) && !n.landing && (n.kind !== 'floor' || JT.R() < 0.25));
       const n = 8 + Math.floor(JT.R() * 7);
       for (let i = 0; i < n && cands.length; i++) {
         const node = cands[Math.floor(JT.R() * cands.length)];
@@ -1983,9 +2113,79 @@ input[type=range]{accent-color:#a8742a}
       JT.SpiderAI.updateNests(this, dt);
       for (const s of d.silk) s.age += dt;
       d.silk = d.silk.filter(s => s.age < (s.kind === 'retreat' ? 1800 : 600));
-      for (const r of d.remains) r.age += dt;
+      this.updateRemains(dt);
+      this.updateCleaners(dt);
+      this.updateLeaves(dt);
+      this.updateDew(dt);
       for (const inst of d.decor) { const sw = inst._sw; if (sw) { sw.vx += (-sw.x * 26 - sw.vx * 5.5) * dt; sw.vz += (-sw.z * 26 - sw.vz * 5.5) * dt; sw.x += sw.vx * dt; sw.z += sw.vz * dt; if (Math.abs(sw.x) + Math.abs(sw.z) + Math.abs(sw.vx) + Math.abs(sw.vz) < 1e-3) inst._sw = null; } }
       this._valT = (this._valT || 0) + dt; if (this._valT > 1) { this._valT = 0; this.validateRefs(); }
+    }
+    /** Remains slowly decay on their own (damp speeds it); springtails speed it up a lot (prey.js). */
+    updateRemains(dt) {
+      const d = this.data; let gone = false;
+      for (const r of d.remains) {
+        r.age += dt; if (r.clean == null || !isFinite(r.clean)) r.clean = 1;
+        const base = r.cat === 'exuvia' ? 1 / 1500 : r.cat === 'spider' ? 1 / 2400 : 1 / 900;
+        r.clean -= dt * base * (0.5 + d.humidity);
+        if (r.clean <= 0) gone = true;
+      }
+      if (gone) d.remains = d.remains.filter(r => r.clean > 0);
+    }
+    /** Small self-sustaining springtail colony: breeds when there is food or moisture, thins out when dry and bare. */
+    updateCleaners(dt) {
+      const d = this.data; this._brT = (this._brT || 0) + dt; if (this._brT < 15) return; this._brT = 0;
+      const sts = d.prey.filter(p => p.type === 'springtail' && !p.owner); const n = sts.length; if (n < 2) return;
+      const food = d.remains.length; const moist = d.humidity > 0.45;
+      const target = food ? Math.min(12, 6 + food) : moist ? 6 : 3;
+      if (n < target && (food || moist) && JT.R() < 0.35 && d.prey.length < JT.PREY_CAP - 2) {
+        const par = sts[Math.floor(JT.R() * n)]; const p = JT.PreyAI.create(this, 'springtail');
+        const b = Nav.supportBelow(this, [par.pos[0] + (JT.R() - 0.5) * 2, par.pos[1] + 0.5, par.pos[2] + (JT.R() - 0.5) * 2]);
+        p.pos = b.pos; p.sup = b.sup; p.young = true; d.prey.push(p);
+      } else if (!food && !moist && n > 3 && JT.R() < 0.2) {
+        const v = sts.find(p => p.state === 'idle' || p.state === 'buried') || null; if (v) this.removeEntity(v, 'natural');
+      }
+    }
+    /** Transient falling leaf bits / debris from plants: something moving that a hungry jumper may lunge at. */
+    updateLeaves(dt) {
+      const L = this._leaves || (this._leaves = []);
+      this._leafT = (this._leafT == null ? 6 + JT.R() * 10 : this._leafT) - dt;
+      if (this._leafT <= 0) {
+        this._leafT = 8 + JT.R() * 14;
+        const plants = this.data.decor.filter(i => { const g = this.geoms[i.id]; return g && g.def && g.def.cat === 'plants' && g.height > 10; });
+        if (plants.length && L.length < 4) {
+          const inst = plants[Math.floor(JT.R() * plants.length)]; const g = this.geoms[inst.id];
+          const a = JT.R() * 6.28, rr = JT.R() * Math.max(2, g.coverR * 0.8);
+          const x = g.center[0] + Math.cos(a) * rr, z = g.center[2] + Math.sin(a) * rr;
+          if (Nav.inside(this, x, z, 3)) {
+            const y = g.baseY + g.height * (0.55 + JT.R() * 0.4); const b = Nav.supportBelow(this, [x, y, z]);
+            L.push({ id: JT.newId('l'), pos: [x, y, z], y0: b.pos[1], falling: true, t: 0, rest: 0, ang: JT.R() * 6.28, seed: JT.R() * 100, decor: b.sup.d || null, hue: JT.R() });
+          }
+        }
+      }
+      for (const l of L) {
+        l.t += dt;
+        if (l.falling) {
+          l.pos[1] -= dt * (3.2 + Math.sin(l.t * 2.1 + l.seed) * 1.2);
+          l.pos[0] += Math.sin(l.t * 1.7 + l.seed) * dt * 2.2; l.pos[2] += Math.cos(l.t * 1.3 + l.seed) * dt * 1.6; l.ang += dt * 1.5;
+          const c = Nav.clampInside(this, l.pos[0], l.pos[2], 2); l.pos[0] = c[0]; l.pos[2] = c[1];
+          if (l.pos[1] <= l.y0 + 0.15 || l.t > 40) { l.pos[1] = l.y0 + 0.1; l.falling = false; }
+        } else l.rest += dt;
+      }
+      this._leaves = L.filter(l => l.rest < 14);
+    }
+    /** Morning dew: a few droplets condense on leaves and walls around dawn when humid enough. */
+    updateDew(dt) {
+      if (!this.game) return; const tod = this.game.tod ? this.game.tod() : null; if (tod == null) return;
+      const day = Math.floor(this.game.state.time / (JT.DAY || 480));
+      if (tod > 0.2 && tod < 0.3 && this.data.humidity > 0.5 && this.data.dewDay !== day) {
+        this.data.dewDay = day;
+        const cands = this.nav.nodes.filter(n => !n.landing && n.kind !== 'floor' && n.pos[1] > 3);
+        for (let i = 0; i < 5 && cands.length; i++) {
+          const node = cands[Math.floor(JT.R() * cands.length)];
+          if (this.data.drops.some(w => M.dist(w.pos, node.pos) < 3)) continue;
+          this.data.drops.push({ id: JT.newId('w'), pos: node.pos.slice(), sup: JT.deepClone(node.sup), decor: node.decor || null, life: 120 + JT.R() * 120, r: 0.6 + JT.R() * 0.5 });
+        }
+      }
     }
     /** Small damped-spring impulse on flexible vegetation. */
     nudge(decorId, ix, iz) {
@@ -2081,8 +2281,9 @@ input[type=range]{accent-color:#a8742a}
   const JT = root.JT, M = JT.M, Nav = JT.Nav, Loco = JT.Loco;
   const AI = JT.SpiderAI = {};
   const DAY = 480;
-  const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 2, watch: 4, display: 20, social: 20, avoid: 22,
+  const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 34, watch: 4, display: 20, social: 20, avoid: 22,
     investigate: 15, inspect: 15, postFeed: 10, search: 35, sleepSeek: 30, sleep: 30,
+    cleanEyes: 3, look: 3, scuttle: 3, stretch: 5, homeSeek: 3, baskSeek: 12, bask: 12, dangle: 45, scan: 34, lunge: 36,
     notice: 40, assess: 40, stalk: 40, creep: 41, crouch: 42, track: 40,
     drinkSeek: 50, drink: 50, flee: 60, pounce: 75, fall: 75, subdue: 70, carry: 70, feed: 70,
     moltSeek: 80, moltSilk: 85, premolt: 90, molting: 95, postMolt: 85, emerge: 86 };
@@ -2100,6 +2301,13 @@ input[type=range]{accent-color:#a8742a}
   AI.caps = (sp, carry) => ({ jump: AI.jump(sp) * (carry ? 0.6 : 1), climb: true, drop: true, carry: !!carry });
   AI.hungerLabel = (s) => s > 0.85 ? 'Full & Round' : s > 0.6 ? 'Content' : s > 0.35 ? 'Peckish' : 'Hungry';
   AI.moltNeed = (sp) => 3 + sp.stage;
+  AI.STARVING = 0.15;
+  /** Live food this jumper will actually go after. Cleanup crew is ignored unless the jumper is starving. */
+  AI.huntableFor = (sp, d) => !!d && (d.huntable || (d.id === 'springtail' && sp.sat < AI.STARVING));
+  AI.nutOf = (d) => d ? (d.nut || (d.id === 'springtail' ? 0.05 : 0)) : 0;
+  /** Is there anything left in the habitat this jumper could eat? */
+  AI.preyAvailable = (hab, sp) => hab.data.prey.some(p => !p.owner && !p.buried && !p.dead && AI.huntableFor(sp, JT.PREY_BY_ID[p.type]));
+  AI.hungerLevel = (sp) => sp.sat < 0.2 ? 2 : sp.sat < 0.4 ? 1 : 0;
 
   function usedNames() { const s = new Set(); if (JT.game) for (const h of JT.game.habs) for (const x of h.data.spiders) s.add(x.name); return s; }
   AI.create = function (hab, speciesId, o) {
@@ -2180,7 +2388,7 @@ input[type=range]{accent-color:#a8742a}
       if (e.sup && e.sup.k === 'air') p *= 0.8;
       if (JT.R() < p) { if (!seen[e.id]) sp._noticedAt = now; seen[e.id] = now; }
     };
-    for (const p of hab.data.prey) { if (p.owner || p.buried || p.dead) continue; const d = JT.PREY_BY_ID[p.type]; if (!d.huntable) continue; consider(p); }
+    for (const p of hab.data.prey) { if (p.owner || p.buried || p.dead) continue; const d = JT.PREY_BY_ID[p.type]; if (!AI.huntableFor(sp, d)) continue; consider(p); }
     if (sp.sat < 0.32 && sp.pers.cannibal > 0.5) for (const o of hab.data.spiders) if (o !== sp && !MOLT.has(o.state) || (o !== sp && o.soft > 0)) consider(o, true);
   }
   function scoreTarget(hab, sp, e, isSpider) {
@@ -2189,13 +2397,14 @@ input[type=range]{accent-color:#a8742a}
     const hungry = sp.sat < 0.35; const starving = sp.sat < 0.18;
     const maxR = 0.9 + sp.traits.bold * 0.8 + (hungry ? 0.3 : 0) + (starving ? 0.2 : 0);
     if (ratio > maxR) return -1;
-    if (ratio < 0.08 && L > 6) return -1;
+    const crumbs = !isSpider && !def.huntable; // springtails: only worth it when starving
+    if (ratio < 0.08 && L > 6 && !crumbs) return -1;
     let danger = (isSpider ? 0.4 : def.danger) * ratio; if (isSpider && e.soft > 0) danger *= 0.3;
     if (danger > sp.traits.bold * 0.8 + (hungry ? 0.3 : 0)) return -1;
     if (isSpider) { const el = AI.len(e); if (!(L > el * 1.35 || (e.soft > 0 && L > el * 0.95))) return -1; }
     const d = M.dist(sp.pos, e.pos);
-    const nut = isSpider ? 0.6 : def.nut;
-    let s = nut * 10 - d * 0.04 - danger * 5 + (ratio > 0.25 && ratio < 1 ? 2 : 0);
+    const nut = isSpider ? 0.6 : AI.nutOf(def);
+    let s = nut * 10 - d * 0.04 - danger * 5 + (ratio > 0.25 && ratio < 1 ? 2 : 0) + (crumbs ? 2.5 : 0);
     const v = e._vel ? M.len(e._vel) : 0; if (v > 1) s += 1;
     if (sp.mem.ignore[e.id] && !starving) s -= 8;
     if (e.sup && e.sup.k === 'air') s -= 1.5;
@@ -2244,13 +2453,17 @@ input[type=range]{accent-color:#a8742a}
     if (canHunt && cur < 40) {
       const t = chooseTarget(hab, sp);
       if (t) { startNotice(hab, sp, t); return; }
-      const hungryPrey = sp.sat < 0.4 && hab.data.prey.some(p => !p.owner && !p.buried && JT.PREY_BY_ID[p.type].huntable);
-      if (hungryPrey && cur < 35 && !(sp._searchCD > hab.time)) { startSearch(hab, sp); return; }
+      if (sp.sat < 0.4) {
+        const avail = AI.preyAvailable(hab, sp);
+        if (avail && cur < 35 && !(sp._searchCD > hab.time)) { startSearch(hab, sp); return; }
+        if (!avail && cur < 34 && !(sp._patrolCD > hab.time) && !(sp.state === 'sleep' && sp.st < 20)) { if (startPatrol(hab, sp)) return; }
+      }
     }
     if (cur >= 35) return;
     const dl = hab.daylight();
     if (dl < 0.2 && sp.sat > 0.3 && cur < 30 && sp.state !== 'sleep') { startSleep(hab, sp); return; }
     if (cur >= 30) return;
+    if (cur < 12 && AI.wantsWarmth(hab, sp) && startBask(hab, sp)) return;
     if (cur < 20 && social(hab, sp)) return;
     if (cur < 15 && curiosity(hab, sp)) return;
     if (sp.state === 'idle') pickIdle(hab, sp);
@@ -2280,7 +2493,22 @@ input[type=range]{accent-color:#a8742a}
     sp._crouch = M.lerp(sp._crouch || 0, sp.state === 'crouch' ? 1 : sneak ? (sp._low ? 0.85 : 0.35) : 0, Math.min(1, dt * 4));
     const raise = (HUNT.has(sp.state) && sp.state !== 'assess') || sp.state === 'display' || sp.state === 'inspect' || sp.state === 'watch' ? 1 : 0;
     sp._legRaise = M.lerp(sp._legRaise || 0, raise, Math.min(1, dt * 5));
-    sp._gazeT = (sp._gazeT || 0) - dt; if (sp._gazeT <= 0) { sp._gazeT = 0.6 + JT.R() * 2.5; sp._gaze = (JT.R() - 0.5) * 0.7 * (1 - (sp._legRaise || 0)); }
+    if (sp.state === 'lunge' && sp.st < 0.3) sp._crouch = M.lerp(sp._crouch, 1, Math.min(1, dt * 10));
+    if (sp._prepT > 0) sp._crouch = M.lerp(sp._crouch, 0.55, Math.min(1, dt * 8));
+    if (sp.state === 'scan' || sp.state === 'lunge') sp._legRaise = M.lerp(sp._legRaise, sp.state === 'lunge' ? 1 : 0.45, Math.min(1, dt * 5));
+    // body condition: the abdomen slims down when hungry and plumps up after a meal (eased, never pops)
+    const fatT = M.clamp(0.68 + Math.min(1.05, sp.sat) * 0.55, 0.68, 1.26);
+    sp._fatNow = sp._fatNow == null ? fatT : M.lerp(sp._fatNow, fatT, Math.min(1, dt * 0.5));
+    sp._flat = M.lerp(sp._flat || 0, sp.state === 'bask' ? 1 : 0, Math.min(1, dt * 1.6));
+    sp._stretchK = M.lerp(sp._stretchK || 0, sp.state === 'stretch' ? 1 : 0, Math.min(1, dt * 3));
+    sp._wipe = M.lerp(sp._wipe || 0, sp.state === 'cleanEyes' ? 1 : 0, Math.min(1, dt * 4));
+    sp._dangleVis = M.lerp(sp._dangleVis || 0, sp.state === 'dangle' ? (sp._dangleK || 0) : 0, Math.min(1, dt * (sp.state === 'dangle' ? 6 : 2.5)));
+    if (sp.state !== 'dangle' && sp._dangleVis < 0.01) sp._dangleOff = null;
+    // palp flicks: little twitches, more often while alert
+    sp._flickT = (sp._flickT == null ? JT.R() * 4 : sp._flickT) - dt;
+    if (sp._flickT <= 0) { sp._flickT = (HUNT.has(sp.state) || sp.state === 'scan' ? 0.8 : 2.5) + JT.R() * 5; if (!NEST_STATES.has(sp.state) && sp.state !== 'feed') sp._flick = 1; }
+    sp._flick = Math.max(0, (sp._flick || 0) - dt * 2.6);
+    if (sp.state !== 'scan' && sp.state !== 'look') sp._gazeT = (sp._gazeT || 0) - dt; if (sp._gazeT <= 0) { sp._gazeT = 0.6 + JT.R() * 2.5; sp._gaze = (JT.R() - 0.5) * 0.7 * (1 - (sp._legRaise || 0)); }
     sp._gazeNow = M.lerp(sp._gazeNow || 0, sp._gaze || 0, Math.min(1, dt * 8));
   };
   AI.mouth = function (hab, sp) {
@@ -2288,7 +2516,14 @@ input[type=range]{accent-color:#a8742a}
     return M.add(M.add(sp.pos, M.mul(sp.fwd || [1, 0, 0], L * 0.55)), M.mul(fr.n, L * 0.08));
   };
 
-  function move(hab, sp, dt, mult) {
+  function move(hab, sp, dt, mult, urgent) {
+    // a short pause to dab a silk safety line onto the surface before each jump along a route
+    const R = sp._route;
+    if (!urgent && R && !sp._air && R.steps[R.i] && R.steps[R.i].mode === 'jump') {
+      const st = R.steps[R.i];
+      if (sp._prepStep !== st) { sp._prepStep = st; sp._prepT = 0.28 + JT.R() * 0.22; sp._routeStart = (sp._routeStart || hab.time) + sp._prepT; }
+      if (sp._prepT > 0) { sp._prepT -= dt; faceToward(sp, st.pos, dt, 6); return 'moving'; }
+    } else sp._prepT = 0;
     return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1), {
       onLaunch: (st) => { if (st.mode === 'jump') { sp._anchor = sp.pos.slice(); hab.event('jump', { sp }); } },
       onLand: (st) => { if (sp._anchor) { hab.addSilk(sp._anchor, sp.pos, 'drag'); sp._anchor = null; hab.event('journal', { id: 'safety', sp, soft: true }); } },
@@ -2302,11 +2537,32 @@ input[type=range]{accent-color:#a8742a}
   const H = AI.H = {};
   H.idle = function (hab, sp, dt) { if (sp.st > 0.8 + sp.traits.patience) pickIdle(hab, sp); };
   function pickIdle(hab, sp) {
-    const S = sp_(sp); const r = JT.R();
+    const S = sp_(sp); let r = JT.R();
     const act = sp.pers.activity, pat = sp.traits.patience;
+    const restless = AI.hungerLevel(sp) >= 2;
+    if (restless) r = 0.3 + r * 0.7; // very hungry: little grooming or resting, more wandering
+    if (sp.hyd < 0.72 && hab.data.drops.length && JT.R() < 0.4 && !(sp._drinkFail > hab.time) && startDrink(hab, sp, 140)) return;
     if (S.prefs.display > 0.7 && r < 0.08) { setState(sp, 'display', 'Performing a little leg-waving dance.'); sp.stats.displays++; hab.event('journal', { id: 'display', sp }); return; }
-    if (r < 0.18 + (1 - act) * 0.1) { setState(sp, 'groom', JT.R() < 0.5 ? 'Cleaning its palps and big front eyes.' : 'Grooming its legs, one at a time.'); return; }
-    if (r < 0.32 + pat * 0.15) { setState(sp, 'rest', pat > 0.6 ? 'Sitting perfectly still, watching.' : 'Pausing for a moment.'); sp.stats.rests++; return; }
+    if (r < 0.18 + (1 - act) * 0.1) {
+      if (JT.R() < 0.5) setState(sp, 'cleanEyes', 'Wiping its big front eyes with its front legs.');
+      else setState(sp, 'groom', JT.R() < 0.5 ? 'Cleaning its palps.' : 'Grooming its legs, one at a time.');
+      return;
+    }
+    if (r < 0.36) {
+      const k = JT.R();
+      if (k < 0.18 && startDangle(hab, sp)) return;
+      if (k < 0.5 && startScuttle(hab, sp)) return;
+      startLook(hab, sp); return;
+    }
+    if (r < 0.42 + pat * 0.15 && !restless) {
+      if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
+      if (sp.home && M.dist(sp.home.pos, sp.pos) > 14 && JT.R() < 0.35 + sp.pers.routine * 0.4) {
+        const r3 = routeTo(hab, sp, sp.home.sup, sp.home.pos); if (r3) { setState(sp, 'homeSeek', 'Heading back to its favourite spot.'); return; }
+      }
+      if (!sp.home && Nav.coverAt(hab, sp.pos) > 0.35 && sp.sup.k !== 'air') AI.setHome(hab, sp);
+      const atHome = sp.home && M.dist(sp.home.pos, sp.pos) < 6;
+      setState(sp, 'rest', atHome ? 'Resting at its favourite spot.' : pat > 0.6 ? 'Sitting perfectly still, watching.' : 'Pausing for a moment.'); sp.stats.rests++; return;
+    }
     // explore / lookout: choose a reachable destination weighted by species/individual preferences
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
     const nodes = hab.nav.nodes; let best = null, bs = -1e9; const H0 = hab.dims.h;
@@ -2331,9 +2587,9 @@ input[type=range]{accent-color:#a8742a}
     else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
   };
   H.patrol = H.explore;
-  H.lookout = function (hab, sp, dt) { if (sp.st > 3 + sp.traits.patience * 7) setState(sp, 'idle'); };
+  H.lookout = function (hab, sp, dt) { if (sp.st > (3 + sp.traits.patience * 7) * (AI.hungerLevel(sp) >= 2 ? 0.4 : 1)) setState(sp, 'idle'); };
   H.groom = function (hab, sp, dt) { if (sp.st > 2 + JT.R() * 0.02 + sp.pers.routine * 2) setState(sp, 'idle'); };
-  H.rest = function (hab, sp, dt) { if (sp.st > 2 + sp.traits.patience * 6) setState(sp, 'idle'); };
+  H.rest = function (hab, sp, dt) { const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6; if (sp.st > (2 + sp.traits.patience * 6) * (home ? 2.2 : 1)) setState(sp, 'idle'); };
   H.watch = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 2.5) setState(sp, 'idle'); };
   H.display = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 3.5) { setState(sp, 'idle'); sp._watchPos = null; } };
   H.postFeed = function (hab, sp, dt) { if (sp.st > 6 + sp.traits.patience * 8) setState(sp, 'groom', 'Cleaning up after its meal.'); };
@@ -2648,7 +2904,7 @@ input[type=range]{accent-color:#a8742a}
       let s;
       if (mode === 'feed') s = hgt * 6 * (0.6 + S.prefs.height) + (plant ? 3 : 0) + (g && !plant ? 1 : 0) + cover * 3 + quiet * 0.04 + traffic * 0.03 - c * 0.025;
       else if (mode === 'molt') s = hgt * 12 + (plant ? 3.5 : 0) + (g && !plant ? 1.5 : 0) + cover * 4 + (n.perch ? 0.5 : 0) + quiet * 0.06 + traffic * 0.02 - c * 0.012;
-      else s = hgt * 3 * (0.5 + S.prefs.height) + (plant ? 1.5 : 0) + cover * 5 + quiet * 0.05 - c * 0.02;
+      else s = hgt * 3 * (0.5 + S.prefs.height) + (plant ? 1.5 : 0) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0);
       for (const o of others) if (o.retreat && o.retreat.pos && M.dist(o.retreat.pos, n.pos) < 10) s -= 4;
       if (s > bs) { bs = s; best = n; }
     }
@@ -2675,7 +2931,7 @@ input[type=range]{accent-color:#a8742a}
   function startFeed(hab, sp) {
     sp._route = null; const p = hab.preyById(sp.hold); if (!p) { setState(sp, 'idle'); return; }
     const def = JT.PREY_BY_ID[p.type];
-    sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : def.nut;
+    sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def);
     setState(sp, 'feed', 'Feeding on the ' + (p.type === 'jumperMeal' ? 'unlucky jumper' : preyName(def)) + '.');
   }
   H.feed = function (hab, sp, dt) {
@@ -2690,20 +2946,21 @@ input[type=range]{accent-color:#a8742a}
     sp.catches++; sp.meals++;
     hab.event('meal', { sp, value: def.val || 10 });
     hab.event('journal', { id: 'firstHunt', sp });
+    sp._afterMeal = hab.time; sp._patrolCD = 0;
     setState(sp, 'postFeed', 'Full and resting after its meal.');
   }
 
   // ---- thirst ----
-  function startDrink(hab, sp) {
+  function startDrink(hab, sp, maxCost) {
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
-    const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor })).concat(hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
-    let best = null, bc = 260;
+    const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor })).concat(maxCost ? [] : hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
+    let best = null, bc = maxCost || 260;
     for (const s of srcs) { const gc = Nav.goalCost(hab, dj, s.sup, s.pos); if (gc && gc.cost < bc) { bc = gc.cost; best = s; } }
-    if (!best) { sp._drinkFail = hab.time + 30; return false; }
+    if (!best) { sp._drinkFail = hab.time + (maxCost ? 12 : 30); return false; }
     const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) { sp._drinkFail = hab.time + 30; return false; }
     sp._route = r; sp._routeStart = hab.time; sp._drink = best; AI.dropTarget(hab, sp);
     const dn = decorName(hab, best.decor);
-    setState(sp, 'drinkSeek', 'Thirsty — heading for ' + (best.id ? 'a droplet' : 'water') + (dn ? ' on the ' + dn : '') + '.');
+    setState(sp, 'drinkSeek', (maxCost ? 'Off to sip ' : 'Thirsty — heading for ') + (best.id ? 'a droplet' : 'water') + (dn ? ' on the ' + dn : '') + '.');
     return true;
   }
   H.drinkSeek = function (hab, sp, dt) {
@@ -2802,7 +3059,7 @@ input[type=range]{accent-color:#a8742a}
       setState(sp, 'postMolt', 'Freshly molted — pale and soft, resting while the new skin hardens.');
     }
   };
-  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; startEmerge(hab, sp, 'rest', 'Stretching its new legs carefully.'); } };
+  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; startEmerge(hab, sp, 'stretch', 'Stretching its new legs carefully.'); } };
 
   // ---- sleep ----
   function startSleep(hab, sp) {
@@ -2812,10 +3069,10 @@ input[type=range]{accent-color:#a8742a}
   }
   H.sleepSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.7);
-    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); if (!sp.home || JT.R() < 0.25) AI.setHome(hab, sp); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
   };
   H.sleep = function (hab, sp, dt) {
-    if (hab.daylight() > 0.35) startEmerge(hab, sp, 'groom', 'Waking up and stretching.');
+    if (hab.daylight() > 0.35) startEmerge(hab, sp, 'stretch', 'Waking up and stretching.');
     else if (sp.sat < 0.25 && sp.st > 20) startEmerge(hab, sp, 'idle', 'Too hungry to sleep.');
   };
 
@@ -2830,7 +3087,7 @@ input[type=range]{accent-color:#a8742a}
   }
   AI.escapeFrom = function (hab, sp, hunter) { if ((PRI[sp.state] || 0) < 60) { startFlee(hab, sp, hunter); } };
   H.flee = function (hab, sp, dt) {
-    const r = move(hab, sp, dt, 1.5);
+    const r = move(hab, sp, dt, 1.5, true);
     if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'watch', 'Keeping a wary eye out.'); }
   };
   H.avoid = function (hab, sp, dt) { const r = move(hab, sp, dt, 1.0); if (r !== 'moving' || stuck(hab, sp)) { sp._route = null; setState(sp, 'watch', 'Keeping its distance.'); } };
@@ -2893,6 +3150,210 @@ input[type=range]{accent-color:#a8742a}
     if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'lookout', 'Scanning hungrily for movement.'); }
   };
 
+  // ---------------- small natural behaviours ----------------
+  AI.setHome = function (hab, sp) { if (!sp.sup || sp.sup.k === 'air') return; sp.home = { pos: sp.pos.slice(), sup: JT.deepClone(sp.sup) }; };
+  /** One short line describing what the jumper is doing (used by the info panel). */
+  AI.stateLine = function (hab, sp) {
+    const lvl = AI.hungerLevel(sp); const st = sp.state;
+    const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6;
+    const L = {
+      notice: 'Has spotted prey', assess: 'Sizing up prey', stalk: 'Stalking prey', creep: 'Creeping closer', crouch: 'About to pounce', track: 'Tracking a flyer', pounce: 'Pouncing',
+      subdue: 'Holding its catch', carry: 'Carrying its catch', feed: 'Feeding', postFeed: 'Resting after a meal', fall: 'Dropping down',
+      drinkSeek: 'Going for a drink', drink: 'Drinking a droplet', sleepSeek: 'Heading to bed', sleep: 'Asleep in its retreat',
+      moltSeek: 'Looking for a molting spot', moltSilk: 'Spinning a molting hammock', premolt: 'Waiting to molt', molting: 'Molting', postMolt: 'Hardening after a molt', emerge: 'Leaving its retreat',
+      flee: 'Fleeing', avoid: 'Keeping its distance', display: 'Displaying', watch: 'Watching warily', investigate: 'Investigating', inspect: 'Inspecting something new',
+      groom: 'Grooming', cleanEyes: 'Cleaning its eyes', look: 'Looking around', scuttle: 'Scuttling sideways', stretch: 'Stretching', dangle: 'Dangling on a silk line',
+      baskSeek: 'Heading for the warm spot', bask: 'Basking under the lamp', homeSeek: 'Heading home', lunge: 'Lunged at a movement',
+      explore: 'Exploring', lookout: 'Keeping a lookout', search: 'Searching for prey', rest: home ? 'Resting at home' : 'Resting', idle: 'Settling',
+    };
+    if (st === 'patrol' || st === 'scan') return lvl >= 2 ? 'Very hungry · wandering restlessly' : st === 'scan' ? 'Hungry · scanning for movement' : 'Hungry · patrolling for prey';
+    const base = L[st] || 'Settling';
+    if (lvl >= 2 && !HUNT.has(st) && !['feed', 'subdue', 'carry', 'pounce', 'lunge'].includes(st) && !MOLT.has(st)) return 'Very hungry · ' + base.toLowerCase();
+    if (lvl === 1 && !AI.preyAvailable(hab, sp) && !MOLT.has(st) && st !== 'feed') return 'Hungry · ' + base.toLowerCase();
+    return base;
+  };
+  function regionStep(hab, sp, dir, step) {
+    const key = Nav.regionKey(sp.sup); if (!key) return false; const r = hab.nav.regions[key]; if (!r) return false;
+    const np = [sp.pos[0] + dir[0] * step, sp.pos[1], sp.pos[2] + dir[2] * step];
+    const ok = key === 'F' ? Nav.inside(hab, np[0], np[2], 3) : JT.G.pointInPoly(np[0], np[2], JT.G.scalePoly(r.poly, 0.92));
+    if (!ok || r.obstacles.some(o => JT.G.pointInPoly(np[0], np[2], o))) return false;
+    sp.pos = np; return true;
+  }
+  H.cleanEyes = function (hab, sp, dt) { if (sp.st > 2.4 + sp.pers.routine * 1.5) { if (JT.R() < 0.5) sp._flick = 1; setState(sp, 'idle'); } };
+  H.stretch = function (hab, sp, dt) { if (sp.st > 2.8) setState(sp, JT.R() < 0.5 ? 'cleanEyes' : 'idle', 'Tidying up after a good stretch.'); };
+  function startLook(hab, sp) { sp._lookN = 3 + Math.floor(JT.R() * 3); sp._lookStepT = 0; setState(sp, 'look', 'Looking around, a few degrees at a time.'); }
+  /** Look around in steps: quick turns separated by still pauses; the head leads each turn. */
+  H.look = function (hab, sp, dt) {
+    sp._gazeT = 0.5; sp._lookStepT -= dt;
+    if (sp._lookStepT <= 0) {
+      if (sp._lookN-- <= 0) { sp._gaze = 0; setState(sp, 'idle'); return; }
+      const f = sp.fwd || [1, 0, 0]; const a = Math.atan2(f[2], f[0]) + (JT.R() < 0.5 ? -1 : 1) * (0.4 + JT.R() * 0.5);
+      sp._lookTo = [Math.cos(a), 0, Math.sin(a)]; sp._gaze = (a - Math.atan2(f[2], f[0])) > 0 ? 0.6 : -0.6; sp._lookStepT = 0.55 + JT.R() * 0.5;
+    }
+    if (sp._lookTo && sp.sup.k !== 'path') { faceToward(sp, M.add(sp.pos, sp._lookTo), dt, 9); }
+    if (sp._lookStepT < 0.3) sp._gaze = M.lerp(sp._gaze || 0, 0, Math.min(1, dt * 6));
+  };
+  function startScuttle(hab, sp) {
+    if (!Nav.regionKey(sp.sup)) return false;
+    const f = horiz(sp.fwd || [1, 0, 0]); const sd = JT.R() < 0.5 ? 1 : -1; const dir = [-f[2] * sd, 0, f[0] * sd];
+    const probe = { pos: sp.pos.slice(), sup: sp.sup }; if (!regionStep(hab, probe, dir, AI.len(sp) * 1.5)) return false;
+    sp._scutDir = dir; sp._scutDur = 0.45 + JT.R() * 0.4; setState(sp, 'scuttle', 'A quick sideways scuttle.'); return true;
+  }
+  H.scuttle = function (hab, sp, dt) {
+    if (sp.st < sp._scutDur) { if (!regionStep(hab, sp, sp._scutDir, AI.speed(sp) * 0.95 * dt)) sp.st = sp._scutDur; return; }
+    if (sp.st > sp._scutDur + 0.5) setState(sp, JT.R() < 0.5 ? 'idle' : 'lookout');
+  };
+  AI.startDangle = startDangle;
+  function startDangle(hab, sp) {
+    const L = AI.len(sp); let point = sp.pos.slice(), exclude = null;
+    if (sp.sup.k === 'path') {
+      const fr = Nav.supFrame(hab, sp.sup); if (!fr.tan || Math.abs(fr.tan[1]) > 0.55 || fr.n[1] < 0.55) return false;
+    } else if (sp.sup.k === 'top') {
+      const t = hab.geoms[sp.sup.d] && hab.geoms[sp.sup.d].tops[sp.sup.i]; if (!t) return false; exclude = sp.sup.d;
+      let best = null, bd = 1e9; const poly = t.poly;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const a = poly[j], b = poly[i]; const ex = b[0] - a[0], ez = b[1] - a[1]; const l2 = ex * ex + ez * ez || 1;
+        const u = M.clamp(((sp.pos[0] - a[0]) * ex + (sp.pos[2] - a[1]) * ez) / l2, 0, 1); const q = [a[0] + ex * u, a[1] + ez * u]; const d = Math.hypot(q[0] - sp.pos[0], q[1] - sp.pos[2]);
+        if (d < bd) { bd = d; best = q; }
+      }
+      if (!best || bd > L * 1.8) return false;
+      const c = JT.G.centroid(poly); const o = M.norm([best[0] - c[0], 0, best[1] - c[1]]);
+      point = [best[0] + o[0] * Math.max(1.2, L * 0.3), sp.pos[1], best[1] + o[2] * Math.max(1.2, L * 0.3)];
+    } else return false;
+    if (sp.pos[1] < 10 || !Nav.inside(hab, point[0], point[2], 3)) return false;
+    const below = Nav.supportBelow(hab, [point[0], sp.pos[1] - 0.8, point[2]], exclude);
+    const clear = sp.pos[1] - below.pos[1]; if (clear < 9) return false;
+    sp._dangleOff = { dx: point[0] - sp.pos[0], dz: point[2] - sp.pos[2], depth: M.clamp(clear * 0.45, 4, Math.min(16, L * 3.2)), anchor: point };
+    sp._dangleHold = 1.6 + JT.R() * 2.2; sp._dangleK = 0;
+    setState(sp, 'dangle', 'Dropping on a silk line for a look around, then climbing back up.'); hab.event('journal', { id: 'dangle', sp, soft: true }); return true;
+  }
+  H.dangle = function (hab, sp, dt) {
+    const down = 1.3, hold = sp._dangleHold || 2, up = 2.2; const t = sp.st;
+    sp._dangleK = t < down ? M.smooth(t / down) : t < down + hold ? 1 : Math.max(0, 1 - M.smooth((t - down - hold) / up));
+    if (t > down + hold + up) { sp._dangleK = 0; setState(sp, 'lookout', 'Back up after a little dangle.'); }
+  };
+  H.homeSeek = function (hab, sp, dt) {
+    const r = move(hab, sp, dt, 0.7);
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'rest', 'Resting at its favourite spot.'); }
+  };
+
+  // ---------------- warmth: basking under the lamp ----------------
+  AI.wantsWarmth = function (hab, sp) {
+    if (sp._baskCD > hab.time || sp.sat < 0.12 || sp.soft > 60 || sp.hold) return false;
+    if (!hab.lampsOn || !hab.lampsOn().length) return false;
+    const tod = hab.game ? hab.game.tod() : 0.3; const morning = tod > 0.2 && tod < 0.45;
+    const cool = hab.daylight() < 0.6;
+    const fed = sp._afterMeal != null && hab.time - sp._afterMeal < 300;
+    return morning || cool || fed;
+  };
+  function startBask(hab, sp) {
+    sp._baskCD = hab.time + 30;
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = -1e9;
+    for (const n of hab.nav.nodes) {
+      if (n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
+      const w = hab.warmthAt(n.pos); if (w < 0.4) continue;
+      let s = w * 3 - dj.dist[n.id] * 0.01 + (n.kind === 'top' ? 0.3 : 0);
+      for (const o of hab.data.spiders) if (o !== sp && M.dist(o.pos, n.pos) < 6) s -= 1.5;
+      if (s > bs) { bs = s; best = n; }
+    }
+    if (!best) return false;
+    const fed = sp._afterMeal != null && hab.time - sp._afterMeal < 300;
+    if (M.dist(best.pos, sp.pos) < 3) { beginBask(hab, sp); return true; }
+    const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) return false;
+    sp._route = r; sp._routeStart = hab.time;
+    setState(sp, 'baskSeek', fed ? 'Full — heading for the warm spot to digest.' : 'A little cool — heading for the warm light.');
+    return true;
+  }
+  AI.startBask = startBask;
+  function beginBask(hab, sp) { sp._baskDur = 22 + JT.R() * 26; setState(sp, 'bask', 'Basking in the warm light, body pressed flat.'); hab.event('journal', { id: 'bask', sp, soft: true }); }
+  H.baskSeek = function (hab, sp, dt) {
+    const r = move(hab, sp, dt, 0.75);
+    if (r === 'done' || r === 'none') { sp._route = null; if (hab.warmthAt(sp.pos) > 0.25) beginBask(hab, sp); else setState(sp, 'idle'); }
+    else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
+  };
+  H.bask = function (hab, sp, dt) {
+    if (hab.warmthAt(sp.pos) < 0.2) { sp._afterMeal = null; setState(sp, 'idle', 'The warmth faded.'); return; }
+    if (sp.st > (sp._baskDur || 30)) { sp._baskCD = hab.time + 120 + JT.R() * 160; sp._afterMeal = null; setState(sp, 'groom', 'Warmed through. Tidying its legs.'); }
+  };
+
+  // ---------------- hunger with no prey: patrol perches, scan from high, lunge at movement ----------------
+  function startPatrol(hab, sp) {
+    const lvl = AI.hungerLevel(sp); const far = lvl >= 2;
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const H0 = hab.dims.h;
+    const vis = sp._pvisit || (sp._pvisit = []);
+    let best = null, bs = -1e9;
+    for (const n of hab.nav.nodes) {
+      if (n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
+      if (M.dist(n.pos, sp.pos) < 10) continue;
+      const c = dj.dist[n.id];
+      let s = n.y / H0 * 7 + (n.perch ? 1.5 : 0) + (n.kind === 'floor' ? -2 : 0) + JT.R() * 2;
+      s -= far ? Math.abs(c - 110) * 0.018 : Math.abs(c - 45) * 0.03;
+      for (const v of vis) if (M.dist(v, n.pos) < 18) s -= 5; // perches in turn: skip the last few visited
+      if (s > bs) { bs = s; best = n; }
+    }
+    sp._patrolCD = hab.time + 4;
+    if (!best) { startScan(hab, sp); return true; }
+    const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) return false;
+    sp._route = r; sp._routeStart = hab.time; vis.push(best.pos.slice()); while (vis.length > 4) vis.shift();
+    setState(sp, 'patrol', far ? 'Very hungry — wandering restlessly in search of food.' : (best.y > 18 ? 'Hungry — climbing high to scan for prey.' : 'Hungry — patrolling its perches for prey.'));
+    return true;
+  }
+  AI.startPatrol = startPatrol;
+  function startScan(hab, sp) {
+    const far = AI.hungerLevel(sp) >= 2;
+    sp._scanDur = far ? 2 + JT.R() * 1.8 : 4 + JT.R() * 3.5; sp._peerT = 0;
+    setState(sp, 'scan', far ? 'Very hungry — peering around, restless.' : 'Peering around for any movement.');
+  }
+  /** Anything moving within reach: prey of any kind (incl. springtails), falling leaves, other jumpers. */
+  function moverNear(hab, sp) {
+    const R0 = Math.max(14, AI.jump(sp) * 0.85); let best = null, bd = R0; const f = horiz(sp.fwd || [1, 0, 0]);
+    const test = (pos, speed, id, kind) => {
+      if (speed < 1.2) return; const d = M.dist(pos, sp.pos); if (d > bd || d < 1.5) return;
+      const to = horiz(M.sub(pos, sp.pos)); if (M.dot(f, to) < -0.35) return;
+      best = { pos: pos.slice(), id, kind }; bd = d;
+    };
+    for (const p of hab.data.prey) if (!p.owner && !p.buried) test(p.pos, p._vel ? M.len(p._vel) : 0, p.id, p.type);
+    for (const lf of hab._leaves || []) if (lf.falling) test(lf.pos, 3, lf.id, 'leaf');
+    for (const o of hab.data.spiders) if (o !== sp && o._moving) test(o.pos, 3, o.id, 'spider');
+    return best;
+  }
+  function maybeLunge(hab, sp, dt) {
+    sp._mvT = (sp._mvT || 0) - dt; if (sp._mvT > 0 || sp._air || sp._lungeCD > hab.time) return false; sp._mvT = 0.3;
+    const m = moverNear(hab, sp); if (!m || JT.R() > 0.55) return false;
+    sp._route = null; sp._lunge = m; sp._lungeGone = 0;
+    const what = m.kind === 'leaf' ? 'a falling leaf' : m.kind === 'springtail' ? 'a springtail' : m.kind === 'spider' ? 'a moving jumper' : 'a flicker of movement';
+    setState(sp, 'lunge', 'Lunged at ' + what + '.'); hab.event('journal', { id: 'restless', sp, soft: true }); return true;
+  }
+  H.patrol = function (hab, sp, dt) {
+    if (maybeLunge(hab, sp, dt)) return;
+    const r = move(hab, sp, dt, AI.hungerLevel(sp) >= 2 ? 1.05 : 0.8);
+    if (r === 'done' || r === 'none') { sp._route = null; startScan(hab, sp); }
+    else if (stuck(hab, sp) && !sp._air) { sp._route = null; startScan(hab, sp); }
+  };
+  H.scan = function (hab, sp, dt) {
+    sp._gazeT = 0.5;
+    if (maybeLunge(hab, sp, dt)) return;
+    sp._peerT -= dt;
+    if (sp._peerT <= 0) { // peering head turns: snap to a new bearing, hold still, repeat
+      const opts = [-0.75, -0.4, 0, 0.4, 0.75]; let g = opts[Math.floor(JT.R() * opts.length)]; if (Math.abs(g - (sp._gaze || 0)) < 0.2) g = -g || 0.6;
+      sp._gaze = g; sp._peerT = 0.6 + JT.R() * 0.7;
+      if (JT.R() < 0.35 && sp.sup.k !== 'path') { const f = sp.fwd || [1, 0, 0]; const a = Math.atan2(f[2], f[0]) + g * 1.4; sp._lookTo = [Math.cos(a), 0, Math.sin(a)]; }
+    }
+    if (sp._lookTo && sp.sup.k !== 'path') faceToward(sp, M.add(sp.pos, sp._lookTo), dt, 7);
+    if (sp.st > sp._scanDur) { sp._lookTo = null; sp._gaze = 0; sp._patrolCD = hab.time + (AI.hungerLevel(sp) >= 2 ? 0.3 : 1.5); setState(sp, 'idle'); }
+  };
+  H.lunge = function (hab, sp, dt) {
+    const m = sp._lunge; if (!m) { setState(sp, 'idle'); return; }
+    const e = hab.preyById(m.id) || hab.spider(m.id) || (hab._leaves || []).find(l => l.id === m.id); if (e && e.pos) m.pos = e.pos.slice();
+    faceToward(sp, m.pos, dt, 10);
+    if (sp.st > 0.28 && sp.st < 0.46) { // the dart: a short burst forward, never airborne
+      const L = AI.len(sp); const d = M.dist2(sp.pos, m.pos); sp._lungeGone = sp._lungeGone || 0;
+      const step = Math.min(L * 9 * dt, Math.max(0, Math.min(L * 1.4, d - L * 0.6) - sp._lungeGone));
+      if (step > 0 && regionStep(hab, sp, horiz(M.sub(m.pos, sp.pos)), step)) sp._lungeGone += step;
+    }
+    if (sp.st > 1.2) { sp._lungeCD = hab.time + 3 + JT.R() * 4; sp._lunge = null; if (AI.hungerLevel(sp) >= 1) startScan(hab, sp); else setState(sp, 'idle'); }
+  };
+
   // ---------------- off-screen lightweight simulation ----------------
   AI.liteUpdate = function (hab, dt) {
     for (const sp of hab.data.spiders) {
@@ -2909,7 +3370,7 @@ input[type=range]{accent-color:#a8742a}
 
   /** Observation-mode interest of what a spider is doing right now. */
   AI.interest = function (sp) {
-    const m = { pounce: 100, fall: 90, subdue: 90, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35 };
+    const m = { pounce: 100, fall: 90, subdue: 90, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35, lunge: 55, dangle: 58, bask: 30, scan: 26, patrol: 28, scuttle: 20, cleanEyes: 22, stretch: 24 };
     return m[sp.state] || 8;
   };
   /** Discoverable personality descriptors (revealed as the player watches). */
@@ -2928,12 +3389,13 @@ input[type=range]{accent-color:#a8742a}
     // transient plans don't persist; resume safely from saved biological state
     sp._route = null; sp._air = null; sp._plan = null;
     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }
-    if (HUNT.has(sp.state) || ['explore', 'patrol', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
+    if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
     if (sp.state === 'carry') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
     if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type]; sp._feedDur = 6 + (def.nut || 0.5) * 28; sp._feedNut = def.nut || 0.5; } else sp.state = 'idle'; }
     if (sp.state === 'subdue') sp._subdueDur = sp._subdueDur || 1;
     if (sp.state === 'moltSeek') sp.state = 'idle';
     if (sp.state === 'crouch') sp.state = 'idle';
+    if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3025,10 +3487,12 @@ input[type=range]{accent-color:#a8742a}
   function pickLanding(hab, p, hunter) {
     const d = def(p); const nav = hab.nav; const R = JT.R;
     let best = null, bs = -1e9;
-    const consider = (pos, sup, bonus) => { let s = bonus + R() * 3; if (hunter) s += Math.min(60, M.dist(pos, hunter.pos)) * 0.08; s -= M.dist(pos, p.pos) * 0.01; if (s > bs) { bs = s; best = { pos: pos.slice(), sup: JT.deepClone(sup) }; } };
+    const lit = hab.daylight() < 0.3 && hab.lampsOn().length > 0; const rest = p._lampRest; p._lampRest = false;
+    const consider = (pos, sup, bonus) => { let s = bonus + R() * 3; if (lit) s += hab.warmthAt(pos) * (rest ? 8 : 3); if (hunter) s += Math.min(60, M.dist(pos, hunter.pos)) * 0.08; s -= M.dist(pos, p.pos) * 0.01; if (s > bs) { bs = s; best = { pos: pos.slice(), sup: JT.deepClone(sup) }; } };
     for (let k = 0; k < 6; k++) { const id = nav.flowers[Math.floor(R() * nav.flowers.length)]; if (id != null) { const n = nav.nodes[id]; consider(n.pos, n.sup, (d.flowers || 0) * 4); } }
     for (let k = 0; k < 8; k++) { const id = nav.perches[Math.floor(R() * nav.perches.length)]; if (id != null) { const n = nav.nodes[id]; consider(n.pos, n.sup, 1); } }
     for (let k = 0; k < 3; k++) { const q = hab.randomFloorPoint(); consider(q, { k: 'floor' }, d.id === 'gnat' ? 2 : 0); }
+    if (lit) for (const L of hab.lampsOn()) { const b = Nav.supportBelow(hab, [L.pool[0] + (R() - 0.5) * L.r, L.head[1] - 2, L.pool[2] + (R() - 0.5) * L.r]); if (b.sup.k !== 'air' && Nav.inside(hab, b.pos[0], b.pos[2], 3)) consider(b.pos, b.sup, rest ? 3 : 1); }
     return best;
   }
   function pickWalkGoal(hab, p, hunter, wantCover) {
@@ -3089,6 +3553,8 @@ input[type=range]{accent-color:#a8742a}
     const night = hab.daylight() < 0.3;
     let dur = p.dur;
     if (d.night) dur *= night ? 0.5 : 1 + d.night * 3;
+    if (d.fly && night && hab.lampsOn().length) dur *= 0.5;
+    if (d.cleaner && hab.data.remains.length && p.st > 0.6 && !(p._seekCD > hab.time)) { p.st = 0; if (seekRemains(hab, p, d)) return; }
     if (p.st < dur) return;
     p.st = 0; p.dur = (d.slow ? 3 : 1.5) + JT.R() * (d.fly ? 9 : 5);
     if (d.cleaner && seekRemains(hab, p, d)) return;
@@ -3117,7 +3583,7 @@ input[type=range]{accent-color:#a8742a}
   PH.buried = function (hab, p, d, dt) { if (p.st > p.dur) { p.buried = false; p.state = 'idle'; p.st = 0; } };
   PH.fly = function (hab, p, d, dt) {
     const H = hab.dims.h; const night = hab.daylight() < 0.3;
-    if (!p._goal || (p._goalT = (p._goalT || 0) + dt) > 14) { p._goal = pickLanding(hab, p, null); p._goalT = 0; }
+    if (!p._goal || (p._goalT = (p._goalT || 0) + dt) > 14) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
     const g = p._goal; const to = g ? M.sub(g.pos, p.pos) : [0, 0, 0]; const dist = M.len(to);
     const cruise = d.spd * (d.id === 'moth' && !night ? 0.6 : 1);
     let want = dist > 0.01 ? M.mul(M.norm(to), Math.min(cruise, dist * 2.5 + 2)) : [0, 0, 0];
@@ -3134,27 +3600,49 @@ input[type=range]{accent-color:#a8742a}
     // never fly through solid decor
     for (const inst of hab.data.decor) { const gg = hab.geoms[inst.id]; if (!gg) continue; for (const tp of gg.tops) if (p.pos[1] < tp.y && p.pos[1] > gg.baseY - 1 && JT.G.pointInPoly(p.pos[0], p.pos[2], tp.poly)) p.pos[1] = tp.y + 0.6; }
     if (M.len([p._v[0], 0, p._v[2]]) > 0.5) p.fwd = M.norm([p._v[0], 0, p._v[2]]);
-    if (g && dist < 1.6) {
+    if (g && g.orbit && dist < 2.2) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
+    else if (g && dist < 1.6) {
       if (Nav.validSup(hab, g.sup)) { p.pos = Nav.supPos(hab, g.sup, g.pos); p.sup = JT.deepClone(g.sup); p.state = 'idle'; p.st = 0; p.dur = 2 + JT.R() * (d.id === 'moth' && !night ? 40 : 10); p._goal = null; p._v = [0, 0, 0]; }
       else p._goal = null;
     }
   };
+  /** Cleaners actively look for husks AND molt skins, then gather in a loose ring around them. */
   function seekRemains(hab, p, d) {
-    const rs = hab.data.remains.filter(r => r.cat !== 'exuvia');
-    if (!rs.length) return false;
+    const rs = hab.data.remains; if (!rs.length) return false;
+    if (p._seekCD > hab.time) return false;
     let best = null, bc = 1e9; const dj = Nav.dijkstra(hab, p.sup, p.pos, PA.caps(d));
-    for (const r of rs) { const gc = Nav.goalCost(hab, dj, r.sup, r.pos); if (gc && gc.cost < bc) { bc = gc.cost; best = r; } }
-    if (!best) return false;
-    const route = Nav.buildRoute(hab, dj, best.sup, [best.pos[0] + (JT.R() - .5) * 1.5, best.pos[1], best.pos[2] + (JT.R() - .5) * 1.5]);
-    if (!route) return false;
+    for (const r of rs) { const gc = Nav.goalCost(hab, dj, r.sup, r.pos); if (!gc) continue; const crowd = PA.cleanersOn(hab, r.id) * 4; if (gc.cost + crowd < bc) { bc = gc.cost + crowd; best = r; } }
+    if (!best || bc > 400) { p._seekCD = hab.time + 4 + JT.R() * 4; return false; }
+    const a = ((p.seed % 360) / 57.3) + JT.R() * 0.5, rad = 0.7 + JT.R() * 0.6;
+    const route = Nav.buildRoute(hab, dj, best.sup, [best.pos[0] + Math.cos(a) * rad, best.pos[1], best.pos[2] + Math.sin(a) * rad]);
+    if (!route) { p._seekCD = hab.time + 4; return false; }
     p._route = route; p._clean = best.id; p.state = 'walk'; return true;
   }
+  PA.cleanersOn = function (hab, rid) { let n = 0; for (const q of hab.data.prey) if (q._clean === rid) n++; return n; };
+  /** Per-cleaner nibble rate (fraction of the remains per second). Many springtails clear things quickly. */
+  PA.cleanRate = function (d, r) { return (d.id === 'springtail' ? 0.022 : 0.035) * (r.cat === 'spider' ? 0.4 : r.cat === 'exuvia' ? 0.8 : 1); };
   PH.clean = function (hab, p, d, dt) {
     const r = hab.data.remains.find(x => x.id === p._clean);
-    if (!r || M.dist(r.pos, p.pos) > 4) { p._clean = null; p.state = 'idle'; return; }
-    r.clean -= dt * (d.id === 'springtail' ? 0.025 : 0.04) * (r.cat === 'spider' ? 0.4 : 1);
-    if (r.clean <= 0) { hab.data.remains = hab.data.remains.filter(x => x !== r); p._clean = null; p.state = 'idle'; hab.event('journal', { id: 'cleanup' }); }
+    if (!r || M.dist(r.pos, p.pos) > 4) { p._clean = null; p.state = 'idle'; p.st = 0; p.dur = 0.3 + JT.R(); return; }
+    // nibbling: face the remains with small head-jitter turns; brief pauses
+    p._nibT = (p._nibT || 0) - dt;
+    if (p._nibT <= 0) { p._nibT = 0.4 + JT.R() * 0.9; const to = [r.pos[0] - p.pos[0], 0, r.pos[2] - p.pos[2]]; const a = Math.atan2(to[2], to[0]) + (JT.R() - 0.5) * 0.9; p.fwd = [Math.cos(a), 0, Math.sin(a)]; p._nib = JT.R() < 0.25 ? 0 : 1; }
+    if (p._nib === 0) return;
+    r.clean -= dt * PA.cleanRate(d, r);
+    if (r.clean <= 0) { hab.data.remains = hab.data.remains.filter(x => x !== r); for (const q of hab.data.prey) if (q._clean === r.id) { q._clean = null; if (q.state === 'clean') { q.state = 'idle'; q.st = 0; q.dur = 0.5 + JT.R() * 2; } } hab.event('journal', { id: 'cleanup' }); }
   };
+  // ---------------- night lights ----------------
+  /** Flying insects are drawn to a lit lamp at night: loose loops around the head, then settle near its pool of light. */
+  function lampGoal(hab, p, d) {
+    if (hab.daylight() > 0.3) return null; const L = hab.lampsOn(); if (!L.length) return null;
+    const pull = d.id === 'moth' ? 0.85 : d.id === 'lacewing' ? 0.6 : 0.4;
+    if (p._orb == null && JT.R() > pull) return null;
+    const lamp = L[(p.seed >>> 3) % L.length]; p._orb = (p._orb || 0) + 1;
+    if (p._orb > 3 + (p.seed % 4)) { p._orb = null; p._lampRest = true; return null; }
+    const a = JT.R() * 6.28, rr = 3 + JT.R() * 5; const H = hab.dims.h;
+    return { pos: [lamp.head[0] + Math.cos(a) * rr, M.clamp(lamp.head[1] - 4 + JT.R() * 5, 3, H - 3), lamp.head[2] + Math.sin(a) * rr], sup: { k: 'air' }, orbit: true };
+  }
+  PA.lampGoal = lampGoal;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -3252,7 +3740,7 @@ input[type=range]{accent-color:#a8742a}
   'use strict';
   const JT = root.JT, M = JT.M;
   const DAY = JT.DAY = 480;
-  const SAVE_KEY = 'jumperTerrarium.save', SET_KEY = 'jumperTerrarium.settings', VERSION = 2;
+  const SAVE_KEY = 'jumperTerrarium.save', SET_KEY = 'jumperTerrarium.settings', VERSION = 3;
 
   // localStorage can throw in privacy modes: every access is wrapped.
   const Store = JT.Store = {
@@ -3316,9 +3804,13 @@ input[type=range]{accent-color:#a8742a}
     static migrate(d) {
       d.v = d.v || 1;
       if (d.v < 2) { d.customPresets = d.customPresets || []; d.timeMode = d.timeMode || 'auto'; d.v = 2; }
+      if (d.v < 3) { // v3: basking lamps (on/off), spider home spots, remains decay — all optional fields with safe defaults
+        for (const h of d.habitats || []) { for (const x of h.decor || []) if (x.type === 'heatlamp' && x.on == null) x.on = true; for (const r of h.remains || []) if (!isFinite(r.clean)) r.clean = 1; }
+        d.v = 3;
+      }
       d.coins = isFinite(d.coins) ? d.coins : 400; d.journal = d.journal || {}; d.species = d.species || ['bold', 'regal', 'canopy'];
       d.slots = M.clamp(d.slots || 3, 1, 8); d.nextId = d.nextId || 1000;
-      for (const h of d.habitats || []) { if (!JT.HABITATS[h.type]) h.type = 'standard'; if (!JT.SUBSTRATES[h.substrate]) h.substrate = 'coco'; if (!JT.BACKGROUNDS[h.bg]) h.bg = 'mossy'; h.decor = (h.decor || []).filter(x => JT.DECOR_BY_ID[x.type]); h.spiders = (h.spiders || []).filter(s => JT.SPECIES_BY_ID[s.species]); h.prey = (h.prey || []).filter(p => JT.PREY_BY_ID[p.type]); h.remains = h.remains || []; h.drops = h.drops || []; h.silk = h.silk || []; }
+      for (const h of d.habitats || []) { if (!JT.HABITATS[h.type]) h.type = 'standard'; if (!JT.SUBSTRATES[h.substrate]) h.substrate = 'coco'; if (!JT.BACKGROUNDS[h.bg]) h.bg = 'mossy'; h.decor = (h.decor || []).filter(x => JT.DECOR_BY_ID[x.type]); h.spiders = (h.spiders || []).filter(s => JT.SPECIES_BY_ID[s.species]); h.prey = (h.prey || []).filter(p => JT.PREY_BY_ID[p.type]); h.remains = (h.remains || []).filter(r => r && r.pos); for (const r of h.remains) if (!isFinite(r.clean)) r.clean = 1; h.drops = h.drops || []; h.silk = h.silk || []; }
       return d;
     }
     serialize() { return JSON.stringify(Object.assign({}, this.state, { habitats: this.habs.map(h => h.data) }), replacer); }
@@ -3341,7 +3833,7 @@ input[type=range]{accent-color:#a8742a}
       if (this._lite >= 1) { for (const h of this.habs) if (h !== active) h.update(this._lite, false); this._lite = 0; }
       for (const h of this.habs) h.data.age = (h.data.age || 0) + dt / DAY;
       this._saveT = (this._saveT || 0) + dt; if (this._saveT > 20) { this._saveT = 0; this.save(); }
-      if (!this.state.species.includes('portia') && this.state.catches >= 30) { this.state.species.push('portia'); this.emit('toast', { text: '🕷 Portia unlocked — 30 successful catches!' }); }
+      if (!this.state.species.includes('portia') && this.state.catches >= 30) { this.state.species.push('portia'); this.emit('toast', { text: 'Portia unlocked after 30 successful catches.' }); }
     }
 
     // ---------------- events from simulation ----------------
@@ -3422,6 +3914,103 @@ input[type=range]{accent-color:#a8742a}
   }
   JT.View = View;
   JT.LIGHT = M.norm([-0.45, 0.85, -0.35]);
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Jumper Terrarium — smart follow camera (pure maths, no DOM, unit-testable).
+   Frames the jumper's upper body from the side its back faces: from above at an angle on the floor,
+   facing the wall when on a wall, orbiting round to the visible side on branches / under ledges.
+   Everything is damped (critically damped springs, capped yaw speed, shortest-way rotation) so the
+   view never snaps or flips. During jumps it leads toward the landing and widens slightly.
+   User orbit / zoom pauses the automatic rotation for a few idle seconds. */
+(function (root) {
+  'use strict';
+  const JT = root.JT, M = JT.M;
+  const PITCH_MIN = 0.2, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15;
+
+  function spring(x, v, target, omega, dt) {
+    // critically damped spring step (stable for any dt)
+    const f = 1 + 2 * dt * omega, oo = omega * omega, hoo = dt * oo, hhoo = dt * hoo;
+    const detInv = 1 / (f + hhoo);
+    const nx = (f * x + dt * v + hhoo * target) * detInv;
+    const nv = (v + hoo * (target - x)) * detInv;
+    return [nx, nv];
+  }
+
+  class FollowCam {
+    constructor() { this.st = null; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.dir = null; this.id = null; }
+    /** Start from whatever the camera currently shows, so entering follow never snaps. */
+    reset(cur, spId) {
+      this.st = { yaw: cur.yaw, pitch: M.clamp(cur.pitch, PITCH_MIN, PITCH_MAX), s: cur.s, c: cur.c.slice(), vy: 0, vp: 0, vs: 0, vc: [0, 0, 0] };
+      this.dir = null; this.tYaw = this.tPitch = this.tS = null; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.id = spId || null; this.lastYaw = cur.yaw;
+    }
+    /** User dragged (radians). Pauses auto-rotation. */
+    orbit(dyaw, dpitch) { if (!this.st) return; this.st.yaw = M.wrapAngle(this.st.yaw + dyaw); this.st.pitch = M.clamp(this.st.pitch + dpitch, PITCH_MIN, PITCH_MAX); this.st.vy = 0; this.st.vp = 0; this.pause = PAUSE; }
+    zoom(f) { this.userZoom = M.clamp(this.userZoom * f, 0.45, 2.6); this.tS = null; this.pause = PAUSE; }
+    get paused() { return this.pause > 0; }
+
+    /** Desired view direction (unit vector from the jumper toward the camera) and framing. */
+    desired(hab, sp) {
+      const fr = JT.Nav.supFrame(hab, sp.sup); const n = (sp.sup && sp.sup.k === 'air') ? [0, 1, 0] : fr.n;
+      const f = sp.fwd && M.finite3(sp.fwd) ? M.norm(sp.fwd) : [1, 0, 0];
+      // behind and above the back: normal + a little behind the head + a little world-up
+      // (only the horizontal part of "behind": on a wall the head points up, and we never want to look from below)
+      const back = [-f[0], 0, -f[2]]; const bl = Math.hypot(back[0], back[2]) > 0.2 ? M.norm(back) : [0, 0, 0];
+      let d = M.add(M.add(M.mul(n, 0.75), M.mul(bl, 0.95)), [0, 0.18, 0]);
+      if (n[1] < -0.3) { // under a ledge / branch: come round to the side its back is visible from
+        const side = M.norm([-f[2], 0, f[0]]); d = M.add(M.mul(side, Math.sign(M.dot(side, [-Math.sin(this.st.yaw), 0, -Math.cos(this.st.yaw)])) || 1), [0, 0.45, 0]);
+      }
+      d = M.norm(d);
+      const wall = Math.abs(n[1]) < 0.5;
+      return { d, wall, n };
+    }
+
+    step(hab, sp, dt, s0) {
+      if (!this.st) return null; dt = Math.min(dt, 0.1);
+      const st = this.st; const L = JT.SpiderAI.len ? JT.SpiderAI.len(sp) : 6;
+      const des = this.desired(hab, sp);
+      // low-pass the desired direction so small turns and wobbles do not move the camera
+      this.dir = this.dir ? M.norm(M.lerp3(this.dir, des.d, Math.min(1, dt * 0.9))) : des.d;
+      const d = this.dir; const hm = Math.hypot(d[0], d[2]);
+      let tYaw = hm > 0.15 ? Math.atan2(-d[0], -d[2]) : (this.lastYaw != null ? this.lastYaw : st.yaw);
+      this.lastYaw = tYaw;
+      let tPitch = M.clamp(Math.asin(M.clamp(d[1], -1, 1)), PITCH_MIN, PITCH_MAX);
+      if (des.wall) tPitch = M.clamp(tPitch, 0.3, 0.7); // never let the wall fill the frame
+      // target point: the upper body, leading toward the landing while airborne
+      let c = M.add(sp.pos, M.mul(des.n, L * 0.3)); let zoomMul = des.wall ? 0.9 : 1;
+      const air = sp._air;
+      if (air && air.to && M.finite3(air.to)) { c = M.lerp3(c, air.to, 0.35); zoomMul *= 0.82; }
+      const dm = hab.dims; c = [M.clamp(c[0], 4, dm.w - 4), M.clamp(c[1], 0, dm.h), M.clamp(c[2], 4, dm.d - 4)];
+      let tS = s0 * zoomMul * this.userZoom;
+      // dead-bands: small turns and wobbles do not move the camera at all, so it can come fully to rest
+      // (a resting camera lets the renderer reuse its cached layers — important on phones)
+      // a new viewing direction is adopted only once the jumper has held it for a moment
+      const off = this.tYaw == null || Math.abs(M.wrapAngle(tYaw - this.tYaw)) > 0.5 || Math.abs(tPitch - this.tPitch) > 0.12;
+      this.hold = off ? (this.hold || 0) + dt : 0;
+      if (this.tYaw == null || this.hold > (air ? 0.25 : 1.1)) { this.tYaw = tYaw; this.tPitch = tPitch; this.hold = 0; }
+      tYaw = this.tYaw; tPitch = this.tPitch;
+      if (this.tS == null || Math.abs(tS / this.tS - 1) > 0.04) this.tS = tS; tS = this.tS;
+      // rotation (paused while the user is in control)
+      if (this.pause > 0) { this.pause -= dt; st.vy *= 0.8; st.vp *= 0.8; }
+      else {
+        const diff = M.wrapAngle(tYaw - st.yaw); // shortest way round
+        let r = spring(0, st.vy, diff, 1.3, dt); let step = M.clamp(r[0], -YAW_SPEED * dt, YAW_SPEED * dt);
+        st.yaw = M.wrapAngle(st.yaw + step); st.vy = M.clamp(r[1], -YAW_SPEED, YAW_SPEED);
+        r = spring(st.pitch, st.vp, tPitch, 1.5, dt); st.pitch = M.clamp(r[0], PITCH_MIN, PITCH_MAX); st.vp = r[1];
+      }
+      let r = spring(st.s, st.vs, tS, 2.2, dt); st.s = r[0]; st.vs = r[1];
+      // settle exactly once close enough
+      if (Math.abs(M.wrapAngle(tYaw - st.yaw)) < 0.004 && Math.abs(st.vy) < 0.02) { st.yaw = tYaw; st.vy = 0; }
+      if (Math.abs(tPitch - st.pitch) < 0.003 && Math.abs(st.vp) < 0.02 && this.pause <= 0) { st.pitch = tPitch; st.vp = 0; }
+      if (Math.abs(tS - st.s) < tS * 0.002 && Math.abs(st.vs) < tS * 0.01) { st.s = tS; st.vs = 0; }
+      for (let i = 0; i < 3; i++) { r = spring(st.c[i], st.vc[i], c[i], 3.2, dt); st.c[i] = r[0]; st.vc[i] = r[1]; }
+      if (!M.finite3(st.c) || !isFinite(st.yaw) || !isFinite(st.pitch) || !isFinite(st.s)) { st.c = c; st.yaw = tYaw; st.pitch = tPitch; st.s = tS; st.vy = st.vp = st.vs = 0; st.vc = [0, 0, 0]; }
+      return st;
+    }
+  }
+  FollowCam.PITCH_MIN = PITCH_MIN; FollowCam.PITCH_MAX = PITCH_MAX; FollowCam.PAUSE = PAUSE;
+  JT.FollowCam = FollowCam;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -3807,6 +4396,28 @@ input[type=range]{accent-color:#a8742a}
     if (rx > 3) { ctx.strokeStyle = sh(pr.col, -0.5); ctx.globalAlpha = (o.alpha != null ? o.alpha : 1) * 0.6; ctx.lineWidth = Math.max(0.5, V.s * 0.12); ctx.stroke(); ctx.globalAlpha = o.alpha != null ? o.alpha : 1; }
   };
   // cushion moss clump: overlapping rounded lobes, lit from the light side
+  PR.lampfoot = function (ctx, V, pr, g, P, o) {
+    const c = P(pr.o), t = P([pr.o[0], pr.o[1] + 1, pr.o[2]]); const rx = pr.r * V.s, ry = Math.max(0.5, rx * V.sp);
+    ctx.fillStyle = '#3a3026'; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, Math.PI); ctx.lineTo(t[0] - rx, t[1]); ctx.ellipse(t[0], t[1], rx, ry, 0, Math.PI, 0, true); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5a4a36'; ctx.beginPath(); ctx.ellipse(t[0], t[1], rx, ry, 0, 0, 6.283); ctx.fill();
+  };
+  /** Dome shade + bulb. The glow itself is drawn by the renderer's light pass so it survives night grading. */
+  PR.lamp = function (ctx, V, pr, g, P, o) {
+    const c = pr.o, r = pr.r, on = g.lampOn !== false; const s = V.s;
+    const rim = P([c[0], c[1] - r * 0.3, c[2]]), top = P([c[0], c[1] + r * 0.7, c[2]]);
+    const rx = r * s, ry = Math.max(rx * 0.12, rx * Math.abs(V.sp));
+    // dome
+    const gr = ctx.createLinearGradient(rim[0] - rx, top[1], rim[0] + rx, rim[1]);
+    gr.addColorStop(0, '#6a5638'); gr.addColorStop(0.45, '#4a3a26'); gr.addColorStop(1, '#2a2016');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(rim[0] - rx, rim[1]);
+    ctx.bezierCurveTo(rim[0] - rx, top[1] - ry * 0.2, rim[0] - rx * 0.35, top[1] - ry * 0.3, top[0], top[1]);
+    ctx.bezierCurveTo(rim[0] + rx * 0.35, top[1] - ry * 0.3, rim[0] + rx, top[1] - ry * 0.2, rim[0] + rx, rim[1]);
+    ctx.ellipse(rim[0], rim[1], rx, ry, 0, 0, Math.PI, false); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(230,200,140,0.35)'; ctx.lineWidth = Math.max(0.6, s * 0.18); ctx.beginPath(); ctx.ellipse(rim[0], rim[1], rx, ry, 0, 0, 6.283); ctx.stroke();
+    // inside of the shade, seen from below or at a shallow angle
+    if (V.sp < 0.35) { ctx.fillStyle = on ? '#f6dca0' : '#3a3024'; ctx.beginPath(); ctx.ellipse(rim[0], rim[1], rx * 0.9, ry * 0.9, 0, 0, 6.283); ctx.fill(); }
+    const b = P([c[0], c[1] - r * 0.42, c[2]]); ctx.fillStyle = on ? '#fff4d6' : '#b8b0a2'; ctx.beginPath(); ctx.ellipse(b[0], b[1], rx * 0.36, Math.max(rx * 0.22, ry * 0.4), 0, 0, 6.283); ctx.fill();
+  };
   PR.tuft = function (ctx, V, pr, g, P, o) {
     const p = P(pr.o); const R = pr.r * V.s; if (R < 0.6) return;
     const lob = pr._lob || (pr._lob = (() => { const r = JT.makeRng(pr.seed || 1); const a = []; for (let k = 0; k < 7; k++) { const t = r() * 6.28, d = r() * 0.6; a.push([Math.cos(t) * d, Math.sin(t) * d * 0.8, 0.35 + r() * 0.35, (r() - 0.5) * 0.2]); } return a; })());
@@ -4084,17 +4695,25 @@ input[type=range]{accent-color:#a8742a}
 
   // -------------------- Remains / droplets / silk --------------------
   D.remains = function (ctx, V, r, fr, o) {
-    const k = Math.max(0.2, r.clean);
-    if (r.cat === 'exuvia') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.5 }, fr, { len: r.len || 5, ghost: true, alpha: 0.55, noShadow: true }); return; }
-    if (r.cat === 'spider') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.2 }, fr, { len: (r.len || 5) * 0.9, curled: true, alpha: 0.7 * k, palette: { ceph: '#3a3028', abd: '#2e2620', mark: '#5a4a3a', leg: '#3a3028', chel: '#3a3028', hair: '#4a4038', belly: '#4a4038' }, noShadow: true }); return; }
-    const d = JT.PREY_BY_ID[r.kind] || { len: 4, col: '#7a6a5a' }; const L = d.len * 0.5 * (0.5 + 0.5 * k);
-    const p = V.P(fr.p); const rr = Math.max(1.2, L * V.s * 0.5);
-    ctx.globalAlpha = 0.85 * (0.4 + 0.6 * k);
+    const k = M.clamp(r.clean, 0, 1); if (k <= 0.01) return; const fade = Math.min(1, k * 2.2); // shrink, then fade out at the end
+    if (r.cat === 'exuvia') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.5 }, fr, { len: (r.len || 5) * (0.55 + 0.45 * k), ghost: true, alpha: 0.55 * fade, noShadow: true }); return; }
+    if (r.cat === 'spider') { D.spider(ctx, V, { species: r.species, state: 'idle', seed: 3, sat: 0.2 }, fr, { len: (r.len || 5) * 0.9 * (0.6 + 0.4 * k), curled: true, alpha: 0.7 * fade, palette: { ceph: '#3a3028', abd: '#2e2620', mark: '#5a4a3a', leg: '#3a3028', chel: '#3a3028', hair: '#4a4038', belly: '#4a4038' }, noShadow: true }); return; }
+    const d = JT.PREY_BY_ID[r.kind] || { len: 4, col: '#7a6a5a' }; const L = d.len * 0.5 * (0.3 + 0.7 * k);
+    const p = V.P(fr.p); const rr = Math.max(0.6, L * V.s * 0.5);
+    ctx.globalAlpha = 0.85 * fade;
     ctx.fillStyle = sh(d.col || '#7a6a5a', -0.45); ctx.beginPath(); ctx.ellipse(p[0], p[1], rr, rr * 0.55, r.ang || 0, 0, 6.283); ctx.fill();
     ctx.fillStyle = sh(d.col || '#7a6a5a', -0.15); ctx.beginPath(); ctx.ellipse(p[0] - rr * 0.2, p[1] - rr * 0.15, rr * 0.5, rr * 0.3, r.ang || 0, 0, 6.283); ctx.fill();
     ctx.strokeStyle = sh(d.col || '#7a6a5a', -0.5); ctx.lineWidth = Math.max(0.5, rr * 0.12);
     for (let i = 0; i < 3; i++) { const a = (r.ang || 0) + i * 2.1; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0] + Math.cos(a) * rr * 1.5, p[1] + Math.sin(a) * rr * 0.8); ctx.stroke(); }
     ctx.globalAlpha = 1;
+  };
+  /** A small leaf fragment drifting down from a plant, resting a while, then fading. */
+  D.leafBit = function (ctx, V, lf) {
+    const p = V.P(lf.pos); const r = Math.max(1, 1.3 * V.s); const a = lf.falling ? 0.9 : 0.9 * M.clamp(1 - (lf.rest - 9) / 5, 0, 1); if (a <= 0) return;
+    const col = lf.hue < 0.5 ? '#8a9a4a' : lf.hue < 0.8 ? '#a8843e' : '#6e7a3a';
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(p[0], p[1]); ctx.rotate(lf.ang); ctx.scale(1, lf.falling ? 0.45 + 0.4 * Math.abs(Math.sin(lf.t * 2.3 + lf.seed)) : Math.max(0.3, V.sp));
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-r, 0); ctx.quadraticCurveTo(0, -r * 0.7, r, 0); ctx.quadraticCurveTo(0, r * 0.7, -r, 0); ctx.fill();
+    ctx.strokeStyle = sh(col, -0.35); ctx.lineWidth = Math.max(0.4, r * 0.1); ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.stroke(); ctx.restore();
   };
   D.drop = function (ctx, V, w, pos) {
     const p = V.P(pos); const r = Math.max(1.2, w.r * V.s);
@@ -4298,21 +4917,24 @@ input[type=range]{accent-color:#a8742a}
     ctx.globalAlpha = alpha;
     const crouch = sp._crouch || 0, raise = sp._legRaise || 0, moving = sp._moving ? 1 : 0;
     const breath = Math.sin(sp._breath || 0) * 0.015; const ant = !!S.antShape;
-    const h0 = L * (0.14 - 0.07 * crouch);
+    const flat = sp._flat || 0, strK = sp._stretchK || 0, wipe = sp._wipe || 0, flick = sp._flick || 0, hang = o.hang || 0;
+    const h0 = L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) + L * 0.035 * strK;
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
     if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha);
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb; // seen from below: belly colours
-    const fat = M.clamp(0.85 + (sp.sat != null ? sp.sat : 0.7) * 0.34, 0.85, 1.2) * (1 + breath);
+    const fat = (sp._fatNow != null ? M.clamp(sp._fatNow, 0.66, 1.28) : M.clamp(0.85 + (sp.sat != null ? sp.sat : 0.7) * 0.34, 0.85, 1.2)) * (1 + breath);
     // head turns independently: gaze + an occasional curious look at the camera ("selfie glance")
     let gz = (sp._gazeNow || 0) * 0.3;
     if (o.lookCam) { const cf = M.sub(V.toCam, M.mul(n, M.dot(V.toCam, n))); if (M.len(cf) > 0.2) { const c2 = M.norm(cf); const a = Math.atan2(M.dot(c2, s), M.dot(c2, f)); if (Math.abs(a) < 1.6) gz = M.lerp(gz, M.clamp(a, -0.55, 0.55), o.lookCam); } }
-    const fg = M.norm(M.add(M.mul(f, Math.cos(gz)), M.mul(s, Math.sin(gz)))); const sg = M.norm(M.cross(n, fg));
+    const fg = M.norm(M.add(M.mul(f, Math.cos(gz)), M.mul(s, Math.sin(gz)))); let sg = M.norm(M.cross(n, fg)); let nh = n;
+    // curious head tilt toward a close, still camera: roll the carapace a little about its long axis
+    if (o.tilt > 0.01) { const sgn = M.dot(sg, V.toCam) >= 0 ? 1 : -1; const ra = 0.3 * o.tilt * sgn; const cr = Math.cos(ra), sr = Math.sin(ra); const sg2 = M.norm(M.add(M.mul(sg, cr), M.mul(n, sr))); nh = M.norm(M.sub(M.mul(n, cr), M.mul(sg, sr))); sg = sg2; }
     const stalk = ['stalk', 'creep', 'crouch'].includes(sp.state) ? 0.22 : sp.state === 'display' ? 0.35 : 0.05;
     const parts = [];
     const bodyCol = (c, belly) => under ? mix(c, belly, 0.75) : c;
     // --- cephalothorax (+ eyes) ---
     const cc = W(0.13 * L, 0, h0 + L * (ant ? 0.06 : 0.1));
-    const cph = Part(cc, M.mul(fg, L * (ant ? 0.2 : 0.25)), M.mul(sg, L * (ant ? 0.115 : 0.2)), M.mul(n, L * (ant ? 0.1 : 0.15)));
+    const cph = Part(cc, M.mul(fg, L * (ant ? 0.2 : 0.25)), M.mul(sg, L * (ant ? 0.115 : 0.2)), M.mul(nh, L * (ant ? 0.1 : 0.15)));
     parts.push({ d: V.depth(cc), f: () => {
       blob(ctx, V, cph.c, cph.ax, cph.ay, cph.az, bodyCol(pal.ceph, pal.belly), { lod, gloss: S.pattern === 'ant' || S.pattern === 'johnson' ? 0.8 : 0.45, fuzz: lod === 2 && !ant ? 0.9 : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: (S.pattern === 'emerald' || S.pattern === 'imperial') ? 1 : 0, time: t });
       if (lod > 0 && !under) {
@@ -4337,7 +4959,7 @@ input[type=range]{accent-color:#a8742a}
     } });
     if (ant) { const nc = W(-0.08 * L, 0, h0 + L * 0.05); parts.push({ d: V.depth(nc), f: () => blob(ctx, V, nc, M.mul(f, L * 0.07), M.mul(s, L * 0.055), M.mul(n, L * 0.055), pal.ceph, { lod, gloss: 0.7 }) }); }
     // --- abdomen (raised while stalking, plump when fed) ---
-    const ta = stalk + crouch * 0.1; const af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))), an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
+    const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06; const af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))), an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
     const ac = M.add(W(ant ? -0.33 * L : -0.27 * L, 0, h0 + L * 0.09), M.mul(an, L * 0.02));
     const abd = Part(ac, M.mul(af, L * (ant ? 0.23 : 0.3) * (0.95 + fat * 0.05)), M.mul(s, L * (ant ? 0.13 : 0.22) * fat), M.mul(an, L * (ant ? 0.13 : 0.19) * fat));
     parts.push({ d: V.depth(ac), f: () => {
@@ -4357,8 +4979,9 @@ input[type=range]{accent-color:#a8742a}
     for (const sd of [-1, 1]) {
       const chc = M.add(W(0.33 * L, sd * L * 0.055, h0 + L * 0.02), M.mul(fg, L * 0.04));
       parts.push({ d: V.depth(chc) - 0.01, f: () => blob(ctx, V, chc, M.mul(fg, L * 0.05), M.mul(sg, L * 0.045), M.mul(n, L * 0.07), pal.chel, { lod, gloss: 1, sheen: S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'canopy' || S.pattern === 'orange' ? 2 : 0, time: t }) });
-      const pw = (sp.state === 'groom' ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
-      const a = W(0.3 * L, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + pw, sd * L * 0.1, h0 + L * 0.06), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + pw, sd * L * 0.09, h0 + L * 0.0), M.mul(fg, L * 0.02));
+      const pw = (sp.state === 'groom' || wipe > 0.2 ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
+      const fl = flick * Math.sin(flick * 9.4 + sd * 0.8) * L * 0.06; // quick alternating palp flicks
+      const a = W(0.3 * L, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + pw, sd * L * 0.1, h0 + L * 0.06 + Math.abs(fl)), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + pw - Math.abs(fl) * 0.5, sd * L * 0.09, h0 + L * 0.0 + fl), M.mul(fg, L * 0.02));
       parts.push({ d: V.depth(b) - 0.02, f: () => { limb(ctx, V, [a, b, c], [L * 0.04, L * 0.036], pal.leg, lod, null); if (lod > 0) blob(ctx, V, c, M.mul(fg, L * 0.035), M.mul(sg, L * 0.03), M.mul(n, L * 0.03), pal.hair, { lod, ink: false }); } });
     }
     // --- 8 legs: coxa→femur→tibia→tarsus, tapered and inked; front legs stout ---
@@ -4371,6 +4994,10 @@ input[type=range]{accent-color:#a8742a}
       if (i === 0 && raise > 0) { fu += L * 0.2 * raise; fw += L * 0.18 * raise; fv *= 1 - 0.1 * raise; }
       if (sp.state === 'display' && i <= (S.prefs.display > 0.7 ? 2 : 0)) fw += L * (0.26 + Math.sin(t * 7 + i + (sd > 0 ? 1 : 0)) * 0.12);
       if (sp.state === 'groom' && i === 0) { fw += L * 0.15 * (0.5 + 0.5 * Math.sin(t * 9 + sd)); fv *= 0.75; }
+      if (wipe > 0.01 && i === 0) { const w = wipe * (0.65 + 0.35 * Math.sin(t * 10 + (sd > 0 ? 0 : 1.7))); fu = M.lerp(fu, L * 0.4, w); fv = M.lerp(fv, sd * L * 0.16, w); fw = M.lerp(fw, h0 + L * 0.16, w); }
+      if (strK > 0.01) { if (i < 2) { fu += L * 0.16 * strK; fw += L * 0.05 * strK * (i === 0 ? 1 : 0); } else { fu -= L * 0.12 * strK; } fv *= 1 + 0.12 * strK; }
+      if (flat > 0.01) { fv *= 1 + 0.2 * flat; fu *= 1 + 0.06 * flat; }
+      if (hang > 0.01) { fv *= 1 - 0.25 * hang; fw += L * 0.05 * hang; }
       if (o.airborne) { if (i < 2) { fu += L * 0.22; fw += L * 0.06; fv *= 0.8; } else { fu -= L * 0.3; fv *= 0.7; } }
       if (o.curled) { fu *= 0.35; fv *= 0.55; fw = h0 + L * 0.14; }
       else if (o.tucked) { fu *= 0.6; fv *= 0.56; fw = L * 0.03; }
@@ -4378,7 +5005,7 @@ input[type=range]{accent-color:#a8742a}
       const hip = W(AU[i] * L, sd * L * 0.15, h0 + L * 0.04); const foot = W(fu, fv, fw);
       const mid = M.lerp3(hip, foot, 0.4);
       const far = sd * M.dot(s, V.toCam) < -0.15 && !o.thumb; // far-side legs: keep the knee low so it never pokes up over the head
-      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1))), M.mul(s, sd * L * 0.06));
+      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1))), M.mul(s, sd * L * 0.06));
       const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
       const ankle = M.add(M.lerp3(knee, foot, 0.62), M.mul(n, L * 0.05));
       const wk = i === 0 ? (S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'orange' || S.pattern === 'apache' ? 1.55 : 1.3) : 1;
@@ -4643,11 +5270,14 @@ input[type=range]{accent-color:#a8742a}
     }
     setMode(m) { if (!CAMS[m]) return; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
     zoomBy(f, sx, sy) {
+      if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.zoom(f); return; }
       const z0 = this.cam.zoom; const z = M.clamp(z0 * f, 0.6, 5); if (z === z0) return;
       if (sx != null) { const cx = this.cssW / 2 + this.cam.pan[0], cy = this.cssH / 2 + this.cam.pan[1]; const k = z / z0; this.cam.pan[0] += (sx - cx) * (1 - k); this.cam.pan[1] += (sy - cy) * (1 - k); }
       this.cam.zoom = z; this.clampPan();
     }
-    panBy(dx, dy) { this.cam.pan[0] += dx; this.cam.pan[1] += dy; this.clampPan(); }
+    panBy(dx, dy) {
+      if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.orbit(dx * 0.0065, dy * 0.004); return; }
+      this.cam.pan[0] += dx; this.cam.pan[1] += dy; this.clampPan(); }
     clampPan() { const lim = (0.35 + this.cam.zoom * 0.45); this.cam.pan[0] = M.clamp(this.cam.pan[0], -this.cssW * lim, this.cssW * lim); this.cam.pan[1] = M.clamp(this.cam.pan[1], -this.cssH * lim, this.cssH * lim); }
     resetView() { this.cam.zoom = 1; this.cam.pan = [0, 0]; }
 
@@ -4684,6 +5314,16 @@ input[type=range]{accent-color:#a8742a}
       const cu = this.cur; let dy = M.wrapAngle(T.yaw - cu.yaw);
       cu.yaw += dy * k; cu.pitch += (T.pitch - cu.pitch) * k; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
       cu.c = M.lerp3(cu.c, T.c, kc);
+      if (this.cam.mode === 'follow') {
+        const sp = hab.spider(this.game.selectedId) || hab.spiders[0];
+        const fc = this.fcam || (this.fcam = new JT.FollowCam());
+        if (sp) {
+          if (!fc.st || fc.id !== sp.id || fc.hab !== hab.id) { fc.reset(cu, sp.id); fc.hab = hab.id; }
+          const st = fc.step(hab, sp, dt, Math.min(this.cssW, this.cssH) / (this.cssH > this.cssW * 1.1 ? 54 : 70));
+          cu.yaw = st.yaw; cu.pitch = st.pitch; cu.s = st.s; cu.c = st.c.slice(); cu.offY += (0 - cu.offY) * k;
+          this.cam.pan[0] *= 1 - k; this.cam.pan[1] *= 1 - k;
+        }
+      } else if (this.fcam) this.fcam.st = null;
       const kk = this.k;
       this.V.set(cu.yaw, cu.pitch, cu.s * kk, (this.cssW / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
       return this.V;
@@ -4792,10 +5432,13 @@ input[type=range]{accent-color:#a8742a}
       const vk = V.yaw.toFixed(4) + '|' + V.pitch.toFixed(4) + '|' + V.s.toFixed(4);
       this._viewStable = vk === this._lastVK; this._lastVK = vk; this._vk = vk; this._sprBudget = 6; this._dt = dt;
       this.drawBase(ctx, V, hab, night);
+      const lamps = hab.lampsOn ? hab.lampsOn() : [];
+      if (lamps.length) this.drawLampPools(ctx, V, hab, lamps, night);
       this.drawScene(ctx, V, hab, night);
       this.drawEffects(ctx, V, hab, dt);
       if (post) this.postProcess(this.ctx, this.scene, night);
       else this.nightGrade(this.ctx, night);
+      if (lamps.length) this.drawLampGlow(this.ctx, V, hab, lamps, night);
       if (this.set.debug) this.drawDebug(this.ctx, V, hab);
     }
     drawScene(ctx, V, hab, night) {
@@ -4827,18 +5470,34 @@ input[type=range]{accent-color:#a8742a}
         if (!M.finite3(sp.pos) || !onScreen(sp.pos)) continue;
         const calm = sp.id === sel && ['idle', 'lookout', 'rest', 'watch', 'groom', 'postFeed'].includes(sp.state);
         const lcT = calm && Math.sin(this.time * 0.33 + (sp.seed % 7)) > 0.55 ? 1 : 0; sp._lc = M.lerp(sp._lc || 0, lcT, Math.min(1, (this._dt || 0.016) * 2.5));
-        const L = JT.SpiderAI.len(sp); const fr = D.frame(hab, sp, 0.05);
+        const L = JT.SpiderAI.len(sp); let fr = D.frame(hab, sp, 0.05);
+        // curious head tilt when the camera is close and the jumper is sitting still
+        const still = !sp._moving && !sp._air && ['idle', 'lookout', 'rest', 'watch', 'look', 'groom'].includes(sp.state);
+        sp._tilt = M.lerp(sp._tilt || 0, still && L * V.s > 46 * this.k && sp._lc > 0.3 ? 1 : 0, Math.min(1, (this._dt || 0.016) * 2));
+        // brief dangle on a silk line: purely visual offset from the ledge edge, then back up
+        let hang = 0, hangA = null;
+        if (sp._dangleOff && sp._dangleVis > 0.01) {
+          const dOff = sp._dangleOff, kv = sp._dangleVis; const edge = M.clamp(kv * 3, 0, 1), down = M.smooth(M.clamp((kv - 0.3) / 0.7, 0, 1));
+          hangA = [sp.pos[0] + dOff.dx, sp.pos[1] + 0.2, sp.pos[2] + dOff.dz];
+          const pos = [M.lerp(fr.p[0], hangA[0], edge), M.lerp(fr.p[1], hangA[1], edge) - dOff.depth * down + Math.sin(this.time * 1.7) * 0.15 * down, M.lerp(fr.p[2], hangA[2], edge)];
+          const out = M.norm([dOff.dx || 0.01, 0, dOff.dz || 0]); const fD = M.norm(M.lerp3(fr.f, [0, -1, 0], down * 0.85)); const nD = M.norm(M.lerp3(fr.n, out, down));
+          const sD = M.norm(M.cross(nD, fD)); fr = { p: pos, f: fD, s: sD, n: M.norm(M.cross(fD, sD)) }; hang = down;
+        }
         const ventral = M.dot(fr.n, V.toCam) < -0.08;
         let d = animalDepth(sp); if (ventral && sp.sup && sp.sup.d && decDepth[sp.sup.d] != null) d = decDepth[sp.sup.d] + 0.05;
         const air = !!sp._air || (sp.sup && sp.sup.k === 'air');
         const draw = (alpha) => {
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, noShadow: hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
+        if (hangA) { const fp = fr.p, fff = fr.f; items.push({ d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
+        // live safety dragline paid out behind a jump
+        if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; items.push({ d: V.depth(M.lerp3(an, sp2, 0.5)) - 0.05, f: () => { const a = V.P(an), b = V.P(sp2); ctx.strokeStyle = 'rgba(240,240,250,' + (0.32 - night * 0.1).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
         items.push({ d, f: () => draw(1) });
         if (ventral && sp.id === sel) items.push({ d: d - 0.2 - 50, f: () => { ctx.globalAlpha = 0.3; D.spider(ctx, V, sp, fr, { len: L, time: t, alpha: 0.3, noShadow: true }); ctx.globalAlpha = 1; } });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)) }); }
       }
+      for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf) }); }
       for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !onScreen(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0]; items.push({ d: V.depth(n.pos) - n.len * 0.7, f: () => D.nest(ctx, V, n, up, night) }); }
       for (const k of hab.data.silk) items.push({ d: V.depth(M.lerp3(k.a, k.b, 0.5)) - 0.1, f: () => D.silk(ctx, V, k, night) });
       if (this.ghost && this.ghost.geom) {
@@ -4886,7 +5545,7 @@ input[type=range]{accent-color:#a8742a}
     drawDecorCached(ctx, V, g, sway, night, t) {
       if (sway || g.id === '_ghost') { D.decor(ctx, V, g, { sway, night, time: t }); return; }
       if (g._glow == null) g._glow = g.prims.some(p => p.glow);
-      const key = this._vk + (g._glow ? '|' + Math.round(night * 10) : '');
+      const key = this._vk + (g._glow ? '|' + Math.round(night * 10) : '') + (g.lamp ? '|L' + (g.lampOn !== false) : '');
       const o = V.P(g.center || [0, 0, 0]); const S = g._spr;
       if (S && S.key === key) { if (S.cv) ctx.drawImage(S.cv, S.x + o[0] - S.o[0], S.y + o[1] - S.o[1]); else D.decor(ctx, V, g, { night, time: t }); return; }
       if (!this._viewStable || this._sprBudget <= 0) { D.decor(ctx, V, g, { night, time: t }); return; }
@@ -4933,9 +5592,62 @@ input[type=range]{accent-color:#a8742a}
     }
 
     // ---------------- effects ----------------
+    // ---------------- basking lamp light ----------------
+    lampSurface(hab, L) {
+      const k = L.inst.id + '|' + hab._geomVersion; L.inst._ls = L.inst._ls && L.inst._ls.k === k ? L.inst._ls : { k, y: JT.Nav.supportBelow(hab, [L.pool[0], L.head[1] - 3, L.pool[2]]).pos[1] };
+      return L.inst._ls.y;
+    }
+    /** Warm pool on the surfaces under the lamp + longer, darker shadows cast away from it (drawn before night grading). */
+    drawLampPools(ctx, V, hab, lamps, night) {
+      ctx.save();
+      for (const L of lamps) {
+        const y = this.lampSurface(hab, L); const c = V.P([L.pool[0], y + 0.05, L.pool[2]]); const R = L.r * 1.05 * V.s;
+        // shadows: objects and jumpers near the light throw a soft shadow pointing away from it
+        ctx.globalCompositeOperation = 'source-over';
+        const sh = (pos, rad, hgt, a) => {
+          const dx = pos[0] - L.pool[0], dz = pos[2] - L.pool[2]; const dl = Math.hypot(dx, dz); if (dl > L.r * 2.2 || dl < 0.5) return;
+          const ux = dx / dl, uz = dz / dl; const len = Math.min(rad * 2.4, hgt * 0.5 + rad);
+          const q = V.P([pos[0] + ux * len * 0.55, pos[1] + 0.05, pos[2] + uz * len * 0.55]); const ax = V.J([ux * len * 0.7, 0, uz * len * 0.7]), ay = V.J([-uz * rad * 0.8, 0, ux * rad * 0.8]);
+          const rx = Math.hypot(ax[0], ax[1]), ry = Math.max(0.5, Math.hypot(ay[0], ay[1])); if (rx < 0.5) return;
+          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,10,4,' + (a * (1 - dl / (L.r * 2.2))).toFixed(3) + ')'); g.addColorStop(1, 'rgba(20,10,4,0)');
+          ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(Math.atan2(ax[1], ax[0])); ctx.scale(rx, ry); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.283); ctx.fill(); ctx.restore();
+        };
+        for (const inst of hab.decor) { if (inst.id === L.inst.id) continue; const g = hab.geoms[inst.id]; if (!g || g.def.arche === 'backwall' || g.def.arche === 'wallmount') continue; sh(g.center, Math.max(3, Math.min(14, g.coverR * 0.7)), g.height, 0.3); }
+        for (const sp of hab.spiders) if (M.finite3(sp.pos) && Math.abs(sp.pos[1] - y) < 3) { const l = JT.SpiderAI.len(sp); sh(sp.pos, l * 0.5, l * 0.6, 0.35); }
+        // the warm pool itself
+        ctx.globalCompositeOperation = 'screen';
+        ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(1, Math.max(0.15, V.sp));
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); const a = 0.3 + night * 0.1;
+        g.addColorStop(0, 'rgba(255,196,120,' + a.toFixed(3) + ')'); g.addColorStop(0.45, 'rgba(255,170,90,' + (a * 0.55).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,150,70,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
+      }
+      ctx.restore();
+    }
+    /** Additive bulb glow and lit highlights; drawn after grading so it stays visible at night. */
+    drawLampGlow(ctx, V, hab, lamps, night) {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';
+      for (const L of lamps) {
+        const b = V.P(L.head); const y = this.lampSurface(hab, L); const c = V.P([L.pool[0], y + 0.05, L.pool[2]]);
+        const flick = 1 + Math.sin(this.time * 0.7) * 0.015;
+        const rb = 9 * V.s * flick; let g = ctx.createRadialGradient(b[0], b[1], 0, b[0], b[1], rb);
+        g.addColorStop(0, 'rgba(255,226,170,' + (0.35 + night * 0.4).toFixed(3) + ')'); g.addColorStop(0.3, 'rgba(255,170,90,' + (0.12 + night * 0.18).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,140,60,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b[0], b[1], rb, 0, 6.283); ctx.fill();
+        if (night > 0.05) {
+          // soft cone of light falling to the pool
+          ctx.save(); ctx.globalAlpha = 0.5 * night; const R = L.r * V.s;
+          const cg = ctx.createLinearGradient(b[0], b[1], c[0], c[1]); cg.addColorStop(0, 'rgba(255,200,130,0.14)'); cg.addColorStop(1, 'rgba(255,170,90,0.03)');
+          ctx.fillStyle = cg; ctx.beginPath(); ctx.moveTo(b[0] - 3 * V.s, b[1]); ctx.lineTo(b[0] + 3 * V.s, b[1]); ctx.lineTo(c[0] + R * 0.8, c[1]); ctx.lineTo(c[0] - R * 0.8, c[1]); ctx.closePath(); ctx.fill(); ctx.restore();
+          ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(1, Math.max(0.15, V.sp)); const gp = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+          gp.addColorStop(0, 'rgba(255,170,90,' + (0.32 * night).toFixed(3) + ')'); gp.addColorStop(0.5, 'rgba(255,140,60,' + (0.13 * night).toFixed(3) + ')'); gp.addColorStop(1, 'rgba(255,120,40,0)');
+          ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
     addText(pos, text, col, big) { this.fx.push({ pos: pos.slice(), text, col: col || '#ffe9a8', t: 0, life: big ? 1.8 : 1.5, big }); }
     burst(pos, col, n) { for (let i = 0; i < (n || 10); i++) this.particles.push({ pos: pos.slice(), v: [(JT.R() - 0.5) * 30, 10 + JT.R() * 25, (JT.R() - 0.5) * 30], t: 0, life: 0.6 + JT.R() * 0.5, col: col || '#fff2c0', r: 0.4 + JT.R() * 0.5 }); }
-    mistFx(hab) { for (let i = 0; i < 90; i++) { const q = hab.randomFloorPoint(); this.particles.push({ pos: [q[0], hab.dims.h * (0.6 + JT.R() * 0.6), q[2]], v: [(JT.R() - 0.5) * 6, -40 - JT.R() * 30, (JT.R() - 0.5) * 6], t: 0, life: 1.2 + JT.R() * 1.2, col: 'rgba(210,235,255,0.8)', r: 0.25 + JT.R() * 0.35, mist: true }); } }
+    /** A light, slow-settling haze of fine droplets (no burst). */
+    mistFx(hab) { for (let i = 0; i < 36; i++) { const q = hab.randomFloorPoint(); this.particles.push({ pos: [q[0], hab.dims.h * (0.5 + JT.R() * 0.5), q[2]], v: [(JT.R() - 0.5) * 3, -12 - JT.R() * 10, (JT.R() - 0.5) * 3], t: -JT.R() * 0.8, life: 2.2 + JT.R() * 1.5, col: 'rgba(225,240,255,0.45)', r: 0.2 + JT.R() * 0.25, mist: true }); } }
     drawMotes(ctx, V, hab, dt) {
       // dust motes drifting through the light — a tiny bit of air between you and the scene
       const day = this.game.daylight(); if (day < 0.15 || this.quality === 'low') return;
@@ -4951,7 +5663,7 @@ input[type=range]{accent-color:#a8742a}
     }
     drawEffects(ctx, V, hab, dt) {
       this.drawMotes(ctx, V, hab, dt);
-      for (const p of this.particles) { p.t += dt; p.v[1] -= (p.mist ? 10 : 60) * dt; p.pos = M.add(p.pos, M.mul(p.v, dt)); const q = V.P(p.pos); const a = 1 - p.t / p.life; if (a <= 0) continue; ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, p.r * V.s), 0, 6.283); ctx.fill(); }
+      for (const p of this.particles) { p.t += dt; p.v[1] -= (p.mist ? 10 : 60) * dt; p.pos = M.add(p.pos, M.mul(p.v, dt)); const q = V.P(p.pos); if (p.t < 0) continue; const a = Math.min(1, p.t * 3) * (1 - p.t / p.life); if (a <= 0) continue; ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, p.r * V.s), 0, 6.283); ctx.fill(); }
       this.particles = this.particles.filter(p => p.t < p.life && p.pos[1] > -2); if (this.particles.length > 400) this.particles.splice(0, this.particles.length - 400);
       ctx.globalAlpha = 1; ctx.textAlign = 'center';
       for (const f of this.fx) {
@@ -5201,6 +5913,7 @@ input[type=range]{accent-color:#a8742a}
   const speciesPrice = (S) => S.starter ? STARTER_PRICE : S.price;
 
   const UI = JT.UI = {
+    MOBILE_MQ: '(max-width:820px) and (orientation:portrait), (max-width:560px), (max-height:500px) and (orientation:landscape)',
     tab: null, mode: null, place: null, obs: null, panelId: null, renaming: false, ptrType: 'mouse', _t: 0, _panelT: 0, _mistT: 0,
     init(game, R, settings) {
       this.game = game; this.R = R; this.set = settings; this.cv = $('view');
@@ -5209,7 +5922,7 @@ input[type=range]{accent-color:#a8742a}
       const sp = game.hab.spider(game.selectedId); if (sp) this.showPanel(sp.id);
     },
     get hab() { return this.game.hab; },
-    isMobile() { return root.matchMedia && root.matchMedia('(max-width:820px) and (orientation:portrait), (max-width:560px)').matches; },
+    isMobile() { return root.matchMedia && root.matchMedia(UI.MOBILE_MQ).matches; },
 
     // ------------------------------------------------ binding
     bind() {
@@ -5289,14 +6002,24 @@ input[type=range]{accent-color:#a8742a}
       $('coins').textContent = Math.floor(st.coins);
       const tabs = $('habTabs'); tabs.innerHTML = '';
       g.habs.forEach((h, i) => { const b = el('button', i === st.active ? 'on' : '', esc(h.data.name)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); });
-      $('habPicker').textContent = '🪴 ' + g.hab.data.name;
+      $('habPicker').textContent = g.hab.data.name;
       document.querySelectorAll('#cams button').forEach(b => b.classList.toggle('on', b.dataset.cam === this.R.cam.mode));
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
-      $('btnSound').textContent = this.set.muted ? '🔇' : '🔊';
+      $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
+      const fol = this.R.cam.mode === 'follow' && !this.obs; document.querySelectorAll('#dock button[data-dock="follow"]').forEach(b => b.classList.toggle('on', fol));
       document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('on', b.dataset.tool === this.tab || (b.dataset.tool === 'remove' && this.mode === 'remove')));
     },
-    updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' ☀' : ' 🌙') : ''); },
-    setCam(m) { this.R.setMode(m); this.refreshHeader(); if (m === 'follow' && !this.hab.spider(this.game.selectedId)) this.toast('Select a jumper to follow.'); },
+    updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
+    setCam(m) {
+      if (m === 'follow' && this.R.cam.mode !== 'follow') this._prevCam = this.R.cam.mode;
+      if (m === 'follow' && !this.hab.spider(this.game.selectedId)) { const s0 = this.hab.spiders[0]; if (s0) this.game.selectedId = s0.id; else { this.toast('No jumper here to follow yet.'); return; } }
+      this.R.setMode(m); this.refreshHeader(); if (this.panelId) this.renderPanel(true);
+    },
+    /** Start following a jumper (tap on it, or the Follow control). */
+    follow(id) { if (id) this.game.selectedId = id; if (this.R.cam.mode !== 'follow') this.setCam('follow'); else { this.refreshHeader(); } },
+    /** Stop following and ease back to the previous overview camera. */
+    unfollow() { if (this.R.cam.mode !== 'follow') return; const prev = this._prevCam && this._prevCam !== 'follow' ? this._prevCam : 'iso'; this.setCam(prev); },
+    toggleFollow() { if (this.R.cam.mode === 'follow') this.unfollow(); else this.follow(this.game.selectedId); },
     setTimeMode(m) { this.game.state.timeMode = m; this.refreshHeader(); this.updateClock(); A().sfx('click'); },
     switchHab(i) {
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); g.state.active = M.clamp(i, 0, g.habs.length - 1);
@@ -5305,10 +6028,11 @@ input[type=range]{accent-color:#a8742a}
       if (this.obs) this.obs.sub = null;
       if (this.tab) this.openDrawer(this.tab); this.refreshHeader(); A().sfx('click');
     },
+    /** A small line of text that fades in and out (no boxes). */
     toast(text, cls, ms) {
       const t = el('div', 'toast ' + (cls || ''), text); $('toasts').appendChild(t);
-      while ($('toasts').children.length > 4) $('toasts').firstChild.remove();
-      setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 600); }, ms || 2600);
+      while ($('toasts').children.length > 3) $('toasts').firstChild.remove();
+      setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 900); }, ms || 2800);
     },
     bumpCoins() { const c = document.querySelector('.coins'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); $('coins').textContent = Math.floor(this.game.state.coins); },
 
@@ -5318,8 +6042,8 @@ input[type=range]{accent-color:#a8742a}
       if (t === 'coins') { this.bumpCoins();  if (this.tab) this.refreshCardsAfford(); }
       else if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
-      else if (t === 'journal') { this.toast('<b>' + d.entry.icon + ' Journal: ' + esc(d.entry.title) + '</b>' + esc(d.entry.text), 'journal', 5200); A().sfx('journal'); }
-      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast('🌱 ' + esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
+      else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); }
+      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
       else if (t === 'toast') this.toast(d.text, d.cls, d.ms);
     },
 
@@ -5340,6 +6064,7 @@ input[type=range]{accent-color:#a8742a}
       if (d === 'build') { if (this.tab && this.tab !== 'food') this.closeDrawer(); else { this.openDrawer('decor'); this.dockOn('build'); } }
       else if (d === 'food') { if (this.tab === 'food') this.closeDrawer(); else { this.openDrawer('food'); this.dockOn('food'); } }
       else if (d === 'jumpers') { this.closeDrawer(); this.collectionModal(); }
+      else if (d === 'follow') { this.closeDrawer(); this.toggleFollow(); }
       else if (d === 'observe') { this.closeDrawer(); this.toggleObserve(); }
       else if (d === 'more') { this.closeDrawer(); this.moreSheet(); }
     },
@@ -5347,22 +6072,22 @@ input[type=range]{accent-color:#a8742a}
     doMist() {
       if (performance.now() - this._mistT < 1500) return; this._mistT = performance.now();
       this.hab.mist(); this.R.mistFx(this.hab); A().sfx('mist');
-      this.toast('💧 Misted — fresh droplets bead on leaves and stones.');
+      this.toast('Misted. Fresh droplets bead on leaves and stones.');
     },
     doClean() {
       const n = this.hab.clean(); A().sfx(n ? 'rustle' : 'click');
-      this.toast(n ? '🧹 Tidied away ' + n + ' leftover husk' + (n > 1 ? 's' : '') + '.' : '✨ Everything is already spotless — nothing to clean right now.');
+      this.toast(n ? 'Tidied away ' + n + ' leftover husk' + (n > 1 ? 's' : '') + '.' : 'Everything is already tidy.');
     },
 
     // ------------------------------------------------ drawer
     openDrawer(tab) {
       this.tab = tab; const d = $('drawer'); d.classList.remove('hidden');
       const tabs = $('drawerTabs'); tabs.innerHTML = '';
-      const list = tab === 'food' ? [['food', '🪰 Live Food']] : [['decor', '🪨 Decor'], ['walls', '🧱 Walls'], ['plants', '🌿 Plants'], ['substrate', '🟫 Substrate']];
+      const list = tab === 'food' ? [['food', 'Live food']] : [['decor', 'Decor'], ['walls', 'Walls'], ['plants', 'Plants'], ['substrate', 'Substrate']];
       for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => this.openDrawer(id); tabs.appendChild(b); }
-      if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', '✖ Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
+      if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', 'Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
-      $('drawerTitle').textContent = tab === 'food' ? 'Live food for ' + h.data.name + ' (' + h.livePreyCount() + '/' + JT.PREY_CAP + ')' : tab === 'substrate' ? 'Substrate & ground cover' : (tab === 'plants' ? 'Plants' : tab === 'walls' ? 'Back walls & wall mounts' : 'Decor') + (tab === 'walls' ? ' — walls stand at the back; mounts hang where you point on a wall' : ' — click a piece, then place it');
+      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Walls stand at the back; mounts hang where you point' : 'Choose a piece, then place it';
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
       if (tab === 'decor' || tab === 'plants' || tab === 'walls') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
       else if (tab === 'substrate') {
@@ -5370,15 +6095,17 @@ input[type=range]{accent-color:#a8742a}
         body.appendChild(el('div', 'sect', 'Ground cover'));
         for (const d of JT.DECOR.filter(x => x.cat === 'ground')) body.appendChild(this.decorCard(d));
       } else if (tab === 'food') for (const p of JT.PREY) body.appendChild(this.preyCard(p));
-      this.refreshHeader();
+      this.refreshHeader(); this.syncDrawerSpace();
     },
-    closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
+    /** Toast lines sit just above the shop strip while it is open. */
+    syncDrawerSpace() { const d = $('drawer'); const open = !d.classList.contains('hidden'); document.body.classList.toggle('drawer-open', open); document.documentElement.style.setProperty('--drawerH', open ? Math.round(d.getBoundingClientRect().height) + 'px' : '0px'); },
+    closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); this.syncDrawerSpace(); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
     refreshCardsAfford() { document.querySelectorAll('#drawerBody .card[data-price]').forEach(c => c.classList.toggle('disabled', +c.dataset.price > this.game.state.coins)); },
     decorCard(d) {
       const c = el('div', 'card'); c.dataset.price = d.price; c.title = d.name + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
       c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112)));
-      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price + ' coins'));
-      const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers'].filter(Boolean).join(' · '); c.appendChild(el('div', 'tg', tg || '&nbsp;'));
+      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price + ''));
+      const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean).join(', '); if (tg) c.title += ' — ' + tg;
       if (d.price > this.game.state.coins) c.classList.add('disabled');
       c.onclick = () => { if (d.price > this.game.state.coins) { this.toast('Not enough coins for ' + esc(d.name) + '.'); A().sfx('error'); return; } this.startPlace(d.id); };
       return c;
@@ -5389,8 +6116,8 @@ input[type=range]{accent-color:#a8742a}
       const cv = document.createElement('canvas'); cv.width = cv.height = 112; const g = cv.getContext('2d');
       const gr = g.createLinearGradient(0, 0, 0, 112); gr.addColorStop(0, S.top); gr.addColorStop(0.62, S.top); gr.addColorStop(0.63, S.mid); gr.addColorStop(1, S.dark); g.fillStyle = gr; g.fillRect(0, 0, 112, 112);
       const rng = JT.makeRng(JT.hashStr(id)); for (let i = 0; i < 260; i++) { g.fillStyle = S.speck[i % 2]; const x = rng() * 112, y = rng() * 70; g.fillRect(x, y, 1 + rng() * 2, 1 + rng() * 1.5); }
-      c.appendChild(cv); c.appendChild(el('div', 'nm', esc(S.name))); c.appendChild(el('div', 'pr', cur ? 'Current' : S.price ? S.price + ' coins' : 'Free'));
-      c.appendChild(el('div', 'tg', (S.burrow > 0.6 ? 'burrowable · ' : '') + (S.moist > 0.6 ? 'humid' : S.moist < 0.25 ? 'dry' : 'balanced')));
+      c.appendChild(cv); c.appendChild(el('div', 'nm', esc(S.name))); c.appendChild(el('div', 'pr', cur ? 'current' : S.price ? S.price + '' : 'free'));
+      c.title = S.name + ' — ' + (S.burrow > 0.6 ? 'burrowable, ' : '') + (S.moist > 0.6 ? 'humid' : S.moist < 0.25 ? 'dry' : 'balanced');
       c.onclick = () => {
         if (cur) return; if (!this.game.spend(S.price)) { this.toast('Not enough coins.'); A().sfx('error'); return; }
         h.data.substrate = id; this.R._speck = null; A().sfx('place'); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
@@ -5401,15 +6128,15 @@ input[type=range]{accent-color:#a8742a}
       const c = el('div', 'card'); c.dataset.price = p.price;
       c.appendChild(cloneCanvas(this.R.preyPortrait(p.id, 112)));
       c.appendChild(el('div', 'nm', esc(p.name) + (p.count > 1 ? ' ×' + p.count : '')));
-      c.appendChild(el('div', 'pr', p.price + ' coins')); c.appendChild(el('div', 'tg', TAGS(p) || (p.huntable ? 'ground prey' : '&nbsp;')));
+      c.appendChild(el('div', 'pr', p.price + ''));
       if (p.price > this.game.state.coins) c.classList.add('disabled');
-      c.title = p.cleaner ? 'Cleanup crew: eats leftover husks, even on decor.' : 'Prey value ' + p.val + ' coins when caught.';
+      c.title = p.name + ' — ' + (TAGS(p) || 'ground prey') + (p.cleaner ? '. Cleanup crew: eats husks and shed skins, even up on decor.' : '. Worth ' + p.val + ' coins when caught.');
       c.onclick = () => {
         const h = this.hab; const n = p.count || 1;
         if (h.prey.length + n > JT.PREY_CAP) { this.toast('This habitat already has plenty of live food (' + JT.PREY_CAP + ' max).'); A().sfx('error'); return; }
         if (!this.game.spend(p.price)) { this.toast('Not enough coins.'); A().sfx('error'); return; }
         h.addPrey(p.id, n); A().sfx('rustle'); this.toast('Released ' + (n > 1 ? n + ' ' : 'a ') + esc(p.name) + '.');
-        $('drawerTitle').textContent = 'Live food for ' + h.data.name + ' (' + h.livePreyCount() + '/' + JT.PREY_CAP + ')';
+        $('drawerTitle').textContent = h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live';
       };
       return c;
     },
@@ -5419,15 +6146,15 @@ input[type=range]{accent-color:#a8742a}
       this.cancelMode(); const d = JT.DECOR_BY_ID[type];
       this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false };
       this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.remove('hidden'); $('modeDone').classList.remove('hidden');
-      if (this.isMobile()) $('drawer').classList.add('hidden');
+      if (this.isMobile()) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); }
       // start the ghost in the middle so touch users see it immediately
       const r = this.cv.getBoundingClientRect(); this.updateGhost(r.width / 2, r.height * 0.55);
       this.setModeText(); void d;
     },
     setModeText() {
       const p = this.place; if (!p) return; const d = JT.DECOR_BY_ID[p.type]; const touch = this.ptrType !== 'mouse';
-      const st = p.ok ? '<span class="ok">✔ fits here</span>' : '<span class="bad">✗ ' + esc(p.reason || 'Not here') + '</span>';
-      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> (' + d.price + ') · ' + st + ' · <span class="muted" style="color:#c8b48a">' + (touch ? 'drag to move' : 'click to place · R rotate · Esc cancel') + '</span>';
+      const st = p.ok ? '<span class="ok">fits here</span>' : '<span class="bad">' + esc(p.reason || 'Not here') + '</span>';
+      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> ' + d.price + ' · ' + st + ' · <span class="hint">' + (touch ? 'drag to move' : 'click to place, R rotates, Esc cancels') + '</span>';
     },
     updateGhost(sx, sy) {
       const p = this.place; if (!p) return; const h = this.hab; const pt = this.R.placementPoint(sx, sy, h, p.type);
@@ -5450,13 +6177,13 @@ input[type=range]{accent-color:#a8742a}
       this.toast('Placed ' + esc(d.name) + (inst.parent ? ' (stacked)' : '') + '.');
       p.seed = (JT.R() * 1e9) | 0;
       if (this.game.state.coins < d.price) this.cancelMode(); else { this.updateGhostAtCurrent(); }
-      if (this.isMobile()) { this.cancelMode(); if (this.tab) $('drawer').classList.remove('hidden'); }
+      if (this.isMobile()) { this.cancelMode(); if (this.tab) { $('drawer').classList.remove('hidden'); this.syncDrawerSpace(); } }
     },
     updateGhostAtCurrent() { const p = this.place; if (p && p.x != null) { const s = this.R.project([p.x, p.y || 0, p.z]); this.updateGhost(s[0], s[1]); } },
     startRemove() {
       this.cancelMode(); this.mode = 'remove'; this.cv.classList.add('removing'); $('modeBar').classList.remove('hidden');
       $('modeRotate').classList.add('hidden'); $('modeDone').classList.add('hidden');
-      $('modeText').innerHTML = '<b>Remove mode</b> · tap decor for a 50% refund, or tap live food / leftovers to remove them · Esc to finish';
+      $('modeText').innerHTML = '<b>Remove</b> · tap decor for a half refund, or live food and leftovers to take them out <span class="hint">· Esc to finish</span>';
       this.refreshHeader();
     },
     removeAt(sx, sy) {
@@ -5488,10 +6215,12 @@ input[type=range]{accent-color:#a8742a}
       if (this.mode === 'place') { if (this.ptrType === 'mouse') { this.updateGhost(sx, sy); this.confirmPlace(); } else this.updateGhost(sx, sy); return; }
       if (this.mode === 'remove') { this.removeAt(sx, sy); return; }
       const hit = this.R.pick(sx, sy, {});
-      if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); A().sfx('click'); return; }
-      if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ' — part of the cleanup crew.' : '')); return; }
-      if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed exoskeleton (exuvia).' : 'Leftover husk — springtails and isopods will tidy it.'); return; }
-      if (hit && hit.kind === 'decor' && this.ptrType === 'mouse') return;
+      if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); this.follow(hit.ent.id); A().sfx('click'); return; }
+      if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
+      if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew.' : '.'), 'quiet'); return; }
+      if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed skin. The springtails will find it.' : 'Leftovers. The springtails will tidy them.', 'quiet'); return; }
+      // empty space (or scenery): stop following
+      if (this.R.cam.mode === 'follow') this.unfollow();
       if (this.isMobile() && this.panelId) $('spiderPanel').classList.remove('expanded');
     },
 
@@ -5508,21 +6237,21 @@ input[type=range]{accent-color:#a8742a}
       const hl = AI.hungerLabel(sp.sat);
       const moltTxt = sp.stage >= 5 ? 'Fully grown' : molting ? 'Molting now…' : 'Next molt: ' + Math.min(sp.meals, need) + '/' + need + ' meals';
       const follow = this.R.cam.mode === 'follow';
-      const html = '<button class="x" id="pClose" title="Close">✖</button>' +
+      const line = AI.stateLine ? AI.stateLine(h, sp) : hl;
+      const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
+      const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
+      const html = '<button class="txt x" id="pClose" title="Close">Close</button>' +
         '<h3 id="pHead">' + (this.renaming ? '<input id="pName" maxlength="18" value="' + esc(sp.name) + '">' : esc(sp.name)) + '</h3>' +
-        '<div class="sci">' + esc(S.name) + ' — <i>' + esc(S.sci) + '</i></div>' +
-        '<div class="mini"><b>' + JT.STAGES[sp.stage] + '</b> · ' + hl + ' · <i>' + esc(sp.thought || '') + '</i> <button class="modal-btn" id="pMore">More</button></div>' +
+        '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
+        '<div class="state">' + esc(line) + '</div>' +
+        '<div class="mini"><span>' + JT.STAGES[sp.stage] + ' · ' + hl + '</span><button class="txt" id="pMore">More</button></div>' +
         '<div class="full">' +
-        '<div class="row"><span>Stage</span><b>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ' (soft after molt)' : '') + '</b></div>' +
-        '<div class="row"><span>Hunger</span><b>' + hl + '</b></div><div class="bar"><i style="width:' + Math.round(sp.sat * 100) + '%"></i></div>' +
-        '<div class="row"><span>Hydration</span><b>' + Math.round((sp.hyd != null ? sp.hyd : 1) * 100) + '%</b></div><div class="bar hyd"><i style="width:' + Math.round((sp.hyd != null ? sp.hyd : 1) * 100) + '%"></i></div>' +
-        '<div class="row"><span>Growth</span><b>' + moltTxt + '</b></div><div class="bar molt"><i style="width:' + (sp.stage >= 5 ? 100 : Math.round(Math.min(1, sp.meals / need) * 100)) + '%"></i></div>' +
-        '<div class="row"><span>Age</span><b>' + (sp.ageDays || 0).toFixed(1) + ' days</b></div>' +
-        '<div class="row"><span>Molts · Catches</span><b>' + (sp.molts || 0) + ' · ' + (sp.catches || 0) + '</b></div>' +
-        '<div class="row"><span>Size</span><b>' + size + ' mm</b></div>' +
-        '<div class="thought">“' + esc(sp.thought || '…') + '”</div>' +
-        '<div class="pers"><b>Personality:</b> ' + (desc ? desc.map(esc).join(', ') : '<i>Still learning about ' + esc(sp.name) + '… keep watching.</i>') + '</div>' +
-        '<div class="pbtns"><button class="btn" id="pRename">' + (this.renaming ? 'Save' : '✏️ Rename') + '</button><button class="btn' + (follow ? ' gold' : '') + '" id="pFollow">' + (follow ? 'Following' : '👁 Follow') + '</button><button class="btn" id="pRemove">Rehome</button></div>' +
+        '<div class="rule"></div>' +
+        meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
+        '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd></dl>' +
+        '<div class="thought">' + esc(sp.thought || '…') + '</div>' +
+        '<div class="pers">' + (desc ? desc.map(esc).join(', ') : 'Still learning about ' + esc(sp.name) + '. Keep watching.') + '</div>' +
+        '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">' + (follow ? 'Following' : 'Follow') + '</button><button class="txt" id="pRemove">Rehome</button></div>' +
         '</div>';
       P.innerHTML = html;
       $('pClose').onclick = (e) => { e.stopPropagation(); this.hidePanel(); };
@@ -5532,7 +6261,7 @@ input[type=range]{accent-color:#a8742a}
         if (this.renaming) { const v = ($('pName').value || '').trim().slice(0, 18); if (v) sp.name = v; this.renaming = false; this.game.save(); this.renderPanel(true); }
         else { this.renaming = true; this.renderPanel(true); const i = $('pName'); i.focus(); i.select(); i.onkeydown = (e) => { if (e.key === 'Enter') $('pRename').click(); if (e.key === 'Escape') { this.renaming = false; this.renderPanel(true); } }; }
       };
-      $('pFollow').onclick = () => { this.game.selectedId = sp.id; this.setCam(follow ? 'iso' : 'follow'); this.renderPanel(true); };
+      $('pFollow').onclick = () => { this.game.selectedId = sp.id; if (follow) this.unfollow(); else this.follow(sp.id); this.renderPanel(true); };
       $('pRemove').onclick = () => {
         if (!root.confirm('Rehome ' + sp.name + ' outside the collection? This cannot be undone.')) return;
         h.removeEntity(sp, 'player'); const ref = Math.floor(speciesPrice(S) * 0.5); this.game.refund(ref); this.bumpCoins();
@@ -5590,7 +6319,7 @@ input[type=range]{accent-color:#a8742a}
         const owned = mine.filter(m => m[0].species === S.id).length;
         e.insertAdjacentHTML('beforeend', (S.starter ? '<span class="badge">Starter</span>' : owned ? '<span class="badge">Owned ×' + owned + '</span>' : '') + '<h4>' + esc(S.name) + '</h4><div class="sci">' + esc(S.sci) + ' · ~' + S.len + ' mm adult</div><p>' + esc(S.desc) + '</p>' + this.traitBars(S.traits));
         const b = el('button', 'modal-btn gold');
-        if (lockedByCatches) { b.textContent = '🔒 Unlocks after ' + S.unlockCatches + ' catches (' + Math.min(st.catches, S.unlockCatches) + '/' + S.unlockCatches + ')'; b.disabled = true; }
+        if (lockedByCatches) { b.textContent = 'Unlocks after ' + S.unlockCatches + ' catches (' + Math.min(st.catches, S.unlockCatches) + '/' + S.unlockCatches + ')'; b.disabled = true; }
         else if (full) { b.textContent = 'Habitat full (' + h.dims.cap + ')'; b.disabled = true; }
         else { b.textContent = (unlocked || S.starter ? 'Add' : 'Adopt') + ' — ' + (price ? price + ' coins' : 'free'); b.disabled = st.coins < price; }
         b.onclick = () => {
@@ -5607,28 +6336,33 @@ input[type=range]{accent-color:#a8742a}
     journalModal() {
       const st = this.game.state; const n = JT.JOURNAL.filter(j => st.journal[j.id]).length;
       let html = '<p class="muted">Only behaviours you actually witness are recorded. ' + n + ' of ' + JT.JOURNAL.length + ' observed.</p><div class="grid">';
-      for (const j of JT.JOURNAL) { const c = st.journal[j.id]; html += c ? '<div class="entry"><span class="badge">×' + c + '</span><h4>' + j.icon + ' ' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p></div>' : '<div class="entry locked"><h4>❓ Not yet witnessed</h4><p class="muted">Keep watching your jumpers…</p></div>'; }
+      for (const j of JT.JOURNAL) { const c = st.journal[j.id]; html += c ? '<div class="entry"><span class="badge">' + c + '×</span><h4>' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p></div>' : '<div class="entry locked"><h4>Not yet witnessed</h4><p class="muted">Keep watching your jumpers.</p></div>'; }
       this.openModal('Field Journal', html + '</div>');
     },
     habPickerModal() {
       const g = this.game; const w = el('div'); const list = el('div', 'sheet-list');
-      g.habs.forEach((h, i) => { const b = el('button', i === g.state.active ? 'on' : '', '<span>' + (h.data.type === 'jar' ? '🫙' : '🪴') + '</span>' + esc(h.data.name) + '<small class="muted">' + h.spiders.length + ' jumper(s)</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); }; list.appendChild(b); });
-      const m = el('button', '', '<span>🗂</span>Manage Habitats'); m.onclick = () => this.manageModal(); list.appendChild(m);
+      g.habs.forEach((h, i) => { const b = el('button', i === g.state.active ? 'on' : '', esc(h.data.name) + '<small class="muted">' + h.spiders.length + ' jumper(s)</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); }; list.appendChild(b); });
+      const m = el('button', '', 'Manage habitats'); m.onclick = () => this.manageModal(); list.appendChild(m);
       w.appendChild(list); this.openModal('Your Habitats', w);
     },
     moreSheet() {
       const w = el('div'); const list = el('div', 'sheet-list'); this.dockOn('more');
-      const add = (ic, lab, fn, on) => { const b = el('button', on ? 'on' : '', '<span>' + ic + '</span>' + lab); b.onclick = fn; list.appendChild(b); };
-      add('📖', 'Journal', () => this.journalModal());
-      add('💧', 'Mist', () => { this.closeModal(); this.doMist(); });
-      add('🧹', 'Clean', () => { this.closeModal(); this.doClean(); });
-      add('✖', 'Remove', () => { this.closeModal(); this.startRemove(); });
-      add('🗂', 'Habitats', () => this.manageModal());
-      add('⚙', 'Settings', () => this.settingsModal());
-      for (const [m, ic] of [['iso', '🧊'], ['observer', '👀'], ['follow', '🎯'], ['reverse', '🔄']]) add(ic, JT.CAMS[m].label + ' cam', () => { this.closeModal(); this.setCam(m); }, this.R.cam.mode === m);
-      for (const [m, ic, lab] of [['auto', '🌗', 'Auto time'], ['day', '☀', 'Always day'], ['night', '🌙', 'Always night']]) add(ic, lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
-      add(this.set.muted ? '🔇' : '🔊', 'Sound', () => { this.closeModal(); this.soundPopover(); });
-      add('❓', 'Help', () => this.helpModal());
+      const add = (lab, fn, on) => { const b = el('button', on ? 'on' : '', lab); b.onclick = fn; list.appendChild(b); };
+      const sect = (t) => list.appendChild(el('div', 'sect', t));
+      sect('Care');
+      add('Mist', () => { this.closeModal(); this.doMist(); });
+      add('Clean', () => { this.closeModal(); this.doClean(); });
+      add('Remove', () => { this.closeModal(); this.startRemove(); });
+      add('Journal', () => this.journalModal());
+      sect('Camera');
+      for (const m of ['iso', 'observer', 'follow', 'reverse']) add(JT.CAMS[m].label, () => { this.closeModal(); if (m === 'follow') this.follow(this.game.selectedId); else this.setCam(m); }, this.R.cam.mode === m);
+      sect('Time');
+      for (const [m, lab] of [['auto', 'Natural'], ['day', 'Always day'], ['night', 'Always night']]) add(lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
+      sect('Settings');
+      add('Habitats', () => this.manageModal());
+      add('Settings', () => this.settingsModal());
+      add(this.set.muted ? 'Sound (muted)' : 'Sound', () => { this.closeModal(); this.soundPopover(); });
+      add('Help', () => this.helpModal());
       w.appendChild(list); this.openModal('More', w);
     },
     manageModal() {
@@ -5653,7 +6387,7 @@ input[type=range]{accent-color:#a8742a}
         const r3 = el('div', 'form-row'); r3.appendChild(el('label', '', 'Preset layout'));
         const ps = el('select'); const opts = JT.Presets.forType(h.data.type);
         opts.forEach((p, k) => { const o = el('option', '', esc(p.name)); o.value = 't:' + p.theme; ps.appendChild(o); });
-        (st.customPresets || []).forEach((p, k) => { const o = el('option', '', '★ ' + esc(p.name)); o.value = 'c:' + k; ps.appendChild(o); });
+        (st.customPresets || []).forEach((p, k) => { const o = el('option', '', 'Custom: ' + esc(p.name)); o.value = 'c:' + k; ps.appendChild(o); });
         const ap = el('button', 'modal-btn', 'Apply / Regenerate'); ap.onclick = () => {
           if (!root.confirm('Replace all decor in ' + h.data.name + ' with this layout? Current decor is removed (no refund for preset pieces).')) return;
           let refund = 0; for (const d of h.decor) if (!d.preset) refund += Math.floor(JT.DECOR_BY_ID[d.type].price * 0.5);
@@ -5673,7 +6407,7 @@ input[type=range]{accent-color:#a8742a}
           const b = el('button', 'modal-btn gold', 'Build habitat'); b.onclick = () => { const h = g.createHabitat(sel.value); if (!h) { this.toast('Not enough coins.'); return; } h.decor.forEach(d => { d.preset = true; }); this.refreshHeader(); this.manageModal(); this.toast('Built ' + esc(h.data.name) + '.'); };
           r.appendChild(sel); r.appendChild(b); c.appendChild(r);
         } else {
-          const price = JT.SLOT_PRICES[i]; c.innerHTML = '<h4>🔒 Shelf slot ' + (i + 1) + '</h4>';
+          const price = JT.SLOT_PRICES[i]; c.innerHTML = '<h4>Shelf slot ' + (i + 1) + ' <span class="muted">locked</span></h4>';
           if (i === st.slots) { const b = el('button', 'modal-btn gold', 'Buy slot — ' + price + ' coins'); b.disabled = st.coins < price; b.onclick = () => { if (g.buySlot()) { this.bumpCoins(); this.manageModal(); } else this.toast('Not enough coins.'); }; c.appendChild(b); }
           else c.appendChild(el('div', 'muted', 'Unlock earlier slots first.'));
         }
@@ -5709,17 +6443,25 @@ input[type=range]{accent-color:#a8742a}
       p.classList.remove('hidden');
     },
     helpModal() {
+      const e = (h, p) => '<div class="entry"><h4>' + h + '</h4><p>' + p + '</p></div>';
       this.openModal('How to Keep Jumpers', '<div class="grid">' +
-        '<div class="entry"><h4>🕷 Your jumpers</h4><p>Click or tap a jumper to see its card: hunger, hydration, growth, thoughts and personality. Rename, follow or rehome it there.</p></div>' +
-        '<div class="entry"><h4>🪰 Feeding</h4><p>Buy Live Food. Hungry jumpers hunt on their own — stalking, ambushing from perches and pouncing. Every catch earns coins.</p></div>' +
-        '<div class="entry"><h4>🌱 Growth</h4><p>After enough meals a jumper climbs to a high sheltered spot, spins a silk retreat and molts. It stays soft and pale for a while afterwards.</p></div>' +
-        '<div class="entry"><h4>🪴 Building</h4><p>Decor, Plants and Substrate open shop drawers. Pick a piece and place it — green means it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>Esc</kbd> cancels. Remove refunds 50%.</p></div>' +
-        '<div class="entry"><h4>💧 Care</h4><p>Mist to leave droplets for drinking. Springtails and isopods clean leftovers; the Clean button tidies husks too.</p></div>' +
-        '<div class="entry"><h4>📹 Observe</h4><p>Observation Mode (<kbd>O</kbd>) hides the interface and follows the most interesting jumper. <kbd>Esc</kbd> exits.</p></div>' +
-        '<div class="entry"><h4>🎥 Camera</h4><p><kbd>1</kbd> Isometric · <kbd>2</kbd> Observer · <kbd>3</kbd> Follow · <kbd>4</kbd> Reverse. Scroll or pinch to zoom, drag to pan, <kbd>0</kbd> resets.</p></div>' +
-        '<div class="entry"><h4>📖 Journal & unlocks</h4><p>Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Earn coins for more shelf slots and enclosures.</p></div></div>');
+        e('Your jumpers', 'Tap a jumper to follow it and see its card: one line on what it is doing, hunger, water, growth and personality. Tap empty space, or Follow again, to stop following.') +
+        e('Feeding', 'Buy live food. Hungry jumpers hunt on their own. When the food runs out they patrol their perches, climb high to scan and lunge at anything that moves. The Food control gently glows while someone is waiting.') +
+        e('Growth', 'After enough meals a jumper climbs somewhere high and sheltered, spins a silk retreat and molts. It stays soft and pale for a while afterwards.') +
+        e('Building', 'Decor, Plants and Substrate open the shop strip. Pick a piece and place it; it shows whether it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>Esc</kbd> cancels. Removing refunds half.') +
+        e('Warmth', 'A Basking Lamp throws a warm pool of light. Jumpers bask there in the morning, when it is cool and after a meal. Tap the lamp to switch it on or off. At night it draws moths and flies.') +
+        e('Care', 'Mist to leave droplets for drinking. Springtails and isopods seek out husks and shed skins and nibble them away; more springtails clean faster. Clean tidies husks at once.') +
+        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Observer, <kbd>3</kbd> Follow, <kbd>4</kbd> Reverse. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
+        e('Journal', 'Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Coins buy more shelf slots and enclosures.') + '</div>');
     },
 
+    /** The Food control gently breathes while a hungry jumper has nothing left to hunt (no badge, no icon). */
+    updateWanting() {
+      const h = this.hab; const AI = JT.SpiderAI;
+      const want = h.spiders.some(s => s.sat < 0.4 && !s.hold && !(AI.preyAvailable && AI.preyAvailable(h, s)));
+      if (want === this._want) return; this._want = want;
+      document.querySelectorAll('#toolbar button[data-tool="food"], #dock button[data-dock="food"]').forEach(b => b.classList.toggle('wanting', want));
+    },
     // ------------------------------------------------ per-frame
     update(dt) {
       this._t += dt; this._panelT += dt;
@@ -5727,7 +6469,7 @@ input[type=range]{accent-color:#a8742a}
       if (this.obs) this.updateObs(dt);
       // the player "watches" the selected jumper -> personality is discovered over time
       if (g.viewing) for (const s of h.spiders) s.obsT = (s.obsT || 0) + dt * (s.id === g.selectedId && (this.panelId === s.id || this.obs || this.R.cam.mode === 'follow') ? 1 : 0.2);
-      if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); $('coins').textContent = Math.floor(g.state.coins); }
+      if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); $('coins').textContent = Math.floor(g.state.coins); this.updateWanting(); }
       if (this.mode === 'place' && this.place && this._t > 0.5) { this._t = 0; this.updateGhostAtCurrent(); }
     },
   };
@@ -5749,8 +6491,8 @@ input[type=range]{accent-color:#a8742a}
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
-    if (restored && game._gifted) setTimeout(() => JT.UI.toast('🌿 A <b>Moss Tower</b> made for portrait screens was added to your shelf — meet <b>Moss</b>, a young Regal Jumper.', '', 6500), 600);
-    if (!restored) setTimeout(() => JT.UI.toast('Welcome! Meet <b>Bolt</b>, your Bold Jumper. Click a jumper to see what it is thinking.', '', 6000), 600);
+    if (restored && game._gifted) setTimeout(() => JT.UI.toast('A <b>Moss Tower</b> made for portrait screens was added to your shelf — meet <b>Moss</b>, a young Regal Jumper.', '', 6500), 600);
+    if (!restored) setTimeout(() => JT.UI.toast('Welcome! Meet <b>Bolt</b>, your Bold Jumper. Tap a jumper to follow it and see what it is doing.', '', 6000), 600);
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());

@@ -44,11 +44,14 @@
     }
     setMode(m) { if (!CAMS[m]) return; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
     zoomBy(f, sx, sy) {
+      if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.zoom(f); return; }
       const z0 = this.cam.zoom; const z = M.clamp(z0 * f, 0.6, 5); if (z === z0) return;
       if (sx != null) { const cx = this.cssW / 2 + this.cam.pan[0], cy = this.cssH / 2 + this.cam.pan[1]; const k = z / z0; this.cam.pan[0] += (sx - cx) * (1 - k); this.cam.pan[1] += (sy - cy) * (1 - k); }
       this.cam.zoom = z; this.clampPan();
     }
-    panBy(dx, dy) { this.cam.pan[0] += dx; this.cam.pan[1] += dy; this.clampPan(); }
+    panBy(dx, dy) {
+      if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.orbit(dx * 0.0065, dy * 0.004); return; }
+      this.cam.pan[0] += dx; this.cam.pan[1] += dy; this.clampPan(); }
     clampPan() { const lim = (0.35 + this.cam.zoom * 0.45); this.cam.pan[0] = M.clamp(this.cam.pan[0], -this.cssW * lim, this.cssW * lim); this.cam.pan[1] = M.clamp(this.cam.pan[1], -this.cssH * lim, this.cssH * lim); }
     resetView() { this.cam.zoom = 1; this.cam.pan = [0, 0]; }
 
@@ -85,6 +88,16 @@
       const cu = this.cur; let dy = M.wrapAngle(T.yaw - cu.yaw);
       cu.yaw += dy * k; cu.pitch += (T.pitch - cu.pitch) * k; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
       cu.c = M.lerp3(cu.c, T.c, kc);
+      if (this.cam.mode === 'follow') {
+        const sp = hab.spider(this.game.selectedId) || hab.spiders[0];
+        const fc = this.fcam || (this.fcam = new JT.FollowCam());
+        if (sp) {
+          if (!fc.st || fc.id !== sp.id || fc.hab !== hab.id) { fc.reset(cu, sp.id); fc.hab = hab.id; }
+          const st = fc.step(hab, sp, dt, Math.min(this.cssW, this.cssH) / (this.cssH > this.cssW * 1.1 ? 54 : 70));
+          cu.yaw = st.yaw; cu.pitch = st.pitch; cu.s = st.s; cu.c = st.c.slice(); cu.offY += (0 - cu.offY) * k;
+          this.cam.pan[0] *= 1 - k; this.cam.pan[1] *= 1 - k;
+        }
+      } else if (this.fcam) this.fcam.st = null;
       const kk = this.k;
       this.V.set(cu.yaw, cu.pitch, cu.s * kk, (this.cssW / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
       return this.V;
@@ -193,10 +206,13 @@
       const vk = V.yaw.toFixed(4) + '|' + V.pitch.toFixed(4) + '|' + V.s.toFixed(4);
       this._viewStable = vk === this._lastVK; this._lastVK = vk; this._vk = vk; this._sprBudget = 6; this._dt = dt;
       this.drawBase(ctx, V, hab, night);
+      const lamps = hab.lampsOn ? hab.lampsOn() : [];
+      if (lamps.length) this.drawLampPools(ctx, V, hab, lamps, night);
       this.drawScene(ctx, V, hab, night);
       this.drawEffects(ctx, V, hab, dt);
       if (post) this.postProcess(this.ctx, this.scene, night);
       else this.nightGrade(this.ctx, night);
+      if (lamps.length) this.drawLampGlow(this.ctx, V, hab, lamps, night);
       if (this.set.debug) this.drawDebug(this.ctx, V, hab);
     }
     drawScene(ctx, V, hab, night) {
@@ -228,18 +244,34 @@
         if (!M.finite3(sp.pos) || !onScreen(sp.pos)) continue;
         const calm = sp.id === sel && ['idle', 'lookout', 'rest', 'watch', 'groom', 'postFeed'].includes(sp.state);
         const lcT = calm && Math.sin(this.time * 0.33 + (sp.seed % 7)) > 0.55 ? 1 : 0; sp._lc = M.lerp(sp._lc || 0, lcT, Math.min(1, (this._dt || 0.016) * 2.5));
-        const L = JT.SpiderAI.len(sp); const fr = D.frame(hab, sp, 0.05);
+        const L = JT.SpiderAI.len(sp); let fr = D.frame(hab, sp, 0.05);
+        // curious head tilt when the camera is close and the jumper is sitting still
+        const still = !sp._moving && !sp._air && ['idle', 'lookout', 'rest', 'watch', 'look', 'groom'].includes(sp.state);
+        sp._tilt = M.lerp(sp._tilt || 0, still && L * V.s > 46 * this.k && sp._lc > 0.3 ? 1 : 0, Math.min(1, (this._dt || 0.016) * 2));
+        // brief dangle on a silk line: purely visual offset from the ledge edge, then back up
+        let hang = 0, hangA = null;
+        if (sp._dangleOff && sp._dangleVis > 0.01) {
+          const dOff = sp._dangleOff, kv = sp._dangleVis; const edge = M.clamp(kv * 3, 0, 1), down = M.smooth(M.clamp((kv - 0.3) / 0.7, 0, 1));
+          hangA = [sp.pos[0] + dOff.dx, sp.pos[1] + 0.2, sp.pos[2] + dOff.dz];
+          const pos = [M.lerp(fr.p[0], hangA[0], edge), M.lerp(fr.p[1], hangA[1], edge) - dOff.depth * down + Math.sin(this.time * 1.7) * 0.15 * down, M.lerp(fr.p[2], hangA[2], edge)];
+          const out = M.norm([dOff.dx || 0.01, 0, dOff.dz || 0]); const fD = M.norm(M.lerp3(fr.f, [0, -1, 0], down * 0.85)); const nD = M.norm(M.lerp3(fr.n, out, down));
+          const sD = M.norm(M.cross(nD, fD)); fr = { p: pos, f: fD, s: sD, n: M.norm(M.cross(fD, sD)) }; hang = down;
+        }
         const ventral = M.dot(fr.n, V.toCam) < -0.08;
         let d = animalDepth(sp); if (ventral && sp.sup && sp.sup.d && decDepth[sp.sup.d] != null) d = decDepth[sp.sup.d] + 0.05;
         const air = !!sp._air || (sp.sup && sp.sup.k === 'air');
         const draw = (alpha) => {
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, noShadow: hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
+        if (hangA) { const fp = fr.p, fff = fr.f; items.push({ d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
+        // live safety dragline paid out behind a jump
+        if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; items.push({ d: V.depth(M.lerp3(an, sp2, 0.5)) - 0.05, f: () => { const a = V.P(an), b = V.P(sp2); ctx.strokeStyle = 'rgba(240,240,250,' + (0.32 - night * 0.1).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
         items.push({ d, f: () => draw(1) });
         if (ventral && sp.id === sel) items.push({ d: d - 0.2 - 50, f: () => { ctx.globalAlpha = 0.3; D.spider(ctx, V, sp, fr, { len: L, time: t, alpha: 0.3, noShadow: true }); ctx.globalAlpha = 1; } });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)) }); }
       }
+      for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf) }); }
       for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !onScreen(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0]; items.push({ d: V.depth(n.pos) - n.len * 0.7, f: () => D.nest(ctx, V, n, up, night) }); }
       for (const k of hab.data.silk) items.push({ d: V.depth(M.lerp3(k.a, k.b, 0.5)) - 0.1, f: () => D.silk(ctx, V, k, night) });
       if (this.ghost && this.ghost.geom) {
@@ -287,7 +319,7 @@
     drawDecorCached(ctx, V, g, sway, night, t) {
       if (sway || g.id === '_ghost') { D.decor(ctx, V, g, { sway, night, time: t }); return; }
       if (g._glow == null) g._glow = g.prims.some(p => p.glow);
-      const key = this._vk + (g._glow ? '|' + Math.round(night * 10) : '');
+      const key = this._vk + (g._glow ? '|' + Math.round(night * 10) : '') + (g.lamp ? '|L' + (g.lampOn !== false) : '');
       const o = V.P(g.center || [0, 0, 0]); const S = g._spr;
       if (S && S.key === key) { if (S.cv) ctx.drawImage(S.cv, S.x + o[0] - S.o[0], S.y + o[1] - S.o[1]); else D.decor(ctx, V, g, { night, time: t }); return; }
       if (!this._viewStable || this._sprBudget <= 0) { D.decor(ctx, V, g, { night, time: t }); return; }
@@ -334,9 +366,62 @@
     }
 
     // ---------------- effects ----------------
+    // ---------------- basking lamp light ----------------
+    lampSurface(hab, L) {
+      const k = L.inst.id + '|' + hab._geomVersion; L.inst._ls = L.inst._ls && L.inst._ls.k === k ? L.inst._ls : { k, y: JT.Nav.supportBelow(hab, [L.pool[0], L.head[1] - 3, L.pool[2]]).pos[1] };
+      return L.inst._ls.y;
+    }
+    /** Warm pool on the surfaces under the lamp + longer, darker shadows cast away from it (drawn before night grading). */
+    drawLampPools(ctx, V, hab, lamps, night) {
+      ctx.save();
+      for (const L of lamps) {
+        const y = this.lampSurface(hab, L); const c = V.P([L.pool[0], y + 0.05, L.pool[2]]); const R = L.r * 1.05 * V.s;
+        // shadows: objects and jumpers near the light throw a soft shadow pointing away from it
+        ctx.globalCompositeOperation = 'source-over';
+        const sh = (pos, rad, hgt, a) => {
+          const dx = pos[0] - L.pool[0], dz = pos[2] - L.pool[2]; const dl = Math.hypot(dx, dz); if (dl > L.r * 2.2 || dl < 0.5) return;
+          const ux = dx / dl, uz = dz / dl; const len = Math.min(rad * 2.4, hgt * 0.5 + rad);
+          const q = V.P([pos[0] + ux * len * 0.55, pos[1] + 0.05, pos[2] + uz * len * 0.55]); const ax = V.J([ux * len * 0.7, 0, uz * len * 0.7]), ay = V.J([-uz * rad * 0.8, 0, ux * rad * 0.8]);
+          const rx = Math.hypot(ax[0], ax[1]), ry = Math.max(0.5, Math.hypot(ay[0], ay[1])); if (rx < 0.5) return;
+          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,10,4,' + (a * (1 - dl / (L.r * 2.2))).toFixed(3) + ')'); g.addColorStop(1, 'rgba(20,10,4,0)');
+          ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(Math.atan2(ax[1], ax[0])); ctx.scale(rx, ry); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.283); ctx.fill(); ctx.restore();
+        };
+        for (const inst of hab.decor) { if (inst.id === L.inst.id) continue; const g = hab.geoms[inst.id]; if (!g || g.def.arche === 'backwall' || g.def.arche === 'wallmount') continue; sh(g.center, Math.max(3, Math.min(14, g.coverR * 0.7)), g.height, 0.3); }
+        for (const sp of hab.spiders) if (M.finite3(sp.pos) && Math.abs(sp.pos[1] - y) < 3) { const l = JT.SpiderAI.len(sp); sh(sp.pos, l * 0.5, l * 0.6, 0.35); }
+        // the warm pool itself
+        ctx.globalCompositeOperation = 'screen';
+        ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(1, Math.max(0.15, V.sp));
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); const a = 0.3 + night * 0.1;
+        g.addColorStop(0, 'rgba(255,196,120,' + a.toFixed(3) + ')'); g.addColorStop(0.45, 'rgba(255,170,90,' + (a * 0.55).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,150,70,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
+      }
+      ctx.restore();
+    }
+    /** Additive bulb glow and lit highlights; drawn after grading so it stays visible at night. */
+    drawLampGlow(ctx, V, hab, lamps, night) {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';
+      for (const L of lamps) {
+        const b = V.P(L.head); const y = this.lampSurface(hab, L); const c = V.P([L.pool[0], y + 0.05, L.pool[2]]);
+        const flick = 1 + Math.sin(this.time * 0.7) * 0.015;
+        const rb = 9 * V.s * flick; let g = ctx.createRadialGradient(b[0], b[1], 0, b[0], b[1], rb);
+        g.addColorStop(0, 'rgba(255,226,170,' + (0.35 + night * 0.4).toFixed(3) + ')'); g.addColorStop(0.3, 'rgba(255,170,90,' + (0.12 + night * 0.18).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,140,60,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b[0], b[1], rb, 0, 6.283); ctx.fill();
+        if (night > 0.05) {
+          // soft cone of light falling to the pool
+          ctx.save(); ctx.globalAlpha = 0.5 * night; const R = L.r * V.s;
+          const cg = ctx.createLinearGradient(b[0], b[1], c[0], c[1]); cg.addColorStop(0, 'rgba(255,200,130,0.14)'); cg.addColorStop(1, 'rgba(255,170,90,0.03)');
+          ctx.fillStyle = cg; ctx.beginPath(); ctx.moveTo(b[0] - 3 * V.s, b[1]); ctx.lineTo(b[0] + 3 * V.s, b[1]); ctx.lineTo(c[0] + R * 0.8, c[1]); ctx.lineTo(c[0] - R * 0.8, c[1]); ctx.closePath(); ctx.fill(); ctx.restore();
+          ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(1, Math.max(0.15, V.sp)); const gp = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+          gp.addColorStop(0, 'rgba(255,170,90,' + (0.32 * night).toFixed(3) + ')'); gp.addColorStop(0.5, 'rgba(255,140,60,' + (0.13 * night).toFixed(3) + ')'); gp.addColorStop(1, 'rgba(255,120,40,0)');
+          ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
     addText(pos, text, col, big) { this.fx.push({ pos: pos.slice(), text, col: col || '#ffe9a8', t: 0, life: big ? 1.8 : 1.5, big }); }
     burst(pos, col, n) { for (let i = 0; i < (n || 10); i++) this.particles.push({ pos: pos.slice(), v: [(JT.R() - 0.5) * 30, 10 + JT.R() * 25, (JT.R() - 0.5) * 30], t: 0, life: 0.6 + JT.R() * 0.5, col: col || '#fff2c0', r: 0.4 + JT.R() * 0.5 }); }
-    mistFx(hab) { for (let i = 0; i < 90; i++) { const q = hab.randomFloorPoint(); this.particles.push({ pos: [q[0], hab.dims.h * (0.6 + JT.R() * 0.6), q[2]], v: [(JT.R() - 0.5) * 6, -40 - JT.R() * 30, (JT.R() - 0.5) * 6], t: 0, life: 1.2 + JT.R() * 1.2, col: 'rgba(210,235,255,0.8)', r: 0.25 + JT.R() * 0.35, mist: true }); } }
+    /** A light, slow-settling haze of fine droplets (no burst). */
+    mistFx(hab) { for (let i = 0; i < 36; i++) { const q = hab.randomFloorPoint(); this.particles.push({ pos: [q[0], hab.dims.h * (0.5 + JT.R() * 0.5), q[2]], v: [(JT.R() - 0.5) * 3, -12 - JT.R() * 10, (JT.R() - 0.5) * 3], t: -JT.R() * 0.8, life: 2.2 + JT.R() * 1.5, col: 'rgba(225,240,255,0.45)', r: 0.2 + JT.R() * 0.25, mist: true }); } }
     drawMotes(ctx, V, hab, dt) {
       // dust motes drifting through the light — a tiny bit of air between you and the scene
       const day = this.game.daylight(); if (day < 0.15 || this.quality === 'low') return;
@@ -352,7 +437,7 @@
     }
     drawEffects(ctx, V, hab, dt) {
       this.drawMotes(ctx, V, hab, dt);
-      for (const p of this.particles) { p.t += dt; p.v[1] -= (p.mist ? 10 : 60) * dt; p.pos = M.add(p.pos, M.mul(p.v, dt)); const q = V.P(p.pos); const a = 1 - p.t / p.life; if (a <= 0) continue; ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, p.r * V.s), 0, 6.283); ctx.fill(); }
+      for (const p of this.particles) { p.t += dt; p.v[1] -= (p.mist ? 10 : 60) * dt; p.pos = M.add(p.pos, M.mul(p.v, dt)); const q = V.P(p.pos); if (p.t < 0) continue; const a = Math.min(1, p.t * 3) * (1 - p.t / p.life); if (a <= 0) continue; ctx.globalAlpha = a; ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, p.r * V.s), 0, 6.283); ctx.fill(); }
       this.particles = this.particles.filter(p => p.t < p.life && p.pos[1] > -2); if (this.particles.length > 400) this.particles.splice(0, this.particles.length - 400);
       ctx.globalAlpha = 1; ctx.textAlign = 'center';
       for (const f of this.fx) {

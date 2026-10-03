@@ -379,6 +379,28 @@
     if (rx > 3) { ctx.strokeStyle = sh(pr.col, -0.5); ctx.globalAlpha = (o.alpha != null ? o.alpha : 1) * 0.6; ctx.lineWidth = Math.max(0.5, V.s * 0.12); ctx.stroke(); ctx.globalAlpha = o.alpha != null ? o.alpha : 1; }
   };
   // cushion moss clump: overlapping rounded lobes, lit from the light side
+  PR.lampfoot = function (ctx, V, pr, g, P, o) {
+    const c = P(pr.o), t = P([pr.o[0], pr.o[1] + 1, pr.o[2]]); const rx = pr.r * V.s, ry = Math.max(0.5, rx * V.sp);
+    ctx.fillStyle = '#3a3026'; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, Math.PI); ctx.lineTo(t[0] - rx, t[1]); ctx.ellipse(t[0], t[1], rx, ry, 0, Math.PI, 0, true); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5a4a36'; ctx.beginPath(); ctx.ellipse(t[0], t[1], rx, ry, 0, 0, 6.283); ctx.fill();
+  };
+  /** Dome shade + bulb. The glow itself is drawn by the renderer's light pass so it survives night grading. */
+  PR.lamp = function (ctx, V, pr, g, P, o) {
+    const c = pr.o, r = pr.r, on = g.lampOn !== false; const s = V.s;
+    const rim = P([c[0], c[1] - r * 0.3, c[2]]), top = P([c[0], c[1] + r * 0.7, c[2]]);
+    const rx = r * s, ry = Math.max(rx * 0.12, rx * Math.abs(V.sp));
+    // dome
+    const gr = ctx.createLinearGradient(rim[0] - rx, top[1], rim[0] + rx, rim[1]);
+    gr.addColorStop(0, '#6a5638'); gr.addColorStop(0.45, '#4a3a26'); gr.addColorStop(1, '#2a2016');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(rim[0] - rx, rim[1]);
+    ctx.bezierCurveTo(rim[0] - rx, top[1] - ry * 0.2, rim[0] - rx * 0.35, top[1] - ry * 0.3, top[0], top[1]);
+    ctx.bezierCurveTo(rim[0] + rx * 0.35, top[1] - ry * 0.3, rim[0] + rx, top[1] - ry * 0.2, rim[0] + rx, rim[1]);
+    ctx.ellipse(rim[0], rim[1], rx, ry, 0, 0, Math.PI, false); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(230,200,140,0.35)'; ctx.lineWidth = Math.max(0.6, s * 0.18); ctx.beginPath(); ctx.ellipse(rim[0], rim[1], rx, ry, 0, 0, 6.283); ctx.stroke();
+    // inside of the shade, seen from below or at a shallow angle
+    if (V.sp < 0.35) { ctx.fillStyle = on ? '#f6dca0' : '#3a3024'; ctx.beginPath(); ctx.ellipse(rim[0], rim[1], rx * 0.9, ry * 0.9, 0, 0, 6.283); ctx.fill(); }
+    const b = P([c[0], c[1] - r * 0.42, c[2]]); ctx.fillStyle = on ? '#fff4d6' : '#b8b0a2'; ctx.beginPath(); ctx.ellipse(b[0], b[1], rx * 0.36, Math.max(rx * 0.22, ry * 0.4), 0, 0, 6.283); ctx.fill();
+  };
   PR.tuft = function (ctx, V, pr, g, P, o) {
     const p = P(pr.o); const R = pr.r * V.s; if (R < 0.6) return;
     const lob = pr._lob || (pr._lob = (() => { const r = JT.makeRng(pr.seed || 1); const a = []; for (let k = 0; k < 7; k++) { const t = r() * 6.28, d = r() * 0.6; a.push([Math.cos(t) * d, Math.sin(t) * d * 0.8, 0.35 + r() * 0.35, (r() - 0.5) * 0.2]); } return a; })());

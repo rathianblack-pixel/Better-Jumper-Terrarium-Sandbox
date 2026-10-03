@@ -184,21 +184,24 @@
     ctx.globalAlpha = alpha;
     const crouch = sp._crouch || 0, raise = sp._legRaise || 0, moving = sp._moving ? 1 : 0;
     const breath = Math.sin(sp._breath || 0) * 0.015; const ant = !!S.antShape;
-    const h0 = L * (0.14 - 0.07 * crouch);
+    const flat = sp._flat || 0, strK = sp._stretchK || 0, wipe = sp._wipe || 0, flick = sp._flick || 0, hang = o.hang || 0;
+    const h0 = L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) + L * 0.035 * strK;
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
     if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha);
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb; // seen from below: belly colours
-    const fat = M.clamp(0.85 + (sp.sat != null ? sp.sat : 0.7) * 0.34, 0.85, 1.2) * (1 + breath);
+    const fat = (sp._fatNow != null ? M.clamp(sp._fatNow, 0.66, 1.28) : M.clamp(0.85 + (sp.sat != null ? sp.sat : 0.7) * 0.34, 0.85, 1.2)) * (1 + breath);
     // head turns independently: gaze + an occasional curious look at the camera ("selfie glance")
     let gz = (sp._gazeNow || 0) * 0.3;
     if (o.lookCam) { const cf = M.sub(V.toCam, M.mul(n, M.dot(V.toCam, n))); if (M.len(cf) > 0.2) { const c2 = M.norm(cf); const a = Math.atan2(M.dot(c2, s), M.dot(c2, f)); if (Math.abs(a) < 1.6) gz = M.lerp(gz, M.clamp(a, -0.55, 0.55), o.lookCam); } }
-    const fg = M.norm(M.add(M.mul(f, Math.cos(gz)), M.mul(s, Math.sin(gz)))); const sg = M.norm(M.cross(n, fg));
+    const fg = M.norm(M.add(M.mul(f, Math.cos(gz)), M.mul(s, Math.sin(gz)))); let sg = M.norm(M.cross(n, fg)); let nh = n;
+    // curious head tilt toward a close, still camera: roll the carapace a little about its long axis
+    if (o.tilt > 0.01) { const sgn = M.dot(sg, V.toCam) >= 0 ? 1 : -1; const ra = 0.3 * o.tilt * sgn; const cr = Math.cos(ra), sr = Math.sin(ra); const sg2 = M.norm(M.add(M.mul(sg, cr), M.mul(n, sr))); nh = M.norm(M.sub(M.mul(n, cr), M.mul(sg, sr))); sg = sg2; }
     const stalk = ['stalk', 'creep', 'crouch'].includes(sp.state) ? 0.22 : sp.state === 'display' ? 0.35 : 0.05;
     const parts = [];
     const bodyCol = (c, belly) => under ? mix(c, belly, 0.75) : c;
     // --- cephalothorax (+ eyes) ---
     const cc = W(0.13 * L, 0, h0 + L * (ant ? 0.06 : 0.1));
-    const cph = Part(cc, M.mul(fg, L * (ant ? 0.2 : 0.25)), M.mul(sg, L * (ant ? 0.115 : 0.2)), M.mul(n, L * (ant ? 0.1 : 0.15)));
+    const cph = Part(cc, M.mul(fg, L * (ant ? 0.2 : 0.25)), M.mul(sg, L * (ant ? 0.115 : 0.2)), M.mul(nh, L * (ant ? 0.1 : 0.15)));
     parts.push({ d: V.depth(cc), f: () => {
       blob(ctx, V, cph.c, cph.ax, cph.ay, cph.az, bodyCol(pal.ceph, pal.belly), { lod, gloss: S.pattern === 'ant' || S.pattern === 'johnson' ? 0.8 : 0.45, fuzz: lod === 2 && !ant ? 0.9 : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: (S.pattern === 'emerald' || S.pattern === 'imperial') ? 1 : 0, time: t });
       if (lod > 0 && !under) {
@@ -223,7 +226,7 @@
     } });
     if (ant) { const nc = W(-0.08 * L, 0, h0 + L * 0.05); parts.push({ d: V.depth(nc), f: () => blob(ctx, V, nc, M.mul(f, L * 0.07), M.mul(s, L * 0.055), M.mul(n, L * 0.055), pal.ceph, { lod, gloss: 0.7 }) }); }
     // --- abdomen (raised while stalking, plump when fed) ---
-    const ta = stalk + crouch * 0.1; const af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))), an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
+    const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06; const af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))), an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
     const ac = M.add(W(ant ? -0.33 * L : -0.27 * L, 0, h0 + L * 0.09), M.mul(an, L * 0.02));
     const abd = Part(ac, M.mul(af, L * (ant ? 0.23 : 0.3) * (0.95 + fat * 0.05)), M.mul(s, L * (ant ? 0.13 : 0.22) * fat), M.mul(an, L * (ant ? 0.13 : 0.19) * fat));
     parts.push({ d: V.depth(ac), f: () => {
@@ -243,8 +246,9 @@
     for (const sd of [-1, 1]) {
       const chc = M.add(W(0.33 * L, sd * L * 0.055, h0 + L * 0.02), M.mul(fg, L * 0.04));
       parts.push({ d: V.depth(chc) - 0.01, f: () => blob(ctx, V, chc, M.mul(fg, L * 0.05), M.mul(sg, L * 0.045), M.mul(n, L * 0.07), pal.chel, { lod, gloss: 1, sheen: S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'canopy' || S.pattern === 'orange' ? 2 : 0, time: t }) });
-      const pw = (sp.state === 'groom' ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
-      const a = W(0.3 * L, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + pw, sd * L * 0.1, h0 + L * 0.06), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + pw, sd * L * 0.09, h0 + L * 0.0), M.mul(fg, L * 0.02));
+      const pw = (sp.state === 'groom' || wipe > 0.2 ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
+      const fl = flick * Math.sin(flick * 9.4 + sd * 0.8) * L * 0.06; // quick alternating palp flicks
+      const a = W(0.3 * L, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + pw, sd * L * 0.1, h0 + L * 0.06 + Math.abs(fl)), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + pw - Math.abs(fl) * 0.5, sd * L * 0.09, h0 + L * 0.0 + fl), M.mul(fg, L * 0.02));
       parts.push({ d: V.depth(b) - 0.02, f: () => { limb(ctx, V, [a, b, c], [L * 0.04, L * 0.036], pal.leg, lod, null); if (lod > 0) blob(ctx, V, c, M.mul(fg, L * 0.035), M.mul(sg, L * 0.03), M.mul(n, L * 0.03), pal.hair, { lod, ink: false }); } });
     }
     // --- 8 legs: coxa→femur→tibia→tarsus, tapered and inked; front legs stout ---
@@ -257,6 +261,10 @@
       if (i === 0 && raise > 0) { fu += L * 0.2 * raise; fw += L * 0.18 * raise; fv *= 1 - 0.1 * raise; }
       if (sp.state === 'display' && i <= (S.prefs.display > 0.7 ? 2 : 0)) fw += L * (0.26 + Math.sin(t * 7 + i + (sd > 0 ? 1 : 0)) * 0.12);
       if (sp.state === 'groom' && i === 0) { fw += L * 0.15 * (0.5 + 0.5 * Math.sin(t * 9 + sd)); fv *= 0.75; }
+      if (wipe > 0.01 && i === 0) { const w = wipe * (0.65 + 0.35 * Math.sin(t * 10 + (sd > 0 ? 0 : 1.7))); fu = M.lerp(fu, L * 0.4, w); fv = M.lerp(fv, sd * L * 0.16, w); fw = M.lerp(fw, h0 + L * 0.16, w); }
+      if (strK > 0.01) { if (i < 2) { fu += L * 0.16 * strK; fw += L * 0.05 * strK * (i === 0 ? 1 : 0); } else { fu -= L * 0.12 * strK; } fv *= 1 + 0.12 * strK; }
+      if (flat > 0.01) { fv *= 1 + 0.2 * flat; fu *= 1 + 0.06 * flat; }
+      if (hang > 0.01) { fv *= 1 - 0.25 * hang; fw += L * 0.05 * hang; }
       if (o.airborne) { if (i < 2) { fu += L * 0.22; fw += L * 0.06; fv *= 0.8; } else { fu -= L * 0.3; fv *= 0.7; } }
       if (o.curled) { fu *= 0.35; fv *= 0.55; fw = h0 + L * 0.14; }
       else if (o.tucked) { fu *= 0.6; fv *= 0.56; fw = L * 0.03; }
@@ -264,7 +272,7 @@
       const hip = W(AU[i] * L, sd * L * 0.15, h0 + L * 0.04); const foot = W(fu, fv, fw);
       const mid = M.lerp3(hip, foot, 0.4);
       const far = sd * M.dot(s, V.toCam) < -0.15 && !o.thumb; // far-side legs: keep the knee low so it never pokes up over the head
-      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1))), M.mul(s, sd * L * 0.06));
+      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1))), M.mul(s, sd * L * 0.06));
       const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
       const ankle = M.add(M.lerp3(knee, foot, 0.62), M.mul(n, L * 0.05));
       const wk = i === 0 ? (S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'orange' || S.pattern === 'apache' ? 1.55 : 1.3) : 1;

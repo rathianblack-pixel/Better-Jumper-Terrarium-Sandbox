@@ -84,10 +84,12 @@
   function pickLanding(hab, p, hunter) {
     const d = def(p); const nav = hab.nav; const R = JT.R;
     let best = null, bs = -1e9;
-    const consider = (pos, sup, bonus) => { let s = bonus + R() * 3; if (hunter) s += Math.min(60, M.dist(pos, hunter.pos)) * 0.08; s -= M.dist(pos, p.pos) * 0.01; if (s > bs) { bs = s; best = { pos: pos.slice(), sup: JT.deepClone(sup) }; } };
+    const lit = hab.daylight() < 0.3 && hab.lampsOn().length > 0; const rest = p._lampRest; p._lampRest = false;
+    const consider = (pos, sup, bonus) => { let s = bonus + R() * 3; if (lit) s += hab.warmthAt(pos) * (rest ? 8 : 3); if (hunter) s += Math.min(60, M.dist(pos, hunter.pos)) * 0.08; s -= M.dist(pos, p.pos) * 0.01; if (s > bs) { bs = s; best = { pos: pos.slice(), sup: JT.deepClone(sup) }; } };
     for (let k = 0; k < 6; k++) { const id = nav.flowers[Math.floor(R() * nav.flowers.length)]; if (id != null) { const n = nav.nodes[id]; consider(n.pos, n.sup, (d.flowers || 0) * 4); } }
     for (let k = 0; k < 8; k++) { const id = nav.perches[Math.floor(R() * nav.perches.length)]; if (id != null) { const n = nav.nodes[id]; consider(n.pos, n.sup, 1); } }
     for (let k = 0; k < 3; k++) { const q = hab.randomFloorPoint(); consider(q, { k: 'floor' }, d.id === 'gnat' ? 2 : 0); }
+    if (lit) for (const L of hab.lampsOn()) { const b = Nav.supportBelow(hab, [L.pool[0] + (R() - 0.5) * L.r, L.head[1] - 2, L.pool[2] + (R() - 0.5) * L.r]); if (b.sup.k !== 'air' && Nav.inside(hab, b.pos[0], b.pos[2], 3)) consider(b.pos, b.sup, rest ? 3 : 1); }
     return best;
   }
   function pickWalkGoal(hab, p, hunter, wantCover) {
@@ -148,6 +150,8 @@
     const night = hab.daylight() < 0.3;
     let dur = p.dur;
     if (d.night) dur *= night ? 0.5 : 1 + d.night * 3;
+    if (d.fly && night && hab.lampsOn().length) dur *= 0.5;
+    if (d.cleaner && hab.data.remains.length && p.st > 0.6 && !(p._seekCD > hab.time)) { p.st = 0; if (seekRemains(hab, p, d)) return; }
     if (p.st < dur) return;
     p.st = 0; p.dur = (d.slow ? 3 : 1.5) + JT.R() * (d.fly ? 9 : 5);
     if (d.cleaner && seekRemains(hab, p, d)) return;
@@ -176,7 +180,7 @@
   PH.buried = function (hab, p, d, dt) { if (p.st > p.dur) { p.buried = false; p.state = 'idle'; p.st = 0; } };
   PH.fly = function (hab, p, d, dt) {
     const H = hab.dims.h; const night = hab.daylight() < 0.3;
-    if (!p._goal || (p._goalT = (p._goalT || 0) + dt) > 14) { p._goal = pickLanding(hab, p, null); p._goalT = 0; }
+    if (!p._goal || (p._goalT = (p._goalT || 0) + dt) > 14) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
     const g = p._goal; const to = g ? M.sub(g.pos, p.pos) : [0, 0, 0]; const dist = M.len(to);
     const cruise = d.spd * (d.id === 'moth' && !night ? 0.6 : 1);
     let want = dist > 0.01 ? M.mul(M.norm(to), Math.min(cruise, dist * 2.5 + 2)) : [0, 0, 0];
@@ -193,25 +197,47 @@
     // never fly through solid decor
     for (const inst of hab.data.decor) { const gg = hab.geoms[inst.id]; if (!gg) continue; for (const tp of gg.tops) if (p.pos[1] < tp.y && p.pos[1] > gg.baseY - 1 && JT.G.pointInPoly(p.pos[0], p.pos[2], tp.poly)) p.pos[1] = tp.y + 0.6; }
     if (M.len([p._v[0], 0, p._v[2]]) > 0.5) p.fwd = M.norm([p._v[0], 0, p._v[2]]);
-    if (g && dist < 1.6) {
+    if (g && g.orbit && dist < 2.2) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
+    else if (g && dist < 1.6) {
       if (Nav.validSup(hab, g.sup)) { p.pos = Nav.supPos(hab, g.sup, g.pos); p.sup = JT.deepClone(g.sup); p.state = 'idle'; p.st = 0; p.dur = 2 + JT.R() * (d.id === 'moth' && !night ? 40 : 10); p._goal = null; p._v = [0, 0, 0]; }
       else p._goal = null;
     }
   };
+  /** Cleaners actively look for husks AND molt skins, then gather in a loose ring around them. */
   function seekRemains(hab, p, d) {
-    const rs = hab.data.remains.filter(r => r.cat !== 'exuvia');
-    if (!rs.length) return false;
+    const rs = hab.data.remains; if (!rs.length) return false;
+    if (p._seekCD > hab.time) return false;
     let best = null, bc = 1e9; const dj = Nav.dijkstra(hab, p.sup, p.pos, PA.caps(d));
-    for (const r of rs) { const gc = Nav.goalCost(hab, dj, r.sup, r.pos); if (gc && gc.cost < bc) { bc = gc.cost; best = r; } }
-    if (!best) return false;
-    const route = Nav.buildRoute(hab, dj, best.sup, [best.pos[0] + (JT.R() - .5) * 1.5, best.pos[1], best.pos[2] + (JT.R() - .5) * 1.5]);
-    if (!route) return false;
+    for (const r of rs) { const gc = Nav.goalCost(hab, dj, r.sup, r.pos); if (!gc) continue; const crowd = PA.cleanersOn(hab, r.id) * 4; if (gc.cost + crowd < bc) { bc = gc.cost + crowd; best = r; } }
+    if (!best || bc > 400) { p._seekCD = hab.time + 4 + JT.R() * 4; return false; }
+    const a = ((p.seed % 360) / 57.3) + JT.R() * 0.5, rad = 0.7 + JT.R() * 0.6;
+    const route = Nav.buildRoute(hab, dj, best.sup, [best.pos[0] + Math.cos(a) * rad, best.pos[1], best.pos[2] + Math.sin(a) * rad]);
+    if (!route) { p._seekCD = hab.time + 4; return false; }
     p._route = route; p._clean = best.id; p.state = 'walk'; return true;
   }
+  PA.cleanersOn = function (hab, rid) { let n = 0; for (const q of hab.data.prey) if (q._clean === rid) n++; return n; };
+  /** Per-cleaner nibble rate (fraction of the remains per second). Many springtails clear things quickly. */
+  PA.cleanRate = function (d, r) { return (d.id === 'springtail' ? 0.022 : 0.035) * (r.cat === 'spider' ? 0.4 : r.cat === 'exuvia' ? 0.8 : 1); };
   PH.clean = function (hab, p, d, dt) {
     const r = hab.data.remains.find(x => x.id === p._clean);
-    if (!r || M.dist(r.pos, p.pos) > 4) { p._clean = null; p.state = 'idle'; return; }
-    r.clean -= dt * (d.id === 'springtail' ? 0.025 : 0.04) * (r.cat === 'spider' ? 0.4 : 1);
-    if (r.clean <= 0) { hab.data.remains = hab.data.remains.filter(x => x !== r); p._clean = null; p.state = 'idle'; hab.event('journal', { id: 'cleanup' }); }
+    if (!r || M.dist(r.pos, p.pos) > 4) { p._clean = null; p.state = 'idle'; p.st = 0; p.dur = 0.3 + JT.R(); return; }
+    // nibbling: face the remains with small head-jitter turns; brief pauses
+    p._nibT = (p._nibT || 0) - dt;
+    if (p._nibT <= 0) { p._nibT = 0.4 + JT.R() * 0.9; const to = [r.pos[0] - p.pos[0], 0, r.pos[2] - p.pos[2]]; const a = Math.atan2(to[2], to[0]) + (JT.R() - 0.5) * 0.9; p.fwd = [Math.cos(a), 0, Math.sin(a)]; p._nib = JT.R() < 0.25 ? 0 : 1; }
+    if (p._nib === 0) return;
+    r.clean -= dt * PA.cleanRate(d, r);
+    if (r.clean <= 0) { hab.data.remains = hab.data.remains.filter(x => x !== r); for (const q of hab.data.prey) if (q._clean === r.id) { q._clean = null; if (q.state === 'clean') { q.state = 'idle'; q.st = 0; q.dur = 0.5 + JT.R() * 2; } } hab.event('journal', { id: 'cleanup' }); }
   };
+  // ---------------- night lights ----------------
+  /** Flying insects are drawn to a lit lamp at night: loose loops around the head, then settle near its pool of light. */
+  function lampGoal(hab, p, d) {
+    if (hab.daylight() > 0.3) return null; const L = hab.lampsOn(); if (!L.length) return null;
+    const pull = d.id === 'moth' ? 0.85 : d.id === 'lacewing' ? 0.6 : 0.4;
+    if (p._orb == null && JT.R() > pull) return null;
+    const lamp = L[(p.seed >>> 3) % L.length]; p._orb = (p._orb || 0) + 1;
+    if (p._orb > 3 + (p.seed % 4)) { p._orb = null; p._lampRest = true; return null; }
+    const a = JT.R() * 6.28, rr = 3 + JT.R() * 5; const H = hab.dims.h;
+    return { pos: [lamp.head[0] + Math.cos(a) * rr, M.clamp(lamp.head[1] - 4 + JT.R() * 5, 3, H - 3), lamp.head[2] + Math.sin(a) * rr], sup: { k: 'air' }, orbit: true };
+  }
+  PA.lampGoal = lampGoal;
 })(typeof window !== 'undefined' ? window : globalThis);
