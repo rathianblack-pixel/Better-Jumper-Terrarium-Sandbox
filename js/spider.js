@@ -14,7 +14,7 @@
     investigate: 15, inspect: 15, postFeed: 10, search: 35, sleepSeek: 30, sleep: 30,
     notice: 40, assess: 40, stalk: 40, creep: 41, crouch: 42, track: 40,
     drinkSeek: 50, drink: 50, flee: 60, pounce: 75, fall: 75, subdue: 70, carry: 70, feed: 70,
-    moltSeek: 80, moltSilk: 85, premolt: 90, molting: 95, postMolt: 85 };
+    moltSeek: 80, moltSilk: 85, premolt: 90, molting: 95, postMolt: 85, emerge: 86 };
   const HUNT = new Set(['notice', 'assess', 'stalk', 'creep', 'crouch', 'track']);
   const MOLT = new Set(['moltSeek', 'moltSilk', 'premolt', 'molting', 'postMolt']);
   AI.HUNT = HUNT; AI.MOLT = MOLT;
@@ -160,6 +160,8 @@
   AI.decide = function (hab, sp) {
     const cur = PRI[sp.state] || 0;
     if (cur >= 70) return;                                  // molt / held meal / airborne manage themselves
+    if (sp._air) return;                                    // mid-jump along a route: finish the leap first
+    if (sp.state === 'sleep' && sp.nest) return;           // sealed in for the night: wakes only via its own handler (and carves out)
     if (AI.moltReady(sp)) { startMoltSeek(hab, sp); return; }
     const th = detectThreat(hab, sp);
     if (th && cur < 60) { startFlee(hab, sp, th); return; }
@@ -195,12 +197,16 @@
     const moved = M.dist(before, sp.pos); sp._walk = (sp._walk || 0) + moved / Math.max(0.5, AI.len(sp) * 0.32);
     sp._moving = moved > 0.02;
     sp._speedNow = M.dist(before, sp.pos) / Math.max(dt, 1e-3);
+    // a route jump/drop abandoned mid-air (state changed, route cleared or replaced) must never leave the spider hanging
+    if (sp._air && sp._air.mode && sp.state !== 'pounce' && sp.state !== 'fall' && (!sp._route || sp._route.steps[sp._route.i] !== sp._air.step)) { sp._air = null; sp.sup = { k: 'air' }; }
     if (sp.sup && sp.sup.k === 'air' && !sp._air && sp.state !== 'pounce' && sp.state !== 'fall') startFall(hab, sp);
     if (!M.finite3(sp.pos)) { const b = Nav.supportBelow(hab, [hab.dims.w / 2, 0, hab.dims.d / 2]); sp.pos = b.pos; sp.sup = b.sup; sp._route = null; setState(sp, 'idle'); }
     if (sp.hold) { const p = hab.preyById(sp.hold); if (p) { p.pos = AI.mouth(hab, sp); p.sup = JT.deepClone(sp.sup); p.fwd = sp.fwd; } }
     // micro animation drivers
     sp._breath = (sp._breath || 0) + dt * (sp.state === 'sleep' ? 1.2 : 2.4);
-    sp._crouch = M.lerp(sp._crouch || 0, sp.state === 'crouch' ? 1 : (sp.state === 'stalk' || sp.state === 'creep') ? 0.35 : 0, Math.min(1, dt * 6));
+    const sneak = sp.state === 'stalk' || sp.state === 'creep';
+    if (!sneak && sp.state !== 'crouch') { sp._low = 0; sp._watched = 0; }
+    sp._crouch = M.lerp(sp._crouch || 0, sp.state === 'crouch' ? 1 : sneak ? (sp._low ? 0.85 : 0.35) : 0, Math.min(1, dt * 4));
     const raise = (HUNT.has(sp.state) && sp.state !== 'assess') || sp.state === 'display' || sp.state === 'inspect' || sp.state === 'watch' ? 1 : 0;
     sp._legRaise = M.lerp(sp._legRaise || 0, raise, Math.min(1, dt * 5));
     sp._gazeT = (sp._gazeT || 0) - dt; if (sp._gazeT <= 0) { sp._gazeT = 0.6 + JT.R() * 2.5; sp._gaze = (JT.R() - 0.5) * 0.7 * (1 - (sp._legRaise || 0)); }
@@ -373,12 +379,32 @@
     if (d < AI.jump(sp) * 0.6 && JT.R() < dt * (0.4 + sp.traits.tactics)) { startCrouch(hab, sp, 0.25); return; }
     if (sp.st > 10 + sp.traits.patience * 10) { sp.mem.ignore[e.id] = hab.time + 8; AI.dropTarget(hab, sp); }
   };
+  /** How the prey is oriented relative to the hunter: look>0.35 = facing it, look<-0.3 = back turned. */
+  function preyView(hab, sp, e) {
+    const to = M.sub(sp.pos, e.pos); to[1] = 0; const l = M.len(to) || 1; const f = e.fwd || [1, 0, 0]; const fl = Math.hypot(f[0], f[2]) || 1;
+    const look = (f[0] * to[0] + f[2] * to[2]) / (fl * l);
+    const busy = M.len(e._vel || [0, 0, 0]) > 1 || e.state === 'walk' || e.state === 'clean';
+    return { look, busy, facing: look > 0.35 && l < ((targetDef(hab, sp, e) || {}).sense || 20) * 2.2, back: look < -0.3 };
+  }
+  AI.preyView = preyView;
+  /** Stalking pace: freeze while watched, slow creep, a bit quicker while the prey is busy, slowest in the final approach. */
+  function stalkPace(hab, sp, e, dt) {
+    if (e.sup && e.sup.k === 'air') { sp._watched = 0; sp._low = 0; return 1; }
+    const v = preyView(hab, sp, e); const d = M.dist(sp.pos, e.pos); const ej = effJump(sp, e.pos);
+    sp._low = v.back ? 1 : 0;
+    if (v.facing && !sp._air) { sp._watched = (sp._watched || 0) + dt; if (sp._watched < 12) { faceToward(sp, e.pos, dt, 2); return 0; } }
+    else sp._watched = 0;
+    let pace = v.busy ? 0.55 : 0.36;
+    if (d < ej * 1.7) pace = 0.2 + 0.1 * M.clamp((d - ej) / (ej * 0.7), 0, 1); // inching in before the pounce
+    return pace;
+  }
   H.stalk = function (hab, sp, dt) {
     const e = targetEnt(hab, sp); if (!e) return AI.dropTarget(hab, sp);
     const urgency = M.clamp((0.65 - sp.sat) / 0.5, 0, 1);
-    let mult = (0.38 + 0.6 * urgency) * (1 - sp.traits.patience * 0.2);
-    const alert = e.alert || 0;
-    if (alert > 0.55 && sp.traits.stealth > 0.45 && !(sp._air)) { sp._freeze = (sp._freeze || 0) + dt; if (sp._freeze < 2.5) { faceToward(sp, e.pos, dt, 3); if (sp._freeze < dt * 1.5) sp.thought = 'Freezing — the ' + sp._plan.name + ' looked this way.'; return; } } else sp._freeze = 0;
+    // far away the route is walked normally; once within sight range the approach becomes a creep governed by the prey's gaze
+    const far = M.dist(sp.pos, e.pos) > Math.max(36, ((targetDef(hab, sp, e) || {}).sense || 20) * 2.2);
+    const mult = far ? (0.45 + 0.5 * urgency) * (1 - sp.traits.patience * 0.2) : stalkPace(hab, sp, e, dt);
+    if (mult <= 0) return;
     const r = move(hab, sp, dt, mult);
     sp._evalT = (sp._evalT || 0) + dt;
     if (sp._evalT > 0.4) {
@@ -403,7 +429,8 @@
     if (d <= ej * 0.78) { startCrouch(hab, sp); return; }
     const myR = Nav.regionKey(sp.sup), tR = e.sup && Nav.regionKey(e.sup);
     if (myR && myR === tR) {
-      const r = hab.nav.regions[myR]; const step = AI.speed(sp) * 0.3 * dt; const dir = horiz(M.sub(e.pos, sp.pos));
+      const pace = stalkPace(hab, sp, e, dt); if (pace <= 0) { sp.st = 0; return; }
+      const r = hab.nav.regions[myR]; const step = AI.speed(sp) * 0.8 * pace * dt; const dir = horiz(M.sub(e.pos, sp.pos));
       const np = [sp.pos[0] + dir[0] * step, sp.pos[1], sp.pos[2] + dir[2] * step];
       const ok = myR === 'F' ? Nav.inside(hab, np[0], np[2], 2) : JT.G.pointInPoly(np[0], np[2], r.poly);
       if (ok && !r.obstacles.some(o => JT.G.pointInPoly(np[0], np[2], o))) { sp.pos = np; sp.fwd = dir; return; }
@@ -436,6 +463,7 @@
     sp._anchor = sp.pos.slice(); sp.sup = { k: 'air' }; sp._route = null;
     // prey reflex: alertness + hunter stealth; committed pounces on tiny jumpers stay fair
     let reflex = (def.reflex || 0.3) * (0.35 + 0.65 * M.clamp(e.alert || 0, 0, 1)) * (1 - sp.traits.stealth * 0.4);
+    if (sp.target.kind === 'prey' && e.sup.k !== 'air') { const v = preyView(hab, sp, e); reflex *= v.back ? 0.45 : v.look > 0.35 ? 1.35 : 1; }
     if (sp.target.kind === 'prey' && e.type === 'tinyjumper') reflex = Math.min(reflex, 0.4);
     if (sp.target.kind === 'spider') reflex = Math.min(0.6, reflex + 0.15);
     if (JT.R() < reflex) {
@@ -641,6 +669,45 @@
       const spot = AI.chooseSpot(hab, sp, 'molt'); if (spot) { sp._route = spot.route; sp._routeStart = hab.time; sp.retreat = { d: spot.node.decor || null, pos: spot.node.pos.slice() }; } else { setState(sp, 'moltSilk'); }
     }
   };
+  // ---- thick silk sac (sleep / molt): built around the jumper, carved open front or back on the way out ----
+  const NEST_STATES = new Set(['sleep', 'moltSilk', 'premolt', 'molting', 'postMolt', 'emerge']);
+  AI.NEST_STATES = NEST_STATES;
+  function makeNest(hab, sp, kind) {
+    const d = hab.data; d.nests = d.nests || [];
+    let n = d.nests.find(x => !x.owner && M.dist(x.pos, sp.pos) < AI.len(sp) * 0.5 && x.age < 1500);
+    if (n) { n.owner = sp.id; n.hole = null; n.prog = Math.min(n.prog, 0.5); n.age = 0; n.kind = kind; }
+    else {
+      n = { id: JT.newId('n'), owner: sp.id, pos: sp.pos.slice(), sup: JT.deepClone(sp.sup), fwd: (sp.fwd || [1, 0, 0]).slice(), len: AI.len(sp), prog: 0, hole: null, age: 0, kind, seed: (JT.R() * 1e6) | 0 };
+      d.nests.push(n); while (d.nests.length > 8) d.nests.shift();
+    }
+    sp.nest = n.id; return n;
+  }
+  AI.nestOf = (hab, sp) => sp.nest && (hab.data.nests || []).find(n => n.id === sp.nest);
+  function startEmerge(hab, sp, next, thought) {
+    const n = AI.nestOf(hab, sp); if (!n || n.prog < 0.3) { if (n) { n.owner = null; } sp.nest = null; setState(sp, next, thought); return; }
+    sp._emergeNext = next; sp._emergeThought = thought; setState(sp, 'emerge');
+    n.hole = { side: JT.R() < 0.6 ? 1 : -1, open: 0 };
+  }
+  H.emerge = function (hab, sp, dt) {
+    const n = AI.nestOf(hab, sp); if (!n || !n.hole) { sp.nest = null; setState(sp, sp._emergeNext || 'idle'); return; }
+    const hd = M.mul(n.fwd, n.hole.side);
+    faceToward(sp, M.add(sp.pos, hd), dt, 3);                         // turn toward the chosen end
+    if (sp.st > 0.6) n.hole.open = Math.min(1, n.hole.open + dt / 1.4); // chew/pull a doorway open
+    if (n.hole.open >= 1 && sp.st > 2.2) {
+      const L = AI.len(sp); const out = M.add(n.pos, M.mul(hd, L * 0.95));
+      if (sp.sup.k === 'floor' ? Nav.inside(hab, out[0], out[2], 2) : sp.sup.k === 'top' ? JT.G.pointInPoly(out[0], out[2], hab.geoms[sp.sup.d].tops[sp.sup.i].poly) : false) sp.pos = [out[0], sp.pos[1], out[2]];
+      n.owner = null; sp.nest = null; setState(sp, sp._emergeNext || 'idle', sp._emergeThought);
+    }
+  };
+  AI.updateNests = function (hab, dt) {
+    const ns = hab.data.nests; if (!ns || !ns.length) return;
+    for (const n of ns) {
+      const sp = n.owner && hab.spider(n.owner);
+      if (sp && NEST_STATES.has(sp.state) && sp.nest === n.id) { const rate = sp.state === 'moltSilk' ? 1 / 5 : 1 / 4; if (sp.state !== 'emerge') n.prog = Math.min(1, n.prog + dt * rate); n.age = 0; }
+      else { if (n.owner) { n.owner = null; if (!n.hole && n.prog > 0.3) n.hole = { side: 1, open: 1 }; if (sp && sp.nest === n.id) sp.nest = null; } n.age += dt; }
+    }
+    hab.data.nests = ns.filter(n => n.age < 1800);
+  };
   function weave(hab, sp, n, kind) {
     for (let i = 0; i < n; i++) {
       const a = JT.R() * 6.28, up = JT.R() * 0.8; const L = 3 + AI.len(sp) * 0.5 + JT.R() * 4;
@@ -649,7 +716,8 @@
     }
   }
   H.moltSilk = function (hab, sp, dt) {
-    if (sp.st > 5) { weave(hab, sp, 6, 'retreat'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'premolt', 'Sealed inside its molting hammock. Very still.'); }
+    if (!AI.nestOf(hab, sp)) makeNest(hab, sp, 'molt');
+    if (sp.st > 5) { weave(hab, sp, 3, 'retreat'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'premolt', 'Sealed inside its molting hammock. Very still.'); }
   };
   H.premolt = function (hab, sp, dt) { if (sp.st > 28) setState(sp, 'molting', 'Molting! Slowly pulling free of its old skin.'); };
   H.molting = function (hab, sp, dt) {
@@ -663,21 +731,21 @@
       setState(sp, 'postMolt', 'Freshly molted — pale and soft, resting while the new skin hardens.');
     }
   };
-  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; setState(sp, 'rest', 'Stretching its new legs carefully.'); } };
+  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; startEmerge(hab, sp, 'rest', 'Stretching its new legs carefully.'); } };
 
   // ---- sleep ----
   function startSleep(hab, sp) {
     const spot = AI.chooseSpot(hab, sp, 'sleep');
     if (spot && M.dist(spot.node.pos, sp.pos) > 3) { sp._route = spot.route; sp._routeStart = hab.time; setState(sp, 'sleepSeek', 'Night is falling — heading to a sheltered retreat.'); }
-    else { weave(hab, sp, 3, 'retreat'); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
+    else { weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
   }
   H.sleepSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.7);
-    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 3, 'retreat'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
   };
   H.sleep = function (hab, sp, dt) {
-    if (hab.daylight() > 0.35) setState(sp, 'groom', 'Waking up and stretching.');
-    else if (sp.sat < 0.25 && sp.st > 20) setState(sp, 'idle', 'Too hungry to sleep.');
+    if (hab.daylight() > 0.35) startEmerge(hab, sp, 'groom', 'Waking up and stretching.');
+    else if (sp.sat < 0.25 && sp.st > 20) startEmerge(hab, sp, 'idle', 'Too hungry to sleep.');
   };
 
   // ---- threat / flee ----

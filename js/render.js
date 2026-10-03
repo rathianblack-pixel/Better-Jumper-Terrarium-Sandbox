@@ -59,10 +59,13 @@
       top = Math.min(top, dm.h * 1.1);
       const pts = []; for (const x of [0, dm.w]) for (const z of [0, dm.d]) for (const y of [-12, top]) pts.push([x, y, z]);
       const c = [dm.w / 2, top * 0.38, dm.d / 2];
-      const tmp = new JT.View(C.yaw, C.pitch, 1, 0, 0, c);
-      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
       const W = this.cssW, H = this.cssH; const portrait = H > W * 1.1;
-      const availH = H * (portrait ? 0.6 : 0.78), availW = W * (portrait ? 1.0 : 0.88);
+      // tall screens: swing the camera round so the tank's long side runs up the screen ("tall setup")
+      const tall = portrait && dm.w > dm.d * 1.3 && this.cam.mode !== 'follow';
+      const yaw = C.yaw + (tall ? (this.cam.mode === 'observer' ? 1.2 : 0.73) : 0), pitch = C.pitch + (tall ? 0.12 : 0);
+      const tmp = new JT.View(yaw, pitch, 1, 0, 0, c);
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+      const availH = H * (portrait ? 0.62 : 0.78), availW = W * (portrait ? 0.94 : 0.88);
       let s = Math.min(availW / (x1 - x0), availH / (y1 - y0));
       let center = c, offY = -(y0 + y1) / 2 * s;
       if (this.cam.mode === 'follow') {
@@ -73,7 +76,7 @@
           center = f; s = Math.min(W, H) / 70; offY = 0;
         }
       }
-      return { yaw: C.yaw, pitch: C.pitch, s: s * this.cam.zoom, c: center, offY: offY * this.cam.zoom };
+      return { yaw, pitch, s: s * this.cam.zoom, c: center, offY: offY * this.cam.zoom };
     }
     updateView(hab, dt) {
       const T = this.targetView(hab);
@@ -83,7 +86,7 @@
       cu.yaw += dy * k; cu.pitch += (T.pitch - cu.pitch) * k; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
       cu.c = M.lerp3(cu.c, T.c, kc);
       const kk = this.k;
-      this.V.set(cu.yaw, cu.pitch, cu.s * kk, (this.cssW / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? -this.cssH * 0.04 : this.cssH * 0.02)) * kk, cu.c);
+      this.V.set(cu.yaw, cu.pitch, cu.s * kk, (this.cssW / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
       return this.V;
     }
     /** CSS pixel -> world (x,z) at height y. */
@@ -209,8 +212,10 @@
         const c = g.foot ? G.centroid(g.foot) : [inst.x, inst.z];
         const dep = V.depth([c[0], g.baseY + Math.min(10, g.height * 0.25), c[1]]);
         decDepth[inst.id] = dep;
-        items.push({ d: dep, f: () => this.drawDecorCached(ctx, V, g, sway, night, t) });
+        items.push({ d: dep, f: () => this.drawDecorCached(ctx, V, g, sway, night, t), inst });
       }
+      // wall-mounted pieces sit just in front of (or, seen from behind, just behind) their wall
+      for (const it of items) { const inst = it.inst; if (!inst || !inst.wall || decDepth[inst.wall] == null) continue; const wg = geoms[inst.wall]; const facing = wg && wg.out ? wg.out[0] * V.toCam[0] + wg.out[2] * V.toCam[2] >= 0 : true; it.d = decDepth[inst.wall] + (facing ? -0.3 : 0.3); decDepth[inst.id] = it.d; }
       const animalDepth = (e) => { let d = V.depth(e.pos); if (e.sup && e.sup.d && decDepth[e.sup.d] != null && decDepth[e.sup.d] < 1e8) d = Math.min(d, decDepth[e.sup.d] - 0.05); return d; };
       for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; const fr = D.frame(hab, r, 0.1); items.push({ d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}) }); }
       for (const w of hab.data.drops) { if (!M.finite3(w.pos)) continue; const fr = JT.Nav.supFrame(hab, w.sup); const pos = M.add(w.pos, M.mul(fr.n, (fr.r || 0) + 0.3)); items.push({ d: animalDepth(w) + 0.01, f: () => D.drop(ctx, V, w, pos) }); }
@@ -228,15 +233,14 @@
         let d = animalDepth(sp); if (ventral && sp.sup && sp.sup.d && decDepth[sp.sup.d] != null) d = decDepth[sp.sup.d] + 0.05;
         const air = !!sp._air || (sp.sup && sp.sup.k === 'air');
         const draw = (alpha) => {
-          if (sp.id === sel && !this.observing) selRing(ctx, V, fr, L, t);
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, lookCam: sp._lc > 0.02 ? sp._lc : 0, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
         items.push({ d, f: () => draw(1) });
-        if (sp.id === sel && !this.observing && L * V.s < 26 * this.k) items.push({ d: -1e9, f: () => this.pin(ctx, V, sp, L) });
         if (ventral && sp.id === sel) items.push({ d: d - 0.2 - 50, f: () => { ctx.globalAlpha = 0.3; D.spider(ctx, V, sp, fr, { len: L, time: t, alpha: 0.3, noShadow: true }); ctx.globalAlpha = 1; } });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)) }); }
       }
+      for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !onScreen(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0]; items.push({ d: V.depth(n.pos) - n.len * 0.7, f: () => D.nest(ctx, V, n, up, night) }); }
       for (const k of hab.data.silk) items.push({ d: V.depth(M.lerp3(k.a, k.b, 0.5)) - 0.1, f: () => D.silk(ctx, V, k, night) });
       if (this.ghost && this.ghost.geom) {
         const gh = this.ghost; const g = gh.geom; const c = G.centroid(g.foot || [[gh.x, gh.z]]);
@@ -413,6 +417,15 @@
     placementPoint(sx, sy, hab, type) {
       const tops = [];
       const def = JT.DECOR_BY_ID[type];
+      if (def && def.mount) { // point at a back wall: intersect the view ray with the wall face plane
+        const A = this.unproject(sx, sy, 0), B = this.unproject(sx, sy, 100); let best = null;
+        for (const id in hab.geoms) { const g = hab.geoms[id]; if (!g.front) continue; const F = g.front, a = F[0], b = F[F.length - 1]; const nx = g.out[0], nz = g.out[2];
+          const f0 = (A[0] - a[0]) * nx + (A[1] - a[1]) * nz, f1 = (B[0] - a[0]) * nx + (B[1] - a[1]) * nz; if (Math.abs(f1 - f0) < 1e-6) continue;
+          const y = -f0 / (f1 - f0) * 100; if (!(y > -20 && y < g.wallH + 30)) continue; const x = A[0] + (B[0] - A[0]) * y / 100, z = A[1] + (B[1] - A[1]) * y / 100;
+          const ex = b[0] - a[0], ez = b[1] - a[1], L = Math.hypot(ex, ez) || 1, u = ((x - a[0]) * ex + (z - a[1]) * ez) / L; const off = Math.max(0, -u, u - L);
+          if (!best || off < best.off) best = { x, z, y: 0, my: y, off, on: id }; }
+        if (best) return best;
+      }
       if (def) for (const id in hab.geoms) { const g = hab.geoms[id]; g.tops.forEach((t, i) => tops.push({ id, i, t })); }
       tops.sort((a, b) => b.t.y - a.t.y);
       for (const T of tops) { const xz = this.unproject(sx, sy, T.t.y); if (G.pointInPoly(xz[0], xz[1], T.t.poly)) return { x: xz[0], z: xz[1], y: T.t.y, on: T.id }; }

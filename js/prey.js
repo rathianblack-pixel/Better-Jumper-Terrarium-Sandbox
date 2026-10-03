@@ -16,6 +16,7 @@
   };
 
   // ---------------- perception ----------------
+  function nearestHunter(hab, p) { let b = null, bd = 60; for (const s of hab.data.spiders) { const d = M.dist(s.pos, p.pos); if (d < bd) { bd = d; b = s; } } return b; }
   function updateAlert(hab, p, d, dt) {
     let a = 0; const range = (d.sense || 20) * 1.3;
     let nearest = null, nd = 1e9;
@@ -125,10 +126,19 @@
     const before = p.pos.slice();
     p._aT = (p._aT || 0) - dt; if (p._aT <= 0) { p._aT = 0.25; if (d.huntable) updateAlert(hab, p, d, 0.25); }
     const h = PH[p.state] || PH.idle; h(hab, p, d, dt);
+    if (p._air && p._air.mode && (!p._route || p._route.steps[p._route.i] !== p._air.step)) { p._air = null; if (p.state !== 'fly') { const b = Nav.supportBelow(hab, p.pos); p._route = { steps: [{ pos: b.pos, mode: 'drop', arrive: b.sup }], i: 0 }; p.sup = { k: 'air' }; p.state = 'walk'; } }
     if (!M.finite3(p.pos)) { p.pos = hab.randomFloorPoint(); p.sup = { k: 'floor' }; p._route = null; p.state = 'idle'; }
     const v = M.mul(M.sub(p.pos, before), 1 / Math.max(dt, 1e-3));
     p._vel = p._vel ? M.lerp3(p._vel, v, Math.min(1, dt * 6)) : v;
     if (M.len([v[0], 0, v[2]]) > 0.5 && p.state !== 'fly') p.fwd = M.norm([v[0], p.sup.k === 'path' ? v[1] : 0, v[2]]);
+    // idle prey look around now and then (gives a stalking jumper windows to move); alert prey turn toward the threat
+    else if (p.state === 'idle' && p.sup.k !== 'air') {
+      p._lookT = (p._lookT || 0) - dt;
+      if (p._lookT <= 0) { p._lookT = 1.2 + JT.R() * 3.5; const f = p.fwd || [1, 0, 0]; let a = Math.atan2(f[2], f[0]) + (JT.R() - 0.5) * 2.6;
+        if ((p.alert || 0) > 0.5 && JT.R() < 0.5) { const s = nearestHunter(hab, p); if (s) a = Math.atan2(s.pos[2] - p.pos[2], s.pos[0] - p.pos[0]) + (JT.R() - 0.5) * 0.6; }
+        p._lookTo = [Math.cos(a), 0, Math.sin(a)]; }
+      if (p._lookTo) { const f = p.fwd || [1, 0, 0]; const k = Math.min(1, dt * 5); const nf = M.norm([M.lerp(f[0], p._lookTo[0], k), 0, M.lerp(f[2], p._lookTo[2], k)]); if (M.finite3(nf)) p.fwd = nf; }
+    }
     if (p.sup.k === 'path' && JT.R() < dt * 2 && M.len(v) > 1) hab.nudge(p.sup.d, v[0] * 0.01 * d.len, v[2] * 0.01 * d.len);
     p._anim = (p._anim || 0) + dt; p._walk = (p._walk || 0) + M.dist(before, p.pos) / Math.max(0.4, d.len * 0.3);
   };

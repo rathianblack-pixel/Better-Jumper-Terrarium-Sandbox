@@ -46,6 +46,13 @@
         case 'remove': this.noise('effects', 0.22, { f: 900, fTo: 300, q: 1, vol: 0.14 }); break;
         case 'mist': this.noise('effects', 1.1, { ft: 'highpass', f: 3500, vol: 0.12, att: 0.15 }); break;
         case 'pounce': this.noise('effects', 0.12, { f: 2500, fTo: 900, q: 2, vol: 0.12 }); break;
+        // natural strike: a soft body-thud into the substrate, a scuffle of legs, and (for flyers) a few frantic wingbeats that cut off
+        case 'strike': case 'strikeFly':
+          this.noise('ambience', 0.09, { ft: 'lowpass', f: 380, vol: 0.16, att: 0.004 });
+          this.noise('ambience', 0.22, { f: 2600, q: 0.9, vol: 0.05, att: 0.01, delay: 0.03 });
+          this.noise('ambience', 0.12, { f: 4200, q: 1.2, vol: 0.025, delay: 0.16 });
+          if (name === 'strikeFly') this.tone('ambience', 230 + Math.random() * 40, 0.45, { type: 'sawtooth', vol: 0.02, att: 0.01, lp: 900, vib: 23, vibAmt: 60, delay: 0.04 });
+          break;
         case 'catch': this.tone('effects', 660, 0.12, { type: 'triangle', vol: 0.1 }); this.tone('effects', 990, 0.18, { type: 'triangle', vol: 0.08, delay: 0.07 }); break;
         case 'coin': this.tone('effects', 1318, 0.12, { type: 'sine', vol: 0.09 }); this.tone('effects', 1760, 0.22, { type: 'sine', vol: 0.08, delay: 0.08 }); break;
         case 'rustle': this.noise('effects', 0.35, { f: 1800, q: 0.6, vol: 0.07, att: 0.08 }); break;

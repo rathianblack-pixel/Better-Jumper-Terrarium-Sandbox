@@ -127,9 +127,8 @@
     // ------------------------------------------------ simulation events
     onGame(t, d) {
       const R = this.R;
-      if (t === 'coins') { this.bumpCoins(); if (d.amount > 0 && d.sp && d.sp.pos) { R.addText(d.sp.pos, '+' + d.amount + ' coins', '#f4d47a'); A().sfx('coin'); } if (this.tab) this.refreshCardsAfford(); }
-      else if (t === 'catch') { if (d.sp) { R.addText(M.add(d.sp.pos, [0, 4, 0]), 'GOT IT!', '#fffbe8', true); R.burst(d.sp.pos, '#fff2c0', 12); } A().sfx('catch'); }
-      else if (t === 'pounce') A().sfx('pounce');
+      if (t === 'coins') { this.bumpCoins();  if (this.tab) this.refreshCardsAfford(); }
+      else if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
       else if (t === 'journal') { this.toast('<b>' + d.entry.icon + ' Journal: ' + esc(d.entry.title) + '</b>' + esc(d.entry.text), 'journal', 5200); A().sfx('journal'); }
       else if (t === 'molt') { const sp = d.sp; if (sp) this.toast('🌱 ' + esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
@@ -171,13 +170,13 @@
     openDrawer(tab) {
       this.tab = tab; const d = $('drawer'); d.classList.remove('hidden');
       const tabs = $('drawerTabs'); tabs.innerHTML = '';
-      const list = tab === 'food' ? [['food', '🪰 Live Food']] : [['decor', '🪨 Decor'], ['plants', '🌿 Plants'], ['substrate', '🟫 Substrate']];
+      const list = tab === 'food' ? [['food', '🪰 Live Food']] : [['decor', '🪨 Decor'], ['walls', '🧱 Walls'], ['plants', '🌿 Plants'], ['substrate', '🟫 Substrate']];
       for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => this.openDrawer(id); tabs.appendChild(b); }
       if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', '✖ Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
-      $('drawerTitle').textContent = tab === 'food' ? 'Live food for ' + h.data.name + ' (' + h.livePreyCount() + '/' + JT.PREY_CAP + ')' : tab === 'substrate' ? 'Substrate & ground cover' : (tab === 'plants' ? 'Plants' : 'Decor') + ' — click a piece, then place it';
+      $('drawerTitle').textContent = tab === 'food' ? 'Live food for ' + h.data.name + ' (' + h.livePreyCount() + '/' + JT.PREY_CAP + ')' : tab === 'substrate' ? 'Substrate & ground cover' : (tab === 'plants' ? 'Plants' : tab === 'walls' ? 'Back walls & wall mounts' : 'Decor') + (tab === 'walls' ? ' — walls stand at the back; mounts hang where you point on a wall' : ' — click a piece, then place it');
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
-      if (tab === 'decor' || tab === 'plants') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
+      if (tab === 'decor' || tab === 'plants' || tab === 'walls') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
       else if (tab === 'substrate') {
         for (const id in JT.SUBSTRATES) body.appendChild(this.substrateCard(id));
         body.appendChild(el('div', 'sect', 'Ground cover'));
@@ -244,8 +243,9 @@
     },
     updateGhost(sx, sy) {
       const p = this.place; if (!p) return; const h = this.hab; const pt = this.R.placementPoint(sx, sy, h, p.type);
-      p.x = pt.x; p.z = pt.z; p.y = pt.y;
-      const chk = h.canPlace(p.type, p.x, p.z, p.rot, p.seed);
+      p.x = pt.x; p.z = pt.z; p.y = pt.y; p.my = pt.my;
+      const chk = h.canPlace(p.type, p.x, p.z, p.rot, p.seed, null, p.my);
+      if (chk.wall) { p.x = chk.x; p.z = chk.z; p.rot = chk.rot; p.my = chk.my; }
       const price = JT.DECOR_BY_ID[p.type].price; p.ok = chk.ok && this.game.state.coins >= price; p.reason = chk.ok ? (p.ok ? '' : 'Not enough coins') : chk.reason;
       let geom = chk.geom; if (!geom) { try { geom = JT.Geo.build({ id: '_ghost', type: p.type, x: p.x, z: p.z, rot: p.rot, seed: p.seed }, chk.baseY || pt.y || 0, h.dims.h); } catch (e) { geom = null; } }
       if (geom) geom.id = '_ghost';
@@ -256,7 +256,7 @@
       const p = this.place; if (!p) return; const h = this.hab; const d = JT.DECOR_BY_ID[p.type];
       if (!p.ok) { this.toast(esc(p.reason || 'Cannot place here.')); A().sfx('error'); return; }
       if (!this.game.spend(d.price)) { this.toast('Not enough coins.'); return; }
-      const inst = h.addDecor(p.type, p.x, p.z, p.rot, p.seed, true);
+      const inst = h.addDecor(p.type, p.x, p.z, p.rot, p.seed, true, p.my);
       if (!inst) { this.game.refund(d.price); this.toast('That spot is no longer free.'); return; }
       inst.bought = d.price; A().sfx('place');
       this.toast('Placed ' + esc(d.name) + (inst.parent ? ' (stacked)' : '') + '.');

@@ -140,6 +140,172 @@
     B.height = h; B.coverR = w * 0.6;
   };
 
+  // ---- themed back walls: living, climbable backdrops for tall (portrait) habitats ----
+  // Each style: surface texture (draw-decor STY/makeTex), front-face shape, integrated ledges on the climbing
+  // routes, and wall-mounted living details on both faces.
+  const WALLS = {
+    mosswall:  { bulge: 0, jit: 0, ledges: 0, ledgeStyle: 'cork' },
+    barkwall:  { bulge: 2.5, jit: 1.2, ledges: 2, ledgeStyle: 'cork' },
+    stonewall: { bulge: 1, jit: 1.4, ledges: 3, ledgeStyle: 'slate' },
+    leafwall:  { bulge: 1.5, jit: 0.8, ledges: 1, ledgeStyle: 'wood' },
+    trunkwall: { bulge: 6, jit: 0.4, ledges: 2, ledgeStyle: 'fungus' },
+    rootwall:  { bulge: 2, jit: 1.6, ledges: 2, ledgeStyle: 'wood' },
+    sandwall:  { bulge: 0.8, jit: 0.6, ledges: 3, ledgeStyle: 'sand' },
+    driftwall: { bulge: 1.2, jit: 1, ledges: 2, ledgeStyle: 'drift' },
+  };
+  JT.WALL_STYLES = Object.keys(WALLS);
+  function halfDisc(x, zf, lw, dp, n, rng, jit) {
+    const pts = [[x + lw / 2, zf + 1.4], [x - lw / 2, zf + 1.4]];
+    for (let i = 0; i <= n; i++) { const a = Math.PI - i / n * Math.PI, j = 1 - (jit || 0) * rng(); pts.push([x + Math.cos(a) * lw / 2 * (i === 0 || i === n ? 1 : j), zf - Math.sin(a) * dp * j]); }
+    return G.hull(pts);
+  }
+  ARCH.backwall = function (B, p, sc) {
+    const rng = B.rng, h = Math.max(20, p.h * sc), w = p.w, d = p.d, c = d * 0.45, S = p.style || 'mosswall', cfg = WALLS[S] || WALLS.mosswall;
+    // front face (local -z) as a gently irregular / convex polyline so bark, trunks and stone read as real material
+    const N = cfg.bulge || cfg.jit ? 8 : 1, x0 = -w / 2 + c, x1 = w / 2 - c;
+    const jz = []; for (let i = 0; i <= N; i++) jz.push(i === 0 || i === N ? 0 : (rng() - 0.5) * cfg.jit);
+    const zAt = (x) => { const u = M.clamp((x - x0) / (x1 - x0), 0, 1); const k = Math.min(N - 1, Math.floor(u * N)), t = u * N - k; const q = 2 * u - 1; return -d / 2 - cfg.bulge * (1 - q * q) + M.lerp(jz[k], jz[k + 1], t); };
+    const base = [];
+    for (let i = 0; i <= N; i++) { const x = x0 + (x1 - x0) * i / N; base.push([x, zAt(x)]); }
+    base.push([w / 2, 0]);
+    base.push([x1, d / 2], [x0, d / 2]);
+    base.push([-w / 2, 0]);
+    const top = G.scalePoly(base, 0.97);
+    B.prim({ t: 'prism', poly: base, topPoly: top, y0: 0, y1: h, style: S });
+    B.solids.push(base); const ti = B.top(top, h);
+    B.front = base.slice(0, N + 1).map(q => [q[0], q[1] - 0.6]); // used to snap wall-mounted pieces
+    // climbing routes up the front face, broken by integrated ledges the jumper can stop and perch on
+    const routes = [-0.32, 0, 0.32].map(u => u * w + (rng() - 0.5) * 6);
+    const ledgeAt = {}; // route index -> [heights]
+    for (let k = 0; k < cfg.ledges; k++) { const r = k % 3 === 0 ? 0 : k % 3 === 1 ? 2 : 1; (ledgeAt[r] = ledgeAt[r] || []).push(h * (k === 0 ? 0.38 : k === 1 ? 0.6 : 0.78) + (rng() - 0.5) * 8); }
+    routes.forEach((x, r) => {
+      const zf = zAt(x); const hs = (ledgeAt[r] || []).sort((a, b) => a - b);
+      let y = 0, start = null;
+      for (const yl of hs.concat([h])) {
+        const crest = yl === h; let topIdx, dp = 0;
+        if (!crest) {
+          const lw = 13 + rng() * 6; dp = 6 + rng() * 3; const th = cfg.ledgeStyle === 'fungus' ? 2.2 : 3 + rng() * 1.5;
+          const poly = halfDisc(x, zf, lw, dp, 8, rng, cfg.ledgeStyle === 'slate' || cfg.ledgeStyle === 'sand' ? 0.18 : 0.08);
+          B.prim({ t: 'prism', poly, topPoly: G.scalePoly(poly, cfg.ledgeStyle === 'fungus' ? 0.96 : 0.94), y0: yl - th, y1: yl, style: cfg.ledgeStyle, ws: [0, 0, -1] });
+          if (cfg.ledgeStyle === 'fungus') B.prim({ t: 'prism', poly: G.scalePoly(poly, 0.7), y0: yl - th - 1.6, y1: yl - th + 0.1, style: 'fungus', ws: [0, 0, -1] });
+          topIdx = B.top(G.scalePoly(poly, 0.88), yl);
+        } else topIdx = ti;
+        const pts = start ? [start] : [[x, 0, zf - 1.6]]; const nrm = [];
+        const y0 = start ? y + 2 : 0; const steps = Math.max(2, Math.round((yl - y0) / 8));
+        if (start) { pts.push([x, y + 2, zf - 0.7]); nrm.push([0, 0, -1]); }
+        for (let k = 1; k < steps; k++) { pts.push([x + Math.sin((y0 + (yl - y0) * k / steps) * 0.16) * 2.5, y0 + (yl - y0) * k / steps, zf - 0.7]); nrm.push([0, 0, -1]); }
+        if (crest) { pts.push([x, h, zf * 0.6]); nrm.push([0, 0, -1]); pts.push([x * 0.95, h, 0]); nrm.push([0, 1, 0]); }
+        else { pts.push([x, yl - 3.5, zf - 0.7]); nrm.push([0, 0, -1]); pts.push([x, yl, zf - dp * 0.45]); nrm.push([0, 1, 0]); }
+        B.path(pts, 0.2, 'face', { flex: 0, nrm, endTop: topIdx, startTop: start ? start.top : undefined, perch: false });
+        if (!crest) { start = [x + 1.5, yl, zf - dp * 0.3]; start.top = topIdx; y = yl; }
+      }
+    });
+    // per-style living surface on both broad faces
+    const F = (sd, x) => sd < 0 ? zAt(x) - 0.6 : d / 2 + 0.6;
+    const nvOf = (sd) => [0, 0, sd];
+    const tuft = (sd, x, y, r, col) => B.prim({ t: 'tuft', o: [x, y, F(sd, x) + sd * 0.8], r, col, nv: nvOf(sd), seed: (rng() * 1e6) | 0, h: y });
+    const shelfs = (sd, x, y, n, cols, r0) => { for (let j = 0; j < n; j++) B.prim({ t: 'shelf', o: [x + j * 3.2 - 3, y - j * 2.6, F(sd, x)], r: (r0 || 3.2) + rng() * 2.4, col: cols[(j + (rng() * 3 | 0)) % cols.length], nv: nvOf(sd), h: y }); };
+    const sprig = (sd, x, y, n, col, shape, len) => { for (let j = 0; j < n; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - n / 2) * 0.45, (len || 7) + rng() * 4, 1.6, shade(col, (rng() - .5) * .2), null, shape || 'lance', -0.15 - rng() * 0.4, y, { nv: nvOf(sd) }); };
+    const flat = (sd, x, y, L, W, ang, col, shape, o2) => { const ca = Math.cos(ang), sa = Math.sin(ang); const z = F(sd, x) + sd * 0.3; return B.prim(Object.assign({ t: 'leaf', o: [x, y, z], a: [ca * L, sa * L, sd * L * 0.12], b: [-sa * W, ca * W, 0], col, shape: shape || 'oval', h: y, nv: nvOf(sd) }, o2 || {})); };
+    const ivyRun = (sd, x, yTop, len, col) => { let px = x, py = yTop; const pts = [[px, py, F(sd, px) + sd * 0.4]]; for (let k = 0; k < len; k++) { px += (rng() - 0.5) * 5; py -= 3 + rng() * 2; if (py < 2) break; pts.push([px, py, F(sd, px) + sd * 0.4]); const sdL = k % 2 ? 1 : -1; flat(sd, px, py, 2.6 + rng() * 1.2, 1.8, Math.PI / 2 + sdL * (0.9 + rng() * 0.5), shade(col, (rng() - 0.5) * 0.25), 'ivy'); } if (pts.length > 1) B.prim({ t: 'tube', pts, r0: 0.4, r1: 0.25, col: '#5a4a2a', style: 'stem', nv: nvOf(sd) }); };
+    const RX = () => (rng() - 0.5) * (w - 10), RY = (lo, hi) => (lo || 4) + rng() * (h - (lo || 4) - (hi || 8));
+    for (const sd of [-1, 1]) {
+      if (S === 'mosswall') {
+        const greens = ['#5f8f2e', '#4a7a26', '#79a83a', '#3f6a22', '#8ab848'];
+        for (let k = 0; k < 16; k++) tuft(sd, (rng() - 0.5) * (w - 8), 4 + rng() * (h - 10), 2.5 + rng() * 3.2, greens[k % greens.length]);
+        for (let k = 0; k < 5; k++) shelfs(sd, (rng() - 0.5) * (w - 16), h * (0.2 + 0.7 * rng()), 2 + (k % 2), k % 3 === 0 ? ['#e0a050'] : ['#cf6a2e']);
+        for (let k = 0; k < 6; k++) sprig(sd, (rng() - 0.5) * (w - 10), 8 + rng() * (h - 20), 4 + (k % 3), '#4f8a34');
+      } else if (S === 'barkwall') {
+        for (let k = 0; k < 18; k++) tuft(sd, RX(), RY(), 1.2 + rng() * 1.6, ['#a8b890', '#c4ccb0', '#8fa47a'][k % 3]); // lichen rosettes
+        for (let k = 0; k < 7; k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2.4, ['#5f8f2e', '#4a7a26'][k % 2]);
+        for (let k = 0; k < 3; k++) shelfs(sd, RX(), RY(20, 20), 2, ['#c8a070', '#b08050', '#d8b888']);
+        for (let k = 0; k < 4; k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 5);
+      } else if (S === 'stonewall') {
+        for (let k = 0; k < 4; k++) ivyRun(sd, RX(), h - 4 - rng() * 30, 10 + (rng() * 12 | 0), '#3e7a2e');
+        for (let k = 0; k < 16; k++) tuft(sd, RX(), RY(), 1.1 + rng() * 1.5, ['#c8c890', '#a8b088', '#d8c070'][k % 3]);
+        for (let k = 0; k < 5; k++) sprig(sd, RX(), RY(10, 20), 5, '#558a3a', 'lance', 6);
+        for (let k = 0; k < 6; k++) tuft(sd, RX(), RY(), 2.4 + rng() * 2, '#4f7a2a');
+      } else if (S === 'leafwall') {
+        const browns = ['#8a5a2e', '#a0682e', '#6e4426', '#b8803e', '#7a5a34', '#c08a48', '#5e3e22'];
+        const nL = Math.round(w * h / 70);
+        for (let k = 0; k < nL; k++) { const L = 4 + rng() * 4.5; flat(sd, RX(), 2 + rng() * (h - 4), L, L * (0.45 + rng() * 0.2), rng() * 6.28, browns[k % browns.length], rng() < 0.45 ? 'oak' : rng() < 0.5 ? 'oval' : 'lance', { vein: 'rgba(60,36,18,0.6)' }); }
+        for (let k = 0; k < 5; k++) { const x = RX(), y = RY(10, 10), a = rng() * 6.28, L = 10 + rng() * 10; const z = F(sd, x) + sd * 0.6; B.prim({ t: 'tube', pts: [[x, y, z], [x + Math.cos(a) * L * 0.5, y + Math.sin(a) * L * 0.5, z], [x + Math.cos(a + 0.2) * L, y + Math.sin(a + 0.2) * L, z]], r0: 0.6, r1: 0.35, col: '#5a4030', style: 'stem', nv: nvOf(sd) }); }
+        for (let k = 0; k < 2; k++) shelfs(sd, RX(), RY(20, 20), 2, ['#e8d8b8', '#d8c098']);
+      } else if (S === 'trunkwall') {
+        for (let k = 0; k < 6; k++) shelfs(sd, RX(), RY(14, 20), 2 + (k % 2), ['#d89048', '#c87830', '#e8b060', '#a85a28'], 3.6);
+        for (let k = 0; k < 3; k++) ivyRun(sd, RX(), h - 4 - rng() * 40, 14, '#356e2a');
+        for (let k = 0; k < 10; k++) tuft(sd, RX(), RY(), 2 + rng() * 2.6, ['#5f8f2e', '#4a7a26', '#79a83a'][k % 3]);
+      } else if (S === 'rootwall') {
+        const rc = ['#6a4a30', '#5a3e28', '#7a5838', '#4e3422'];
+        for (let k = 0; k < 11; k++) {
+          let px = RX(), py = h - rng() * 10; const pts = [[px, py, F(sd, px) + sd * 1.2]]; const r0 = 1.4 + rng() * 1.4;
+          while (py > 2) { px += (rng() - 0.5) * 9; px = M.clamp(px, -w / 2 + 6, w / 2 - 6); py -= 6 + rng() * 8; pts.push([px, Math.max(1, py), F(sd, px) + sd * (0.8 + rng() * 1.4)]); }
+          B.prim({ t: 'tube', pts, r0, r1: r0 * 0.35, col: rc[k % rc.length], style: 'bark', nv: nvOf(sd) });
+        }
+        for (let k = 0; k < 8; k++) tuft(sd, RX(), RY(), 2 + rng() * 2.4, ['#4a7a26', '#5f8f2e'][k % 2]);
+        for (let k = 0; k < 4; k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 6);
+      } else if (S === 'sandwall') {
+        for (let k = 0; k < 9; k++) { const x = RX(), y = RY(); for (let j = 0; j < 7; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 3) * 0.7, 2 + rng() * 1.6, 1.1, shade('#8aa07a', (rng() - .5) * .2), '#c09080', 'fat', 0.1 + rng() * 0.3, y, { nv: nvOf(sd) }); }
+        for (let k = 0; k < 10; k++) tuft(sd, RX(), RY(), 1 + rng() * 1.3, ['#c8a050', '#b8b878', '#d0b070'][k % 3]);
+        for (let k = 0; k < 3; k++) sprig(sd, RX(), RY(10, 30), 5, '#7a8a4a', 'lance', 5);
+      } else if (S === 'driftwall') {
+        for (let k = 0; k < 7; k++) { const x = RX(), y = RY(10, 10); for (let j = 0; j < 9; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 4) * 0.38, 4 + rng() * 4, 0.7, shade('#9aaa98', (rng() - .5) * .2), '#c8c8b8', 'lance', -0.6 + rng() * 1.4, y, { nv: nvOf(sd) }); }
+        for (let k = 0; k < 16; k++) tuft(sd, RX(), RY(), 1 + rng() * 1.6, ['#c8ccb0', '#a8b490', '#e0d8a0'][k % 3]);
+        for (let k = 0; k < 4; k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2, '#6a8a3a');
+      }
+    }
+    // crest planting
+    const crest = { mosswall: ['#5f8f2e', '#4a7a26', '#79a83a'], barkwall: ['#5f8f2e', '#a8b890'], stonewall: ['#4f7a2a', '#6a9a3a'], leafwall: ['#8a5a2e', '#a0682e', '#6e4426'], trunkwall: ['#4a7a26', '#5f8f2e'], rootwall: ['#4a7a26', '#3f6a22'], sandwall: ['#8aa07a', '#b8b878'], driftwall: ['#a8b490', '#6a8a3a'] }[S] || ['#5f8f2e'];
+    for (let k = 0; k < 9; k++) { const x = -w / 2 + 6 + (w - 12) * k / 8; B.prim({ t: 'tuft', o: [x, h + 0.8, (rng() - 0.5) * d * 0.5], r: (S === 'sandwall' || S === 'driftwall' ? 2 : 3.5) + rng() * 3, col: crest[k % crest.length], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h }); }
+    B.height = h + 4; B.coverR = w * 0.45;
+  };
+
+  // ---- wall-mounted pieces: snap onto a back wall's face (local -z points out from the wall) ----
+  ARCH.wallmount = function (B, p) {
+    const rng = B.rng, y = (B.inst && B.inst.my) || 40, K = p.kind;
+    const shelf = (x, z0, yl, lw, dp, th, style, jit) => { const poly = halfDisc(x, z0, lw, dp, 8, rng, jit); B.prim({ t: 'prism', poly, topPoly: G.scalePoly(poly, 0.94), y0: yl - th, y1: yl, style }); return { poly, ti: B.top(G.scalePoly(poly, 0.88), yl) }; };
+    if (K === 'shelf') {
+      const s1 = shelf(0, 0, y, p.w, p.d, p.th || 3.5, p.style, p.style === 'slate' ? 0.2 : 0.08);
+      B.prim({ t: 'prism', poly: G.scalePoly(s1.poly, 0.62), y0: y - (p.th || 3.5) - 3, y1: y - (p.th || 3.5) + 0.2, style: p.style }); // bracket beneath
+      if (p.moss) for (let k = 0; k < 4; k++) B.prim({ t: 'tuft', o: [(rng() - 0.5) * p.w * 0.7, y + 0.4, -p.d * (0.15 + rng() * 0.5)], r: 1.6 + rng() * 1.6, col: ['#5f8f2e', '#79a83a'][k % 2], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h: y });
+    } else if (K === 'fungi') {
+      const spots = [[0, 0, 13, 7.5], [-7, -8, 10, 6], [6, -15, 8, 5]]; let prev = null;
+      for (const [dx, dy, lw, dp] of spots) {
+        const s1 = shelf(dx, 0, y + dy, lw, dp, 2, 'fungus', 0.1);
+        B.prim({ t: 'prism', poly: G.scalePoly(s1.poly, 0.66), y0: y + dy - 3.4, y1: y + dy - 1.9, style: 'fungus' });
+        if (prev) { // short climb on the wall between neighbouring brackets
+          const a = [dx, y + dy, -dp * 0.35], b = [prev.x, prev.y, -prev.dp * 0.35];
+          B.path([a, [dx * 0.6 + prev.x * 0.4, y + dy + 1.6, -0.6], [prev.x * 0.6 + dx * 0.4, prev.y - 3.5, -0.6], b], 0.2, 'face', { flex: 0, nrm: [[0, 0, -1], [0, 0, -1], [0, 1, 0]], startTop: s1.ti, endTop: prev.ti, perch: false });
+        }
+        prev = { x: dx, y: y + dy, dp, ti: s1.ti };
+      }
+    } else if (K === 'planter') {
+      const poly = halfDisc(0, 0, 15, 9, 8, rng, 0.04); const th = 9;
+      B.prim({ t: 'prism', poly: G.scalePoly(poly, 0.8), topPoly: poly, y0: y - th, y1: y, style: 'coir' });
+      const ti = B.top(G.scalePoly(poly, 0.85), y);
+      for (let j = 0; j < 9; j++) leaf(B, [(rng() - 0.5) * 6, y + 0.5, -3 - rng() * 2], -Math.PI / 2 + (j - 4) * 0.42, 5 + rng() * 2.5, 3, shade('#4f8a30', (rng() - .5) * .2), null, 'heart', 0.15 + rng() * 0.5, y, { variegate: '#d8d070' });
+      // trailing vines down the wall: climbable from below straight up into the pocket
+      for (let v = 0; v < 3; v++) {
+        const x = (v - 1) * 5 + (rng() - 0.5) * 2, len = 28 + rng() * 36; const yb = Math.max(0.5, y - th - len);
+        const pts = []; const n = Math.max(3, Math.round((y - yb) / 5));
+        for (let k = 0; k <= n; k++) { const t = k / n; pts.push([x + Math.sin(t * 5 + v) * 1.6 * (1 - t), M.lerp(yb, y - 1, t), k === n ? -4.5 : -0.9 - (1 - t) * 0.4]); }
+        const nrm = pts.slice(1).map((_, k) => k === n - 1 ? [0, 1, 0] : [0, 0, -1]);
+        B.path(pts, 0.25, 'face', { flex: 0, nrm, endTop: ti, perch: false });
+        B.prim({ t: 'tube', pts: pts.slice(0, n), r0: 0.35, r1: 0.5, col: '#4a6a2a', style: 'stem', nv: [0, 0, -1] });
+        for (let k = 0; k < n - 1; k += 1) { const q = pts[k]; leaf(B, [q[0], q[1], q[2] - 0.3], -Math.PI / 2 + (k % 2 ? 0.9 : -0.9), 3 + rng() * 1.5, 2, shade('#4f8a30', (rng() - .5) * .25), null, 'heart', -0.6, q[1], { nv: [0, 0, -1], variegate: k % 3 ? null : '#d8d070' }); }
+      }
+    } else if (K === 'staghorn') {
+      const plaque = [[-7, -2.4], [7, -2.4], [7, 0.8], [-7, 0.8]];
+      B.prim({ t: 'prism', poly: plaque, y0: y - 18, y1: y, style: 'cork' });
+      const ti = B.top(G.scalePoly(plaque, 0.85), y);
+      B.path([[0, y - 18, -3.2], [0.8, y - 12, -3], [-0.6, y - 6, -3], [0, y - 2, -3], [0, y, -0.8]], 0.2, 'face', { flex: 0, nrm: [[0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 1, 0]], endTop: ti, perch: false });
+      // shield frond hugging the plaque, antler fronds forking out and down
+      B.prim({ t: 'leaf', o: [-6, y - 9, -2.8], a: [12, 0.5, -0.6], b: [0, 6, 0], col: '#7a9a4a', col2: '#a89a5a', shape: 'round', h: y, nv: [0, 0, -1] });
+      for (let j = 0; j < 6; j++) { const ang = -Math.PI / 2 + (j - 2.5) * 0.5; const o = [(j - 2.5) * 1.6, y - 8 + (j % 2) * 2, -3.2]; const L = 9 + rng() * 5; leaf(B, o, ang, L, 2.2, shade('#6a9a48', (rng() - .5) * .2), '#9ab878', 'lance', -0.2 - rng() * 0.6, y, {}); const tip = [o[0] + Math.cos(ang) * L * 0.85, o[1] - L * 0.35, o[2] + Math.sin(ang) * L * 0.85]; for (const sdj of [-1, 1]) leaf(B, tip, ang + sdj * 0.5, 4 + rng() * 2, 1.2, shade('#6a9a48', -0.05), null, 'lance', -0.4, y, {}); }
+    }
+    B.height = 6; B.coverR = 12;
+  };
+
   // ---- branches ----
   ARCH.branch = function (B, p, sc) {
     const rng = B.rng, L = p.L, h = p.h * sc, r = p.r, col = p.col, k = p.kind;
@@ -178,6 +344,17 @@
       const all = legL.concat(span, legR.slice(1)); tube(all, r * 1.3, r, { style: 'vine' }); P(all, r * 1.2, { flex: 0.25 });
       const twist = all.map((q, i) => [q[0], q[1] + Math.sin(i * 1.3) * 1.6, q[2] + Math.cos(i * 1.3) * 1.6]); tube(twist, r * 0.7, r * 0.5, { style: 'vine' });
       for (let i = 2; i < all.length - 2; i += 2) leaf(B, all[i], rng() * 6.28, 4 + rng() * 2, 2.6, p.leaves || '#5a8a3a', null, 'oval', 0.5, all[i][1]);
+    } else if (k === 'beads') {
+      // a hanging chain of cork beads strung between two vine stems
+      const legL = bez([-L / 2, 0, -3], [-L / 2 + 1, h * 0.55, -1], [-L / 2 + 5, h, 0], 8);
+      const span = []; for (let i = 1; i <= 16; i++) { const t = i / 16; span.push([M.lerp(-L / 2 + 5, L / 2 - 5, t), h - Math.sin(t * Math.PI) * h * 0.26 + Math.sin(t * 9) * 1.2, Math.sin(t * 4) * 4]); }
+      const legR = bez(span[15], [L / 2 - 1, h * 0.5, 1], [L / 2, 0, 3], 8);
+      tube(legL, r * 1.5, r * 1.1); tube(legR, r * 1.1, r * 1.5);
+      tube(span, r * 0.7, r * 0.7, { style: 'vine', col: '#5a4026' });
+      const all = legL.concat(span, legR.slice(1)); P(all, r * 1.4, { flex: 0.3 });
+      for (let i = 1; i < 15; i += 2) { const a = span[i - 1], b = span[i + 1], m = span[i]; const dir = M.norm(M.sub(b, a)); const bl = 1.6 + rng() * 0.8;
+        B.prim({ t: 'log', a: M.sub(m, M.mul(dir, bl)), b: M.add(m, M.mul(dir, bl)), r: 2.1 + rng() * 0.6, style: 'cork', bead: true }); }
+      for (let i = 2; i < all.length - 2; i += 3) if (rng() < 0.55) leaf(B, all[i], rng() * 6.28, 3.5 + rng() * 2, 2.2, p.leaves || '#5a8a3a', null, 'oval', 0.4, all[i][1]);
     } else if (k === 'mangrove') {
       const tr = bez([0, 0, 0], [2, h * 0.5, -1], [0, h, 0], 9); tube(tr, r * 1.5, r); P(tr, r * 1.2);
       for (let i = 0; i < 4; i++) {
@@ -324,8 +501,8 @@
       const base = [Math.cos(a) * rr, 0, Math.sin(a) * rr];
       const pts = bez(base, [base[0], H * 0.6, base[2]], [base[0] + (rng() - .5) * 2, H, base[2]], 4);
       const capR = p.cap * (0.6 + rng() * 0.6);
-      B.prim({ t: 'tube', pts, r0: capR * 0.32, r1: capR * 0.24, col: '#e8e0c8', style: 'stem' });
-      B.prim({ t: 'cap', o: pts[4], r: capR, col: p.col, glow: p.glow, h: H });
+      B.prim({ t: 'tube', pts, r0: capR * (p.spots ? 0.22 : 0.32), r1: capR * (p.spots ? 0.18 : 0.24), col: p.stem || '#e8e0c8', style: 'stem' });
+      B.prim({ t: 'cap', o: pts[4], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, cone: !!p.spots, h: H });
       pts.push([pts[4][0], H + capR * 0.5, pts[4][2]]);
       B.path(pts, capR * 0.2, 'stem', { flex: 0.05 });
     }
@@ -401,7 +578,7 @@
   Geo.build = function (inst, baseY, maxH) {
     const def = JT.DECOR_BY_ID[inst.type];
     const rng = JT.makeRng(inst.seed || 1);
-    const B = new Builder(rng);
+    const B = new Builder(rng); B.inst = inst;
     const nominal = def.p.h || 10;
     const sc = Math.min(1, Math.max(0.35, (maxH - baseY - 6) / nominal));
     ARCH[def.arche](B, def.p, sc);
@@ -420,6 +597,8 @@
       if (q.t === 'moss') q.blobs = q.blobs.map(b => { const w = X.P2([b[0], b[1]]); return [w[0], w[1], b[2], b[3]]; });
       if (q.t === 'pot') q.o = X.P([0, 0, 0]);
       if (q.door) q.doorDir = X.V([0, 0, -1]);
+      if (q.nv) q.nv = X.V(q.nv);
+      if (q.ws) q.ws = X.V(q.ws);
       if (q.h != null) q.h = q.h; // height above base for sway
       q.base = baseY;
       g.prims.push(q);
@@ -444,6 +623,8 @@
     g.contacts = [];
     for (const pa of g.paths) for (const pt of pa.pts) if (pt[1] - baseY < 1.25) g.contacts.push([pt[0], pt[2]]);
     g.center = [inst.x, baseY, inst.z];
+    if (B.front) { g.front = B.front.map(X.P2); g.out = X.V([0, 0, -1]); g.wallH = B.height - 4; }
+    if (def.arche === 'wallmount') { g.center = [inst.x, inst.my || 40, inst.z]; g.foot = G.circlePoly(inst.x, inst.z, (def.p.w || 14) / 2, 3, 8); }
     g.flexible = g.paths.some(p => p.flex > 0.2) || def.cat === 'plants';
     return g;
   };

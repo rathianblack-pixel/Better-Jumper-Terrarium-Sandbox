@@ -12,6 +12,7 @@
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
+    if (restored && game._gifted) setTimeout(() => JT.UI.toast('🌿 A <b>Moss Tower</b> made for portrait screens was added to your shelf — meet <b>Moss</b>, a young Regal Jumper.', '', 6500), 600);
     if (!restored) setTimeout(() => JT.UI.toast('Welcome! Meet <b>Bolt</b>, your Bold Jumper. Click a jumper to see what it is thinking.', '', 6000), 600);
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     root.addEventListener('pagehide', () => game.save());

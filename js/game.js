@@ -23,12 +23,15 @@
     newGame() {
       JT.game = this;
       this.state = { v: VERSION, coins: 400, time: DAY * 0.3, catches: 0, species: JT.SPECIES.filter(s => s.starter).map(s => s.id), journal: {}, active: 0, slots: 3, timeMode: 'auto', customPresets: [], nextId: 1, habitats: [] };
-      const a = new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this);
-      JT.Presets.starter(a);
+      const tall = Game.isPortrait();
+      const a = tall ? new JT.Habitat({ name: 'Moss Tower', type: 'tower', substrate: 'moss', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this);
+      if (tall) JT.Presets.tower(a); else JT.Presets.starter(a);
+      if (tall) this.state.towerGift = true;
       const bolt = a.addSpider('bold', { name: 'Bolt', stage: 2, meals: 1, sat: 0.55 }); bolt.pos = a.randomFloorPoint(); bolt.sup = { k: 'floor' };
       a.addPrey('fruitfly', 5); a.addPrey('housefly', 1); a.addPrey('cricket', 1);
       const b = new JT.Habitat({ name: 'Canopy Habitat', type: 'arboreal' }, this); JT.Presets.generate(b, 'canopy', 7);
-      const c = new JT.Habitat({ name: 'Wide Habitat', type: 'wide' }, this); JT.Presets.generate(c, 'meadow', 9);
+      const c = tall ? new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Wide Habitat', type: 'wide' }, this);
+      if (tall) JT.Presets.starter(c); else JT.Presets.generate(c, 'meadow', 9);
       b.decor.forEach(d => { d.preset = true; }); c.decor.forEach(d => { d.preset = true; });
       this.habs = [a, b, c];
       this.selectedId = bolt.id;
@@ -46,8 +49,20 @@
         if (!this.habs.length) return false;
         for (const h of this.habs) { h.rebuild(); for (const s of h.spiders) JT.SpiderAI.restore(h, s); h.validateRefs(); }
         this.state.active = M.clamp(this.state.active | 0, 0, this.habs.length - 1);
+        this.giftTower();
         return true;
       } catch (e) { console.error('Save restore failed', e); Store.set(SAVE_KEY + '.failed', raw); return false; }
+    }
+    static isPortrait() { return !!(root.matchMedia && root.matchMedia('(orientation: portrait) and (max-width: 820px)').matches); }
+    /** Existing saves opened on a phone in portrait get a free Moss Tower (once), with a young regal to live in it. */
+    giftTower() {
+      if (this.state.towerGift || !Game.isPortrait() || this.habs.some(h => h.data.type === 'tower')) return false;
+      this.state.towerGift = true;
+      const t = new JT.Habitat({ name: 'Moss Tower', type: 'tower', substrate: 'moss', bg: 'mossy' }, this); JT.Presets.tower(t);
+      const sp = t.addSpider('regal', { name: 'Moss', stage: 1, sat: 0.6 }); sp.pos = t.randomFloorPoint(); sp.sup = { k: 'floor' };
+      t.addPrey('fruitfly', 5);
+      this.habs.push(t); this.state.slots = Math.max(this.state.slots, this.habs.length); this.state.active = this.habs.length - 1; this.selectedId = sp.id;
+      this._gifted = true; this.save(); return true;
     }
     static migrate(d) {
       d.v = d.v || 1;
@@ -105,7 +120,7 @@
       const old = hab.dims; const items = hab.sortedDecor().map(d => Object.assign({}, d, { fx: d.x / old.w, fz: d.z / old.d }));
       hab.data.type = type; hab.data.decor = []; hab.rebuild();
       let refund = 0;
-      for (const it of items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed).ok) hab.addDecor(it.type, x, z, it.rot, it.seed); else refund += Math.round(JT.DECOR_BY_ID[it.type].price * 0.5); }
+      for (const it of items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed, null, it.my).ok) hab.addDecor(it.type, x, z, it.rot, it.seed, false, it.my); else refund += Math.round(JT.DECOR_BY_ID[it.type].price * 0.5); }
       hab.decor.forEach(d => { d.novel = false; });
       const scaleE = (e) => { e.pos = [e.pos[0] / old.w * hab.dims.w, e.pos[1], e.pos[2] / old.d * hab.dims.d]; };
       hab.spiders.forEach(scaleE); hab.prey.forEach(scaleE); hab.data.remains.forEach(scaleE); hab.data.drops = []; hab.data.silk = [];

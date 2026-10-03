@@ -6,12 +6,12 @@
   const P = JT.Presets = {};
   P.forType = (type) => JT.PRESETS.filter(p => p[2].includes(type)).map(p => ({ name: p[0], theme: p[1] }));
 
-  function tryPlace(hab, type, rng, region, tries) {
+  function tryPlace(hab, type, rng, region, tries, rots) {
     const W = hab.dims.w, D = hab.dims.d;
     for (let k = 0; k < (tries || 25); k++) {
       const x = region ? rng.range(region[0], region[1]) : rng.range(10, W - 10);
       const z = region && region[2] != null ? rng.range(region[2], region[3]) : rng.range(12, D - 12);
-      const rot = rng.int(0, 3); const seed = (rng() * 1e9) | 0;
+      const rot = rots ? rng.pick(rots) : rng.int(0, 3); const seed = (rng() * 1e9) | 0;
       if (hab.canPlace(type, x, z, rot, seed).ok) return hab.addDecor(type, x, z, rot, seed);
     }
     return null;
@@ -41,23 +41,37 @@
     const nPlant = compact ? 3 : Math.round(3 + area * 2.2);
     const nGround = compact ? 2 : Math.round(2 + area);
     const tall = filt(th.tall), mid = filt(th.mid), plants = filt(th.plants), ground = filt(th.ground);
-    for (let i = 0; i < nTall; i++) { const seg = W / nTall; tryPlace(hab, tall[i % tall.length], rng, [seg * i + seg * 0.2, seg * (i + 1) - seg * 0.2, D * 0.35, D * 0.75]); }
-    for (let i = 0; i < nMid; i++) tryPlace(hab, mid[i % mid.length], rng);
+    let i0 = 0;
+    if (th.back && JT.DECOR_BY_ID[th.tall[0]].arche === 'backwall') { if (tryPlace(hab, th.tall[0], rng, [W / 2 - 2, W / 2 + 2, D - 9, D - 7], 10, [0])) i0 = 1; }
+    for (let i = i0; i < nTall; i++) { const seg = W / nTall; tryPlace(hab, tall[i % tall.length], rng, [seg * i + seg * 0.2, seg * (i + 1) - seg * 0.2, D * 0.35, D * 0.75]); }
+    const mounts = mid.filter(id => JT.DECOR_BY_ID[id].mount), loose = mid.filter(id => !JT.DECOR_BY_ID[id].mount);
+    if (i0) for (const id of mounts) tryPlace(hab, id, rng, null, 6); // hang the wall pieces first
+    for (let i = 0; i < nMid; i++) if (loose.length) tryPlace(hab, loose[i % loose.length], rng);
     for (let i = 0; i < nPlant; i++) { const id = plants[i % plants.length]; if (!(rng() < 0.35 && JT.DECOR_BY_ID[id].stack && stackOn(hab, id, rng))) tryPlace(hab, id, rng); }
     for (let i = 0; i < nGround; i++) tryPlace(hab, ground[i % ground.length], rng);
     if (!hab.decor.some(d => JT.DECOR_BY_ID[d.type].water)) tryPlace(hab, 'waterdish', rng);
     hab.decor.forEach(d => { d.novel = false; });
   };
   P.saveCustom = function (game, hab, name) {
-    const items = hab.sortedDecor().map(d => ({ type: d.type, fx: d.x / hab.dims.w, fz: d.z / hab.dims.d, rot: d.rot, seed: d.seed }));
+    const items = hab.sortedDecor().map(d => ({ type: d.type, fx: d.x / hab.dims.w, fz: d.z / hab.dims.d, rot: d.rot, seed: d.seed, my: d.my }));
     game.state.customPresets.push({ name, items, sub: hab.data.substrate, bg: hab.data.bg, from: hab.data.type });
   };
   P.applyCustom = function (hab, preset) {
     hab.data.decor = []; hab.rebuild();
     hab.data.substrate = preset.sub; hab.data.bg = preset.bg; let ok = 0;
-    for (const it of preset.items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed).ok) { hab.addDecor(it.type, x, z, it.rot, it.seed); ok++; } }
+    for (const it of preset.items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed, null, it.my).ok) { hab.addDecor(it.type, x, z, it.rot, it.seed, false, it.my); ok++; } }
     hab.decor.forEach(d => { d.novel = false; });
     return ok;
+  };
+  /** Hand-arranged Moss Tower (Vertical Tower 100 x 84): a living back wall for tall/portrait screens. */
+  P.tower = function (hab) {
+    const L = [['mosswall', 50, 74, 0], ['cushionmoss', 30, 22, 0], ['mosspatch', 74, 50, 0], ['beadvine', 50, 52, 0], ['mossmound', 34, 44, 0],
+      ['toadstools', 34, 44, 0], ['toadstools', 80, 64, 0], ['fern', 13, 58, 0], ['maidenhair', 88, 26, 0], ['echeveria', 64, 20, 0], ['echeveria', 22, 12, 1],
+      ['waterdish', 84, 12, 0], ['glowshroom', 14, 30, 0], ['toadstools', 58, 64, 0], ['pothos', 22, 66, 0], ['mossstone', 90, 46, 0], ['wm_fungi', 28, 70, 0], ['wm_pothos', 72, 70, 0]];
+    let s = 23;
+    for (const [t, x, z, r] of L) { s += 7; let ok = false; const rr = JT.makeRng(s); for (let k = 0; k < 40 && !ok; k++) { const sp = k === 0 ? 0 : 3 + k * 0.6; const xx = x + (k ? (rr() - 0.5) * 2 * sp : 0), zz = z + (k ? (rr() - 0.5) * 2 * sp : 0); if (hab.canPlace(t, xx, zz, r, s).ok) { hab.addDecor(t, xx, zz, r, s); ok = true; } } }
+    hab.data.substrate = 'moss'; hab.data.bg = 'mossy';
+    hab.decor.forEach(d => { d.novel = false; });
   };
   /** Hand-arranged Starter Terrarium (Standard 200 x 90). */
   P.starter = function (hab) {

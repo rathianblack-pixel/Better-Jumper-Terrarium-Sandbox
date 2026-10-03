@@ -131,7 +131,8 @@
       }
     }
     // ---- jump edges between distinct objects ----
-    const cand = nav.nodes.filter(n => n.kind !== 'face' && !n.lattice && (n.kind !== 'floor' || true) && (n.kind === 'top' || n.kind === 'floor' || n.path && (n.path.i % 2 === 0 || n.perch)));
+    const wallish = (n) => { const g = n.decor && geoms[n.decor]; return !!g && (g.def.arche === 'backwall' || g.def.arche === 'wallmount'); };
+    const cand = nav.nodes.filter(n => (n.kind !== 'face' || (wallish(n) && n.path && n.path.i % 2 === 0 && n.pos[1] > 6)) && !n.lattice && (n.kind !== 'floor' || true) && (n.kind === 'top' || n.kind === 'floor' || n.path && (n.path.i % 2 === 0 || n.perch)));
     for (const a of cand) {
       const near = [];
       for (const b of cand) {

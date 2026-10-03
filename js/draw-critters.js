@@ -248,29 +248,41 @@
       parts.push({ d: V.depth(b) - 0.02, f: () => { limb(ctx, V, [a, b, c], [L * 0.04, L * 0.036], pal.leg, lod, null); if (lod > 0) blob(ctx, V, c, M.mul(fg, L * 0.035), M.mul(sg, L * 0.03), M.mul(n, L * 0.03), pal.hair, { lod, ink: false }); } });
     }
     // --- 8 legs: coxa→femur→tibia→tarsus, tapered and inked; front legs stout ---
+    const dorsal = M.dot(n, V.toCam) > 0.45;
     const AU = [0.22, 0.17, 0.11, 0.05], FU = ant ? [0.55, 0.3, -0.12, -0.45] : [0.62, 0.3, -0.16, -0.5], FV = [0.42, 0.56, 0.57, 0.47];
     const ring = (S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'orange' || S.pattern === 'zebra') ? pal.mark : null;
     for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) {
       const ph = (sp._walk || 0) * Math.PI + (i % 2) * Math.PI + (sd > 0 ? Math.PI : 0);
       let fu = FU[i] * L + Math.sin(ph) * L * 0.12 * moving, fv = FV[i] * L * sd * (1 + crouch * 0.12), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * moving;
-      if (i === 0 && raise > 0) { fu += L * 0.12 * raise; fw += L * 0.32 * raise; fv *= 1 - 0.35 * raise; }
+      if (i === 0 && raise > 0) { fu += L * 0.2 * raise; fw += L * 0.18 * raise; fv *= 1 - 0.1 * raise; }
       if (sp.state === 'display' && i <= (S.prefs.display > 0.7 ? 2 : 0)) fw += L * (0.26 + Math.sin(t * 7 + i + (sd > 0 ? 1 : 0)) * 0.12);
-      if (sp.state === 'groom' && i === 0) { fw += L * 0.15 * (0.5 + 0.5 * Math.sin(t * 9 + sd)); fv *= 0.5; }
-      if (o.airborne) { if (i < 2) { fu += L * 0.22; fw += L * 0.06; fv *= 0.7; } else { fu -= L * 0.3; fv *= 0.6; } }
-      if (o.curled) { fu *= 0.35; fv *= 0.45; fw = h0 + L * 0.14; }
-      const hip = W(AU[i] * L, sd * L * 0.11, h0 + L * 0.02); const foot = W(fu, fv, fw);
+      if (sp.state === 'groom' && i === 0) { fw += L * 0.15 * (0.5 + 0.5 * Math.sin(t * 9 + sd)); fv *= 0.75; }
+      if (o.airborne) { if (i < 2) { fu += L * 0.22; fw += L * 0.06; fv *= 0.8; } else { fu -= L * 0.3; fv *= 0.7; } }
+      if (o.curled) { fu *= 0.35; fv *= 0.55; fw = h0 + L * 0.14; }
+      else if (o.tucked) { fu *= 0.6; fv *= 0.56; fw = L * 0.03; }
+      // legs attach under the carapace edge and always swing out to the side (never across the head)
+      const hip = W(AU[i] * L, sd * L * 0.15, h0 + L * 0.04); const foot = W(fu, fv, fw);
       const mid = M.lerp3(hip, foot, 0.4);
-      const knee = M.add(M.add(mid, M.mul(n, L * (0.22 + crouch * 0.1) * (o.curled ? 0.4 : 1))), M.mul(s, sd * L * 0.05));
+      const far = sd * M.dot(s, V.toCam) < -0.15 && !o.thumb; // far-side legs: keep the knee low so it never pokes up over the head
+      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1))), M.mul(s, sd * L * 0.06));
+      const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
       const ankle = M.add(M.lerp3(knee, foot, 0.62), M.mul(n, L * 0.05));
       const wk = i === 0 ? (S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'orange' || S.pattern === 'apache' ? 1.55 : 1.3) : 1;
       const col = i === 0 ? sh(pal.leg, -0.04) : pal.leg;
-      parts.push({ d: V.depth(knee) + (M.dot(M.sub(knee, cc), V.toCam) > 0 ? -0.02 : 0.02), f: () => {
-        const Sx = limb(ctx, V, [hip, knee, ankle, foot], [L * 0.066 * wk, L * 0.05 * wk, L * 0.03], col, lod, ring ? [null, ring, null] : null);
+      const kd = V.depth(knee) + (M.dot(M.sub(knee, cc), V.toCam) > 0 ? -0.02 : 0.02);
+      // femur base tucks under the body when seen from above
+      const pd = dorsal ? Math.max(V.depth(cc), V.depth(ac)) + 0.015 : kd;
+      parts.push({ d: pd, f: () => {
+        const Sx = limb(ctx, V, [hip, knee], [L * 0.066 * wk], col, lod, null);
         if (lod === 2 && i === 0 && px > 55) { // hair brush on front legs
           ctx.strokeStyle = pal.hair; ctx.lineWidth = 0.7; ctx.beginPath();
           for (let k = 1; k <= 5; k++) { const q = [M.lerp(Sx[0][0], Sx[1][0], k / 6), M.lerp(Sx[0][1], Sx[1][1], k / 6)]; ctx.moveTo(q[0], q[1]); ctx.lineTo(q[0] + (k % 2 ? 2 : -2), q[1] + 2.5); }
           ctx.stroke();
         }
+      } });
+      parts.push({ d: kd, f: () => {
+        const Sx = limb(ctx, V, [knee, ankle, foot], [L * 0.05 * wk, L * 0.03], col, lod, null);
+        const kr = L * 0.066 * wk * V.s * 0.5; if (lod > 0 && kr > 0.8) { ctx.fillStyle = ring || sh(col, 0.06); ctx.beginPath(); ctx.arc(Sx[0][0], Sx[0][1], kr, 0, 6.283); ctx.fill(); }
       } });
     }
     // --- held meal: tucked beneath the fangs, always drawn behind head + chelicerae ---
@@ -281,6 +293,51 @@
     }
     sortDraw(parts);
     ctx.globalAlpha = 1;
+  };
+
+  // ============================== SILK SAC ==============================
+  /** Thick silk hammock wrapped around a resting / molting jumper; a carved doorway at one end when it leaves. */
+  D.nest = function (ctx, V, n, up, night) {
+    const L = n.len, pr = M.clamp(n.prog, 0, 1); if (pr <= 0.02) return;
+    let f = M.sub(n.fwd, M.mul(up, M.dot(n.fwd, up))); f = M.len(f) > 1e-3 ? M.norm(f) : M.norm(M.cross(up, [0, 0, 1])); const s = M.norm(M.cross(up, f));
+    // snug, flattened envelope: just covers the tucked body and folded legs
+    const k = 0.8 + 0.2 * pr; const ax = M.mul(f, L * 0.7 * k), ay = M.mul(s, L * 0.56 * k), az = M.mul(up, L * 0.36 * k);
+    const c = M.add(n.pos, M.mul(up, L * 0.12)); const P = V.P(c); const e = projEll(V, ax, ay, az); if (e.r1 < 1) return;
+    const vac = !n.owner, fade = vac ? Math.max(0.25, 1 - n.age / 1800) : 1;
+    const A = (0.1 + 0.46 * pr) * fade; // translucent: the resting jumper shows through as a dim shape
+    const rng = JT.makeRng(n.seed || 1); const tc = night ? '205,215,235' : '246,247,250';
+    ctx.save();
+    // a few short anchor threads tacking the sac down
+    ctx.strokeStyle = 'rgba(' + tc + ',' + (0.28 * pr * fade).toFixed(3) + ')'; ctx.lineWidth = Math.max(0.4, V.s * 0.06);
+    for (let i = 0; i < 4; i++) { const a = (i + rng() * 0.6) * 1.571; const dir = M.add(M.mul(f, Math.cos(a)), M.mul(s, Math.sin(a) * 0.8)); const q0 = V.P(M.add(c, M.mul(dir, L * 0.5))); const q1 = V.P(M.add(n.pos, M.mul(dir, L * (0.72 + rng() * 0.2)))); ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.lineTo(q1[0], q1[1]); ctx.stroke(); }
+    ctx.translate(P[0], P[1]); ctx.rotate(e.ang);
+    const g = ctx.createRadialGradient(-e.r1 * 0.2, -e.r2 * 0.3, e.r2 * 0.1, 0, 0, e.r1);
+    g.addColorStop(0, 'rgba(' + tc + ',' + Math.min(0.6, A * 1.25).toFixed(3) + ')'); g.addColorStop(0.7, 'rgba(' + tc + ',' + A.toFixed(3) + ')'); g.addColorStop(1, 'rgba(' + tc + ',' + (A * 1.2).toFixed(3) + ')');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, e.r1, e.r2, 0, 0, 6.283); ctx.fill();
+    // fine woven threads following the long axis, clipped to the sac
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, e.r1, e.r2, 0, 0, 6.283); ctx.clip();
+    const nT = Math.round(6 + 16 * pr); ctx.lineWidth = Math.max(0.35, V.s * 0.05);
+    for (let i = 0; i < nT; i++) { const y0 = (rng() * 2 - 1) * e.r2, y1 = (rng() * 2 - 1) * e.r2; ctx.strokeStyle = 'rgba(255,255,255,' + ((0.12 + rng() * 0.22) * fade).toFixed(3) + ')'; ctx.beginPath(); ctx.moveTo(-e.r1, y0); ctx.quadraticCurveTo(0, (y0 + y1) * 0.5 + (rng() - 0.5) * e.r2 * 0.6, e.r1, y1); ctx.stroke(); }
+    ctx.restore();
+    // soft rim so the envelope reads as a surface
+    ctx.strokeStyle = 'rgba(' + tc + ',' + (0.3 * pr * fade).toFixed(3) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.ellipse(0, 0, e.r1 * 0.98, e.r2 * 0.98, 0, 0, 6.283); ctx.stroke();
+    ctx.restore();
+    // carved doorway at the front or back end: a soft ragged opening with frayed fibres around it
+    if (n.hole && n.hole.open > 0.02) {
+      const hd = M.mul(f, n.hole.side); const vis = M.dot(hd, V.toCam);
+      if (vis > -0.3) {
+        const hc = surfToward(c, ax, ay, az, hd); const o = n.hole.open; const he = projEll(V, M.mul(s, L * 0.22 * o), M.mul(up, L * 0.2 * o), M.mul(hd, L * 0.02));
+        if (he.r1 >= 0.6) {
+          const H = V.P(hc); ctx.save(); ctx.globalAlpha = fade * M.clamp((vis + 0.3) * 2, 0, 1); ctx.translate(H[0], H[1]); ctx.rotate(he.ang);
+          const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, he.r1);
+          hg.addColorStop(0, 'rgba(26,22,18,0.7)'); hg.addColorStop(0.7, 'rgba(36,32,28,0.45)'); hg.addColorStop(1, 'rgba(60,56,52,0)');
+          ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(0, 0, he.r1, Math.max(0.5, he.r2), 0, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = 'rgba(250,250,252,0.45)'; ctx.lineWidth = Math.max(0.35, V.s * 0.05);
+          for (let i = 0; i < 9; i++) { const a = rng() * 6.283, w = 0.8 + rng() * 0.5; const x = Math.cos(a) * he.r1 * 0.85, y = Math.sin(a) * he.r2 * 0.85; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x * (1 + 0.35 * w), y * (1 + 0.35 * w)); ctx.stroke(); }
+          ctx.restore();
+        }
+      }
+    }
   };
 
   // ============================== PREY ==============================

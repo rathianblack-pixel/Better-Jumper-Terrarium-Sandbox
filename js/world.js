@@ -33,7 +33,7 @@
     // ---------------- geometry ----------------
     sortedDecor() {
       const byId = {}; this.data.decor.forEach(d => byId[d.id] = d);
-      const depth = (d, k) => (d.parent && byId[d.parent] && k < 8) ? 1 + depth(byId[d.parent], k + 1) : 0;
+      const depth = (d, k) => (d.parent && byId[d.parent] && k < 8) ? 1 + depth(byId[d.parent], k + 1) : JT.DECOR_BY_ID[d.type] && JT.DECOR_BY_ID[d.type].mount ? 9 : 0; // wall mounts after their wall
       return this.data.decor.slice().sort((a, b) => depth(a, 0) - depth(b, 0));
     }
     rebuild() {
@@ -51,9 +51,45 @@
     }
 
     /** Placement legality incl. creative stacking. Returns {ok, reason, parent, parentTop, geom}. */
-    canPlace(type, x, z, rot, seed, ignoreId) {
+    /** Nearest back wall face for a wall-mounted piece: {id, x, z, rot, h, u}. */
+    mountSnap(x, z, ignoreId) {
+      let best = null;
+      for (const d of this.data.decor) {
+        if (d.id === ignoreId) continue; const g = this.geoms[d.id]; if (!g || !g.front) continue;
+        const F = g.front;
+        for (let i = 0; i < F.length - 1; i++) {
+          const a = F[i], b = F[i + 1]; const ex = b[0] - a[0], ez = b[1] - a[1]; const L2 = ex * ex + ez * ez || 1;
+          let t = ((x - a[0]) * ex + (z - a[1]) * ez) / L2; t = M.clamp(t, 0, 1);
+          const px = a[0] + ex * t, pz = a[1] + ez * t; const dd = Math.hypot(x - px, z - pz);
+          if (!best || dd < best.dd) best = { dd, id: d.id, g, i, t, px, pz, rot: d.rot || 0, h: g.wallH || g.height };
+        }
+      }
+      return best;
+    }
+    _canMount(def, type, x, z, seed, ignoreId, my) {
+      const s = this.mountSnap(x, z, ignoreId); if (!s) return { ok: false, reason: 'Mount it on a back wall' };
+      // keep the piece's width on the wall face
+      const F = s.g.front, a = F[0], b = F[F.length - 1]; const ex = b[0] - a[0], ez = b[1] - a[1], L = Math.hypot(ex, ez) || 1; const hw = (def.p.w || 14) / 2 + 2;
+      let u = ((s.px - a[0]) * ex + (s.pz - a[1]) * ez) / L; u = M.clamp(u, hw, L - hw);
+      const s2 = this.mountSnap(a[0] + ex / L * u + s.g.out[0] * 3, a[1] + ez / L * u + s.g.out[2] * 3, ignoreId) || s;
+      x = s2.px + s.g.out[0] * 0.3; z = s2.pz + s.g.out[2] * 0.3;
+      if (my == null || !isFinite(my)) my = s.h * (0.3 + 0.5 * (((seed || 1) % 997) / 997));
+      my = M.clamp(my, def.p.kind === 'fungi' ? 22 : 12, s.h - 8);
+      const inst = { id: '_probe', type, x, z, rot: s.rot, seed: seed || 1, my };
+      const g = JT.Geo.build(inst, 0, this.dims.h);
+      for (const q of g.extent) if (!Nav.inside(this, q[0], q[1], 1.5)) return { ok: false, reason: 'Outside the habitat' };
+      if (my + 10 > this.dims.h) return { ok: false, reason: 'Too tall to fit here' };
+      for (const d of this.data.decor) {
+        if (d.id === ignoreId) continue; const od = JT.DECOR_BY_ID[d.type]; if (!od || !od.mount || d.wall !== s.id) continue;
+        const og = this.geoms[d.id]; if (!og) continue;
+        if (Math.hypot(og.center[0] - x, og.center[2] - z) < ((od.p.w || 14) + (def.p.w || 14)) / 2 && Math.abs((d.my || 0) - my) < 16) return { ok: false, reason: 'Too close to ' + od.name };
+      }
+      return { ok: true, parent: null, parentTop: 0, baseY: 0, geom: g, x, z, rot: s.rot, my, wall: s.id };
+    }
+    canPlace(type, x, z, rot, seed, ignoreId, my) {
       const def = JT.DECOR_BY_ID[type]; if (!def) return { ok: false, reason: 'Unknown item' };
       if (this.data.decor.length >= 48 && !ignoreId) return { ok: false, reason: 'Habitat is full of decor' };
+      if (def.mount) return this._canMount(def, type, x, z, seed, ignoreId, my);
       const inst = { id: '_probe', type, x, z, rot: rot || 0, seed: seed || 1 };
       let g0 = JT.Geo.build(inst, 0, this.dims.h);
       // find support: highest platform top containing the whole base footprint
@@ -85,6 +121,7 @@
         const og = this.geoms[d.id]; if (!og) continue;
         const sameLevel = (d.parent || null) === (parent || null) && (!parent || (d.parentTop || 0) === parentTop);
         if (d.id === parent) continue;
+        if (og.def.mount) continue; // hangs on a wall above the floor
         if (!sameLevel) continue; // objects resting on different supports do not collide
         if (def.cat === 'ground') { if (og.solids.length && og.solids.some(s => G.pointInPoly(x, z, s))) return { ok: false, reason: 'Ground cover needs open floor' }; continue; }
         if (og.def.cat === 'ground') continue;
@@ -95,10 +132,11 @@
       }
       return { ok: true, parent, parentTop, baseY, geom: g };
     }
-    addDecor(type, x, z, rot, seed, placedBy) {
-      const chk = this.canPlace(type, x, z, rot, seed);
+    addDecor(type, x, z, rot, seed, placedBy, my) {
+      const chk = this.canPlace(type, x, z, rot, seed, null, my);
       if (!chk.ok) return null;
       const inst = { id: JT.newId('d'), type, x, z, rot: rot || 0, seed: seed || ((JT.R() * 1e9) | 0), parent: chk.parent || null, parentTop: chk.parentTop || 0, placedAt: this.time, novel: !!placedBy };
+      if (chk.wall) { inst.x = chk.x; inst.z = chk.z; inst.rot = chk.rot; inst.my = chk.my; inst.wall = chk.wall; }
       this.data.decor.push(inst);
       this.rebuild();
       return inst;
@@ -108,6 +146,8 @@
       const inst = this.decorById(id); if (!inst) return [];
       const removed = [inst];
       this.data.decor = this.data.decor.filter(d => d !== inst);
+      const mounts = this.data.decor.filter(d => d.wall === id); // pieces hung on a removed wall come down with it
+      if (mounts.length) { this.data.decor = this.data.decor.filter(d => d.wall !== id); removed.push(...mounts); }
       const kids = this.data.decor.filter(d => d.parent === id);
       for (const k of kids) {
         k.parent = null; k.parentTop = 0;
@@ -234,6 +274,7 @@
       for (const p of d.prey.slice()) if (d.prey.includes(p)) JT.PreyAI.update(this, p, dt);
       for (const w of d.drops) w.life -= dt * (1.4 - d.humidity);
       d.drops = d.drops.filter(w => w.life > 0);
+      JT.SpiderAI.updateNests(this, dt);
       for (const s of d.silk) s.age += dt;
       d.silk = d.silk.filter(s => s.age < (s.kind === 'retreat' ? 1800 : 600));
       for (const r of d.remains) r.age += dt;
@@ -264,9 +305,10 @@
     while (R.i < R.steps.length && guard++ < 12) {
       const st = R.steps[R.i];
       if (st.mode === 'jump' || st.mode === 'drop') {
+        if (e._air && e._air.step && e._air.step !== st) e._air = null; // route changed mid-air: continue from here to the new step
         if (!e._air) {
           const d = M.dist(e.pos, st.pos);
-          e._air = { from: e.pos.slice(), to: st.pos.slice(), t: 0, dur: st.mode === 'drop' ? 0.35 + Math.sqrt(d) * 0.09 : 0.22 + d / 170, apex: st.mode === 'drop' ? 0 : 2 + d * 0.16, mode: st.mode, arrive: st.arrive };
+          e._air = { from: e.pos.slice(), to: st.pos.slice(), t: 0, dur: st.mode === 'drop' ? 0.35 + Math.sqrt(d) * 0.09 : 0.22 + d / 170, apex: st.mode === 'drop' ? 0 : 2 + d * 0.16, mode: st.mode, arrive: st.arrive, step: st };
           e.sup = { k: 'air' };
           if (opts.onLaunch) opts.onLaunch(st);
         }

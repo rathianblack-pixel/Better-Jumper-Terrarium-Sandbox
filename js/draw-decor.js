@@ -17,6 +17,17 @@
     dish: { side: '#d6d1c6', top: '#e6e2d8', mark: '#b8b2a6', hi: '#f4f0e8' },
     ruin: { side: '#88887e', top: '#9c9c90', mark: '#66665e', hi: '#b0b0a4' },
     terracotta: { side: '#a8573a', top: '#c06a48', mark: '#7e3e28', hi: '#d88a62' },
+    mosswall: { side: '#3d5a24', top: '#4f7a2c', mark: '#2a3e18', hi: '#6e9a3a', soft: true },
+    barkwall: { side: '#5a3a24', top: '#6e4a2e', mark: '#2e1c10', hi: '#8a6444', soft: true },
+    stonewall: { side: '#5e5a52', top: '#7a766c', mark: '#3a3732', hi: '#9a968a', soft: true },
+    leafwall: { side: '#4a3220', top: '#6a4a2a', mark: '#2e1e12', hi: '#8a6436', soft: true },
+    trunkwall: { side: '#5e4632', top: '#8a6a4a', mark: '#33241a', hi: '#7e624a', soft: true },
+    rootwall: { side: '#33251a', top: '#4a3626', mark: '#1e140c', hi: '#6a4e36', soft: true },
+    sandwall: { side: '#b88452', top: '#cc9a64', mark: '#8e6038', hi: '#dcb07a', soft: true },
+    driftwall: { side: '#9a9184', top: '#b0a898', mark: '#6a6258', hi: '#c8c0b2', soft: true },
+    fungus: { side: '#b8742e', top: '#e2c08a', mark: '#8a4e1e', hi: '#f0d8a8' },
+    coir: { side: '#6a4a2c', top: '#3a2a1a', mark: '#4a321c', hi: '#8a6a44' },
+    drift: { side: '#a49a8a', top: '#bcb4a4', mark: '#746c60', hi: '#d0c8ba' },
   };
   D.STY = STY;
   const L = JT.LIGHT;
@@ -36,17 +47,22 @@
     if (o.alpha != null) ctx.globalAlpha = o.alpha;
     for (const i of g._order) {
       const pr = g.prims[i];
+      if (pr.nv && pr.nv[1] < 0.5 && pr.nv[0] * V.toCam[0] + pr.nv[2] * V.toCam[2] < -0.02) continue; // wall-mounted item on the hidden face
       try { (PR[pr.t] || noop)(ctx, V, pr, g, P, o); } catch (e) { if (JT.DEV) console.warn(e); }
     }
     ctx.globalAlpha = 1;
   };
   function noop() { }
   function primDepth(V, pr) {
+    if (pr.ws) { const c = JT.G.centroid(pr.poly); const d = V.depth([c[0], pr.y1, c[1]]); return pr.ws[0] * V.toCam[0] + pr.ws[2] * V.toCam[2] >= -0.02 ? -1e6 + d : 1e6 + d; } // ledge on a wall face
     if (pr.t === 'prism') { const c = JT.G.centroid(pr.poly); return V.depth([c[0], pr.y0, c[1]]) + 0.01; }
+    if (pr.nv && pr.t === 'tube') return -1e6 + V.depth(pr.pts[Math.floor(pr.pts.length / 2)]);
+    if (pr.nv && pr.t === 'leaf') return -1e6 + V.depth(pr.o);
     if (pr.t === 'tube') { const a = pr.pts[0], b = pr.pts[pr.pts.length - 1]; const m = pr.pts[Math.floor(pr.pts.length / 2)]; return (V.depth(a) + V.depth(b) + V.depth(m)) / 3 - (pr.style === 'bark' && pr.r0 > 2 ? 0 : 0); }
     if (pr.t === 'log') return V.depth(M.lerp3(pr.a, pr.b, 0.5));
     if (pr.t === 'leaf') return V.depth(M.add(pr.o, M.mul(pr.a, 0.5)));
     if (pr.t === 'moss') return 1e6;
+    if (pr.nv) return -1e6 + V.depth(pr.o); // mounted on a wall face: always over the wall itself
     if (pr.o) return V.depth(pr.o) - (pr.t === 'bloom' || pr.t === 'cap' ? 0.5 : 0);
     return 0;
   }
@@ -96,7 +112,7 @@
       const gr = ctx.createLinearGradient(0, q[3][1], 0, q[0][1]);
       gr.addColorStop(0, sh(st.side, (lit - 1) * 0.8 + 0.06)); gr.addColorStop(1, sh(st.side, (lit - 1) * 0.8 - 0.22));
       ctx.fillStyle = gr; poly(ctx, q); ctx.fill();
-      ctx.strokeStyle = sh(st.side, -0.35); ctx.lineWidth = Math.max(0.6, V.s * 0.15); ctx.stroke();
+      if (!st.soft) { ctx.strokeStyle = sh(st.side, -0.35); ctx.lineWidth = Math.max(0.6, V.s * 0.15); ctx.stroke(); }
       // face texture (cached in face-local coordinates)
       const marks = tex[f.i]; if (!marks) continue;
       const at = (u, v) => { const x0 = M.lerp(a[0], b[0], u), z0 = M.lerp(a[1], b[1], u), x1 = M.lerp(ta[0], tb[0], u), z1 = M.lerp(ta[1], tb[1], u); return P([M.lerp(x0, x1, v), M.lerp(pr.y0, pr.y1, v), M.lerp(z0, z1, v)]); };
@@ -157,6 +173,36 @@
         for (let k = 0; k < W / 3; k++) { const u = rng(); m.push({ k: 'line', u0: u, v0: 0, u1: u + (rng() - .5) * 0.08, v1: 0.4 + rng() * 0.6, c: st.mark, a: 0.5, w: 0.25 }); }
       } else if (S === 'wood' || S === 'terracotta') {
         for (let k = 0; k < W / 2; k++) { const u = rng(); m.push({ k: 'line', u0: u, v0: 0, u1: u + (rng() - .5) * 0.05, v1: 1, c: st.mark, a: 0.4, w: 0.18 }); }
+      } else if (S === 'mosswall') {
+        // dark cork showing through dense cushion moss
+        for (let k = 0; k < W * H / 7; k++) m.push({ k: "dot", u0: rng(), v0: rng(), w: 0.7 + rng() * 1.5, h: 0.6 + rng() * 1.3, c: ['#5f8f2e', '#4a7a26', '#79a83a', '#2e4a1a', '#8ab848'][k % 5], a: 0.7 });
+        for (let k = 0; k < W / 6; k++) { const u = rng(), v = rng(); m.push({ k: 'dot', u0: u, v0: v, w: 1.5 + rng() * 2, h: 2 + rng() * 4, c: '#3a2616', a: 0.55 }); }
+      } else if (S === 'barkwall') {
+        for (let k = 0; k < W * H / 12; k++) m.push({ k: 'dot', u0: rng(), v0: rng(), w: 0.8 + rng() * 1.8, h: 0.8 + rng() * 2.4, c: rng() < 0.55 ? st.mark : st.hi, a: 0.5 });
+        for (let k = 0; k < W / 2.2; k++) { const u = rng(), v = rng() * 0.8; m.push({ k: 'line', u0: u, v0: v, u1: u + (rng() - .5) * 0.06, v1: v + 0.06 + rng() * 0.3, c: '#1e120a', a: 0.65, w: 0.35 + rng() * 0.5 }); }
+      } else if (S === 'stonewall') {
+        const rows = Math.max(3, Math.round(H / 7)); // irregular fieldstones in mortar
+        for (let r = 0; r < rows; r++) { let u = rng() * 0.05; while (u < 1) { const sw = (5 + rng() * 6) / W; const cu = u + sw / 2, cv = (r + 0.5 + (rng() - 0.5) * 0.25) / rows; const sh2 = (2.6 + rng() * 1.6); m.push({ k: 'dot', u0: cu, v0: cv, w: sw * W * 0.5 + 0.4, h: sh2 + 0.4, c: st.mark, a: 0.7 }); m.push({ k: 'dot', u0: cu, v0: cv, w: sw * W * 0.46, h: sh2, c: ['#7a766c', '#6e6a60', '#86827a', '#625e56', '#8a8270'][(rng() * 5) | 0], a: 0.95 }); m.push({ k: 'dot', u0: cu - sw * 0.12, v0: cv + 0.25 / rows, w: sw * W * 0.22, h: sh2 * 0.35, c: st.hi, a: 0.35 }); u += sw + 0.4 / W; } }
+      } else if (S === 'leafwall') {
+        for (let k = 0; k < W * H / 9; k++) m.push({ k: 'dot', u0: rng(), v0: rng(), w: 0.8 + rng() * 1.6, h: 0.5 + rng() * 1, c: ['#6a4426', '#8a5a2e', '#4a3020', '#a06a34'][k % 4], a: 0.6 });
+      } else if (S === 'trunkwall') {
+        for (let k = 0; k < W / 1.6; k++) { const u = rng(); let v = 0, uu = u; while (v < 1) { const dv = 0.05 + rng() * 0.12, du = (rng() - 0.5) * 0.02; m.push({ k: 'line', u0: uu, v0: v, u1: uu + du, v1: v + dv, c: k % 3 ? st.mark : '#24180e', a: 0.6, w: 0.3 + rng() * 0.45 }); uu += du; v += dv + rng() * 0.03; } }
+        for (let k = 0; k < W / 10; k++) m.push({ k: 'dot', u0: rng(), v0: rng(), w: 1 + rng() * 2.5, h: 0.6 + rng(), c: st.hi, a: 0.35 });
+        if (W > 20) { const u = 0.3 + rng() * 0.4, v = 0.25 + rng() * 0.5; m.push({ k: 'dot', u0: u, v0: v, w: 4.5, h: 6, c: '#3a2a1c', a: 0.9 }); m.push({ k: 'dot', u0: u, v0: v, w: 3, h: 4.4, c: '#140c06', a: 0.95 }); }
+      } else if (S === 'rootwall') {
+        for (let k = 0; k < W * H / 8; k++) m.push({ k: 'dot', u0: rng(), v0: rng(), w: 0.5 + rng() * 1.2, h: 0.5 + rng(), c: ['#2a1e14', '#4a3624', '#3a2a1c', '#5a4430'][k % 4], a: 0.6 });
+        for (let k = 0; k < W / 3; k++) { const u = rng(), v = rng(); m.push({ k: 'line', u0: u, v0: v, u1: u + (rng() - .5) * 0.15, v1: v + (rng() - .5) * 0.1, c: '#7a5a3a', a: 0.5, w: 0.2 }); } // fine rootlets
+      } else if (S === 'sandwall') {
+        let v = 0; const bands = ['#c48e58', '#b07a48', '#d4a068', '#a86e40', '#caa070', '#bc8450'];
+        while (v < 1) { const dv = (1.2 + rng() * 3.4) / H; m.push({ k: 'line', u0: 0, v0: v + dv / 2, u1: 1, v1: v + dv / 2 + (rng() - 0.5) * 0.01, c: bands[(rng() * bands.length) | 0], a: 0.75, w: dv * H * 0.95 }); if (rng() < 0.5) m.push({ k: 'line', u0: 0, v0: v, u1: 1, v1: v + (rng() - .5) * 0.008, c: st.mark, a: 0.45, w: 0.2 }); v += dv; }
+        for (let k = 0; k < W * H / 30; k++) m.push({ k: 'dot', u0: rng(), v0: rng(), w: 0.4 + rng() * 0.9, h: 0.3 + rng() * 0.7, c: rng() < 0.6 ? '#7a5030' : st.hi, a: 0.55 });
+      } else if (S === 'driftwall' || S === 'drift') {
+        for (let k = 0; k < W / 0.9; k++) { const u = rng(); m.push({ k: 'line', u0: u, v0: rng() * 0.2, u1: u + (rng() - .5) * 0.04, v1: 0.6 + rng() * 0.4, c: rng() < 0.6 ? st.mark : st.hi, a: 0.45, w: 0.15 + rng() * 0.25 }); }
+        for (let u = 0.08 + rng() * 0.1; u < 1; u += 0.12 + rng() * 0.14) m.push({ k: 'line', u0: u, v0: 0, u1: u + (rng() - .5) * 0.02, v1: 1, c: '#4a443c', a: 0.7, w: 0.5 });
+      } else if (S === 'fungus') {
+        for (let k = 0; k < 3; k++) { const v = 0.25 + k * 0.25; m.push({ k: 'line', u0: 0, v0: v, u1: 1, v1: v, c: k % 2 ? '#e8b060' : '#8a4e1e', a: 0.6, w: 0.4 }); }
+      } else if (S === 'coir') {
+        for (let k = 0; k < W * H / 3; k++) { const u = rng(), v = rng(); m.push({ k: 'line', u0: u, v0: v, u1: u + (rng() - .5) * 0.25, v1: v + (rng() - .5) * 0.25, c: rng() < 0.5 ? st.mark : st.hi, a: 0.6, w: 0.2 }); }
       } else if (S === 'moss') {
         for (let k = 0; k < W * H / 10; k++) m.push({ k: 'dot', u0: rng(), v0: rng(), w: 0.8 + rng(), h: 0.8 + rng(), c: rng() < .5 ? st.hi : st.mark, a: 0.6 });
       } else {
@@ -172,7 +218,7 @@
     const out = []; const area = JT.G.polyArea(tp); const n = Math.min(60, area / 18);
     for (let k = 0; k < n; k++) { const v = tp[Math.floor(rng() * tp.length)]; const t = Math.sqrt(rng()) * 0.9; const x = M.lerp(c[0], v[0], t), z = M.lerp(c[1], v[1], t); out.push({ x, z, r: 0.4 + rng() * (pr.style === 'cork' ? 1.6 : 0.9), c: rng() < 0.5 ? st.mark : st.hi, a: 0.4 }); }
     if (pr.style === 'cork' || pr.style === 'wood') for (let r = 1; r <= 3; r++) { const q = JT.G.scalePoly(tp, r / 4, c); for (let i = 0; i < q.length; i += 1) out.push({ x: q[i][0], z: q[i][1], r: 0.35, c: st.mark, a: 0.5 }); }
-    if (pr.style === 'moss' || g.def.id === 'mossstone') for (let k = 0; k < 20; k++) { const v = tp[Math.floor(rng() * tp.length)]; const t = rng(); out.push({ x: M.lerp(c[0], v[0], t), z: M.lerp(c[1], v[1], t), r: 1 + rng() * 1.4, c: rng() < .5 ? '#6a9a3a' : '#4a7a2a', a: 0.8 }); }
+    if (pr.style === 'moss' || pr.style === 'mosswall' || g.def.id === 'mossstone') for (let k = 0; k < 20; k++) { const v = tp[Math.floor(rng() * tp.length)]; const t = rng(); out.push({ x: M.lerp(c[0], v[0], t), z: M.lerp(c[1], v[1], t), r: 1 + rng() * 1.4, c: rng() < .5 ? '#6a9a3a' : '#4a7a2a', a: 0.8 }); }
     return out;
   }
   // ---------- logs / tubes / pots ----------
@@ -322,7 +368,33 @@
     ctx.fillStyle = sh(pr.col, -0.3); ctx.beginPath(); ctx.ellipse(p[0], p[1], rx, rx * V.sp * 0.6, 0, 0, 6.283); ctx.fill();
     const gr = ctx.createRadialGradient(p[0] - rx * 0.3, p[1] - ry * 0.8, rx * 0.1, p[0], p[1] - ry * 0.3, rx * 1.1);
     gr.addColorStop(0, pr.glow ? '#f4fff0' : sh(pr.col, 0.3)); gr.addColorStop(1, pr.glow ? (o.night > 0.3 ? '#9affc8' : '#c8d8b0') : sh(pr.col, -0.2));
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(p[0], p[1], rx, ry, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = gr; ctx.beginPath();
+    if (pr.cone) { ctx.moveTo(p[0] - rx, p[1]); ctx.quadraticCurveTo(p[0] - rx * 0.55, p[1] - ry * 1.5, p[0], p[1] - ry * 1.55); ctx.quadraticCurveTo(p[0] + rx * 0.55, p[1] - ry * 1.5, p[0] + rx, p[1]); ctx.ellipse(p[0], p[1], rx, rx * V.sp * 0.6, 0, 0, Math.PI); }
+    else ctx.ellipse(p[0], p[1], rx, ry, 0, Math.PI, 0);
+    ctx.closePath(); ctx.fill();
+    if (pr.spots && rx > 2) { // toadstool warts
+      ctx.fillStyle = 'rgba(255,248,232,0.92)'; const sd = (pr.o[0] * 7 + pr.o[2] * 13) | 0;
+      for (let k = 0; k < 6; k++) { const a = ((sd + k * 47) % 100) / 100, b = ((sd * 3 + k * 61) % 100) / 100; const x = p[0] + (a - 0.5) * rx * 1.3, y = p[1] - ry * (0.25 + b * 0.9) * (pr.cone ? 1.2 : 1); ctx.beginPath(); ctx.ellipse(x, y, rx * 0.11, rx * 0.08, 0, 0, 6.283); ctx.fill(); }
+    }
+    if (rx > 3) { ctx.strokeStyle = sh(pr.col, -0.5); ctx.globalAlpha = (o.alpha != null ? o.alpha : 1) * 0.6; ctx.lineWidth = Math.max(0.5, V.s * 0.12); ctx.stroke(); ctx.globalAlpha = o.alpha != null ? o.alpha : 1; }
+  };
+  // cushion moss clump: overlapping rounded lobes, lit from the light side
+  PR.tuft = function (ctx, V, pr, g, P, o) {
+    const p = P(pr.o); const R = pr.r * V.s; if (R < 0.6) return;
+    const lob = pr._lob || (pr._lob = (() => { const r = JT.makeRng(pr.seed || 1); const a = []; for (let k = 0; k < 7; k++) { const t = r() * 6.28, d = r() * 0.6; a.push([Math.cos(t) * d, Math.sin(t) * d * 0.8, 0.35 + r() * 0.35, (r() - 0.5) * 0.2]); } return a; })());
+    const lp = V.J([L[0], L[1], L[2]]); const ll = Math.hypot(lp[0], lp[1]) || 1; const lx = lp[0] / ll, ly = lp[1] / ll;
+    ctx.fillStyle = sh(pr.col, -0.35); ctx.beginPath(); ctx.ellipse(p[0], p[1] + R * 0.12, R, R * 0.82, 0, 0, 6.283); ctx.fill();
+    for (const b of lob) { const x = p[0] + b[0] * R, y = p[1] + b[1] * R, r = b[2] * R; ctx.fillStyle = sh(pr.col, b[3]); ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); if (r > 1.5) { ctx.fillStyle = sh(pr.col, 0.12 + b[3]); ctx.beginPath(); ctx.arc(x + lx * r * 0.3, y + ly * r * 0.3, r * 0.55, 0, 6.283); ctx.fill(); } }
+  };
+  // bracket (shelf) fungus jutting out of a wall: a flat half-disc in the plane (outward, sideways)
+  PR.shelf = function (ctx, V, pr, g, P, o) {
+    const n = pr.nv, t = M.norm(M.cross([0, 1, 0], n)); const A = V.J(M.mul(n, pr.r)), Bt = V.J(M.mul(t, pr.r * 1.15)); const p = P(pr.o); const dn = V.J([0, -pr.r * 0.28, 0]);
+    const half = (ox, oy, k) => { ctx.beginPath(); for (let i = 0; i <= 12; i++) { const a = i / 12 * Math.PI; const x = A[0] * Math.sin(a) * k + Bt[0] * Math.cos(a) * k, y = A[1] * Math.sin(a) * k + Bt[1] * Math.cos(a) * k; i ? ctx.lineTo(p[0] + ox + x, p[1] + oy + y) : ctx.moveTo(p[0] + ox + x, p[1] + oy + y); } ctx.closePath(); };
+    ctx.fillStyle = sh(pr.col, -0.4); half(dn[0], dn[1], 1); ctx.fill();
+    ctx.fillStyle = pr.col; half(0, 0, 1); ctx.fill();
+    ctx.fillStyle = sh(pr.col, 0.25); half(0, 0, 0.62); ctx.fill();
+    ctx.fillStyle = sh(pr.col, 0.45); half(0, 0, 0.3); ctx.fill();
+    if (pr.r * V.s > 3) { ctx.strokeStyle = sh(pr.col, -0.55); ctx.lineWidth = Math.max(0.5, V.s * 0.12); half(0, 0, 1); ctx.stroke(); }
   };
   PR.moss = function (ctx, V, pr, g, P, o) {
     const base = pr.kind === 'lichen' ? '#b8c4a0' : pr.kind === 'clover' ? '#4a8a3a' : pr.col; const sq = Math.max(0.25, V.sp);

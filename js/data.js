@@ -13,6 +13,7 @@
     breeder:   { name: 'Acrylic Breeder',    w: 135, d: 72,  h: 96,  cap: 2, shape: 'rect',   price: 160 },
     panoramic: { name: 'Panoramic Habitat',  w: 310, d: 98,  h: 112, cap: 4, shape: 'rect',   price: 600 },
     jar:       { name: 'Tall Display Jar',   w: 132, d: 132, h: 155, cap: 2, shape: 'circle', price: 380 },
+    tower:     { name: 'Vertical Tower',     w: 100, d: 84,  h: 172, cap: 2, shape: 'rect',   price: 280, tall: true },
   };
   JT.SLOT_PRICES = [0, 0, 0, 400, 600, 850, 1100, 1400];
 
@@ -188,6 +189,23 @@
     D('rootarch', 'Root Arch', 'decor', 45, 'branch', { kind: 'arch', L: 70, h: 34, r: 3.4, col: '#5a4030' }, { cover: .2 }),
     D('canopybranch', 'Canopy Branch', 'decor', 70, 'branch', { kind: 'canopy', L: 110, h: 80, r: 3, col: '#5a4432' }, {}),
     D('vinebridge', 'Twisted Vine Bridge', 'decor', 60, 'branch', { kind: 'vine', L: 100, h: 48, r: 1.8, col: '#6a5a3a', leaves: '#5a8a3a' }, {}),
+    // --- Back walls (portrait towers) & wall-mounted pieces ---
+    D('mosswall', 'Moss Back Wall', 'walls', 80, 'backwall', { w: 92, d: 10, h: 140, style: 'mosswall' }, { cover: .45, wall: true }),
+    D('barkwall', 'Cork Bark Wall', 'walls', 80, 'backwall', { w: 92, d: 10, h: 140, style: 'barkwall' }, { cover: .45, wall: true }),
+    D('stonewall', 'Fieldstone Wall', 'walls', 90, 'backwall', { w: 92, d: 10, h: 140, style: 'stonewall' }, { cover: .4, wall: true }),
+    D('leafwall', 'Dead Leaf Wall', 'walls', 75, 'backwall', { w: 92, d: 10, h: 140, style: 'leafwall' }, { cover: .55, wall: true }),
+    D('trunkwall', 'Tree Trunk Wall', 'walls', 95, 'backwall', { w: 92, d: 10, h: 140, style: 'trunkwall' }, { cover: .45, wall: true }),
+    D('rootwall', 'Root Tangle Wall', 'walls', 90, 'backwall', { w: 92, d: 10, h: 140, style: 'rootwall' }, { cover: .6, wall: true }),
+    D('sandwall', 'Sandstone Wall', 'walls', 85, 'backwall', { w: 92, d: 10, h: 140, style: 'sandwall' }, { cover: .35, wall: true }),
+    D('driftwall', 'Driftwood Wall', 'walls', 85, 'backwall', { w: 92, d: 10, h: 140, style: 'driftwall' }, { cover: .4, wall: true }),
+    D('wm_cork', 'Wall Cork Shelf', 'walls', 20, 'wallmount', { kind: 'shelf', w: 16, d: 9, th: 3.5, style: 'cork', moss: true }, { mount: true, small: true, cover: .15 }),
+    D('wm_slate', 'Wall Slate Ledge', 'walls', 20, 'wallmount', { kind: 'shelf', w: 18, d: 8, th: 2.5, style: 'slate' }, { mount: true, small: true, cover: .1 }),
+    D('wm_drift', 'Wall Driftwood Perch', 'walls', 22, 'wallmount', { kind: 'shelf', w: 20, d: 6.5, th: 3, style: 'drift' }, { mount: true, small: true, cover: .1 }),
+    D('wm_fungi', 'Bracket Fungi Cluster', 'walls', 28, 'wallmount', { kind: 'fungi', w: 20 }, { mount: true, small: true, cover: .2 }),
+    D('wm_pothos', 'Hanging Pothos Pocket', 'walls', 30, 'wallmount', { kind: 'planter', w: 16 }, { mount: true, small: true, cover: .5 }),
+    D('wm_staghorn', 'Mounted Staghorn Fern', 'walls', 32, 'wallmount', { kind: 'staghorn', w: 18 }, { mount: true, small: true, cover: .45 }),
+    D('beadvine', 'Cork Bead Vine', 'decor', 55, 'branch', { kind: 'beads', L: 84, h: 82, r: 1.4, col: '#6a4e34', leaves: '#5a8a3a' }, {}),
+    D('mossmound', 'Moss Mound', 'decor', 25, 'rock', { w: 30, d: 24, h: 9, style: 'moss', round: true }, { platform: true, small: true, cover: .1 }),
     D('mangrove', 'Mangrove Root', 'decor', 85, 'branch', { kind: 'mangrove', L: 70, h: 70, r: 3.2, col: '#4a3a2c' }, { cover: .2 }),
     // --- Trees & plants ---
     D('tinytree', 'Tiny Tree', 'plants', 60, 'tree', { kind: 'tiny', h: 60, r: 2.8, spread: 38, leaf: '#5a8a34' }, { stack: true, cover: .5 }),
@@ -210,6 +228,8 @@
     D('redbromeliad', 'Red Bromeliad', 'plants', 55, 'rosette', { n: 10, L: 22, h: 16, leaf: '#8a2a2a', tip: '#e04a3a', cup: true }, { stack: true, cover: .45, water: true }),
     D('succulent', 'Succulent', 'plants', 20, 'rosette', { n: 12, L: 9, h: 5, leaf: '#7ab0a0', fat: true }, { stack: true, small: true }),
     D('mossrosette', 'Moss Rosette', 'plants', 15, 'rosette', { n: 14, L: 5, h: 3, leaf: '#6a9a3a', fat: true }, { stack: true, small: true }),
+    D('toadstools', 'Toadstools', 'plants', 35, 'mushroom', { n: 4, h: 24, cap: 6, col: '#cf4a24', spots: true, stem: '#f0e6d0' }, { stack: true, small: true, cover: .15 }),
+    D('echeveria', 'Echeveria', 'plants', 30, 'rosette', { n: 16, L: 12, h: 8, leaf: '#d99280', tip: '#b04a58', fat: true }, { stack: true, small: true, cover: .2 }),
     D('glowshroom', 'Glow Mushrooms', 'plants', 40, 'mushroom', { n: 5, h: 14, cap: 5, col: '#e8f0d0', glow: '#b0ffd0' }, { stack: true, small: true }),
     D('climbvine', 'Climbing Vine', 'plants', 35, 'vine', { h: 70, leaf: '#4a8a3a' }, { stack: true, cover: .35 }),
     D('creepfig', 'Creeping Fig', 'plants', 30, 'vine', { h: 40, leaf: '#3a7a2a', creep: true, small: true }, { stack: true, cover: .35, small: true }),
@@ -232,6 +252,7 @@
     D('barkchips', 'Bark Chips', 'ground', 10, 'scatter', { kind: 'chips', r: 22, col: '#6a4428', n: 14 }, { cover: .35, small: true, moist: .2 }),
     D('lichen', 'Lichen Patch', 'ground', 12, 'scatter', { kind: 'lichen', r: 16, col: '#b8c8a0' }, { cover: .1, small: true }),
     D('twigs', 'Twig Scatter', 'ground', 10, 'scatter', { kind: 'twigs', r: 22, col: '#6a5038', n: 9 }, { cover: .25, small: true }),
+    D('cushionmoss', 'Cushion Moss', 'ground', 12, 'scatter', { kind: 'moss', r: 24, col: '#7aa83a' }, { cover: .3, small: true, moist: .7 }),
     D('clover', 'Clover Patch', 'ground', 12, 'scatter', { kind: 'clover', r: 18, col: '#4a8a3a' }, { cover: .4, small: true, moist: .4 }),
   ];
   JT.DECOR_BY_ID = {}; JT.DECOR.forEach(d => JT.DECOR_BY_ID[d.id] = d);
@@ -278,6 +299,14 @@
     jungle:   { sub: 'jungle', bg: 'canopy',  tall: ['ficus', 'mangrove'], mid: ['corkbark', 'rootarch', 'vinebridge'], plants: ['monstera', 'calathea', 'fern', 'bromeliad', 'pothos'], ground: ['leaflitter', 'magnolia'] },
     mushroom: { sub: 'black',  bg: 'log',     tall: ['tinytree'], mid: ['hollowlog', 'corkbark', 'riverstone'], plants: ['glowshroom', 'fern', 'maidenhair', 'glowshroom'], ground: ['mosspatch', 'oaklitter'] },
     rock:     { sub: 'gravel', bg: 'stone',   tall: ['slatepillar'], mid: ['slatestack', 'slateledge', 'riverstone', 'dewstone'], plants: ['fern', 'succulent', 'mossrosette'], ground: ['pebbles', 'lichen'] },
+    mosswall: { sub: 'moss',   bg: 'mossy',   tall: ['mosswall', 'mossstone'], mid: ['beadvine', 'mossmound', 'wm_fungi', 'wm_cork', 'maghide'], plants: ['toadstools', 'fern', 'echeveria', 'maidenhair', 'toadstools', 'glowshroom'], ground: ['cushionmoss', 'mosspatch'], back: true },
+    barkwall: { sub: 'coco',   bg: 'hollow',  tall: ['barkwall', 'corktower'], mid: ['wm_cork', 'wm_staghorn', 'wm_cork', 'branchperch', 'corkround'], plants: ['fern', 'pothos', 'bromeliad', 'fittonia', 'mossrosette'], ground: ['leaflitter', 'mosspatch'], back: true },
+    stonewall: { sub: 'gravel', bg: 'stone',  tall: ['stonewall', 'slatepillar'], mid: ['wm_slate', 'wm_pothos', 'wm_slate', 'riverstone', 'dewstone'], plants: ['ivy', 'fern', 'mossrosette', 'maidenhair'], ground: ['lichen', 'mosspatch', 'pebbles'], back: true },
+    leafwall: { sub: 'forest',  bg: 'log',    tall: ['leafwall', 'forked'], mid: ['wm_fungi', 'wm_cork', 'hollowlog', 'branchperch'], plants: ['toadstools', 'fern', 'glowshroom', 'maidenhair'], ground: ['oaklitter', 'leaflitter', 'twigs'], back: true },
+    trunkwall: { sub: 'forest', bg: 'mossy',  tall: ['trunkwall', 'tinytree'], mid: ['wm_fungi', 'wm_staghorn', 'wm_fungi', 'rootarch', 'mossmound'], plants: ['fern', 'toadstools', 'ivy', 'glowshroom'], ground: ['mosspatch', 'oaklitter', 'pinecones'], back: true },
+    rootwall: { sub: 'jungle',  bg: 'canopy', tall: ['rootwall', 'mangrove'], mid: ['wm_pothos', 'wm_cork', 'vinebridge', 'rootarch'], plants: ['monstera', 'calathea', 'fern', 'pothos', 'bromeliad'], ground: ['leaflitter', 'magnolia'], back: true },
+    sandwall: { sub: 'desert',  bg: 'twilight', tall: ['sandwall', 'forked'], mid: ['wm_drift', 'wm_slate', 'sandshelf', 'rockcave'], plants: ['succulent', 'echeveria', 'driedflowers', 'airplant'], ground: ['pebbles', 'twigs'], back: true },
+    driftwall: { sub: 'clay',   bg: 'twilight', tall: ['driftwall', 'driftwood'], mid: ['wm_drift', 'wm_staghorn', 'wm_drift', 'flatstone'], plants: ['airplant', 'succulent', 'tallgrass', 'redbromeliad'], ground: ['pebbles', 'lichen'], back: true },
     feeding:  { sub: 'coco',   bg: 'mossy',   tall: ['branchperch'], mid: ['feedledge', 'corkbark'], plants: ['pothos', 'fern'], ground: ['mosspatch'] },
   };
   // preset name -> [theme, habitat types]
@@ -290,6 +319,7 @@
     ['Deep Jungle', 'jungle', ['cube', 'standard']], ['Root Cathedral', 'jungle', ['cube']], ['Layered Rock', 'rock', ['cube', 'standard']], ['Mushroom Grove', 'mushroom', ['cube', 'standard']], ['Cube Paradise', 'paradise', ['cube']],
     ['Clean Breeder', 'minimal', ['breeder']], ['Cork Strip', 'cork', ['breeder', 'nano']], ['Feeding Ledge Setup', 'feeding', ['breeder', 'nano']], ['Dry Minimal', 'dry', ['breeder', 'nano']],
     ['Woodland Panorama', 'forest', ['panoramic']], ['Garden Walk', 'flower', ['panoramic']], ['Canyon Run', 'canyon', ['panoramic']], ['Showcase Jungle', 'jungle', ['panoramic']], ['Panoramic Ruin', 'ruin', ['panoramic']],
-    ['Jar Jungle', 'jungle', ['jar']], ['Moss Lantern', 'mushroom', ['jar']], ['Vine Spiral', 'vertical', ['jar']], ['Flower Jar', 'flower', ['jar']], ['Vertical Cork Jar', 'cork', ['jar']],
+    ['Moss Tower', 'mosswall', ['tower', 'arboreal', 'cube']], ['Mushroom Wall', 'mosswall', ['tower', 'standard']], ['Cork Bark Tower', 'barkwall', ['tower', 'arboreal']], ['Stone Garden Wall', 'stonewall', ['tower', 'cube']], ['Autumn Leaf Wall', 'leafwall', ['tower', 'standard']], ['Old Oak Trunk', 'trunkwall', ['tower', 'arboreal']], ['Root Cellar', 'rootwall', ['tower', 'cube']], ['Sandstone Cliff', 'sandwall', ['tower', 'wide']], ['Driftwood Shore', 'driftwall', ['tower', 'standard']], ['Tower Canopy', 'vertical', ['tower']], ['Tower Jungle', 'jungle', ['tower']],
+        ['Jar Jungle', 'jungle', ['jar']], ['Moss Lantern', 'mushroom', ['jar']], ['Vine Spiral', 'vertical', ['jar']], ['Flower Jar', 'flower', ['jar']], ['Vertical Cork Jar', 'cork', ['jar']],
   ];
 })(typeof window !== 'undefined' ? window : globalThis);
