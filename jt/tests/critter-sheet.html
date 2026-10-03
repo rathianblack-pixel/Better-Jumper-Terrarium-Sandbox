@@ -1,0 +1,21 @@
+<!DOCTYPE html><html><body style="margin:0;background:#cdbb90">
+<canvas id="c" width="1500" height="1000"></canvas>
+<script src="../js/core.js"></script><script src="../js/data.js"></script><script src="../js/geometry.js"></script><script src="../js/nav.js"></script><script src="../js/render-view.js"></script><script src="../js/draw-decor.js"></script><script src="../js/draw-animals.js"></script><script src="../js/draw-critters.js"></script>
+<script>
+const ctx=document.getElementById('c').getContext('2d'); const M=JT.M;
+const views=[['top',0.5,1.45],['iso',0.52,0.66],['side',0,0.05],['face',-1.91,0.3]];
+const subjects=(new URLSearchParams(location.search).get('s')||'bold,regal,peacock,housefly,cricket,moth,mealworm,darkling,isopod,lacewing').split(',');
+const Q=new URLSearchParams(location.search); const meal=Q.get('meal');
+const cw=1500/views.length, ch=1000/subjects.length;
+ctx.font='14px Georgia';
+subjects.forEach((id,r)=>views.forEach(([nm,yaw,pitch],c)=>{
+  const sp=JT.SPECIES_BY_ID[id]; const L=sp?12:Math.max(6,JT.PREY_BY_ID[id].len);
+  const scale=ch*0.75/L; const V=new JT.View(yaw,pitch,scale,c*cw+cw/2,r*ch+ch*0.62,[0,0,0]);
+  const fr={p:[0,0,0],f:M.norm([1,0,0.35]),s:null,n:[0,1,0]}; fr.s=M.norm(M.cross(fr.n,fr.f));
+  ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fillRect(c*cw+2,r*ch+2,cw-4,ch-4);
+  if(sp) JT.Draw.spider(ctx,V,{species:id,state:Q.get('state')||'idle',_walk:0.3,_moving:!!Q.get('walk'),_legRaise:+(Q.get('raise')||0),_crouch:+(Q.get('crouch')||0),seed:3,sat:0.8},fr,{len:L,time:1,tucked:!!Q.get('nest'),meal:meal?(mp,fg,sg,n)=>{const pl=Math.min(JT.PREY_BY_ID[meal].len,L*1.1);JT.Draw.prey(ctx,V,{type:meal,seed:2},{p:M.add(mp,M.mul(fg,pl*0.25)),f:M.mul(fg,-1),s:M.mul(sg,-1),n},{held:true,curled:true,len:pl,time:1});}:null}); else JT.Draw.prey(ctx,V,{type:id,sup:{k:'floor'},seed:2,_anim:1},fr,{time:1});
+  if(sp&&Q.get('nest')) JT.Draw.nest(ctx,V,{pos:[0,0,0],fwd:fr.f,len:L,prog:+Q.get('nest'),hole:Q.get('hole')?{side:+Q.get('hole'),open:1}:null,owner:'x',age:0,seed:5},[0,1,0],0);
+  ctx.fillStyle='#2a1c10'; ctx.fillText(id+' / '+nm,c*cw+8,r*ch+18);
+}));
+// climbing: vertical surface (normal facing camera) in the last column overlay
+</script></body></html>
