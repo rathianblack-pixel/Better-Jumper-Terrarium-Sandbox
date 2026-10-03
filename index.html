@@ -34,10 +34,10 @@ b{font-weight:600}
 kbd{font-family:var(--serif);font-size:.82em;font-variant:small-caps;letter-spacing:.06em;color:var(--dim);margin-left:.45em;border-bottom:1px solid var(--rule)}
 
 /* ---------- text buttons: underline / highlight on hover and press ---------- */
-button{font-family:var(--serif);color:var(--dim);cursor:pointer;background:none;border:0;padding:0 .7em;min-height:var(--tap);min-width:var(--tap);font-size:15px;letter-spacing:.04em;position:relative;text-shadow:var(--shadow);transition:color .25s ease}
+button{touch-action:manipulation;font-family:var(--serif);color:var(--dim);cursor:pointer;background:none;border:0;padding:0 .7em;min-height:var(--tap);min-width:var(--tap);font-size:15px;letter-spacing:.04em;position:relative;text-shadow:var(--shadow);transition:color .25s ease}
 button::after{content:"";position:absolute;left:.7em;right:.7em;bottom:9px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:center;transition:transform .3s ease,opacity .3s ease;opacity:.8}
-button:hover{color:var(--ink)}
-button:hover::after,button:focus-visible::after{transform:scaleX(1)}
+@media (hover:hover){button:hover{color:var(--ink)}}
+button:focus-visible::after{transform:scaleX(1)}@media (hover:hover){button:hover::after{transform:scaleX(1)}}
 button:active{color:var(--accent)}
 button.on{color:var(--accent)}
 button.on::after{transform:scaleX(1)}
@@ -89,13 +89,13 @@ button.wanting{animation:wanting 3.6s ease-in-out infinite}
 #drawerTitle{flex:1;color:var(--faint);font-size:14px;font-style:italic;text-shadow:var(--shadow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #drawerClose{font-variant:small-caps;letter-spacing:.08em;font-size:14px}
 .cards{display:flex;gap:2px;overflow-x:auto;padding:2px 0 4px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
-.card{flex:0 0 auto;width:112px;padding:4px 6px 6px;text-align:center;cursor:pointer;scroll-snap-align:start;transition:opacity .25s ease,transform .25s ease;position:relative}
+.card{touch-action:manipulation;flex:0 0 auto;width:112px;padding:4px 6px 6px;text-align:center;cursor:pointer;scroll-snap-align:start;transition:opacity .25s ease,transform .25s ease;position:relative}
 .card canvas,.card .sw{width:84px;height:84px;display:block;margin:0 auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45));transition:transform .3s ease}
-.card:hover canvas{transform:translateY(-3px)}
+@media (hover:hover){.card:hover canvas{transform:translateY(-3px)}}
 .card .nm{font-size:13.5px;line-height:1.2;color:var(--ink);margin-top:2px;min-height:33px;display:flex;align-items:flex-start;justify-content:center;text-shadow:var(--shadow)}
 .card .pr{font-size:13px;color:var(--accent);font-variant:small-caps;letter-spacing:.06em;text-shadow:var(--shadow)}
 .card .nm::after{content:"";position:absolute;left:22px;right:22px;bottom:2px;height:1px;background:var(--accent);transform:scaleX(0);transition:transform .3s ease}
-.card:hover .nm::after,.card.cur .nm::after{transform:scaleX(1)}
+.card.cur .nm::after{transform:scaleX(1)}@media (hover:hover){.card:hover .nm::after{transform:scaleX(1)}}
 .card.disabled{opacity:.42;cursor:default}
 .card.disabled:hover canvas{transform:none}
 .card.cur .pr{color:var(--ok)}
@@ -222,12 +222,16 @@ input[type=range]{accent-color:#c9a25c;width:140px}
  .clock{margin-left:auto;min-width:0}
  #drawer{padding:24px 10px 4px;bottom:calc(48px + var(--sab));max-height:55vh;display:flex;flex-direction:column}
  .drawer-head{gap:4px;flex-wrap:nowrap}
- .drawer-head .seg{flex:1;overflow-x:auto;scrollbar-width:none}
+ .drawer-head .seg{flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+ .drawer-head .seg button{flex:0 0 auto;white-space:nowrap;padding:0 .6em}
+ .drawer-head .seg button::after{left:.6em;right:.6em}
+ #drawerClose{flex:0 0 auto;white-space:nowrap}
  .drawer-head .seg::-webkit-scrollbar{display:none}
  #drawerTitle{display:none}
  .card{width:98px;padding:4px 3px 6px}
  .card canvas{width:72px;height:72px}
- .card .nm{font-size:13px}
+ .card .nm{font-size:13px;min-height:0;margin-top:4px}
+ .card .pr{margin-top:1px}
  #spiderPanel{left:0;right:0;bottom:auto;width:auto;max-height:68vh;overflow:auto;padding:calc(50px + var(--sat)) calc(14px + var(--sar)) 34px calc(16px + var(--sal));background:linear-gradient(rgba(12,8,4,.72),rgba(12,8,4,.58) 70%,rgba(12,8,4,0));scrollbar-width:none}
  #spiderPanel h3{font-size:24px;padding-right:70px}
  #spiderPanel .sci{margin:2px 0 6px;font-size:13px}
@@ -247,7 +251,9 @@ input[type=range]{accent-color:#c9a25c;width:140px}
  body.drawer-open #toasts{bottom:calc(var(--drawerH,0px) + 48px + var(--sab))}
  body.drawer-open #zoomCtl{display:none}
  .toast{font-size:14px}
- #dock button{font-size:14px;letter-spacing:.03em}
+ #dock button{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;font-size:min(14px,3.45vw);letter-spacing:.02em;padding:0 1px}
+ #spiderPanel .mini{flex-wrap:wrap}
+ .clock{white-space:nowrap}
  #popover{left:0;right:0;width:auto;top:auto;bottom:calc(52px + var(--sab));padding:26px 26px 14px;background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.82) 30%,rgba(12,8,4,.9))}
  #obsHud{bottom:calc(4px + var(--sab));padding:26px 20px 4px}
 }
@@ -5915,7 +5921,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     pick(sx, sy, opts) {
       opts = opts || {}; const hab = this.game.hab; const V = this.V; const X = sx * this.k, Y = sy * this.k;
       let best = null, bd = 1e9;
-      const test = (e, kind, rad) => { if (!e.pos || !M.finite3(e.pos)) return; const q = V.P(e.pos); const d = Math.hypot(q[0] - X, q[1] - Y); const r = Math.max(16 * this.k, rad * V.s); if (d < r && d / r < bd) { bd = d / r; best = { kind, ent: e }; } };
+      const test = (e, kind, rad) => { if (!e.pos || !M.finite3(e.pos)) return; const q = V.P(e.pos); const d = Math.hypot(q[0] - X, q[1] - Y); const r = Math.max((opts.touch ? 34 : 16) * this.k, rad * V.s * (opts.touch ? 1.3 : 1)); if (d < r && d / r < bd) { bd = d / r; best = { kind, ent: e }; } };
       for (const sp of hab.spiders) test(sp, 'spider', JT.SpiderAI.len(sp) * 1.1);
       if (best) return best;
       if (!opts.noPrey) for (const p of hab.prey) if (!p.owner && !p.buried) test(p, 'prey', (JT.PREY_BY_ID[p.type] || { len: 3 }).len * 1.2);
@@ -6143,6 +6149,20 @@ input[type=range]{accent-color:#c9a25c;width:140px}
   const STARTER_PRICE = 25;
   const speciesPrice = (S) => S.starter ? STARTER_PRICE : S.price;
 
+  /** Copy text/attributes from b's subtree into a's when the structure matches (keeps nodes + their handlers). */
+  function morphChildren(a, b) {
+    const ac = a.childNodes, bc = b.childNodes; if (ac.length !== bc.length) return false;
+    for (let i = 0; i < ac.length; i++) { const x = ac[i], y = bc[i]; if (x.nodeType !== y.nodeType || x.nodeName !== y.nodeName) return false; }
+    for (let i = 0; i < ac.length; i++) {
+      const x = ac[i], y = bc[i];
+      if (x.nodeType === 3) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; continue; }
+      if (x.nodeType !== 1) continue;
+      for (const at of ['class', 'style', 'title']) { const v = y.getAttribute(at); if (x.getAttribute(at) !== v) { if (v == null) x.removeAttribute(at); else x.setAttribute(at, v); } }
+      if (x.tagName === 'INPUT') continue;
+      if (!morphChildren(x, y)) { x.innerHTML = y.innerHTML; }
+    }
+    return true;
+  }
   const UI = JT.UI = {
     MOBILE_MQ: '(max-width:820px) and (orientation:portrait), (max-width:560px), (max-height:500px) and (orientation:landscape)',
     tab: null, mode: null, place: null, obs: null, panelId: null, renaming: false, ptrType: 'mouse', _t: 0, _panelT: 0, _mistT: 0,
@@ -6196,7 +6216,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
           if (pinch.d > 10) this.R.zoomBy(d / pinch.d, m[0], m[1]); this.R.panBy(m[0] - pinch.m[0], m[1] - pinch.m[1]); pinch.d = d; pinch.m = m; return;
         }
         if (drag) {
-          const tol = e.pointerType === 'mouse' ? 5 : 10;
+          const tol = e.pointerType === 'mouse' ? 5 : 16; // fingers wobble; a short wobble is still a tap
           if (!drag.moved && Math.hypot(p[0] - drag.s[0], p[1] - drag.s[1]) > tol) drag.moved = true;
           if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.panBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
           drag.l = p;
@@ -6418,7 +6438,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       this.refreshHeader();
     },
     removeAt(sx, sy) {
-      const h = this.hab; const hit = this.R.pick(sx, sy, {});
+      const h = this.hab; const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
       if (!hit) { this.toast('Nothing to remove there.'); return; }
       if (hit.kind === 'spider') { this.showPanel(hit.ent.id); this.toast('Use the jumper card to rehome a jumper.'); return; }
       if (hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.toast('Released the ' + esc(d.name) + ' outside.'); return; }
@@ -6445,7 +6465,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       if (this.obs) return;
       if (this.mode === 'place') { if (this.ptrType === 'mouse') { this.updateGhost(sx, sy); this.confirmPlace(); } else this.updateGhost(sx, sy); return; }
       if (this.mode === 'remove') { this.removeAt(sx, sy); return; }
-      const hit = this.R.pick(sx, sy, {});
+      const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
       if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); this.follow(hit.ent.id); A().sfx('click'); return; }
       if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
       if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew.' : '.'), 'quiet'); return; }
@@ -6484,6 +6504,10 @@ input[type=range]{accent-color:#c9a25c;width:140px}
         '<div class="pers">' + (desc ? desc.map(esc).join(', ') : 'Still learning about ' + esc(sp.name) + '. Keep watching.') + '</div>' +
         '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">' + (follow ? 'Following' : 'Follow') + '</button><button class="txt" id="pRemove">Rehome</button></div>' +
         '</div>';
+      // Refresh in place: rebuilding the panel every 0.3 s replaced buttons mid-tap on touch screens (taps got lost)
+      const key = sp.id + '|' + this.renaming + '|' + follow + '|' + h.data.id;
+      if (!force && this._pKey === key && P.firstChild) { const t = document.createElement('div'); t.innerHTML = html; if (morphChildren(P, t)) return; }
+      this._pKey = key;
       P.innerHTML = html;
       $('pClose').onclick = (e) => { e.stopPropagation(); this.hidePanel(); };
       $('pMore').onclick = (e) => { e.stopPropagation(); P.classList.add('expanded'); };
