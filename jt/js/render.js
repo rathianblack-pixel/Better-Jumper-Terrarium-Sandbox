@@ -286,7 +286,8 @@
       if (lamps.length) this.drawLampGlow(ctx, V, hab, lamps, night);
     }
     drawScene(ctx, V, hab, night, mode) {
-      const items = []; const stat = mode === 'static', rect = mode && mode !== 'static' ? mode : null; const t = this.time; const geoms = hab.geoms; const sel = this.game.selectedId;
+      const items = []; const stat = mode === 'static', rect = mode && mode !== 'static' ? mode : null;
+      const follow = this.cam.mode === 'follow' && !stat; const fsp = follow ? (hab.spider(this.game.selectedId) || hab.spiders[0]) : null; let xray = null; const t = this.time; const geoms = hab.geoms; const sel = this.game.selectedId;
       const decDepth = {};
       // ground-layer decor first (moss, leaf litter, pebbles) + shadows
       const W = this.cv.width, H = this.cv.height, mg = 90 * this.k;
@@ -331,15 +332,17 @@
         const ventral = M.dot(fr.n, V.toCam) < -0.08;
         let d = animalDepth(sp); if (ventral && sp.sup && sp.sup.d && decDepth[sp.sup.d] != null) d = decDepth[sp.sup.d] + 0.05;
         const air = !!sp._air || (sp.sup && sp.sup.k === 'air');
-        const draw = (alpha) => {
+        const draw = (alpha, xr) => {
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, noShadow: hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
         if (hangA) { const fp = fr.p, fff = fr.f; items.push({ d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
         // live safety dragline paid out behind a jump
         if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; items.push({ d: V.depth(M.lerp3(an, sp2, 0.5)) - 0.05, f: () => { const a = V.P(an), b = V.P(sp2); ctx.strokeStyle = 'rgba(240,240,250,' + (0.32 - night * 0.1).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
         items.push({ d, f: () => draw(1) });
-        if (ventral && sp.id === sel) items.push({ d: d - 0.2 - 50, f: () => { ctx.globalAlpha = 0.3; D.spider(ctx, V, sp, fr, { len: L, time: t, alpha: 0.3, noShadow: true }); ctx.globalAlpha = 1; } });
+        // follow / observe: remember the followed jumper so it can be shown through anything in front of it
+        if (follow && sp === fsp) { const q = V.P(fr.p); const r = L * 1.7 * V.s + 10 * this.k; xray = { d, drawTo: (g) => { const keep = ctx; ctx = g; try { draw(1, true); } finally { ctx = keep; } }, box: [Math.floor(q[0] - r), Math.floor(q[1] - r), Math.ceil(q[0] + r), Math.ceil(q[1] + r)] }; }
+        else if (ventral && sp.id === sel) items.push({ d: d - 0.2 - 50, f: () => { ctx.globalAlpha = 0.3; D.spider(ctx, V, sp, fr, { len: L, time: t, alpha: 0.3, noShadow: true }); ctx.globalAlpha = 1; } });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)) }); }
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf) }); }
@@ -351,8 +354,27 @@
       }
       items.sort((a, b) => b.d - a.d);
       for (const it of items) { try { it.f(); } catch (e) { if (JT.DEV) console.warn(e); } ctx.globalAlpha = 1; }
+      if (xray) { const main = ctx; try { ctx = this.xrayPrep(xray, items); if (ctx) { const m = ctx; for (const it of items) if (it.d < xray.d - 1e-6) { try { it.f(); } catch (e) { if (JT.DEV) console.warn(e); } m.globalAlpha = 1; } ctx = main; this.xrayFinish(main, m, xray); } } finally { ctx = main; } }
       // hover/selection highlight for decor in remove mode
       if (this.hover && this.hover.kind === 'decor') { const g = geoms[this.hover.ent.id]; if (g) this.outlineDecor(ctx, V, g, 'rgba(230,90,70,0.9)'); }
+    }
+    /** X-ray for the followed jumper: a mask of everything in front of it (inside its box only). */
+    xrayPrep(xr, items) {
+      const W = this.cv.width, H = this.cv.height; const b = xr.box;
+      const x0 = Math.max(0, b[0]), y0 = Math.max(0, b[1]), x1 = Math.min(W, b[2]), y1 = Math.min(H, b[3]); if (x1 <= x0 || y1 <= y0) return null;
+      if (!items.some(it => it.d < xr.d - 1e-6)) return null;
+      if (!this._xr || this._xr.width !== W || this._xr.height !== H) this._xr = mkCanvas(W, H);
+      const m = this._xr.getContext('2d'); m.setTransform(1, 0, 0, 1, 0, 0); m.globalAlpha = 1; m.globalCompositeOperation = 'source-over'; m.clearRect(x0, y0, x1 - x0, y1 - y0);
+      m.save(); m.beginPath(); m.rect(x0, y0, x1 - x0, y1 - y0); m.clip(); xr.r = [x0, y0, x1, y1]; return m;
+    }
+    /** Keep only the hidden parts of the jumper and lay them over the scene, softly see-through. */
+    xrayFinish(main, m, xr) {
+      m.restore(); const W = this.cv.width, H = this.cv.height; const [x0, y0, x1, y1] = xr.r; const w = x1 - x0, h = y1 - y0;
+      if (!this._xs || this._xs.width !== W || this._xs.height !== H) this._xs = mkCanvas(W, H);
+      const g = this._xs.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(x0, y0, w, h);
+      g.save(); g.beginPath(); g.rect(x0, y0, w, h); g.clip(); xr.drawTo(g); g.globalAlpha = 1;
+      g.globalCompositeOperation = 'destination-in'; g.drawImage(this._xr, x0, y0, w, h, x0, y0, w, h); g.restore(); // keep only the hidden parts
+      main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.globalAlpha = 0.6; main.drawImage(this._xs, x0, y0, w, h, x0, y0, w, h); main.restore();
     }
     // ---------------- cached layers (static geometry is drawn once per camera pose) ----------------
     drawBaseDirect(ctx, V, hab, night) {

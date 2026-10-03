@@ -60,6 +60,7 @@ build.js           bundles everything into dist/jumper-terrarium.html
 - **Follow camera** settles faster and re-centres lazily (holds still while the jumper potters nearby), so it rests
   more often and can use the one-picture path.
 - Auto quality only drops resolution if rendering really is slow, and returns to full sharpness once it is cheap again.
+- Follow / observe: parts of the followed jumper hidden behind decor or plants are shown softly see-through (60%), using a mask of only what is in front of it, inside its small box.
 - `tests/prof.js` (per-section ms, still vs moving) and `tests/frame-prof.js` (live sim/UI/render split) measure it.
 
 ## Tests
