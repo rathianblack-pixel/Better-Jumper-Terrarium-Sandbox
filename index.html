@@ -4076,7 +4076,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M;
-  const PITCH_MIN = 0.2, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15;
+  const PITCH_MIN = 0.2, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15, PLAN_DT = 0.25;
 
   function spring(x, v, target, omega, dt) {
     // critically damped spring step (stable for any dt)
@@ -4087,12 +4087,52 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     return [nx, nv];
   }
 
+
+  // ---------- line of sight ----------
+  // Coarse occluders built once per decor layout: solid parts are opaque prisms, plants / branches are partial cover.
+  const SOFT = { grass: 0.3, vine: 0.3, flower: 0.25, rosette: 0.35, branch: 0.3, lamp: 0.2 };
+  function occluders(hab) {
+    const key = hab._geomVersion + '|' + hab.decor.length;
+    if (hab._camOcc && hab._camOcc.key === key) return hab._camOcc.list;
+    const G = JT.G, list = [];
+    const add = (poly, y0, y1, op, id) => {
+      if (!poly || poly.length < 3 || !(y1 > y0)) return; let cx = 0, cz = 0; for (const q of poly) { cx += q[0]; cz += q[1]; } cx /= poly.length; cz /= poly.length;
+      let r = 0; for (const q of poly) r = Math.max(r, Math.hypot(q[0] - cx, q[1] - cz)); list.push({ poly, y0, y1, op, id, cx, cz, r });
+    };
+    for (const inst of hab.decor) {
+      const g = hab.geoms[inst.id]; if (!g || !g.def) continue; const def = g.def, a = def.arche;
+      if (def.cat === 'ground' || a === 'wallmount') continue;
+      const y0 = g.baseY, y1 = g.baseY + (g.height || 0);
+      if (g.solids.length && !SOFT[a]) { for (const s of g.solids) add(s, y0, y1, 1, inst.id); continue; }
+      if (a === 'backwall') continue;
+      const ext = g.extent && g.extent.length >= 3 ? G.hull(g.extent) : g.foot;
+      add(ext, y0 + (g.height || 0) * 0.08, y1, SOFT[a] != null ? SOFT[a] : (a === 'tree' ? 0.55 : 0.5), inst.id);
+    }
+    hab._camOcc = { key, list }; return list;
+  }
+  // fraction of light that gets from p to a camera in direction d (unit, d[1] > 0) — 1 = clear, 0 = hidden behind a solid
+  function seeThrough(occ, p, d) {
+    const G = JT.G; let v = 1; if (d[1] < 0.05) return v;
+    for (const o of occ) {
+      const t0 = Math.max(0, (o.y0 - p[1]) / d[1]), t1 = (o.y1 - p[1]) / d[1]; if (t1 <= t0) continue;
+      const ax = p[0] + d[0] * t0, az = p[2] + d[2] * t0, bx = p[0] + d[0] * t1, bz = p[2] + d[2] * t1;
+      // quick reject: segment-to-centre distance
+      const ex = bx - ax, ez = bz - az, ll = ex * ex + ez * ez; let u = ll > 1e-9 ? ((o.cx - ax) * ex + (o.cz - az) * ez) / ll : 0; u = u < 0 ? 0 : u > 1 ? 1 : u;
+      if (Math.hypot(ax + ex * u - o.cx, az + ez * u - o.cz) > o.r) continue;
+      if (o.op >= 1 && t0 === 0 && G.pointInPoly(p[0], p[2], o.poly)) continue; // standing inside its own rock / tower outline: not an occluder
+      if (G.segHitsPoly([ax, az], [bx, bz], o.poly)) { v *= 1 - o.op; if (v < 0.02) return 0; }
+    }
+    return v;
+  }
+  const toCam = (yaw, pitch) => { const cp = Math.cos(pitch); return [-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp]; };
+  function visibility(occ, pts, yaw, pitch) { const d = toCam(yaw, pitch); let s = 0; for (const p of pts) s += seeThrough(occ, p, d); return s / pts.length; }
+
   class FollowCam {
     constructor() { this.st = null; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.dir = null; this.id = null; }
     /** Start from whatever the camera currently shows, so entering follow never snaps. */
     reset(cur, spId) {
       this.st = { yaw: cur.yaw, pitch: M.clamp(cur.pitch, PITCH_MIN, PITCH_MAX), s: cur.s, c: cur.c.slice(), vy: 0, vp: 0, vs: 0, vc: [0, 0, 0] };
-      this.dir = null; this.tYaw = this.tPitch = this.tS = null; this.tC = null; this.track = false; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.id = spId || null; this.lastYaw = cur.yaw;
+      this.dir = null; this.tYaw = this.tPitch = this.tS = null; this.tC = null; this.track = false; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.id = spId || null; this.lastYaw = cur.yaw; this.fYaw = this.fPitch = this.fVis = null; this.mode = 'norm'; this.huntSide = null; this.ease = 0; this.huntT = 0; this.planT = 0; this.better = 0;
     }
     /** User dragged (radians). Pauses auto-rotation. */
     orbit(dyaw, dpitch) { if (!this.st) return; this.st.yaw = M.wrapAngle(this.st.yaw + dyaw); this.st.pitch = M.clamp(this.st.pitch + dpitch, PITCH_MIN, PITCH_MAX); this.st.vy = 0; this.st.vp = 0; this.pause = PAUSE; }
@@ -4115,40 +4155,119 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       return { d, wall, n };
     }
 
+    /** Hunt two-shot: the camera sits in front of the jumper, a little to one side, with the prey in the foreground.
+        Returns null when there is no landed, nearby target to frame (flying / far prey keep the normal view). */
+    huntShot(hab, sp, des, L) {
+      const H = JT.SpiderAI.HUNT; const st = sp.state;
+      const keep = this.mode === 'hunt' && (st === 'pounce' || (st === 'crouch'));
+      if (!(H && H.has(st)) && !keep) return null;
+      if (des.n[1] < -0.3) return null; // hanging under something: the normal "see its back" view is better
+      const e = JT.SpiderAI.targetEnt(hab, sp); if (!e || !e.pos || !M.finite3(e.pos)) return keep ? { e: null, keep: true } : null;
+      const away = e.sup && e.sup.k === 'air' && !(st === 'pounce');
+      const dist = M.dist(e.pos, sp.pos); if (!keep && (away || dist > 70)) return null;
+      const head = M.add(sp.pos, M.mul(des.n, L * 0.3)); const prey = [e.pos[0], e.pos[1] + 0.6, e.pos[2]];
+      let u = [e.pos[0] - sp.pos[0], 0, e.pos[2] - sp.pos[2]];
+      if (Math.hypot(u[0], u[2]) < 1) { const f = sp.fwd || [1, 0, 0]; u = [f[0], 0, f[2]]; }
+      u = Math.hypot(u[0], u[2]) > 1e-6 ? M.norm(u) : [1, 0, 0];
+      const mk = (side) => {
+        if (des.wall) { // on a wall: side-on two-shot, still facing the wall
+          const sv = M.norm([-des.n[2], 0, des.n[0]]); return M.norm(M.add(M.add(M.mul(des.n, 1), M.mul(sv, 0.75 * side)), [0, 0.3, 0]));
+        }
+        const a = 0.6 * side, ca = Math.cos(a), sa = Math.sin(a); const ru = [u[0] * ca - u[2] * sa, 0, u[0] * sa + u[2] * ca];
+        const p = 0.55, cp = Math.cos(p); return [ru[0] * cp, Math.sin(p), ru[2] * cp];
+      };
+      const tid = sp.target ? sp.target.kind + sp.target.id : null;
+      if (this.huntSide == null || this.huntTid !== tid) {
+        // pick the clearer side once per target (sticky); ties go to the side nearer the current view (less swing)
+        const occ = occluders(hab), pts = [head, prey], cur = toCam(this.st.yaw, this.st.pitch);
+        const sc = (side) => { const d = mk(side); const yaw = Math.atan2(-d[0], -d[2]), pitch = Math.asin(M.clamp(d[1], -1, 1)); return visibility(occ, pts, yaw, pitch) * 2 + M.dot(d, cur) * 0.3; };
+        this.huntSide = sc(1) >= sc(-1) ? 1 : -1; this.huntTid = tid;
+      }
+      return { e, head, prey, d: mk(this.huntSide), dist };
+    }
+
+    /** Pick the clearest view near the preferred one (cheap ray casts against coarse decor shapes, a few times a second). */
+    plan(hab, sp, des, L, base, hunt, fresh) {
+      const occ = occluders(hab); const f = sp.fwd && M.finite3(sp.fwd) ? M.norm(sp.fwd) : [1, 0, 0];
+      const head = M.add(sp.pos, M.mul(des.n, L * 0.3)), body = M.sub(M.add(sp.pos, M.mul(des.n, L * 0.15)), M.mul(f, L * 0.35));
+      const pts = hunt && hunt.prey ? [head, body, hunt.prey] : [head, body];
+      if (!occ.length) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 1; this.better = 0; return; }
+      const prevY = this.fYaw != null ? this.fYaw : base.yaw;
+      const score = (y, p, vis) => vis * 2 - 0.5 * Math.abs(M.wrapAngle(y - base.yaw)) / Math.PI - 0.6 * Math.abs(p - base.pitch) - 0.25 * Math.abs(M.wrapAngle(y - prevY)) / Math.PI;
+      const pitches = des.wall ? [base.pitch, Math.min(0.7, base.pitch + 0.2)] : [base.pitch, Math.min(PITCH_MAX, base.pitch + 0.25), 0.95];
+      const K = hunt ? 3 : 6; let best = null;
+      for (let k = -K + (hunt ? 0 : 1); k <= K; k++) for (const p of pitches) {
+        const y = M.wrapAngle(base.yaw + k * Math.PI / 6); const vis = visibility(occ, pts, y, p); const sc = score(y, p, vis);
+        if (!best || sc > best.sc) best = { y, p, vis, sc };
+        if (k === 0 && p === base.pitch && vis > 0.97) { k = K + 1; break; } // preferred view is clear: done
+      }
+      if (fresh || this.fYaw == null) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; return; }
+      const cv = visibility(occ, pts, this.fYaw, this.fPitch), cs = score(this.fYaw, this.fPitch, cv); this.fVis = cv;
+      if (best.sc > cs + 0.3) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.35 ? 0.3 : 0.7)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
+      else this.better = 0;
+    }
+
     step(hab, sp, dt, s0) {
       if (!this.st) return null; dt = Math.min(dt, 0.1);
       const st = this.st; const L = JT.SpiderAI.len ? JT.SpiderAI.len(sp) : 6;
       const des = this.desired(hab, sp);
-      // low-pass the desired direction so small turns and wobbles do not move the camera
-      this.dir = this.dir ? M.norm(M.lerp3(this.dir, des.d, Math.min(1, dt * 0.9))) : des.d;
-      const d = this.dir; const hm = Math.hypot(d[0], d[2]);
-      let tYaw = hm > 0.15 ? Math.atan2(-d[0], -d[2]) : (this.lastYaw != null ? this.lastYaw : st.yaw);
-      this.lastYaw = tYaw;
-      let tPitch = M.clamp(Math.asin(M.clamp(d[1], -1, 1)), PITCH_MIN, PITCH_MAX);
-      if (des.wall) tPitch = M.clamp(tPitch, 0.3, 0.7); // never let the wall fill the frame
-      // target point: the upper body, leading toward the landing while airborne
-      let c = M.add(sp.pos, M.mul(des.n, L * 0.3)); let zoomMul = des.wall ? 0.9 : 1;
+      const hunt = this.huntShot(hab, sp, des, L);
+      const mode = hunt ? 'hunt' : 'norm';
+      if (mode !== this.mode) {
+        if (mode === 'hunt') { this.dir = hunt.d || this.dir; this.tYaw = null; this.huntT = 0; } // noticed prey: swing round now (slowly)
+        else { this.ease = 3; this.huntSide = null; this.hold = 0; } // after the hunt: ease back calmly
+        this.mode = mode;
+      }
+      const freeze = hunt && (sp.state === 'crouch' || sp.state === 'pounce'); // hold perfectly still for the crouch and the leap
+      if (hunt) this.huntT += dt; if (this.ease > 0) this.ease -= dt;
       const air = sp._air;
-      if (air && air.to && M.finite3(air.to)) { c = M.lerp3(c, air.to, 0.35); zoomMul *= 0.82; }
-      const dm = hab.dims; c = [M.clamp(c[0], 4, dm.w - 4), M.clamp(c[1], 0, dm.h), M.clamp(c[2], 4, dm.d - 4)];
-      let tS = s0 * zoomMul * this.userZoom;
-      // dead-bands: small turns and wobbles do not move the camera at all, so it can come fully to rest
-      // (a resting camera lets the renderer reuse its cached layers — important on phones)
-      // a new viewing direction is adopted only once the jumper has held it for a moment
-      const off = this.tYaw == null || Math.abs(M.wrapAngle(tYaw - this.tYaw)) > 0.5 || Math.abs(tPitch - this.tPitch) > 0.12;
-      this.hold = off ? (this.hold || 0) + dt : 0;
-      if (this.tYaw == null || this.hold > (air ? 0.25 : 1.1)) { this.tYaw = tYaw; this.tPitch = tPitch; this.hold = 0; }
-      tYaw = this.tYaw; tPitch = this.tPitch;
-      if (this.tS == null || Math.abs(tS / this.tS - 1) > 0.04) this.tS = tS; tS = this.tS;
-      // rotation (paused while the user is in control)
+      let c, tS, zoomMul = des.wall ? 0.9 : 1;
+      if (!freeze) {
+        // low-pass the desired direction so small turns and wobbles do not move the camera
+        const want = hunt ? hunt.d : des.d;
+        this.dir = this.dir ? M.norm(M.lerp3(this.dir, want, Math.min(1, dt * 0.9))) : want;
+        const d = this.dir; const hm = Math.hypot(d[0], d[2]);
+        let tYaw = hm > 0.15 ? Math.atan2(-d[0], -d[2]) : (this.lastYaw != null ? this.lastYaw : st.yaw);
+        this.lastYaw = tYaw;
+        let tPitch = M.clamp(Math.asin(M.clamp(d[1], -1, 1)), PITCH_MIN, PITCH_MAX);
+        if (des.wall) tPitch = M.clamp(tPitch, 0.3, 0.7); // never let the wall fill the frame
+        // dead-bands: small turns and wobbles do not move the camera at all, so it can come fully to rest
+        // (a resting camera lets the renderer reuse its cached layers — important on phones)
+        // a new viewing direction is adopted only once the jumper has held it for a moment
+        const off = this.tYaw == null || Math.abs(M.wrapAngle(tYaw - this.tYaw)) > 0.5 || Math.abs(tPitch - this.tPitch) > 0.12;
+        this.hold = off ? (this.hold || 0) + dt : 0; let fresh = false;
+        if (this.tYaw == null || this.hold > (air ? 0.25 : hunt ? 0.9 : 1.1)) { this.tYaw = tYaw; this.tPitch = tPitch; this.hold = 0; fresh = true; }
+        // line of sight: step round decor that would hide the jumper (or its prey)
+        this.planT = (this.planT || 0) - dt;
+        if (fresh || this.planT <= 0) { this.planT = PLAN_DT; this.plan(hab, sp, des, L, { yaw: this.tYaw, pitch: this.tPitch }, hunt, fresh); }
+        if (this.fVis != null && this.fVis < 0.45) zoomMul *= 1.2; // nothing clear: come in closer (the x-ray outline shows it through the leaves)
+        // target point: the upper body, leading toward the landing while airborne
+        c = M.add(sp.pos, M.mul(des.n, L * 0.3));
+        if (air && air.to && M.finite3(air.to)) { c = M.lerp3(c, air.to, 0.35); zoomMul *= 0.82; }
+        tS = s0 * zoomMul * this.userZoom;
+        if (hunt && hunt.prey) {
+          // two-shot: weighted to the jumper, zoomed to fit both, slow push-in while it stalks
+          c = M.lerp3(hunt.head, hunt.prey, 0.35);
+          const push = (sp.state === 'stalk' || sp.state === 'creep' || sp.state === 'track') ? 1 + 0.12 * Math.min(1, this.huntT / 6) : 1;
+          const sep = M.sub(hunt.prey, hunt.head), tc = toCam(this.fYaw, this.fPitch), R = [Math.cos(this.fYaw), 0, -Math.sin(this.fYaw)];
+          const sx = Math.abs(M.dot(sep, R)), along = M.dot(sep, tc); const sy = M.len(M.sub(M.sub(sep, M.mul(tc, along)), M.mul(R, M.dot(sep, R))));
+          const fit = s0 * 23.5 / Math.max(1, 0.65 * Math.max(sx, sy * 1.3));
+          tS = Math.max(s0 * 0.5, Math.min(s0 * push * (this.fVis < 0.45 ? 1.2 : 1), fit)) * this.userZoom;
+        }
+        const dm = hab.dims; c = [M.clamp(c[0], 4, dm.w - 4), M.clamp(c[1], 0, dm.h), M.clamp(c[2], 4, dm.d - 4)];
+        if (this.tS == null || Math.abs(tS / this.tS - 1) > 0.04) this.tS = tS;
+      }
+      const tYaw = this.fYaw != null ? this.fYaw : this.tYaw, tPitch = this.fPitch != null ? this.fPitch : this.tPitch; tS = this.tS;
+      // rotation (paused while the user is in control); calmer during hunts and while easing back afterwards
+      const ys = hunt ? 0.9 : this.ease > 0 ? 0.75 : YAW_SPEED, om = hunt || this.ease > 0 ? 1.5 : 1.9;
       if (this.pause > 0) { this.pause -= dt; st.vy *= 0.8; st.vp *= 0.8; }
       else {
         const diff = M.wrapAngle(tYaw - st.yaw); // shortest way round
-        let r = spring(0, st.vy, diff, 1.9, dt); let step = M.clamp(r[0], -YAW_SPEED * dt, YAW_SPEED * dt);
-        st.yaw = M.wrapAngle(st.yaw + step); st.vy = M.clamp(r[1], -YAW_SPEED, YAW_SPEED);
-        r = spring(st.pitch, st.vp, tPitch, 2.0, dt); st.pitch = M.clamp(r[0], PITCH_MIN, PITCH_MAX); st.vp = r[1];
+        let r = spring(0, st.vy, diff, om, dt); let step = M.clamp(r[0], -ys * dt, ys * dt);
+        st.yaw = M.wrapAngle(st.yaw + step); st.vy = M.clamp(r[1], -ys, ys);
+        r = spring(st.pitch, st.vp, tPitch, hunt ? 1.6 : 2.0, dt); st.pitch = M.clamp(r[0], PITCH_MIN, PITCH_MAX); st.vp = r[1];
       }
-      let r = spring(st.s, st.vs, tS, 2.6, dt); st.s = r[0]; st.vs = r[1];
+      let r = spring(st.s, st.vs, tS, hunt ? 1.8 : 2.6, dt); st.s = r[0]; st.vs = r[1];
       // settle exactly once close enough
       if (Math.abs(M.wrapAngle(tYaw - st.yaw)) < 0.007 && Math.abs(st.vy) < 0.05) { st.yaw = tYaw; st.vy = 0; }
       if (Math.abs(tPitch - st.pitch) < 0.005 && Math.abs(st.vp) < 0.05 && this.pause <= 0) { st.pitch = tPitch; st.vp = 0; }
@@ -4156,14 +4275,16 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       // lazy framing: the camera holds still while the jumper potters about near the middle of the frame and
       // re-centres smoothly once it wanders off (or jumps). A still camera lets the renderer reuse one finished picture.
       const thr = 10 * s0 / Math.max(1e-3, st.s);
-      if (!this.tC || air || this.track || M.dist(c, this.tC) > thr) { this.tC = c.slice(); this.track = M.dist(st.c, c) > thr * 0.15 || air; }
-      const tc = this.tC;
+      if (c && (!this.tC || air || this.track || M.dist(c, this.tC) > thr)) { this.tC = c.slice(); this.track = M.dist(st.c, c) > thr * 0.15 || !!air; }
+      if (freeze && air && air.to && M.finite3(air.to)) { this.tC = M.lerp3(M.add(sp.pos, M.mul(des.n, L * 0.3)), air.to, 0.35); this.track = true; } // the leap: lead toward the landing, no rotation
+      const tc = this.tC || st.c;
       for (let i = 0; i < 3; i++) { r = spring(st.c[i], st.vc[i], tc[i], 3.2, dt); st.c[i] = r[0]; st.vc[i] = r[1]; }
       if (!this.track && M.dist(st.c, tc) < 0.02 && Math.hypot(st.vc[0], st.vc[1], st.vc[2]) < 0.05) { st.c = tc.slice(); st.vc = [0, 0, 0]; }
-      if (!M.finite3(st.c) || !isFinite(st.yaw) || !isFinite(st.pitch) || !isFinite(st.s)) { st.c = c; st.yaw = tYaw; st.pitch = tPitch; st.s = tS; st.vy = st.vp = st.vs = 0; st.vc = [0, 0, 0]; }
+      if (!M.finite3(st.c) || !isFinite(st.yaw) || !isFinite(st.pitch) || !isFinite(st.s)) { st.c = (c || sp.pos).slice(); st.yaw = tYaw || 0; st.pitch = tPitch || 0.6; st.s = tS || s0; st.vy = st.vp = st.vs = 0; st.vc = [0, 0, 0]; }
       return st;
     }
   }
+  FollowCam.visibility = (hab, pts, yaw, pitch) => visibility(occluders(hab), pts, yaw, pitch); FollowCam.toCam = toCam;
   FollowCam.PITCH_MIN = PITCH_MIN; FollowCam.PITCH_MAX = PITCH_MAX; FollowCam.PAUSE = PAUSE;
   JT.FollowCam = FollowCam;
 })(typeof window !== 'undefined' ? window : globalThis);
