@@ -284,7 +284,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
 
 /* ---------- storybook theme: ink on cream paper (body.story is set while the WebGL storybook renderer runs) ---------- */
 body.story{--ink:#2b2017;--dim:rgba(43,32,23,.8);--faint:rgba(43,32,23,.52);--rule:rgba(43,32,23,.24);--accent:#8c4a1a;--warm:#b4612a;--ok:#4a7a32;--bad:#a63e2c;
-  --scrim:rgba(241,232,212,.86);--scrim2:rgba(241,232,212,.6);--shadow:0 0 5px rgba(246,238,220,.95),0 0 1px rgba(246,238,220,.95);background:#efe5cf}
+  --scrim:rgba(241,232,212,.86);--scrim2:rgba(241,232,212,.6);--shadow:0 0 5px rgba(246,238,220,.95),0 0 1px rgba(246,238,220,.95);background:#b9ad97}
 body.story :root{
   --scrim:rgba(241,232,212,0.65);--scrim2:rgba(241,232,212,0.40)}
 body.story #top{background:linear-gradient(rgba(241,232,212,0.69),rgba(241,232,212,0.34) 60%,rgba(241,232,212,0.00))}
@@ -7679,7 +7679,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.bindCanvas();
       // rotation: phones often report the old size in the first resize event, so re-measure after layout settles too
       // (the renderer also re-checks the canvas size every frame and fixes any mismatch)
-      const remeasure = () => { this.R.resize(); requestAnimationFrame(() => this.R.resize()); setTimeout(() => this.R.resize(), 250); setTimeout(() => this.R.resize(), 700); };
+      // iOS home-screen app: the web view can stop short of the home-indicator strip, leaving a bare band at the bottom.
+      // Stretch the stage to the full screen height when that happens.
+      const fitStage = () => { const app = $('app'); if (!app || !root.screen) return;
+        const sa = navigator.standalone || (root.matchMedia && root.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
+        const port = root.innerHeight > root.innerWidth, full = port ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height), gap = full - root.innerHeight;
+        const fix = sa && gap > 0 && gap < 90; app.style.height = fix ? full + 'px' : ''; app.style.bottom = fix ? 'auto' : ''; };
+      fitStage();
+      const remeasure = () => { fitStage(); this.R.resize(); requestAnimationFrame(() => this.R.resize()); setTimeout(() => this.R.resize(), 250); setTimeout(() => this.R.resize(), 700); };
       root.addEventListener('resize', remeasure); root.addEventListener('orientationchange', remeasure);
       if (root.visualViewport) root.visualViewport.addEventListener('resize', remeasure);
     },
