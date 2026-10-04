@@ -4957,6 +4957,58 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   JT.View = View;
   JT.LIGHT = M.norm([-0.45, 0.85, -0.35]);
+  JT.LIGHT0 = JT.LIGHT.slice();
+  /* Sky: an unseen sun and moon. Fixed to the tank: the sun rises on the right of the front view (+x), arcs high
+     over the front of the tank and sets on the left (-x); after dusk the moon follows the same path, dimmer and cooler.
+     JT.LIGHT is updated in place (everything shades from it); JT.SKY carries the time-of-day grade:
+       grade  overall colour multiply        key   colour of lit sides     amb  colour of shade sides
+       kd     how directional the light is (0 = soft blue hour, 1 = full sun) */
+  const SUNRISE = 0.2, SUNSET = 0.82, MOONRISE = 0.86, MOONSET = 0.17;
+  const MOON = [0.93, 0.97, 1.07], ONE = [1, 1, 1];
+  // [tod, grade, key, amb, kd]  - subtle storybook washes, interpolated smoothly
+  const KF = [
+    [0.00, [0.32, 0.38, 0.58], MOON, [0.95, 0.97, 1.04], 0.7],
+    [0.12, [0.32, 0.38, 0.58], MOON, [0.95, 0.97, 1.04], 0.55],
+    [0.185, [0.40, 0.44, 0.62], ONE, [0.96, 0.98, 1.04], 0.04],
+    [0.23, [0.64, 0.57, 0.62], [1.07, 0.95, 0.86], [0.93, 0.95, 1.06], 0.5],
+    [0.28, [0.90, 0.82, 0.75], [1.07, 0.97, 0.86], [0.95, 0.96, 1.04], 0.85],
+    [0.37, [1.00, 0.97, 0.92], [1.04, 1.00, 0.94], [0.97, 0.98, 1.02], 1],
+    [0.50, ONE, ONE, ONE, 1],
+    [0.63, [1.00, 0.97, 0.90], [1.05, 0.99, 0.91], [0.97, 0.97, 1.01], 1],
+    [0.72, [0.97, 0.86, 0.73], [1.09, 0.95, 0.80], [0.93, 0.94, 1.04], 0.9],
+    [0.785, [0.72, 0.58, 0.62], [1.08, 0.87, 0.82], [0.91, 0.92, 1.07], 0.45],
+    [0.835, [0.42, 0.43, 0.61], ONE, [0.96, 0.97, 1.04], 0.04],
+    [0.90, [0.33, 0.385, 0.58], MOON, [0.95, 0.97, 1.04], 0.55],
+    [1.00, [0.32, 0.38, 0.58], MOON, [0.95, 0.97, 1.04], 0.7]];
+  const sm = (t) => t * t * (3 - 2 * t);
+  const mix3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  /** Direction toward a body at arc phase s (0 rise on +x, 1 set on -x), peak elevation set by `peak`. */
+  function arc(s, peak) {
+    const a = Math.PI * M.clamp(s, 0, 1); const y = 0.1 + peak * Math.sin(a);
+    return M.norm([Math.cos(a), y, -0.55 * Math.sin(a) - 0.12]);
+  }
+  const SKY = JT.SKY = { tod: 0.5, grade: [1, 1, 1], key: [1, 1, 1], amb: [1, 1, 1], kd: 1, sun: true };
+  /** Sample the sky at time of day t (0..1). Writes JT.LIGHT in place unless noLight. */
+  SKY.at = function (t, out) {
+    out = out || {}; t = ((t % 1) + 1) % 1; let i = 0; while (i < KF.length - 2 && KF[i + 1][0] <= t) i++;
+    const A = KF[i], B = KF[i + 1]; const k = sm(M.clamp((t - A[0]) / (B[0] - A[0]), 0, 1));
+    out.tod = t; out.grade = mix3(A[1], B[1], k); out.key = mix3(A[2], B[2], k); out.amb = mix3(A[3], B[3], k); out.kd = A[4] + (B[4] - A[4]) * k;
+    const sun = t >= SUNRISE - 0.01 && t <= SUNSET + 0.01; out.sun = sun;
+    if (sun) out.dir = arc((t - SUNRISE) / (SUNSET - SUNRISE), 0.95);
+    else { const mt = t >= MOONRISE ? t - MOONRISE : t + 1 - MOONRISE; out.dir = arc(mt / (1 - MOONRISE + MOONSET), 0.7); }
+    return out;
+  };
+  /** Per-frame update from the game clock (Day / Night buttons pin the look to noon / moonlit midnight). */
+  SKY.update = function (game) {
+    const mode = game && game.state && game.state.timeMode;
+    const t = mode === 'day' ? 0.5 : mode === 'night' ? 0.0 : (game && game.tod ? game.tod() : 0.5);
+    SKY.at(t, SKY); const d = SKY.dir; JT.LIGHT[0] = d[0]; JT.LIGHT[1] = d[1]; JT.LIGHT[2] = d[2]; return SKY;
+  };
+  /** Run fn with the fixed studio light (shop thumbnails and portraits don't follow the clock). */
+  JT.withBaseLight = function (fn) {
+    const L = JT.LIGHT, keep = L.slice(); L[0] = JT.LIGHT0[0]; L[1] = JT.LIGHT0[1]; L[2] = JT.LIGHT0[2];
+    try { return fn(); } finally { L[0] = keep[0]; L[1] = keep[1]; L[2] = keep[2]; }
+  };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -5282,7 +5334,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const Lh = [L[0], L[2]]; const ll = Math.hypot(Lh[0], Lh[1]) || 1; const dir = [-Lh[0] / ll, -Lh[1] / ll];
     const len = Math.min(70, Math.max(4, g.height) * ll / Math.max(0.3, L[1])) * (solid ? 0.9 : 0.75);
     const cc = [c[0] + dir[0] * len * 0.45, g.baseY + 0.04, c[1] + dir[1] * len * 0.45];
-    softEll(ctx, V, cc, [dir[0] * (r + len * 0.5), 0, dir[1] * (r + len * 0.5)], [-dir[1] * r * (solid ? 0.95 : 0.8), 0, dir[0] * r * (solid ? 0.95 : 0.8)], 0.26 * day, 0.05);
+    softEll(ctx, V, cc, [dir[0] * (r + len * 0.5), 0, dir[1] * (r + len * 0.5)], [-dir[1] * r * (solid ? 0.95 : 0.8), 0, dir[0] * r * (solid ? 0.95 : 0.8)], 0.26 * day * JT.SKY.kd, 0.05);
   };
   function softEll(ctx, V, c, ax, az, a, inner) {
     if (a <= 0.005) return; const C = V.P(c), A = V.J(ax), B = V.J(az);
@@ -5962,7 +6014,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     return [c[0] + (ax[0] * k0 + ay[0] * k1 + az[0] * k2) / l, c[1] + (ax[1] * k0 + ay[1] * k1 + az[1] * k2) / l, c[2] + (ax[2] * k0 + ay[2] * k1 + az[2] * k2) / l];
   }
   let HV = [0, 1, 0], HVkey = '';
-  function halfVec(V) { const k = V.yaw.toFixed(3) + V.pitch.toFixed(3); if (k !== HVkey) { HVkey = k; HV = M.norm(M.add(LG, V.toCam)); } return HV; }
+  function halfVec(V) { const k = V.yaw.toFixed(3) + V.pitch.toFixed(3) + LG[0].toFixed(3) + LG[2].toFixed(3); if (k !== HVkey) { HVkey = k; HV = M.norm(M.add(LG, V.toCam)); } return HV; }
 
   /** Shaded ellipsoid. o: {gloss, ink, fuzz, hatch, hair, sheen, lod, alpha} */
   function blob(ctx, V, c, ax, ay, az, col, o) {
@@ -6102,7 +6154,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const Lt = M.sub(LG, M.mul(n, M.dot(LG, n))); const ln = Math.max(0.35, M.dot(LG, n));
     let off = M.mul(Lt, -h / ln); const ol = M.len(off); if (ol > L * 0.7) off = M.mul(off, L * 0.7 / ol);
     const sc = M.add(p, off); const e = projEll(V, M.mul(f, L * 0.5 + ol * 0.35), M.mul(s, L * 0.38 * wk), null); const P = V.P(sc);
-    ctx.fillStyle = 'rgba(12,8,4,' + (0.16 * alpha).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(P[0], P[1], e.r1, Math.max(0.3, e.r2), e.ang, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(12,8,4,' + (0.16 * alpha * (0.25 + 0.75 * JT.SKY.kd)).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(P[0], P[1], e.r1, Math.max(0.3, e.r2), e.ang, 0, 6.283); ctx.fill();
     const e2 = projEll(V, M.mul(f, L * 0.36), M.mul(s, L * 0.26 * wk), null); const P2 = V.P(p);
     ctx.fillStyle = 'rgba(12,8,4,' + (0.22 * alpha).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(P2[0], P2[1], e2.r1, Math.max(0.3, e2.r2), e2.ang, 0, 6.283); ctx.fill();
   }
@@ -6916,7 +6968,7 @@ vec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z
   const LAMPS = `
 uniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;
 vec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }
-vec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+0.9*uNight); }`;
+vec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }`;
   const MESH_VS = `
 attribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;
 uniform vec3 uSway; uniform float uOut; uniform float uPass; ${PROJ}
@@ -6927,13 +6979,13 @@ void main(){ vec3 p=aP+uSway*aW; vec3 q=proj(p);
   const MESH_FS = `
 precision highp float;
 varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;
-uniform vec3 uL; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; ${LAMPS}
+uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; ${LAMPS}
 void main(){
   if(vWP.y<-0.05) discard;
   if(uPass>0.5){ gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*uAlpha, uAlpha); return; }
   float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=floor(f/16.0);
   vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }
-  float ndl=dot(n,uL); float lit=0.62+0.38*smoothstep(-0.25,0.55,ndl)+0.07*smoothstep(0.7,0.95,ndl);
+  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);
   vec3 col=vC;
   vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);
   vec4 nz=texture2D(uNoise, uv*0.045);
@@ -6944,7 +6996,7 @@ void main(){
     else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;
     else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;
     col=mix(col, vC2, m); }
-  col*=lit; if(back>0.5) col=mix(col, vec3(0.93,0.95,0.82), 0.12);
+  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5) col=mix(col, vec3(0.93,0.95,0.82), 0.12);
   float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;
   col*=0.9+0.2*nz.r;
   col=mix(col, vec3(0.95,0.91,0.82), 0.07);
@@ -6985,6 +7037,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
   const PAPER = [0.945, 0.905, 0.815];
+  const NEUTRAL = { kd: 1, key: [1, 1, 1], amb: [1, 1, 1] };
   const hexRGB = (h) => GM.rgb(h);
   const toHex = (c) => '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join('');
   const towardPaper = (h, t) => { const c = hexRGB(h); return toHex([c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t]); };
@@ -7021,7 +7074,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     texParams(repeat, mip) { const gl = this.gl; const w = repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE; gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); }
     buf(data, kind) { const gl = this.gl; const b = gl.createBuffer(); const t = kind === 'idx' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER; gl.bindBuffer(t, b); gl.bufferData(t, data, gl.STATIC_DRAW); return b; }
     view(P, V) { const gl = this.gl; gl.uniform3f(P.u.uC, V.c[0], V.c[1], V.c[2]); gl.uniform4f(P.u.uRot, V.cy_, V.sy_, V.cp, V.sp); gl.uniform4f(P.u.uScr, V.s, V.cx, V.cy, 0); const r = this._res; gl.uniform2f(P.u.uRes, r ? r[0] : this.cv.width, r ? r[1] : this.cv.height); }
-    light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); }
+    light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); const S = F.sky || NEUTRAL; if (P.u.uKD) gl.uniform1f(P.u.uKD, S.kd); if (P.u.uKeyC) gl.uniform3f(P.u.uKeyC, S.key[0], S.key[1], S.key[2]); if (P.u.uAmbC) gl.uniform3f(P.u.uAmbC, S.amb[0], S.amb[1], S.amb[2]); }
 
     // ---------- generated textures ----------
     noiseCanvas() { // tileable value noise, a different octave mix in each channel
@@ -7077,7 +7130,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     habGeom(hab) {
       const R = this.R; const key = hab.data.id + '|' + hab._geomVersion + '|' + hab.dims.w + '|' + hab.dims.d + '|' + hab.data.type;
       if (this.hg && this.hg.key === key) return this.hg;
-      const gl = this.gl; if (this.hg) for (const b of this.hg.del) gl.deleteBuffer(b);
+      const gl = this.gl; if (this.hg) { for (const b of this.hg.del) gl.deleteBuffer(b); if (this.hg.cs && this.hg.cs.b) gl.deleteBuffer(this.hg.cs.b); }
       const del = []; const poly = R.floorPoly(hab); const n = poly.length; const c = G.centroid(poly); const dm = hab.dims;
       // floor fan
       const fl = []; const V5 = (q) => [q[0], 0, q[1], q[0] / dm.w, q[1] / dm.d]; for (let i = 0; i < n; i++) fl.push(...V5(c), ...V5(poly[i]), ...V5(poly[(i + 1) % n]));
@@ -7097,9 +7150,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const sh = []; const L = JT.LIGHT; const Lh = [L[0], L[2]]; const ll = Math.hypot(Lh[0], Lh[1]) || 1; const dir = [-Lh[0] / ll, -Lh[1] / ll];
       const decal = (cx, y, cz, ax, az, a) => { const p = (s, t) => [cx + ax[0] * s + az[0] * t, y, cz + ax[1] * s + az[1] * t]; const q = [p(-1, -1), p(1, -1), p(1, 1), p(-1, 1)]; const uv = [[0, 0], [1, 0], [1, 1], [0, 1]]; for (const k of [0, 1, 2, 0, 2, 3]) sh.push(q[k][0], q[k][1], q[k][2], uv[k][0], uv[k][1], a); };
       for (const { g } of meshes) { if (g.def.cat === 'ground' || !g.foot) continue; const fc = G.centroid(g.foot); const solid = g.solids.length > 0; const r = solid ? Math.sqrt(Math.abs(G.polyArea(g.foot)) / Math.PI) * 1.15 : Math.min(18, g.coverR * 0.6);
-        decal(fc[0], g.baseY + 0.06, fc[1], [r * 1.05, 0], [0, r * 1.05], 0.5 * (solid ? 1 : 0.75));
-        const len = Math.min(70, Math.max(4, g.height) * ll / Math.max(0.3, L[1])) * (solid ? 0.8 : 0.65); const cc = [fc[0] + dir[0] * len * 0.45, fc[1] + dir[1] * len * 0.45];
-        decal(cc[0], g.baseY + 0.05, cc[1], [dir[0] * (r + len * 0.5), dir[1] * (r + len * 0.5)], [-dir[1] * r * 0.9, dir[0] * r * 0.9], 0.3); }
+        decal(fc[0], g.baseY + 0.06, fc[1], [r * 1.05, 0], [0, r * 1.05], 0.5 * (solid ? 1 : 0.75)); }
       const shb = sh.length ? this.buf(new Float32Array(sh)) : null; if (shb) del.push(shb);
       // soil heaped round everything that stands in the substrate, so nothing looks set down on top of it
       const mv = []; const Lx = Lh[0] / ll, Lz = Lh[1] / ll;
@@ -7116,14 +7167,27 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const mb = mv.length ? this.buf(new Float32Array(mv)) : null; if (mb) del.push(mb);
       this.hg = { key, floor, nf: fl.length / 5, side, sides, shb, nsh: sh.length / 6, meshes, del, mb, nm: mv.length / 7 }; return this.hg;
     }
+    /** Long soft shadows thrown away from the sun/moon. Rebuilt only when the light has moved ~1.5 degrees. */
+    castShadows(hg) {
+      const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const key = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
+      if (hg.cs && hg.csKey === key) return hg.cs; const gl = this.gl; if (hg.cs && hg.cs.b) gl.deleteBuffer(hg.cs.b);
+      const Lh = [L[0], L[2]]; const ll = Math.hypot(Lh[0], Lh[1]) || 1; const dir = [-Lh[0] / ll, -Lh[1] / ll]; const sh = [];
+      const decal = (cx, y, cz, ax, az, a) => { const p = (s, t) => [cx + ax[0] * s + az[0] * t, y, cz + ax[1] * s + az[1] * t]; const qd = [p(-1, -1), p(1, -1), p(1, 1), p(-1, 1)]; const uv = [[0, 0], [1, 0], [1, 1], [0, 1]]; for (const k of [0, 1, 2, 0, 2, 3]) sh.push(qd[k][0], qd[k][1], qd[k][2], uv[k][0], uv[k][1], a); };
+      for (const { g } of hg.meshes) { if (g.def.cat === 'ground' || !g.foot) continue; const fc = G.centroid(g.foot); const solid = g.solids.length > 0; const r = solid ? Math.sqrt(Math.abs(G.polyArea(g.foot)) / Math.PI) * 1.15 : Math.min(18, g.coverR * 0.6);
+        const len = Math.min(70, Math.max(4, g.height) * ll / Math.max(0.3, L[1])) * (solid ? 0.8 : 0.65); const cc = [fc[0] + dir[0] * len * 0.45, fc[1] + dir[1] * len * 0.45];
+        // longer shadows spread and soften, so the same darkness isn't smeared over a bigger patch
+        const a = 0.36 * M.clamp(1.25 - len / 110, 0.65, 1);
+        decal(cc[0], g.baseY + 0.05, cc[1], [dir[0] * (r + len * 0.5), dir[1] * (r + len * 0.5)], [-dir[1] * r * 0.9, dir[0] * r * 0.9], a); }
+      hg.csKey = key; hg.cs = { b: sh.length ? this.buf(new Float32Array(sh)) : null, n: sh.length / 6 }; return hg.cs;
+    }
 
     // ---------- per-frame ----------
     frame(V, hab, night, lamps, scene) {
       const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
-      const grade = [1 - night * 0.68, 1 - night * 0.62, 1 - night * 0.42];
+      const SK = JT.SKY; const grade = SK.grade.slice();
       const lampU = new Float32Array(16); const LL = []; lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
-      this.F = { night, grade, lamps: LL, lampU };
+      this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, W, H); gl.clearColor(PAPER[0], PAPER[1], PAPER[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
       // background
@@ -7134,11 +7198,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0);
       gl.bindTexture(gl.TEXTURE_2D, gt.s); gl.bindBuffer(gl.ARRAY_BUFFER, hg.side); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform1f(P.u.uLit, 1);
       const Lg = JT.LIGHT;
-      hg.sides.forEach((s, i) => { const f = s[0] * V.toCam[0] + s[1] * V.toCam[2]; if (f <= 0) return; const lit = M.clamp(0.72 + 0.4 * (s[0] * Lg[0] + s[1] * Lg[2]), 0.45, 1.1); gl.uniform4f(P.u.uCol, lit, lit, lit, 1); gl.drawArrays(gl.TRIANGLES, i * 6, 6); });
+      hg.sides.forEach((s, i) => { const f = s[0] * V.toCam[0] + s[1] * V.toCam[2]; if (f <= 0) return; const dd = s[0] * Lg[0] + s[1] * Lg[2]; const lit = M.clamp(0.72 + 0.4 * dd * SK.kd, 0.45, 1.1); const tw = M.clamp(0.5 + dd, 0, 1) * SK.kd; gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1); gl.drawArrays(gl.TRIANGLES, i * 6, 6); });
       gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform4f(P.u.uCol, 1, 1, 1, 1); gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
       // shadows on the ground
       if (hg.shb) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
         gl.uniform4f(P.u.uCol, 0.16, 0.1, 0.05, 0.42 - night * 0.12); gl.drawArrays(gl.TRIANGLES, 0, hg.nsh); }
+      { const cs = this.castShadows(hg); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+        gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
       // warm pools under lamps (added light)
       if (LL.length) this.lampPools(V, hab, LL, night);
       // decor: ink outline pass + wash pass, per object so plants can sway
@@ -7179,7 +7245,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, rb); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, S, S);
         const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
         T = this._tfb[S] = { fb, tex, rb }; }
-      const keepF = this.F; this.F = { night: 0, grade: [1, 1, 1], lamps: [], lampU: new Float32Array(16) }; this._res = [S, S]; this.resetAttribs();
+      const keepF = this.F; this.F = { night: 0, grade: [1, 1, 1], lamps: [], lampU: new Float32Array(16), sky: NEUTRAL }; this._res = [S, S]; this.resetAttribs();
       const W2 = new JT.View(V.yaw, V.pitch, V.s * 2, V.cx * 2, V.cy * 2, V.c);
       try {
         gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); gl.viewport(0, 0, S, S); gl.clearColor(0, 0, 0, 0); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -7419,7 +7485,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
     /** Storybook frame: the GPU paints the scene; the 2D canvas on top only carries effects, labels and edit outlines. */
     renderStory(V, hab, dt) {
-      const night = 1 - this.game.daylight(); const lamps = hab.lampsOn ? hab.lampsOn() : [];
+      JT.SKY.update(this.game); const night = 1 - this.game.daylight(); const lamps = hab.lampsOn ? hab.lampsOn() : [];
       const scene = this.collectScene(V, hab, night);
       try { this.gp.frame(V, hab, night, lamps, scene); } catch (e) { if ((this._glErr = (this._glErr || 0) + 1) < 5) console.error('storybook frame', e); }
       const ctx = this.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, this.cv.width, this.cv.height);
@@ -7686,7 +7752,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         V.set(0.52, 0.62, s, size / 2 - (x0 + x1) / 2 * s, size / 2 - (y0 + y1) / 2 * s, [0, 0, 0]);
         const gc = G.centroid(g.foot || [[0, 0]]); const q = V.P([gc[0], g.baseY, gc[1]]); const rr = Math.max(8, Math.sqrt(Math.abs(G.polyArea(g.foot || [[0, 0], [1, 0], [0, 1]]))) * V.s * 0.75);
         const sg = ctx.createRadialGradient(q[0], q[1], 0, q[0], q[1], rr); sg.addColorStop(0, 'rgba(60,40,20,0.28)'); sg.addColorStop(1, 'rgba(60,40,20,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(q[0], q[1], rr, rr * 0.5, 0, 0, 6.283); ctx.fill();
-        const art = this.gp && this.gp.thumb(g, V, size); if (art) ctx.drawImage(art, 0, 0);
+        const art = this.gp && JT.withBaseLight(() => this.gp.thumb(g, V, size)); if (art) ctx.drawImage(art, 0, 0);
       } catch (e) { if (JT.DEV) console.warn(e); }
       this.thumbs[key] = c; return c;
     }
@@ -7694,14 +7760,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       size = size || 120; const key = id + '|' + size; if (this.portraits[key]) return this.portraits[key];
       const c = mkCanvas(size, size); const ctx = c.getContext('2d'); const V = new JT.View(0.9, 0.85, size / 16, size / 2, size * 0.58, [0, 0, 0]);
       const sp = { species: id, state: 'idle', _walk: 0, _moving: false, _crouch: 0, _legRaise: 0.3, seed: 1, sat: 0.6 };
-      try { D.spider(ctx, V, sp, { p: [0, 0, 0], f: M.norm([-0.5, 0, 0.8]), s: M.norm([0.8, 0, 0.5]), n: [0, 1, 0] }, { len: 10, time: 0, thumb: true }); } catch (e) { if (JT.DEV) console.warn(e); }
+      try { JT.withBaseLight(() => D.spider(ctx, V, sp, { p: [0, 0, 0], f: M.norm([-0.5, 0, 0.8]), s: M.norm([0.8, 0, 0.5]), n: [0, 1, 0] }, { len: 10, time: 0, thumb: true })); } catch (e) { if (JT.DEV) console.warn(e); }
       this.portraits[key] = c; return c;
     }
     preyPortrait(id, size) {
       size = size || 96; const key = 'prey|' + id + '|' + size; if (this.portraits[key]) return this.portraits[key];
       const d = JT.PREY_BY_ID[id]; const c = mkCanvas(size, size); const ctx = c.getContext('2d');
       const V = new JT.View(0.9, 0.8, size / (Math.max(3, d.len) * 1.9), size / 2, size * 0.6, [0, 0, 0]);
-      try { D.prey(ctx, V, { type: id, sup: { k: 'floor' }, seed: 1, _anim: 0, species: 'zebra' }, { p: [0, 0, 0], f: M.norm([-0.5, 0, 0.8]), s: M.norm([0.8, 0, 0.5]), n: [0, 1, 0] }, { time: 0 }); } catch (e) { if (JT.DEV) console.warn(e); }
+      try { JT.withBaseLight(() => D.prey(ctx, V, { type: id, sup: { k: 'floor' }, seed: 1, _anim: 0, species: 'zebra' }, { p: [0, 0, 0], f: M.norm([-0.5, 0, 0.8]), s: M.norm([0.8, 0, 0.5]), n: [0, 1, 0] }, { time: 0 })); } catch (e) { if (JT.DEV) console.warn(e); }
       this.portraits[key] = c; return c;
     }
   }
