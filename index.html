@@ -1229,7 +1229,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     B.solids.push(base); const ti = B.top(top, h);
     B.front = base.slice(0, N + 1).map(q => [q[0], q[1] - 0.6]); // used to snap wall-mounted pieces
     // climbing routes up the front face, broken by integrated ledges the jumper can stop and perch on
-    const nR = Math.max(3, Math.round(w / 34)); const routes = []; for (let i = 0; i < nR; i++) routes.push((i / (nR - 1) - 0.5) * 0.66 * w * (nR > 3 ? 1.36 : 1) + (rng() - 0.5) * 6);
+    const nR = Math.max(3, Math.round(w / 34)); const routes = []; for (let i = 0; i < nR; i++) routes.push(M.clamp((i / (nR - 1) - 0.5) * 0.66 * w * (nR > 3 ? 1.36 : 1) + (rng() - 0.5) * 6, -(x1 - 12), x1 - 12)); // ledges (up to 19 wide) stay on the face
     const ledgeAt = {}; // route index -> [heights]
     const nL = Math.round(cfg.ledges * nR / 3 * Math.min(1.6, Math.max(1, h / 140))); for (let k = 0; k < nL; k++) { const r = (k * 2 + Math.floor(k / nR)) % nR; const kk = Math.floor(k / nR) % 3; (ledgeAt[r] = ledgeAt[r] || []).push(h * (kk === 0 ? 0.38 + (r % 2) * 0.1 : kk === 1 ? 0.6 : 0.78) + (rng() - 0.5) * 8); }
     routes.forEach((x, r) => {
@@ -1263,6 +1263,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const flat = (sd, x, y, L, W, ang, col, shape, o2) => { const ca = Math.cos(ang), sa = Math.sin(ang); const z = F(sd, x) + sd * 0.3; return B.prim(Object.assign({ t: 'leaf', o: [x, y, z], a: [ca * L, sa * L, sd * L * 0.12], b: [-sa * W, ca * W, 0], col, shape: shape || 'oval', h: y, nv: nvOf(sd) }, o2 || {})); };
     const ivyRun = (sd, x, yTop, len, col) => { let px = x, py = yTop; const pts = [[px, py, F(sd, px) + sd * 0.4]]; for (let k = 0; k < len; k++) { px += (rng() - 0.5) * 5; py -= 3 + rng() * 2; if (py < 2) break; pts.push([px, py, F(sd, px) + sd * 0.4]); const sdL = k % 2 ? 1 : -1; flat(sd, px, py, 2.6 + rng() * 1.2, 1.8, Math.PI / 2 + sdL * (0.9 + rng() * 0.5), shade(col, (rng() - 0.5) * 0.25), 'ivy'); } if (pts.length > 1) B.prim({ t: 'tube', pts, r0: 0.4, r1: 0.25, col: '#5a4a2a', style: 'stem', nv: nvOf(sd) }); };
     const RX = () => (rng() - 0.5) * (w - 10), RY = (lo, hi) => (lo || 4) + rng() * (h - (lo || 4) - (hi || 8));
+    const p0 = B.prims.length; // everything from here on is surface dressing: kept inside the wall's edges below
     for (const sd of [-1, 1]) {
       if (S === 'mosswall') {
         const greens = ['#5f8f2e', '#4a7a26', '#79a83a', '#3f6a22', '#8ab848'];
@@ -1310,7 +1311,17 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     }
     // crest planting
     const crest = { mosswall: ['#5f8f2e', '#4a7a26', '#79a83a'], barkwall: ['#5f8f2e', '#a8b890'], stonewall: ['#4f7a2a', '#6a9a3a'], leafwall: ['#8a5a2e', '#a0682e', '#6e4426'], trunkwall: ['#4a7a26', '#5f8f2e'], rootwall: ['#4a7a26', '#3f6a22'], sandwall: ['#8aa07a', '#b8b878'], driftwall: ['#a8b490', '#6a8a3a'] }[S] || ['#5f8f2e'];
-    for (let k = 0; k < Math.round(9 * AF); k++) { const x = -w / 2 + 6 + (w - 12) * k / 8; B.prim({ t: 'tuft', o: [x, h + 0.8, (rng() - 0.5) * d * 0.5], r: (S === 'sandwall' || S === 'driftwall' ? 2 : 3.5) + rng() * 3, col: crest[k % crest.length], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h }); }
+    const nC = Math.max(5, Math.round((w - 16) / 15)); for (let k = 0; k < nC; k++) { const x = -x1 + 5 + (2 * x1 - 10) * k / (nC - 1); B.prim({ t: 'tuft', o: [x, h + 0.8, (rng() - 0.5) * d * 0.5], r: (S === 'sandwall' || S === 'driftwall' ? 2 : 3.5) + rng() * 3, col: crest[k % crest.length], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h }); }
+    // keep every tuft, shelf, leaf and root inside the wall's left / right edges (slide inward along the face)
+    const lim = x1 - 0.5;
+    for (let i = p0; i < B.prims.length; i++) { const q = B.prims[i]; let lo, hi;
+      if (q.t === 'tube' && q.pts) { const r = q.r0 || 1; lo = Math.min(...q.pts.map(v => v[0])) - r; hi = Math.max(...q.pts.map(v => v[0])) + r; }
+      else if (q.o && q.t === 'leaf' && q.a) { const bx = Math.abs((q.b || [0])[0]); lo = q.o[0] + Math.min(0, q.a[0]) - bx; hi = q.o[0] + Math.max(0, q.a[0]) + bx; }
+      else if (q.o) { const r = q.r || 2; lo = q.o[0] - r; hi = q.o[0] + r; } else continue;
+      if (hi - lo > 2 * lim) continue; const dx = lo < -lim ? -lim - lo : hi > lim ? lim - hi : 0; if (!dx) continue;
+      if (q.t === 'tube' && q.pts) q.pts = q.pts.map(v => [v[0] + dx, v[1], v[2] + (v[2] < 0 ? zAt(v[0] + dx) - zAt(v[0]) : 0)]);
+      else { const ox = q.o[0]; q.o = [ox + dx, q.o[1], q.o[2] + (q.o[2] < 0 && q.o[1] < h ? zAt(ox + dx) - zAt(ox) : 0)]; }
+    }
     B.height = h + 4; B.coverR = w * 0.45;
   };
 
@@ -2109,7 +2120,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       this.data = Object.assign({ id: JT.newId('h'), name: 'Habitat', type: 'standard', substrate: 'coco', bg: 'mossy', humidity: 0.6, age: 0,
         decor: [], spiders: [], prey: [], remains: [], drops: [], silk: [] }, data || {});
       this.geoms = {}; this.nav = null; this._geomVersion = 0;
-      this.rebuild(); this._fitWalls();
+      this.rebuild(); this._fitWalls(); for (const wd of this.data.decor.filter(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall')) this._resnapMounts(wd.id); // older mounts hanging past a wall edge slide back on
     }
     get dims() { return JT.HABITATS[this.data.type] || JT.HABITATS.standard; }
     get decor() { return this.data.decor; }
@@ -2169,7 +2180,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (my == null || !isFinite(my)) my = s.h * (0.3 + 0.5 * (((seed || 1) % 997) / 997));
       my = M.clamp(my, def.p.kind === 'fungi' ? 22 : 12, s.h - 8);
       const inst = { id: '_probe', type, x, z, rot: s.rot, seed: seed || 1, my };
-      const g = JT.Geo.build(inst, 0, this.dims.h);
+      let g = JT.Geo.build(inst, 0, this.dims.h);
+      { // keep the whole piece on the wall face, not hanging past its side
+        const fx0 = Math.min(a[0], b[0]) + 1, fx1 = Math.max(a[0], b[0]) - 1; let e0 = 1e9, e1 = -1e9; for (const q of g.extent) { e0 = Math.min(e0, q[0]); e1 = Math.max(e1, q[0]); }
+        const dx = e0 < fx0 ? fx0 - e0 : e1 > fx1 ? fx1 - e1 : 0;
+        if (dx) { if (e1 - e0 > fx1 - fx0) return { ok: false, reason: 'Too wide for this wall' }; const s3 = this.mountSnap(x + dx + s.g.out[0] * 3, z + s.g.out[2] * 3, ignoreId) || s2; x = s3.px + s.g.out[0] * 0.3; z = s3.pz + s.g.out[2] * 0.3; inst.x = x; inst.z = z; g = JT.Geo.build(inst, 0, this.dims.h); }
+      }
       for (const q of g.extent) if (!Nav.inside(this, q[0], q[1], 1.5)) return { ok: false, reason: 'Outside the habitat' };
       if (my + 10 > this.dims.h) return { ok: false, reason: 'Too tall to fit here' };
       for (const d of this.data.decor) {
