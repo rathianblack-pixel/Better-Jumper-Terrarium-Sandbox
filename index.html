@@ -445,7 +445,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
     <div class="tb-right desktop-only">
     <div id="cams" class="seg desktop-only" aria-label="Camera">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Front (2)">Front</button><button data-cam="reverse" title="Back (3)">Back</button><button data-cam="follow" title="Follow the selected jumper (4 or F)">Follow</button>
+      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Front (2)">Front</button><button data-cam="reverse" title="Back (3)">Back</button><button data-cam="left" title="Left side (3)">Left</button><button data-cam="right" title="Right side (4)">Right</button>
     </div>
     <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
     <button id="btnMore" class="txt" title="More" aria-label="More" aria-expanded="false">⋯</button>
@@ -481,7 +481,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="camCtl" aria-label="Camera">
-    <button data-cam="iso" title="Isometric (tap again to re-centre)">1</button><button data-cam="observer" title="Front (tap again to re-centre)">2</button><button data-cam="reverse" title="Back (tap again to re-centre)">3</button>
+    <button data-cam="iso" title="Isometric (tap again to re-centre)">1</button><button data-cam="observer" title="Front (tap again to re-centre)">2</button><button data-cam="reverse" title="Back (tap again to re-centre)">3</button><button data-cam="left" title="Left side (tap again to re-centre)">3</button><button data-cam="right" title="Right side (tap again to re-centre)">4</button>
   </div>
 
   <div id="modeBar" class="hidden">
@@ -503,7 +503,6 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   <nav id="dock" class="mobile-only" aria-label="Main"><span class="lens"></span>
     <button data-dock="build">Build</button>
     <button data-dock="food">Food</button>
-    <button data-dock="follow">Follow</button>
     <button data-dock="jumpers">Jumpers</button>
     <button data-dock="observe">Observe</button>
     <button data-dock="more">More</button>
@@ -4802,7 +4801,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M;
-  const PITCH_MIN = 0.2, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15, PLAN_DT = 0.25;
+  const PITCH_MIN = 0.2, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15, PLAN_DT = 0.25, WALL_ARC = 1.3; // tanks with a back wall: the camera keeps to the front half (±75°)
 
   function spring(x, v, target, omega, dt) {
     // critically damped spring step (stable for any dt)
@@ -4861,10 +4860,17 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       this.dir = null; this.tYaw = this.tPitch = this.tS = null; this.tC = null; this.track = false; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.id = spId || null; this.lastYaw = cur.yaw; this.fYaw = this.fPitch = this.fVis = null; this.mode = 'norm'; this.huntSide = null; this.ease = 0; this.huntT = 0; this.planT = 0; this.better = 0;
     }
     /** User dragged (radians). Pauses auto-rotation. */
-    orbit(dyaw, dpitch) { if (!this.st) return; this.st.yaw = M.wrapAngle(this.st.yaw + dyaw); this.st.pitch = M.clamp(this.st.pitch + dpitch, PITCH_MIN, PITCH_MAX); this.st.vy = 0; this.st.vp = 0; this.pause = PAUSE; }
+    orbit(dyaw, dpitch) { if (!this.st) return; this.st.yaw = M.wrapAngle(this.st.yaw + dyaw); if (this.wallTank) this.st.yaw = M.clamp(this.st.yaw, -WALL_ARC, WALL_ARC); this.st.pitch = M.clamp(this.st.pitch + dpitch, PITCH_MIN, PITCH_MAX); this.st.vy = 0; this.st.vp = 0; this.pause = PAUSE; }
     zoom(f) { this.userZoom = M.clamp(this.userZoom * f, 0.45, 2.6); this.tS = null; this.pause = PAUSE; }
     get paused() { return this.pause > 0; }
 
+    /** Wall tanks: a view that would sit behind the wall is folded round to the front three-quarter view on the same side
+        (straight behind -> about 30° off the front, so its face shows instead of its back). Sticky near the flip point. */
+    foldYaw(y) {
+      y = M.wrapAngle(y); const a = Math.abs(y); if (a <= WALL_ARC) { this._fold = null; return y; }
+      let sg = Math.sign(y) || 1; if (a > 2.5 && this._fold) sg = this._fold; this._fold = sg;
+      return sg * Math.min(WALL_ARC, Math.PI - a + 0.5);
+    }
     /** Desired view direction (unit vector from the jumper toward the camera) and framing. */
     desired(hab, sp) {
       const fr = JT.Nav.supFrame(hab, sp.sup); const n = (sp.sup && sp.sup.k === 'air') ? [0, 1, 0] : fr.n;
@@ -4923,10 +4929,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const pitches = des.wall ? [base.pitch, Math.min(0.7, base.pitch + 0.2)] : [base.pitch, Math.min(PITCH_MAX, base.pitch + 0.25), 0.95];
       const K = hunt ? 3 : 6; let best = null;
       for (let k = -K + (hunt ? 0 : 1); k <= K; k++) for (const p of pitches) {
-        const y = M.wrapAngle(base.yaw + k * Math.PI / 6); const vis = visibility(occ, pts, y, p); const sc = score(y, p, vis);
+        const y = M.wrapAngle(base.yaw + k * Math.PI / 6); if (this.wallTank && Math.abs(y) > WALL_ARC + 1e-6) continue; const vis = visibility(occ, pts, y, p); const sc = score(y, p, vis);
         if (!best || sc > best.sc) best = { y, p, vis, sc };
         if (k === 0 && p === base.pitch && vis > 0.97) { k = K + 1; break; } // preferred view is clear: done
       }
+      if (!best) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 0.5; this.better = 0; return; }
       if (fresh || this.fYaw == null) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; return; }
       const cv = visibility(occ, pts, this.fYaw, this.fPitch), cs = score(this.fYaw, this.fPitch, cv); this.fVis = cv;
       if (best.sc > cs + 0.3) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.35 ? 0.3 : 0.7)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
@@ -4936,6 +4943,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     step(hab, sp, dt, s0) {
       if (!this.st) return null; dt = Math.min(dt, 0.1);
       const st = this.st; const L = JT.SpiderAI.len ? JT.SpiderAI.len(sp) : 6;
+      this.wallTank = hab.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall');
       const des = this.desired(hab, sp);
       const hunt = this.huntShot(hab, sp, des, L);
       const mode = hunt ? 'hunt' : 'norm';
@@ -4957,6 +4965,13 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
         this.lastYaw = tYaw;
         let tPitch = M.clamp(Math.asin(M.clamp(d[1], -1, 1)), PITCH_MIN, PITCH_MAX);
         if (des.wall) tPitch = M.clamp(tPitch, 0.3, 0.7); // never let the wall fill the frame
+        if (this.wallTank) {
+          if (!hunt && des.wall && des.n[2] < -0.7) {
+            // on the back wall's face: stay in front, a little to the side it is facing / heading, at about its height
+            const fx = sp.fwd ? sp.fwd[0] : 0; if (Math.abs(fx) > 0.35 || this.wSide == null) this.wSide = fx > 0 ? -1 : 1;
+            tYaw = this.wSide * 0.36; tPitch = M.lerp(0.5, 0.3, M.clamp(sp.pos[1] / Math.max(1, hab.dims.h), 0, 1));
+          } else tYaw = this.foldYaw(tYaw);
+        }
         // dead-bands: small turns and wobbles do not move the camera at all, so it can come fully to rest
         // (a resting camera lets the renderer reuse its cached layers — important on phones)
         // a new viewing direction is adopted only once the jumper has held it for a moment
@@ -4988,7 +5003,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const ys = hunt ? 0.9 : this.ease > 0 ? 0.75 : YAW_SPEED, om = hunt || this.ease > 0 ? 1.5 : 1.9;
       if (this.pause > 0) { this.pause -= dt; st.vy *= 0.8; st.vp *= 0.8; }
       else {
-        const diff = M.wrapAngle(tYaw - st.yaw); // shortest way round
+        const diff = this.wallTank ? M.wrapAngle(tYaw) - M.wrapAngle(st.yaw) : M.wrapAngle(tYaw - st.yaw); // shortest way round (wall tanks: always round the front)
         let r = spring(0, st.vy, diff, om, dt); let step = M.clamp(r[0], -ys * dt, ys * dt);
         st.yaw = M.wrapAngle(st.yaw + step); st.vy = M.clamp(r[1], -ys, ys);
         r = spring(st.pitch, st.vp, tPitch, hunt ? 1.6 : 2.0, dt); st.pitch = M.clamp(r[0], PITCH_MIN, PITCH_MAX); st.vp = r[1];
@@ -7027,6 +7042,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     observer: { yaw: 0.26, pitch: 0.44, label: 'Front' }, // id kept for saves: the front of the tank, turned a little for depth
     follow: { yaw: 0.45, pitch: 0.5, label: 'Follow' },
     reverse: { yaw: Math.PI + 0.26, pitch: 0.5, label: 'Back' }, // the back of the tank, turned a little
+    left: { yaw: 1.22, pitch: 0.44, label: 'Left' },   // 70° round from the front: the back wall still reads as a backdrop
+    right: { yaw: -1.22, pitch: 0.44, label: 'Right' },
   };
   JT.CAMS = CAMS;
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
@@ -7750,7 +7767,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
       if ((k === 'l' || k === 'L') && this.mode === 'place') { this.toggleLeaves(); return; }
-      if (k === '1') this.setCam('iso'); else if (k === '2') this.setCam('observer'); else if (k === '3') this.setCam('reverse'); else if (k === '4') this.setCam('follow'); else if (k === 'f' || k === 'F') this.toggleFollow();
+      if (k >= '1' && k <= '4') { const cm = this.camModes()[+k - 1]; if (cm) this.setCam(cm); } else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
       else if (k === 'Enter' && this.mode === 'place') this.modeDone();
@@ -7763,23 +7780,32 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const tabs = $('habTabs'); tabs.innerHTML = '';
       g.habs.forEach((h, i) => { const b = el('button', i === st.active ? 'on' : '', esc(h.data.name)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); });
       $('habPicker').textContent = g.hab.data.name;
-      document.querySelectorAll('#cams button, #camCtl button').forEach(b => b.classList.toggle('on', b.dataset.cam === this.R.cam.mode));
+      this.syncCams();
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
-      const fol = this.R.cam.mode === 'follow' && !this.obs; document.querySelectorAll('#dock button[data-dock="follow"]').forEach(b => b.classList.toggle('on', fol));
       document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('on', b.dataset.tool === this.tab || (b.dataset.tool === 'remove' && this.mode === 'remove')));
     },
     updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
+    /** Views on offer: a back wall closes off the back, so wall tanks get the two sides instead. */
+    hasWall(h) { h = h || this.hab; return !!h && h.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall'); },
+    camModes() { return this.hasWall() ? ['iso', 'observer', 'left', 'right'] : ['iso', 'observer', 'reverse']; },
+    /** Show only the views that make sense for this tank; slide to Front if the current one stopped making sense. */
+    syncCams() {
+      const ms = this.camModes(), cur = this.R.cam.mode; this._camKey = ms.join();
+      document.querySelectorAll('#cams button, #camCtl button').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur); });
+      if (!this.obs && cur !== 'follow' && !ms.includes(cur)) { this.R.setMode('observer'); document.querySelectorAll('#cams button, #camCtl button').forEach(b => b.classList.toggle('on', b.dataset.cam === 'observer')); }
+    },
     setCam(m) {
+      if (m !== 'follow' && !this.camModes().includes(m)) m = 'observer';
       if (m === 'follow' && this.R.cam.mode !== 'follow') this._prevCam = this.R.cam.mode;
       if (m === 'follow' && !this.hab.spider(this.game.selectedId)) { const s0 = this.hab.spiders[0]; if (s0) this.game.selectedId = s0.id; else { this.toast('No jumper here to follow yet.'); return; } }
       this.R.setMode(m); this.refreshHeader(); if (this.panelId) this.renderPanel(true);
     },
     /** Start following a jumper (tap on it, or the Follow control). */
-    follow(id) { if (id) this.game.selectedId = id; if (this.R.cam.mode !== 'follow') this.setCam('follow'); else { this.refreshHeader(); } },
+    follow(id) { this.toggleObserve(true, id || this.game.selectedId); }, // Follow and Observe are one mode now
     /** Stop following and ease back to the previous overview camera. */
-    unfollow() { if (this.R.cam.mode !== 'follow') return; const prev = this._prevCam && this._prevCam !== 'follow' ? this._prevCam : 'iso'; this.setCam(prev); },
-    toggleFollow() { if (this.R.cam.mode === 'follow') this.unfollow(); else this.follow(this.game.selectedId); },
+    unfollow() { if (this.obs) { this.toggleObserve(false); return; } if (this.R.cam.mode !== 'follow') return; const prev = this._prevCam && this._prevCam !== 'follow' ? this._prevCam : 'iso'; this.setCam(prev); },
+    toggleFollow() { this.toggleObserve(null, this.game.selectedId); },
     setTimeMode(m) { this.game.state.timeMode = m; this.refreshHeader(); this.updateClock(); A().sfx('click'); },
     switchHab(i) {
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); g.state.active = M.clamp(i, 0, g.habs.length - 1);
@@ -8008,16 +8034,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       else { const hit = this.R.pick(p[0], p[1], { noPrey: true }); this.cv.style.cursor = hit && hit.kind === 'spider' ? 'pointer' : ''; }
     },
     tap(sx, sy) {
-      if (this.obs) return;
+      if (this.obs) { const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse', noPrey: true }); if (hit && hit.kind === 'spider' && hit.ent.id !== this.obs.sub) { this.obs.lock = hit.ent.id; this.pickSubject(true); A().sfx('click'); } return; }
       if (this.mode === 'place') { if (this.ptrType === 'mouse') { this.updateGhost(sx, sy); this.confirmPlace(); } else this.updateGhost(sx, sy); return; }
       if (this.mode === 'remove') { this.removeAt(sx, sy); return; }
       const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
-      if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); this.follow(hit.ent.id); A().sfx('click'); return; }
+      if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); A().sfx('click'); return; }
       if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
       if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew.' : '.'), 'quiet'); return; }
       if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed skin. The springtails will find it.' : 'Leftovers. The springtails will tidy them.', 'quiet'); return; }
-      // empty space (or scenery): stop following
-      if (this.R.cam.mode === 'follow') this.unfollow();
       if (this.isMobile() && this.panelId) $('spiderPanel').classList.remove('expanded');
     },
 
@@ -8033,7 +8057,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const size = (S.len * JT.STAGE_SCALE[sp.stage]).toFixed(1);
       const hl = AI.hungerLabel(sp.sat);
       const moltTxt = sp.stage >= 5 ? 'Fully grown' : molting ? 'Molting now…' : 'Next molt: ' + Math.min(sp.meals, need) + '/' + need + ' meals';
-      const follow = this.R.cam.mode === 'follow';
+      const follow = !!this.obs;
       const line = AI.stateLine ? AI.stateLine(h, sp) : hl;
       const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
       const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
@@ -8048,7 +8072,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd></dl>' +
         '<div class="thought">' + esc(sp.thought || '…') + '</div>' +
         '<div class="pers">' + (desc ? desc.map(esc).join(', ') : 'Still learning about ' + esc(sp.name) + '. Keep watching.') + '</div>' +
-        '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">' + (follow ? 'Following' : 'Follow') + '</button><button class="txt" id="pRemove">Rehome</button></div>' +
+        '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">Observe</button><button class="txt" id="pRemove">Rehome</button></div>' +
         '</div>';
       // Refresh in place: rebuilding the panel every 0.3 s replaced buttons mid-tap on touch screens (taps got lost)
       const key = sp.id + '|' + this.renaming + '|' + follow + '|' + h.data.id;
@@ -8062,7 +8086,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (this.renaming) { const v = ($('pName').value || '').trim().slice(0, 18); if (v) sp.name = v; this.renaming = false; this.game.save(); this.renderPanel(true); }
         else { this.renaming = true; this.renderPanel(true); const i = $('pName'); i.focus(); i.select(); i.onkeydown = (e) => { if (e.key === 'Enter') $('pRename').click(); if (e.key === 'Escape') { this.renaming = false; this.renderPanel(true); } }; }
       };
-      $('pFollow').onclick = () => { this.game.selectedId = sp.id; if (follow) this.unfollow(); else this.follow(sp.id); this.renderPanel(true); };
+      $('pFollow').onclick = () => { this.game.selectedId = sp.id; this.toggleObserve(true, sp.id); };
       $('pRemove').onclick = () => {
         if (!root.confirm('Rehome ' + sp.name + ' outside the collection? This cannot be undone.')) return;
         const ref = this.game.spiderValue(sp); h.removeEntity(sp, 'player'); this.game.refund(ref); this.bumpCoins();
@@ -8071,21 +8095,24 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     },
 
     // ------------------------------------------------ observation mode
-    toggleObserve(on) {
+    toggleObserve(on, lockId) {
       on = on == null ? !this.obs : on;
+      if (on && this.obs) { if (lockId && this.hab.spider(lockId)) { this.obs.lock = lockId; this.pickSubject(true); } return; }
       if (on) {
         if (!this.hab.spiders.length) { this.toast('No jumpers here to observe yet.'); return; }
         this.cancelMode(); this.closeDrawer(); this.closeModal();
-        this.obs = { sub: null, hold: 0, prevCam: this.R.cam.mode, t: 0 }; document.body.classList.add('observe'); $('obsHud').classList.remove('hidden');
+        if (!lockId && this.panelId && this.hab.spider(this.panelId)) lockId = this.panelId; // a jumper's card is open: watch that one
+        this.obs = { sub: null, hold: 0, prevCam: this.R.cam.mode, t: 0, lock: lockId && this.hab.spider(lockId) ? lockId : null }; document.body.classList.add('observe'); $('obsHud').classList.remove('hidden');
         this.R.observing = true; this.R.setMode('follow'); this.pickSubject(true);
       } else if (this.obs) {
-        const prev = this.obs.prevCam; this.obs = null; document.body.classList.remove('observe'); $('obsHud').classList.add('hidden'); this.R.observing = false; this.R.setMode(prev === 'follow' ? 'iso' : prev);
+        const prev = this.obs.prevCam; this.obs = null; document.body.classList.remove('observe'); $('obsHud').classList.add('hidden'); this.R.observing = false; this.R.setMode(prev === 'follow' || !this.camModes().includes(prev) ? (this.camModes().includes(this._prevCam) ? this._prevCam : 'iso') : prev);
         document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on'));
       }
       this.refreshHeader();
     },
     pickSubject(force) {
       const o = this.obs; const h = this.hab; if (!h.spiders.length) { this.toggleObserve(false); return; }
+      if (o.lock) { if (h.spider(o.lock)) { if (o.sub !== o.lock) { o.sub = o.lock; o.hold = 0; this.game.selectedId = o.lock; } return; } o.lock = null; }
       const cur = h.spider(o.sub); const score = (s) => JT.SpiderAI.interest(s) + (s.target ? 10 : 0) + (s.id === o.sub ? 15 : 0);
       let best = h.spiders[0]; for (const s of h.spiders) if (score(s) > score(best)) best = s;
       if (force || !cur || (best.id !== o.sub && o.hold > 7 && score(best) > score(cur) + 20)) { o.sub = best.id; o.hold = 0; this.game.selectedId = best.id; }
@@ -8157,7 +8184,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       add('Journal', () => this.journalModal());
       add('Reset tank…', () => this.resetTank());
       sect('Camera');
-      for (const m of ['iso', 'observer', 'reverse', 'follow']) add(JT.CAMS[m].label, () => { this.closeModal(); if (m === 'follow') this.follow(this.game.selectedId); else this.setCam(m); }, this.R.cam.mode === m);
+      for (const m of this.camModes()) add(JT.CAMS[m].label, () => { this.closeModal(); this.setCam(m); }, this.R.cam.mode === m);
+      add('Observe', () => { this.closeModal(); this.toggleObserve(true); }, !!this.obs);
       sect('Time');
       for (const [m, lab] of [['auto', 'Natural'], ['day', 'Always day'], ['night', 'Always night']]) add(lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
       sect('Settings');
@@ -8306,13 +8334,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     helpModal() {
       const e = (h, p) => '<div class="entry"><h4>' + h + '</h4><p>' + p + '</p></div>';
       this.openModal('How to Keep Jumpers', '<div class="grid">' +
-        e('Your jumpers', 'Tap a jumper to follow it and see its card: one line on what it is doing, hunger, water, growth and personality. Tap empty space, or Follow again, to stop following.') +
+        e('Your jumpers', 'Tap a jumper to see its card: one line on what it is doing, hunger, water, growth and personality. Press Observe on the card to watch that jumper up close.') +
         e('Feeding', 'Buy live food. Hungry jumpers hunt on their own. When the food runs out they patrol their perches, climb high to scan and lunge at anything that moves. The Food control gently glows while someone is waiting.') +
         e('Growth', 'After enough meals a jumper climbs somewhere high and sheltered, spins a silk retreat and molts. It stays soft and pale for a while afterwards.') +
         e('Building', 'New displays start bare: just substrate. Decor, Plants and Substrate open the shop strip. Pick a piece and place it; it shows whether it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>L</kbd> trees with or without leaves, <kbd>Esc</kbd> cancels. Removing refunds half.') +
         e('Warmth', 'A Basking Lamp throws a warm pool of light. Jumpers bask there in the morning, when it is cool and after a meal. Tap the lamp to switch it on or off. At night it draws moths and flies.') +
         e('Care', 'Mist to leave droplets for drinking. Springtails and isopods seek out husks and shed skins and nibble them away; more springtails clean faster. Clean tidies husks at once.') +
-        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Front, <kbd>3</kbd> Back, <kbd>4</kbd> or <kbd>F</kbd> Follow. On a phone, the 1 2 3 buttons switch camera; tap the current one again to re-centre. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
+        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Front, <kbd>3</kbd> Back. Tanks with a back wall swap Back for <kbd>3</kbd> Left and <kbd>4</kbd> Right, and the camera never goes behind the wall. <kbd>O</kbd> or <kbd>F</kbd> Observe (tap another jumper while observing to watch it instead). On a phone, the numbered buttons switch camera; tap the current one again to re-centre. Scroll or pinch to zoom, drag to pan; while observing, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
         e('Coins', 'Every catch pays. Each morning every display earns coins from its appeal: more kinds of decor, more plants and well-fed jumpers earn more (see Habitats). A first sighting in the journal pays 20, every molt 30.') + e('Journal', 'Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Coins buy more shelf slots and enclosures.') + '</div>');
     },
 
@@ -8326,7 +8354,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     // ------------------------------------------------ per-frame
     update(dt) {
       this._t += dt; this._panelT += dt; this._hudT = (this._hudT || 0) + dt;
-      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); } catch (e) { /* layout is cosmetic */ } }
+      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join()) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
       const g = this.game; const h = g.hab;
       if (this.obs) this.updateObs(dt);
       // the player "watches" the selected jumper -> personality is discovered over time
@@ -8354,7 +8382,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
     if (restored && game._gifted) setTimeout(() => JT.UI.toast('A <b>Moss Tower</b> made for portrait screens was added to your shelf — meet <b>Moss</b>, a young Regal Jumper.', '', 6500), 600);
-    if (!restored) setTimeout(() => JT.UI.toast('Welcome! Meet <b>Bolt</b>, your Bold Jumper. Tap a jumper to follow it and see what it is doing.', '', 6000), 600);
+    if (!restored) setTimeout(() => JT.UI.toast('Welcome! Meet <b>Bolt</b>, your Bold Jumper. Tap a jumper to see what it is doing, or press Observe to watch it up close.', '', 6000), 600);
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
