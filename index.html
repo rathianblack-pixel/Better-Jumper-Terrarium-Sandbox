@@ -6145,10 +6145,28 @@ input[type=range]{accent-color:#c9a25c;width:140px}
   const Audio = JT.Audio = {
     ctx: null, buses: {}, started: false, set: null, _musT: 0, _ambT: 0, _chord: 0,
     init(settings) { this.set = settings; },
+    /** iOS: Web Audio only unlocks inside a touchend/click handler, is silenced by the ring/silent switch unless the
+        audio session is 'playback', and comes back 'interrupted' after the app was in the background. */
+    unlockIOS() {
+      try { if (root.navigator && navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older iOS */ }
+      if (!this._silent && root.document) { // a looping silent <audio> moves older iOS into the playback category (ignores the silent switch)
+        try { const n = 4410, b = new Uint8Array(44 + n * 2), v = new DataView(b.buffer); const w = (o, t) => { for (let i = 0; i < t.length; i++) b[o + i] = t.charCodeAt(i); };
+          w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 44100, true); v.setUint32(28, 88200, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+          const el = document.createElement('audio'); el.src = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })); el.loop = true; el.setAttribute('playsinline', ''); el.setAttribute('x-webkit-airplay', 'deny'); el.preload = 'auto'; el.volume = 0.01; this._silent = el;
+        } catch (e) { this._silent = false; }
+      }
+      if (this._silent && this._silent.paused && !(this.set && this.set.muted)) { const pr = this._silent.play(); if (pr && pr.catch) pr.catch(() => {}); }
+    },
     start() {
-      if (this.started) { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      const ios = root.navigator && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+      if (ios) this.unlockIOS();
+      if (this.started) {
+        const c = this.ctx; if (c && c.state !== 'running') { const pr = c.resume(); if (pr && pr.catch) pr.catch(() => {}); this._kick(); }
+        return;
+      }
       const AC = root.AudioContext || root.webkitAudioContext; if (!AC) return;
       try { this.ctx = new AC(); } catch (e) { return; }
+      this._kick();
       const c = this.ctx; this.master = c.createGain(); this.master.connect(c.destination);
       const comp = c.createDynamicsCompressor(); comp.connect(this.master);
       // gentle feedback-delay "room" for music
@@ -6158,7 +6176,10 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       this.buses.music.connect(this.delay);
       this.started = true; this.apply();
     },
-    apply() { if (!this.started) return; const s = this.set; const t = this.ctx.currentTime; this.master.gain.setTargetAtTime(s.muted ? 0 : 0.9, t, 0.05); this.buses.music.gain.setTargetAtTime(s.music * 0.5, t, 0.1); this.buses.ambience.gain.setTargetAtTime(s.ambience * 0.6, t, 0.1); this.buses.effects.gain.setTargetAtTime(s.effects * 0.8, t, 0.05); },
+    /** play one silent sample inside the gesture: required by iOS Safari to really start the context */
+    _kick() { try { const c = this.ctx; const b = c.createBuffer(1, 1, 22050); const src = c.createBufferSource(); src.buffer = b; src.connect(c.destination); src.start(0); if (c.state !== 'running') { const pr = c.resume(); if (pr && pr.catch) pr.catch(() => {}); } } catch (e) { /* ignore */ } },
+    apply() { if (this._silent) { if (this.set.muted) this._silent.pause(); else if (this._silent.paused && this.started) { const pr = this._silent.play(); if (pr && pr.catch) pr.catch(() => {}); } }
+      if (!this.started) return; const s = this.set; const t = this.ctx.currentTime; this.master.gain.setTargetAtTime(s.muted ? 0 : 0.9, t, 0.05); this.buses.music.gain.setTargetAtTime(s.music * 0.5, t, 0.1); this.buses.ambience.gain.setTargetAtTime(s.ambience * 0.6, t, 0.1); this.buses.effects.gain.setTargetAtTime(s.effects * 0.8, t, 0.05); },
     tone(bus, freq, dur, o) {
       if (!this.started) return; o = o || {}; const c = this.ctx; const t = c.currentTime + (o.delay || 0);
       const osc = c.createOscillator(); osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(freq, t);
@@ -6289,6 +6310,9 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       $('modeRotate').onclick = () => this.rotatePlace(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.cancelMode();
       $('obsExit').onclick = () => this.toggleObserve(false);
       document.addEventListener('keydown', (e) => this.key(e));
+      // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
+      for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => A().start(), { capture: true, passive: true });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
       document.addEventListener('pointerdown', (e) => { this.ptrType = e.pointerType || 'mouse'; A().start(); const pop = $('popover'); if (!pop.classList.contains('hidden') && !pop.contains(e.target) && e.target !== $('btnSound')) pop.classList.add('hidden'); }, true);
       this.bindCanvas();
       root.addEventListener('resize', () => { this.R.resize(); });
