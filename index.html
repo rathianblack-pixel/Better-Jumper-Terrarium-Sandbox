@@ -3890,39 +3890,59 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // ---- thick silk sac (sleep / molt): built around the jumper, carved open front or back on the way out ----
   const NEST_STATES = new Set(['sleep', 'moltSilk', 'premolt', 'molting', 'postMolt', 'emerge']);
   AI.NEST_STATES = NEST_STATES;
+  /** Building a retreat: the jumper turns slowly on the spot (whole turns, so it finishes facing its doorway)
+      while its hind legs draw silk from the spinnerets. A molting hammock is thicker and takes longer than a
+      night's retreat; moving back into an old one is a short touch-up. */
+  const SPIN = AI.SPIN = { sleep: { dur: 6, turns: 1 }, molt: { dur: 10, turns: 2 }, patch: { dur: 3, turns: 1 } };
+  function startBuild(n, kind) { const c = SPIN[kind] || SPIN.sleep; n.build = { dur: c.dur, turns: c.turns, t: 0, from: n.prog || 0 }; n.spinA = 0; }
   function makeNest(hab, sp, kind) {
     const d = hab.data; d.nests = d.nests || [];
     let n = d.nests.find(x => !x.owner && M.dist(x.pos, sp.pos) < AI.len(sp) * 0.5 && x.age < 1500);
-    if (n) { n.owner = sp.id; n.hole = null; n.prog = Math.min(n.prog, 0.5); n.age = 0; n.kind = kind; }
+    if (n) { n.owner = sp.id; n.hole = null; n.prog = Math.min(n.prog, 0.5); n.age = 0; n.kind = kind; startBuild(n, 'patch'); }
     else {
       n = { id: JT.newId('n'), owner: sp.id, pos: sp.pos.slice(), sup: JT.deepClone(sp.sup), fwd: (sp.fwd || [1, 0, 0]).slice(), len: AI.len(sp), prog: 0, hole: null, age: 0, kind, seed: (JT.R() * 1e6) | 0 };
-      d.nests.push(n); while (d.nests.length > 8) d.nests.shift();
+      d.nests.push(n); while (d.nests.length > 8) d.nests.shift(); startBuild(n, kind);
     }
     sp.nest = n.id; return n;
   }
+  /** While the retreat is going up, keep the jumper turning on the spot around its surface normal. */
+  function spinTurn(hab, sp) {
+    const n = AI.nestOf(hab, sp); if (!n || !n.build || n.owner !== sp.id) return;
+    const up = (Nav.validSup(hab, sp.sup) ? Nav.supFrame(hab, sp.sup).n : [0, 1, 0]) || [0, 1, 0];
+    const a = M.clamp(n.build.t / n.build.dur, 0, 1) * n.build.turns * Math.PI * 2; n.spinA = a;
+    let f0 = M.sub(n.fwd, M.mul(up, M.dot(n.fwd, up))); if (M.len(f0) < 1e-3) return; f0 = M.norm(f0); const s0 = M.norm(M.cross(up, f0));
+    const f = M.norm(M.add(M.mul(f0, Math.cos(a)), M.mul(s0, Math.sin(a)))); if (M.finite3(f)) sp.fwd = f;
+  }
+  AI.spinTurn = spinTurn;
   AI.nestOf = (hab, sp) => sp.nest && (hab.data.nests || []).find(n => n.id === sp.nest);
   function startEmerge(hab, sp, next, thought) {
     const n = AI.nestOf(hab, sp); if (!n || n.prog < 0.3) { if (n) { n.owner = null; } sp.nest = null; setState(sp, next, thought); return; }
     sp._emergeNext = next; sp._emergeThought = thought; setState(sp, 'emerge');
-    n.hole = { side: JT.R() < 0.6 ? 1 : -1, open: 0 };
+    n.build = null; n.hole = { side: 1, open: 0, exit: 0 }; // always out through its one doorway, at the front
   }
   H.emerge = function (hab, sp, dt) {
     const n = AI.nestOf(hab, sp); if (!n || !n.hole) { sp.nest = null; setState(sp, sp._emergeNext || 'idle'); return; }
     const hd = M.mul(n.fwd, n.hole.side);
     faceToward(sp, M.add(sp.pos, hd), dt, 3);                         // turn toward the chosen end
     if (sp.st > 0.6) n.hole.open = Math.min(1, n.hole.open + dt / 1.4); // chew/pull a doorway open
-    if (n.hole.open >= 1 && sp.st > 2.2) {
+    if (n.hole.open >= 1 && sp.st > 2.2) { // crawl out head first through the doorway
       const L = AI.len(sp); const out = M.add(n.pos, M.mul(hd, L * 0.95));
-      if (sp.sup.k === 'floor' ? Nav.inside(hab, out[0], out[2], 2) : sp.sup.k === 'top' ? JT.G.pointInPoly(out[0], out[2], hab.geoms[sp.sup.d].tops[sp.sup.i].poly) : false) sp.pos = [out[0], sp.pos[1], out[2]];
-      n.owner = null; sp.nest = null; setState(sp, sp._emergeNext || 'idle', sp._emergeThought);
+      const ok = sp.sup.k === 'floor' ? Nav.inside(hab, out[0], out[2], 2) : sp.sup.k === 'top' ? JT.G.pointInPoly(out[0], out[2], hab.geoms[sp.sup.d].tops[sp.sup.i].poly) : false;
+      n.hole.exit = Math.min(1, (n.hole.exit || 0) + dt / 1.2);
+      if (ok) { const k = M.smooth(n.hole.exit); sp.pos = [M.lerp(n.pos[0], out[0], k), sp.pos[1], M.lerp(n.pos[2], out[2], k)]; }
+      if (n.hole.exit >= 1) { n.owner = null; sp.nest = null; setState(sp, sp._emergeNext || 'idle', sp._emergeThought); }
     }
   };
   AI.updateNests = function (hab, dt) {
     const ns = hab.data.nests; if (!ns || !ns.length) return;
     for (const n of ns) {
       const sp = n.owner && hab.spider(n.owner);
-      if (sp && NEST_STATES.has(sp.state) && sp.nest === n.id) { const rate = sp.state === 'moltSilk' ? 1 / 5 : 1 / 4; if (sp.state !== 'emerge') n.prog = Math.min(1, n.prog + dt * rate); n.age = 0; }
-      else { if (n.owner) { n.owner = null; if (!n.hole && n.prog > 0.3) n.hole = { side: 1, open: 1 }; if (sp && sp.nest === n.id) sp.nest = null; } n.age += dt; }
+      if (sp && NEST_STATES.has(sp.state) && sp.nest === n.id) {
+        if (n.build && sp.state !== 'emerge') { const b = n.build; b.t += dt; const k = Math.min(1, b.t / b.dur); n.prog = b.from + (1 - b.from) * k; if (k >= 1) { n.prog = 1; n.build = null; } }
+        else if (sp.state !== 'emerge') n.prog = Math.min(1, n.prog + dt / 4); // older saves: retreats begun before building was animated
+        n.age = 0;
+      }
+      else { if (n.owner) { n.owner = null; n.build = null; if (!n.hole && n.prog > 0.3) n.hole = { side: 1, open: 1, exit: 1 }; if (sp && sp.nest === n.id) sp.nest = null; } n.age += dt; }
     }
     hab.data.nests = ns.filter(n => n.age < 1800);
   };
@@ -3935,7 +3955,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   H.moltSilk = function (hab, sp, dt) {
     if (!AI.nestOf(hab, sp)) makeNest(hab, sp, 'molt');
-    if (sp.st > 5) { weave(hab, sp, 3, 'retreat'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'premolt', 'Sealed inside its molting hammock. Very still.'); }
+    spinTurn(hab, sp); const nn = AI.nestOf(hab, sp);
+    if ((nn && !nn.build && nn.prog >= 1) || sp.st > 16) { weave(hab, sp, 3, 'retreat'); hab.event('journal', { id: 'retreat', sp }); setState(sp, 'premolt', 'Sealed inside its molting hammock. Very still.'); }
   };
   H.premolt = function (hab, sp, dt) { if (sp.st > 28) setState(sp, 'molting', 'Molting! Slowly pulling free of its old skin.'); };
   H.molting = function (hab, sp, dt) {
@@ -3955,13 +3976,14 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   function startSleep(hab, sp) {
     const spot = AI.chooseSpot(hab, sp, 'sleep');
     if (spot && M.dist(spot.node.pos, sp.pos) > 3) { sp._route = spot.route; sp._routeStart = hab.time; setState(sp, 'sleepSeek', 'Night is falling — heading to a sheltered retreat.'); }
-    else { weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
+    else { weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); setState(sp, 'sleep', 'Turning slowly on the spot, spinning a silk retreat for the night.'); }
   }
   H.sleepSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.7);
-    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); if (!sp.home || JT.R() < 0.25) AI.setHome(hab, sp); setState(sp, 'sleep', 'Tucked into a silk retreat for the night.'); }
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); if (!sp.home || JT.R() < 0.25) AI.setHome(hab, sp); setState(sp, 'sleep', 'Turning slowly on the spot, spinning a silk retreat for the night.'); }
   };
   H.sleep = function (hab, sp, dt) {
+    spinTurn(hab, sp);
     if (hab.daylight() > 0.35) startEmerge(hab, sp, 'stretch', 'Waking up and stretching.');
     else if (sp.sat < 0.25 && sp.st > 20) startEmerge(hab, sp, 'idle', 'Too hungry to sleep.');
   };
@@ -6195,7 +6217,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     } });
     if (ant) { const nc = W(-0.08 * L, 0, h0 + L * 0.05); parts.push({ d: V.depth(nc), f: () => blob(ctx, V, nc, M.mul(f, L * 0.07), M.mul(s, L * 0.055), M.mul(n, L * 0.055), pal.ceph, { lod, gloss: 0.7 }) }); }
     // --- abdomen (raised while stalking, plump when fed) ---
-    const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06; const af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))), an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
+    // spinning a retreat: abdomen tipped down so the spinnerets touch the surface, swaying with each hind-leg pull
+    const spin = o.spin ? 1 : 0, spw = spin ? Math.sin(t * 4.2) : 0;
+    const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06 - 0.42 * spin; let af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))); const an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
+    if (spin) af = M.norm(M.add(af, M.mul(s, spw * 0.16)));
     const aL = ant ? 1 : LK.aL || 1, aW = ant ? 1 : LK.aW || 1, aH = ant ? 1 : LK.aH || 1;
     const ac = M.add(W(ant ? -0.33 * L : -(0.27 + 0.24 * (aL - 1) + 0.125 * (cL - 1)) * L, 0, h0 + L * 0.09 * (0.6 + 0.4 * aH)), M.mul(an, L * 0.02));
     const abd = Part(ac, M.mul(af, L * (ant ? 0.23 : 0.3 * aL) * (0.95 + fat * 0.05)), M.mul(s, L * (ant ? 0.13 : 0.22 * aW) * fat), M.mul(an, L * (ant ? 0.13 : 0.19 * aH) * fat));
@@ -6283,6 +6308,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (hang > 0.01) { fv *= 1 - 0.25 * hang; fw += L * 0.05 * hang; }
       if (o.airborne) { if (i < 2) { fu += L * 0.22; fw += L * 0.06; fv *= 0.8; } else { fu -= L * 0.3; fv *= 0.7; } }
       if (i < 2 && reach > 0.01) { fu = M.lerp(fu, L * (0.98 - 0.16 * i) * Math.sqrt(lg), reach); fv = M.lerp(fv, sd * L * (0.2 + 0.15 * i), reach); fw = M.lerp(fw, h0 + L * (0.03 - 0.05 * i), reach); }
+      if (spin && i >= 2) { // hind legs take turns drawing silk back from the spinnerets; pair III braces wide
+        const ph2 = t * 4.2 + (sd > 0 ? Math.PI : 0), cpull = 0.5 + 0.5 * Math.sin(ph2);
+        if (i === 3) { fu = M.lerp(fu, -L * 0.55, cpull); fv = M.lerp(fv, sd * L * 0.1, cpull * 0.85); fw += L * 0.08 * Math.max(0, Math.cos(ph2)); }
+        else { fv *= 1.1; fu -= L * 0.04; }
+      }
       if (o.curled) { fu *= 0.35; fv *= 0.55; fw = h0 + L * 0.14; }
       else if (o.tucked) { fu *= 0.6; fv *= 0.56; fw = L * 0.03; }
       // legs attach under the carapace edge and always swing out to the side (never across the head)
@@ -6333,48 +6363,117 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   };
 
   // ============================== SILK SAC ==============================
-  /** Thick silk hammock wrapped around a resting / molting jumper; a carved doorway at one end when it leaves. */
-  D.nest = function (ctx, V, n, up, night) {
-    const L = n.len, pr = M.clamp(n.prog, 0, 1); if (pr <= 0.02) return;
+  /** Silk retreat as a rounded 3D tube of woven silk, drawn in two layers around the jumper: the 'back' layer
+      (contact shadow, inner wall, far-side strands) goes behind it, the 'front' layer (lit shell, near-side
+      strands, the one doorway at the front with a glint of the jumper's face) goes over it. It thickens from a
+      few frame lines to an opaque wrap while the jumper turns inside, laying silk. info: {glint, ceph, eye} */
+  D.nest = function (ctx, V, n, up, night, layer, info) {
+    const L = n.len, pr = M.clamp(n.prog, 0, 1); if (pr <= 0.02) return; info = info || {};
     let f = M.sub(n.fwd, M.mul(up, M.dot(n.fwd, up))); f = M.len(f) > 1e-3 ? M.norm(f) : M.norm(M.cross(up, [0, 0, 1])); const s = M.norm(M.cross(up, f));
-    // snug, flattened envelope: just covers the tucked body and folded legs
-    const k = 0.8 + 0.2 * pr; const ax = M.mul(f, L * 0.7 * k), ay = M.mul(s, L * 0.56 * k), az = M.mul(up, L * 0.36 * k);
+    const k = 0.84 + 0.16 * pr; const A0 = L * 0.68 * k, B0 = L * 0.5 * k, C0 = L * 0.42 * k; // long, wide, tall (covers body and folded legs)
+    const ax = M.mul(f, A0), ay = M.mul(s, B0), az = M.mul(up, C0);
     const c = M.add(n.pos, M.mul(up, L * 0.12)); const P = V.P(c); const e = projEll(V, ax, ay, az); if (e.r1 < 1) return;
     const vac = !n.owner, fade = vac ? Math.max(0.25, 1 - n.age / 1800) : 1;
-    const A = (0.1 + 0.46 * pr) * fade; // translucent: the resting jumper shows through as a dim shape
-    const rng = JT.makeRng(n.seed || 1); const tc = night ? '205,215,235' : '246,247,250';
+    const cover = M.smooth(M.clamp((pr - 0.1) / 0.8, 0, 1)); // 0: a few lines .. 1: dense, opaque silk
+    const tc = night ? [205, 215, 235] : [246, 247, 250]; const rgba = (cc, a) => 'rgba(' + cc[0] + ',' + cc[1] + ',' + cc[2] + ',' + M.clamp(a, 0, 1).toFixed(3) + ')';
+    const shade = (cc, m) => cc.map(v => Math.round(v * m));
+    // a point on the shell: u along the tube (-1 back .. 1 front), th around it; the underside is flattened onto the surface
+    const pt = (u, th) => { const r = Math.sqrt(Math.max(0, 1 - u * u)); const sn = Math.max(Math.sin(th), -0.3); return M.add(M.add(M.add(c, M.mul(ax, u)), M.mul(ay, Math.cos(th) * r)), M.mul(az, sn * r)); };
+    const nrm = (u, th) => { const r = Math.sqrt(Math.max(0, 1 - u * u)); return M.norm(M.add(M.add(M.mul(f, u / A0), M.mul(s, Math.cos(th) * r / B0)), M.mul(up, Math.max(Math.sin(th), -0.3) * r / C0))); };
+    const rng = JT.makeRng(n.seed || 1);
+    // a soft, lumpy outline (silk bunches up unevenly) instead of a perfect ellipse
+    const lump = []; for (let i = 0; i < 4; i++) lump.push([1 + i * 2 + Math.floor(rng() * 2), rng() * 6.283, (0.012 + rng() * 0.02) * (i < 2 ? 1.3 : 1)]);
+    const blobPath = (sc) => { ctx.beginPath(); for (let j = 0; j <= 40; j++) { const a = j / 40 * 6.283; let r = 1; for (const [fq, ph, am] of lump) r += Math.sin(a * fq + ph) * am * (0.5 + 0.5 * cover); const x = Math.cos(a) * e.r1 * r * sc, y = Math.sin(a) * e.r2 * r * sc; if (j) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); };
+    // woven strands: each a loose wrap around the tube, laid down as the jumper turns (more of them as it thickens)
+    const nT = Math.round(8 + 56 * pr); const strands = [];
+    for (let i = 0; i < 64; i++) { const u0 = rng() * 1.7 - 0.85, du = (rng() - 0.5) * 0.7, th0 = rng() * 6.283, wr = (0.55 + rng() * 0.7) * (rng() < 0.5 ? 1 : -1), w = rng(), g = rng(); if (i < nT) strands.push({ u0, du, th0, wr, w, g }); }
+    const drawStrands = (front) => {
+      ctx.lineCap = 'round';
+      for (const st of strands) {
+        const al = (front ? 0.22 + 0.4 * st.w : 0.1 + 0.16 * st.w) * fade * (0.6 + 0.4 * cover);
+        const col = st.g < 0.35 ? shade(tc, 0.7) : st.g < 0.6 ? shade(tc, 0.86) : [255, 255, 255];
+        ctx.strokeStyle = rgba(col, al); ctx.lineWidth = Math.max(0.3, V.s * (0.035 + 0.04 * st.w));
+        let prev = null, on = false; ctx.beginPath();
+        for (let j = 0; j <= 16; j++) { const t = j / 16, u = M.clamp(st.u0 + st.du * t, -0.97, 0.97), th = st.th0 + st.wr * 6.283 * t;
+          const vis = M.dot(nrm(u, th), V.toCam) >= 0; const q = V.P(pt(u, th));
+          if (vis === front) { if (!on && prev) ctx.moveTo(prev[0], prev[1]); else if (!on) ctx.moveTo(q[0], q[1]); ctx.lineTo(q[0], q[1]); on = true; } else on = false;
+          prev = q; }
+        ctx.stroke();
+      }
+    };
     ctx.save();
-    // a few short anchor threads tacking the sac down
-    ctx.strokeStyle = 'rgba(' + tc + ',' + (0.28 * pr * fade).toFixed(3) + ')'; ctx.lineWidth = Math.max(0.4, V.s * 0.06);
-    for (let i = 0; i < 4; i++) { const a = (i + rng() * 0.6) * 1.571; const dir = M.add(M.mul(f, Math.cos(a)), M.mul(s, Math.sin(a) * 0.8)); const q0 = V.P(M.add(c, M.mul(dir, L * 0.5))); const q1 = V.P(M.add(n.pos, M.mul(dir, L * (0.72 + rng() * 0.2)))); ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.lineTo(q1[0], q1[1]); ctx.stroke(); }
-    ctx.translate(P[0], P[1]); ctx.rotate(e.ang);
-    const g = ctx.createRadialGradient(-e.r1 * 0.2, -e.r2 * 0.3, e.r2 * 0.1, 0, 0, e.r1);
-    g.addColorStop(0, 'rgba(' + tc + ',' + Math.min(0.6, A * 1.25).toFixed(3) + ')'); g.addColorStop(0.7, 'rgba(' + tc + ',' + A.toFixed(3) + ')'); g.addColorStop(1, 'rgba(' + tc + ',' + (A * 1.2).toFixed(3) + ')');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, e.r1, e.r2, 0, 0, 6.283); ctx.fill();
-    // fine woven threads following the long axis, clipped to the sac
-    ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, e.r1, e.r2, 0, 0, 6.283); ctx.clip();
-    const nT = Math.round(6 + 16 * pr); ctx.lineWidth = Math.max(0.35, V.s * 0.05);
-    for (let i = 0; i < nT; i++) { const y0 = (rng() * 2 - 1) * e.r2, y1 = (rng() * 2 - 1) * e.r2; ctx.strokeStyle = 'rgba(255,255,255,' + ((0.12 + rng() * 0.22) * fade).toFixed(3) + ')'; ctx.beginPath(); ctx.moveTo(-e.r1, y0); ctx.quadraticCurveTo(0, (y0 + y1) * 0.5 + (rng() - 0.5) * e.r2 * 0.6, e.r1, y1); ctx.stroke(); }
+    if (layer === 'back') {
+      // soft contact shadow where the silk is tacked down
+      const sh = projEll(V, M.mul(f, A0 * 1.08), M.mul(s, B0 * 1.08), M.mul(up, L * 0.01)); const Q = V.P(n.pos);
+      ctx.save(); ctx.translate(Q[0], Q[1]); ctx.rotate(sh.ang); ctx.fillStyle = 'rgba(30,24,18,' + (0.16 * pr * fade).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(0, 0, sh.r1, sh.r2, 0, 0, 6.283); ctx.fill(); ctx.restore();
+      // tacking threads out to the surface around it
+      ctx.strokeStyle = rgba(tc, 0.3 * pr * fade); ctx.lineWidth = Math.max(0.35, V.s * 0.05);
+      for (let i = 0; i < 6; i++) { const a = (i + rng() * 0.6) * 1.047; const dir = M.add(M.mul(f, Math.cos(a)), M.mul(s, Math.sin(a))); const q0 = V.P(pt(Math.cos(a) * 0.8, Math.sin(a) > 0 ? -0.2 : 3.34)); const q1 = V.P(M.add(n.pos, M.mul(dir, L * (0.85 + rng() * 0.25)))); ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.lineTo(q1[0], q1[1]); ctx.stroke(); }
+      // the inside of the far wall (seen through the gaps while it is still thin)
+      ctx.save(); ctx.translate(P[0], P[1]); ctx.rotate(e.ang);
+      const g = ctx.createRadialGradient(0, e.r2 * 0.2, e.r2 * 0.2, 0, 0, e.r1); g.addColorStop(0, rgba(shade(tc, 0.72), (0.08 + 0.4 * cover) * fade)); g.addColorStop(1, rgba(shade(tc, 0.86), (0.12 + 0.45 * cover) * fade));
+      ctx.fillStyle = g; blobPath(1); ctx.fill(); ctx.restore();
+      drawStrands(false);
+      ctx.restore(); return;
+    }
+    // ---- front layer: lit, rounded shell over the jumper ----
+    ctx.save(); ctx.translate(P[0], P[1]); ctx.rotate(e.ang);
+    const lp = V.J(M.mul(M.norm(M.add(up, M.mul(V.toCam, 0.6))), 1)); const ll = Math.hypot(lp[0], lp[1]) || 1; const ca = Math.cos(-e.ang), sa = Math.sin(-e.ang);
+    const lx = (lp[0] * ca - lp[1] * sa) / ll, ly = (lp[0] * sa + lp[1] * ca) / ll; // light-facing side of the shell, in the rotated frame
+    const Af = (0.06 + 0.9 * cover) * fade;
+    const g = ctx.createRadialGradient(lx * e.r1 * 0.3, ly * e.r2 * 0.45, e.r2 * 0.08, 0, 0, e.r1 * 1.02);
+    g.addColorStop(0, rgba([255, 255, 255], Af)); g.addColorStop(0.45, rgba(tc, Af)); g.addColorStop(0.85, rgba(shade(tc, 0.86), Af)); g.addColorStop(1, rgba(shade(tc, 0.74), Af * 0.95));
+    ctx.fillStyle = rgba(tc, Af * 0.22); blobPath(1.07); ctx.fill(); // loose fluff around the wrap
+    ctx.fillStyle = g; blobPath(1); ctx.fill();
+    // self-shadow on the side away from the light: reads as volume rather than a flat disc
+    ctx.save(); blobPath(1); ctx.clip();
+    const sg = ctx.createLinearGradient(lx * e.r1, ly * e.r2, -lx * e.r1, -ly * e.r2); sg.addColorStop(0.45, 'rgba(90,84,78,0)'); sg.addColorStop(1, 'rgba(90,84,78,' + (0.28 * cover * fade).toFixed(3) + ')');
+    ctx.fillStyle = sg; ctx.fillRect(-e.r1, -e.r2, e.r1 * 2, e.r2 * 2); ctx.restore();
+    // a second, smaller lit layer on top: the wrap looks built up from layers of silk
+    const g2 = ctx.createRadialGradient(lx * e.r1 * 0.35, ly * e.r2 * 0.5, 0, lx * e.r1 * 0.2, ly * e.r2 * 0.3, e.r1 * 0.6); g2.addColorStop(0, rgba([255, 255, 255], 0.5 * cover * fade)); g2.addColorStop(1, rgba([255, 255, 255], 0));
+    ctx.fillStyle = g2; blobPath(0.9); ctx.fill();
+    ctx.strokeStyle = rgba(shade(tc, 0.8), (0.1 + 0.2 * cover) * fade); ctx.lineWidth = Math.max(0.5, V.s * 0.06); blobPath(0.99); ctx.stroke();
     ctx.restore();
-    // soft rim so the envelope reads as a surface
-    ctx.strokeStyle = 'rgba(' + tc + ',' + (0.3 * pr * fade).toFixed(3) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.ellipse(0, 0, e.r1 * 0.98, e.r2 * 0.98, 0, 0, 6.283); ctx.stroke();
-    ctx.restore();
-    // carved doorway at the front or back end: a soft ragged opening with frayed fibres around it
-    if (n.hole && n.hole.open > 0.02) {
-      const hd = M.mul(f, n.hole.side); const vis = M.dot(hd, V.toCam);
-      if (vis > -0.3) {
-        const hc = surfToward(c, ax, ay, az, hd); const o = n.hole.open; const he = projEll(V, M.mul(s, L * 0.22 * o), M.mul(up, L * 0.2 * o), M.mul(hd, L * 0.02));
-        if (he.r1 >= 0.6) {
-          const H = V.P(hc); ctx.save(); ctx.globalAlpha = fade * M.clamp((vis + 0.3) * 2, 0, 1); ctx.translate(H[0], H[1]); ctx.rotate(he.ang);
-          const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, he.r1);
-          hg.addColorStop(0, 'rgba(26,22,18,0.7)'); hg.addColorStop(0.7, 'rgba(36,32,28,0.45)'); hg.addColorStop(1, 'rgba(60,56,52,0)');
-          ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(0, 0, he.r1, Math.max(0.5, he.r2), 0, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = 'rgba(250,250,252,0.45)'; ctx.lineWidth = Math.max(0.35, V.s * 0.05);
-          for (let i = 0; i < 9; i++) { const a = rng() * 6.283, w = 0.8 + rng() * 0.5; const x = Math.cos(a) * he.r1 * 0.85, y = Math.sin(a) * he.r2 * 0.85; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x * (1 + 0.35 * w), y * (1 + 0.35 * w)); ctx.stroke(); }
-          ctx.restore();
+    drawStrands(true);
+    // fluffy loose fibres standing off the surface
+    if (cover > 0.3) { ctx.strokeStyle = rgba([255, 255, 255], 0.35 * cover * fade); ctx.lineWidth = Math.max(0.3, V.s * 0.03);
+      for (let i = 0; i < 26; i++) { const u = rng() * 1.6 - 0.8, th = rng() * 3.4 - 0.2; const a = pt(u, th), b = M.add(a, M.mul(nrm(u, th), L * (0.04 + rng() * 0.06))); if (M.dot(nrm(u, th), V.toCam) < 0) continue; const qa = V.P(a), qb = V.P(b); ctx.beginPath(); ctx.moveTo(qa[0], qa[1]); ctx.lineTo(qb[0], qb[1]); ctx.stroke(); } }
+    // while building: the live thread from the spinnerets out to the anchor it is pulling toward as it turns
+    if (n.build && n.owner) {
+      const a = n.spinA || 0; const fd = M.norm(M.add(M.mul(f, Math.cos(a)), M.mul(s, Math.sin(a)))); const sd = M.norm(M.cross(up, fd));
+      const spn = M.add(M.add(n.pos, M.mul(fd, -L * 0.5)), M.mul(up, L * 0.06)); const S0 = V.P(spn);
+      for (let j = 0; j < 4; j++) { const aj = a - j * 0.55; const dj = M.norm(M.add(M.mul(f, Math.cos(aj)), M.mul(s, Math.sin(aj))));
+        const anc = M.add(M.add(n.pos, M.mul(dj, -L * 0.78)), M.mul(sd, (j % 2 ? 1 : -1) * L * 0.12)); const Q = V.P(anc);
+        ctx.strokeStyle = rgba([255, 255, 255], (0.6 - j * 0.13) * fade); ctx.lineWidth = Math.max(0.35, V.s * 0.05); ctx.beginPath(); ctx.moveTo(S0[0], S0[1]); ctx.quadraticCurveTo((S0[0] + Q[0]) / 2, (S0[1] + Q[1]) / 2 - V.s * L * 0.08, Q[0], Q[1]); ctx.stroke(); }
+    }
+    // the one doorway, at the front end: small and dark while it rests, pulled wide when it leaves
+    const vis = M.dot(f, V.toCam);
+    if (cover > 0.35 && vis > -0.35) {
+      const o = n.hole ? M.clamp(n.hole.open, 0, 1) : 0; const r = L * (0.16 + 0.12 * o) * M.clamp((cover - 0.35) * 2.5, 0.3, 1);
+      const hc = M.add(pt(0.86, 1.2), M.mul(f, L * 0.02)); const he = projEll(V, M.mul(s, r), M.mul(up, r * 0.85), M.mul(f, L * 0.02));
+      if (he.r1 >= 0.6) {
+        const H = V.P(hc); const va = fade * M.clamp((vis + 0.35) * 2, 0, 1);
+        ctx.save(); ctx.globalAlpha = va; ctx.translate(H[0], H[1]); ctx.rotate(he.ang);
+        const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, he.r1); hg.addColorStop(0, 'rgba(14,11,8,0.95)'); hg.addColorStop(0.7, 'rgba(30,26,22,0.85)'); hg.addColorStop(1, 'rgba(70,66,60,0.05)');
+        ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(0, 0, he.r1, Math.max(0.5, he.r2), 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(250,250,252,0.5)'; ctx.lineWidth = Math.max(0.35, V.s * 0.05);
+        for (let i = 0; i < 10; i++) { const a = rng() * 6.283, w = 0.8 + rng() * 0.5; const x = Math.cos(a) * he.r1 * 0.85, y = Math.sin(a) * he.r2 * 0.85; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x * (1 + 0.35 * w), y * (1 + 0.35 * w)); ctx.stroke(); }
+        ctx.restore();
+        // a glint of the jumper inside: the dim front of its carapace and the two big front eyes catching the light
+        if (info.glint && vis > 0.05) {
+          const gA = va * M.clamp(vis * 3, 0, 1) * (info.glint === true ? 1 : info.glint);
+          const fc = M.add(hc, M.mul(f, -L * 0.05)); const F = V.P(fc); const cr = projEll(V, M.mul(s, r * 0.72), M.mul(up, r * 0.5), null);
+          ctx.save(); ctx.globalAlpha = gA * 0.75; ctx.translate(F[0], F[1]); ctx.rotate(cr.ang); ctx.fillStyle = info.ceph || '#3a2a20'; ctx.beginPath(); ctx.ellipse(0, cr.r2 * 0.25, cr.r1, cr.r2, 0, 0, 6.283); ctx.fill(); ctx.restore();
+          const er = Math.max(0.6, L * 0.036 * V.s);
+          for (const sd2 of [-1, 1]) { const ep = V.P(M.add(M.add(fc, M.mul(s, sd2 * r * 0.36)), M.mul(up, -r * 0.02)));
+            ctx.globalAlpha = gA; ctx.fillStyle = '#050403'; ctx.beginPath(); ctx.arc(ep[0], ep[1], er, 0, 6.283); ctx.fill();
+            ctx.fillStyle = info.eye || 'rgba(120,90,60,0.6)'; ctx.globalAlpha = gA * 0.5; ctx.beginPath(); ctx.arc(ep[0], ep[1], er * 0.65, 0, 6.283); ctx.fill();
+            ctx.globalAlpha = gA * (0.75 + 0.2 * Math.sin((info.time || 0) * 1.3 + sd2)); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ep[0] - er * 0.3, ep[1] - er * 0.35, Math.max(0.45, er * 0.3), 0, 6.283); ctx.fill(); }
+          ctx.globalAlpha = 1;
         }
       }
     }
+    ctx.restore();
   };
 
   // ============================== PREY ==============================
@@ -7404,16 +7503,25 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
           let hug = null;
           if (hp && (sp._hug || 0) > 0.01) { const hd = JT.PREY_BY_ID[hp.type] || { len: 3 }; const base = Math.min(hp.len || hd.len, L * 1.1); const full = hp.full != null ? hp.full : 1; hug = { k: sp._hug, pl: base * (0.6 + 0.4 * full), big: base >= L * 0.6 ? 1 : 0 }; }
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && (sp.state !== 'emerge' || !(hab.data.nests || []).some(n => n.id === sp.nest && n.hole && n.hole.open > 0.7)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && !(hab.data.nests || []).some(n => n.id === sp.nest && (n.build || (n.hole && n.hole.exit > 0.05))), spin: (hab.data.nests || []).some(n => n.id === sp.nest && n.build && n.owner === sp.id && JT.SpiderAI.NEST_STATES.has(sp.state)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
         if (hangA) { const fp = fr.p, fff = fr.f; items.push({ ln: { a: hangA, b: M.sub(fp, M.mul(fff, L * 0.32)), w: 0.08, al: 0.45 - night * 0.15 }, d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
         // live safety dragline paid out behind a jump
         if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; items.push({ ln: { a: an, b: sp2, w: 0.07, al: 0.32 - night * 0.1 }, d: V.depth(M.lerp3(an, sp2, 0.5)) - 0.05, f: () => { const a = V.P(an), b = V.P(sp2); ctx.strokeStyle = 'rgba(240,240,250,' + (0.32 - night * 0.1).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
-        items.push({ d, f: () => draw(1), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
+        // inside its retreat the jumper fades from view as the silk thickens (only a glint at the doorway remains)
+        const nst = sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) ? (hab.data.nests || []).find(n => n.id === sp.nest) : null;
+        let hideK = 0; if (nst) { hideK = M.smooth(M.clamp((nst.prog - 0.3) / 0.6, 0, 1)); if (sp.state === 'emerge' && nst.hole) hideK *= 1 - M.smooth(M.clamp((nst.hole.exit || 0) * 1.4, 0, 1)); }
+        const bodyA = 1 - hideK;
+        if (bodyA > 0.01) items.push({ d, f: () => draw(bodyA), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)), p: b.pos, r: L * 0.55 + 1, ground: true }); }
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf), p: lf.pos, r: 3 }); }
-      for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !vis(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0]; items.push({ d: V.depth(n.pos) - n.len * 0.7, f: () => D.nest(ctx, V, n, up, night), p: n.pos, r: (n.len || 6) * 1.3 + 3 }); }
+      for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !vis(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0];
+        const L = n.len || 6, own = n.owner && hab.spider(n.owner); const inside = own && own.nest === n.id && JT.SpiderAI.NEST_STATES.has(own.state);
+        const SP = own && (JT.SPECIES_BY_ID[own.species] || {}); const info = { time: t, glint: inside ? 1 - M.clamp(((n.hole && n.hole.exit) || 0) * 3, 0, 1) : 0, ceph: SP && SP.pal ? SP.pal.ceph : null, eye: SP && SP.look && SP.look.eyeCol ? SP.look.eyeCol : null };
+        const back = M.sub(n.pos, M.mul(V.toCam, L * 0.9)), front = M.add(n.pos, M.mul(V.toCam, L * 0.9)); // pure depth offsets: same place on screen, behind / in front of the jumper
+        items.push({ d: V.depth(n.pos) + L * 0.7, f: () => D.nest(ctx, V, n, up, night, 'back', info), p: back, r: L * 1.3 + 3, bias: 0 });
+        items.push({ d: V.depth(n.pos) - L * 0.7, f: () => D.nest(ctx, V, n, up, night, 'front', info), p: front, r: L * 1.3 + 3, bias: 0 }); }
       for (const k of hab.data.silk) items.push({ silk: k, d: V.depth(M.lerp3(k.a, k.b, 0.5)) - 0.1, f: () => D.silk(ctx, V, k, night) });
       return { items, run: (it, c2, v2) => { const k0 = ctx, v0 = V; ctx = c2; V = v2; try { it.f(); } finally { ctx = k0; V = v0; } } };
     }
