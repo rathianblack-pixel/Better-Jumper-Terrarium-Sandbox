@@ -1688,6 +1688,41 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   JT.shade = shade;
 
+  // ---- wall decorations take on their wall's look (walls are built from the tank's substrate colours) ----
+  const hexRgb = (h) => { let c = String(h || '#888888').replace('#', ''); if (c.length === 3) c = c.split('').map(x => x + x).join(''); const n = parseInt(c, 16); return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
+  const rgbHex = (c) => '#' + c.map(v => Math.round(M.clamp(v, 0, 1) * 255).toString(16).padStart(2, '0')).join('');
+  function toHsl(c) { const [r, g, b] = c, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; if (mx === mn) return [0, 0, l]; const d = mx - mn, s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); const h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return [h / 6, s, l]; }
+  function fromHsl([h, s, l]) { if (!s) return [l, l, l]; const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; const f = (t) => { t = (t % 1 + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; }; return [f(h + 1 / 3), f(h), f(h - 1 / 3)]; }
+  const mixHex = (a, b, t) => { const A = hexRgb(a), B2 = hexRgb(b); return rgbHex(A.map((v, i) => v + (B2[i] - v) * t)); };
+  /** A living colour (leaf, moss, petal) keeps its own hue family but borrows the wall's warmth, light and saturation. */
+  function leanHex(c, ref, k) {
+    const A = toHsl(hexRgb(c)), R = toHsl(hexRgb(ref)); let dh = R[0] - A[0]; if (dh > 0.5) dh -= 1; if (dh < -0.5) dh += 1;
+    const h = A[0] + (R[1] > 0.08 ? dh * k * 0.3 : 0), sat = A[1] + (Math.min(A[1], R[1] + 0.12) - A[1]) * k * 0.8, l = A[2] + (M.clamp(R[2] + 0.12, 0.18, 0.72) - A[2]) * k * 0.55;
+    return rgbHex(fromHsl([h, M.clamp(sat, 0, 1), M.clamp(l, 0.06, 0.94)]));
+  }
+  const HARD = { cork: 1, slate: 1, drift: 1, rock: 1, wood: 1, sand: 1, coir: 1, river: 1, coconut: 1 };
+  /** Re-colour a wall piece's primitives so it reads as part of its wall: hard parts (shelves, pockets, plaques,
+      branch stubs, roots) are made from the wall's own colours; plants, moss and flowers keep their kind but are
+      graded into the wall's palette. look = { style, cols:{side, top, mark, hi} }. */
+  Geo.wallTint = function (prims, look) {
+    if (!look || !look.cols) return; const W = look.cols, STY = (JT.Draw && JT.Draw.STY) || {};
+    const wood = mixHex(W.side, W.mark, 0.35);
+    for (const pr of prims) {
+      if (pr._wt) continue; pr._wt = 1;
+      if (pr.t === 'prism') {
+        const fungus = pr.style === 'fungus'; if (!fungus && !HARD[pr.style] && !pr.cols) continue;
+        const base = pr.cols || STY[pr.style] || STY.rock || W; const k = fungus ? 0.5 : pr.style === 'coir' ? 0.72 : 0.78;
+        if (!pr.cols) pr.keepPat = true; // keep the material's own surface pattern, in the wall's colours
+        pr.cols = { side: mixHex(base.side, W.side, k), top: mixHex(base.top, W.top, k), mark: mixHex(base.mark, W.mark, k), hi: mixHex(base.hi, W.hi, k) };
+        continue;
+      }
+      const woody = pr.t === 'tube' && (pr.style === 'bark' || pr.style === 'drift');
+      if (woody) { if (pr.col) pr.col = mixHex(pr.col, wood, 0.7); continue; }
+      const k = pr.t === 'bloom' ? 0.3 : pr.t === 'cap' ? 0.42 : 0.5;
+      for (const f of ['col', 'col2', 'variegate']) if (typeof pr[f] === 'string' && pr[f][0] === '#') pr[f] = leanHex(pr[f], W.side, k);
+    }
+  };
+
   // ---- world transform ----
   function makeXf(inst, baseY) {
     const a = (inst.rot || 0) * Math.PI / 2, c = Math.round(Math.cos(a)), s = Math.round(Math.sin(a));
@@ -1698,7 +1733,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
 
   /** Build complete world-space geometry for a decor instance at support height baseY. */
-  Geo.build = function (inst, baseY, maxH) {
+  Geo.build = function (inst, baseY, maxH, look) {
     const def = JT.DECOR_BY_ID[inst.type];
     const rng = JT.makeRng(inst.seed || 1);
     const B = new Builder(rng); B.inst = inst;
@@ -1761,6 +1796,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (def.arche === 'wallmount') { g.center = [inst.x, inst.my || 40, inst.z]; g.foot = G.circlePoly(inst.x, inst.z, (def.p.w || 14) / 2, 3, 8); }
     if (B.lampLocal) { const hd = X.P(B.lampLocal); g.lamp = { head: hd, pool: [hd[0], baseY, hd[2]], r: def.p.pool || 24 }; g.lampOn = inst.on !== false; }
     g.flexible = g.paths.some(p => p.flex > 0.2) || def.cat === 'plants';
+    if (look && def.arche === 'wallmount') { Geo.wallTint(g.prims, look); g.look = look.style + '|' + look.cols.side; }
     return g;
   };
 
@@ -2206,7 +2242,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
         if (inst.parent && !this.geoms[inst.parent]) inst.parent = null;
         let baseY = 0;
         if (inst.parent) { const pg = this.geoms[inst.parent]; const t = pg.tops[inst.parentTop || 0]; if (t) baseY = t.y; else inst.parent = null; }
-        this.geoms[inst.id] = JT.Geo.build(inst, baseY, H);
+        this.geoms[inst.id] = JT.Geo.build(inst, baseY, H, inst.wall ? this.wallLook(inst.wall) : null);
       }
       this.nav = Nav.build(this);
       this._geomVersion++;
@@ -2240,11 +2276,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       my = M.clamp(my, def.p.kind === 'fungi' ? 22 : def.p.kind === 'vine' ? (def.p.len || 30) + 4 : 12, s.h - 8);
       if (this.data.decor.filter(d => d.wall === s.id && d.id !== ignoreId).length >= JT.WALL_CAP) return { ok: false, reason: 'This wall already holds ' + JT.WALL_CAP + ' pieces' };
       const inst = { id: '_probe', type, x, z, rot: s.rot, seed: seed || 1, my };
-      let g = JT.Geo.build(inst, 0, this.dims.h);
+      const look = this.wallLook(s.id); let g = JT.Geo.build(inst, 0, this.dims.h, look);
       { // keep the whole piece on the wall face, not hanging past its side
         const fx0 = Math.min(a[0], b[0]) + 1, fx1 = Math.max(a[0], b[0]) - 1; let e0 = 1e9, e1 = -1e9; for (const q of g.extent) { e0 = Math.min(e0, q[0]); e1 = Math.max(e1, q[0]); }
         const dx = e0 < fx0 ? fx0 - e0 : e1 > fx1 ? fx1 - e1 : 0;
-        if (dx) { if (e1 - e0 > fx1 - fx0) return { ok: false, reason: 'Too wide for this wall' }; const s3 = this.mountSnap(x + dx + s.g.out[0] * 3, z + s.g.out[2] * 3, ignoreId) || s2; x = s3.px + s.g.out[0] * 0.3; z = s3.pz + s.g.out[2] * 0.3; inst.x = x; inst.z = z; g = JT.Geo.build(inst, 0, this.dims.h); }
+        if (dx) { if (e1 - e0 > fx1 - fx0) return { ok: false, reason: 'Too wide for this wall' }; const s3 = this.mountSnap(x + dx + s.g.out[0] * 3, z + s.g.out[2] * 3, ignoreId) || s2; x = s3.px + s.g.out[0] * 0.3; z = s3.pz + s.g.out[2] * 0.3; inst.x = x; inst.z = z; g = JT.Geo.build(inst, 0, this.dims.h, look); }
       }
       for (const q of g.extent) if (!Nav.inside(this, q[0], q[1], 1.5)) return { ok: false, reason: 'Outside the habitat' };
       if (my + 10 > this.dims.h) return { ok: false, reason: 'Too tall to fit here' };
@@ -2262,6 +2298,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       return { x: W / 2, z: D - 0.4 - dep / 2, rot: 0, ww: W - 0.8, wh: H - 6 }; // flush with the back and both side panes
     }
     backWall() { return this.data.decor.find(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall') || null; }
+    /** The colours and material of a back wall, so the pieces hung on it can match: {style, cols}. */
+    wallLook(wallId) {
+      const w = (wallId && this.decorById(wallId)) || this.backWall(); const def = w && JT.DECOR_BY_ID[w.type]; if (!def || def.arche !== 'backwall') return null;
+      return { style: def.p.style || w.type, cols: JT.wallCols(this.data.substrate) };
+    }
     _canWall(def, type, seed, ignoreId) {
       const F = this.wallFit(); const old = this.backWall(); const skip = old ? old.id : null;
       const inst = { id: '_probe', type, x: F.x, z: F.z, rot: 0, seed: seed || 1, ww: F.ww, wh: F.wh, sub: this.data.substrate, arc: this.dims.shape === 'circle' ? { R: this.dims.w / 2, cz: this.dims.d / 2 - F.z } : null };
@@ -4470,6 +4511,25 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (p.st > p.dur || close) { const away = h ? M.norm([p.pos[0] - h.pos[0], 0, p.pos[2] - h.pos[2]]) : [1, 0, 0]; p._fleeFrom = null; hop(hab, p, coverDir(hab, p, away), 14 + JT.R() * 18); }
   };
   PH.buried = function (hab, p, d, dt) { if (p.st > p.dur) { p.buried = false; p.state = 'idle'; p.st = 0; } };
+  /** Push a flying insect out of any solid decor it has drifted into, along the nearest way out, and cancel the
+      part of its velocity that points back in. Exits behind the glass are refused (it is lifted over instead). */
+  PA.unclipFlyer = function (hab, p) {
+    const S = JT.Solid; if (!S) return;
+    const solidAt = (q) => { let hit = null; for (const inst of hab.data.decor) { const g = hab.geoms[inst.id]; if (!g) continue; const h = S.at(g, q, 0.6); if (h && (!hit || h.d > hit.d)) hit = h; } return hit; };
+    const hit = solidAt(p.pos); if (!hit) return;
+    // shortest way out that is clear of every piece (a shelf pressed against a wall must not bounce the fly into the wall)
+    // and still inside the glass; the touched surface's own outward direction wins ties
+    const gr = S.grad(p.pos, hit.pr); const dirs = [gr, [0, 1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, -1, 0]];
+    let best = null;
+    for (let k = 0; k < dirs.length; k++) { const n = dirs[k];
+      for (let L = 0.3; L <= 24 && (!best || L < best.L - 0.01); L += L < 3 ? 0.3 : 1) {
+        const q = M.add(p.pos, M.mul(n, L)); if (q[1] < 1.2 || q[1] > hab.dims.h - 1 || !Nav.inside(hab, q[0], q[2], 2)) break;
+        if (!solidAt(q)) { const q2 = M.add(q, M.mul(n, 0.4)); best = { L, n, q: q2 }; break; } }
+    }
+    if (!best) return; // boxed in: leave it be rather than teleport (the next frames' steering carries it clear)
+    p.pos = best.q;
+    if (p._v) { const vn = M.dot(p._v, best.n); if (vn < 0) p._v = M.sub(p._v, M.mul(best.n, vn)); }
+  };
   PH.fly = function (hab, p, d, dt) {
     const H = hab.dims.h; const night = hab.daylight() < 0.3;
     if (!p._goal || (p._goalT = (p._goalT || 0) + dt) > 14) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
@@ -4486,8 +4546,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     p._v = M.lerp3(p._v || [0, 0, 0], want, Math.min(1, dt * 3));
     p.pos = M.add(p.pos, M.mul(p._v, dt));
     const cl = Nav.clampInside(hab, p.pos[0], p.pos[2], 2); p.pos[0] = cl[0]; p.pos[2] = cl[1]; p.pos[1] = M.clamp(p.pos[1], 1.2, H - 2);
-    // never fly through solid decor
-    for (const inst of hab.data.decor) { const gg = hab.geoms[inst.id]; if (!gg) continue; for (const tp of gg.tops) if (p.pos[1] < tp.y && p.pos[1] > gg.baseY - 1 && JT.G.pointInPoly(p.pos[0], p.pos[2], tp.poly)) p.pos[1] = tp.y + 0.6; }
+    // never fly through solid decor: slide off the surface it touched (along a wall face, around a rock) instead of
+    // popping up onto its top — the old footprint test teleported flies onto a tall back wall's crest and back
+    PA.unclipFlyer(hab, p);
     if (M.len([p._v[0], 0, p._v[2]]) > 0.5) p.fwd = M.norm([p._v[0], 0, p._v[2]]);
     if (g && g.orbit && dist < 2.2) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
     else if (g && dist < 1.6) {
@@ -5282,7 +5343,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const out = [];
     for (let i = 0; i < n; i++) {
       const m = []; const a = pr.poly[i], b = pr.poly[(i + 1) % n]; const W = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      const S = pr.cols ? 'plain' : pr.style; // substrate-built walls: plain speckle in their own colours (canvas fallback)
+      const S = pr.cols && !pr.keepPat ? 'plain' : pr.style; // substrate-built walls: plain speckle in their own colours (canvas fallback)
       if (S === 'slate' || S === 'sand' || S === 'ruin') {
         const rows = Math.max(2, Math.round(H / (S === 'slate' ? 3 : 4.5)));
         for (let r = 1; r < rows; r++) { const v = r / rows + (rng() - .5) * 0.04; m.push({ k: 'line', u0: 0, v0: v, u1: 1, v1: v + (rng() - .5) * 0.03, c: st.mark, a: 0.6, w: 0.22 }); }
@@ -7505,11 +7566,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
 
     // ---------------- thumbnails & portraits (same drawing code as the habitat) ----------------
-    decorThumb(type, rot, size) {
-      size = size || 112; const key = type + '|' + (rot || 0) + '|' + size; if (this.thumbs[key]) return this.thumbs[key];
+    decorThumb(type, rot, size, look) {
+      size = size || 112; const key = type + '|' + (rot || 0) + '|' + size + (look ? '|' + look.style + look.cols.side : ''); if (this.thumbs[key]) return this.thumbs[key];
       const c = mkCanvas(size, size); const ctx = c.getContext('2d');
       try {
-        const g = JT.Geo.build({ id: 'thumb_' + type, type, x: 0, z: 0, rot: rot || 0, seed: 1 }, 0, 160);
+        const g = JT.Geo.build({ id: 'thumb_' + type, type, x: 0, z: 0, rot: rot || 0, seed: 1 }, 0, 160, look);
         const V = new JT.View(0.52, 0.62, 1, 0, 0, [0, 0, 0]);
         const pts = []; const hull = this.decorScreenHull(g, V) || [[-1, -1], [1, 1]]; for (const q of hull) pts.push(q);
         let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const q of pts) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
@@ -8005,7 +8066,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           c.appendChild(cloneCanvas(this.R.decorThumb(w.type, 0, 112))); c.appendChild(el('div', 'nm', 'Dress wall')); c.appendChild(el('div', 'pr', 'auto'));
           c.onclick = () => { const n = JT.Presets.dressWall(h, null, 4, 'player'); A().sfx('place'); this.toast(n ? 'Dressed the wall with ' + n + ' pieces.' : 'No room on the wall.', 'quiet'); this.game.save(); this.openDrawer('walls'); };
           body.appendChild(c);
-          for (const id of kit) body.appendChild(this.decorCard(JT.DECOR_BY_ID[id]));
+          const look = h.wallLook(w.id); for (const id of kit) body.appendChild(this.decorCard(JT.DECOR_BY_ID[id], look));
         }
       }
       else if (tab === 'substrate') {
@@ -8019,9 +8080,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     syncDrawerSpace() { const d = $('drawer'); const open = !d.classList.contains('hidden'); document.body.classList.toggle('drawer-open', open); document.documentElement.style.setProperty('--drawerH', open ? Math.round(d.getBoundingClientRect().height) + 'px' : '0px'); },
     closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); this.syncDrawerSpace(); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
     refreshCardsAfford() { document.querySelectorAll('#drawerBody .card[data-price]').forEach(c => c.classList.toggle('disabled', +c.dataset.price > this.game.state.coins)); },
-    decorCard(d) {
+    decorCard(d, look) {
       const c = el('div', 'card'); c.dataset.price = d.price; c.title = d.name + (d.desc ? ' — ' + d.desc : '') + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
-      c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112)));
+      c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112, look)));
       c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price ? d.price + '' : 'free'));
       const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean).join(', '); if (tg) c.title += ' — ' + tg;
       if (d.price > this.game.state.coins) c.classList.add('disabled');
