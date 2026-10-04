@@ -587,9 +587,9 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     S('johnson', "Johnson's Jumper", 'Phidippus johnsoni', 11, 210, { ceph: '#121212', abd: '#c8201e', mark: '#1a1a1a', leg: '#1e1e1e', chel: '#2ab0c8', hair: '#d03028', belly: '#2a2020' }, 'johnson',
       { stealth: .5, patience: .45, jump: .75, bold: .8, tactics: .5 }, { height: .4, foliage: .3, rear: .25, display: .2, activity: .65 },
       'Red-backed and bold. Rarely hesitates once prey is in view.'),
-    S('imperial', 'Imperial Jumper', 'Thyene imperialis', 7, 240, { ceph: '#4a3a1a', abd: '#3aa0a0', mark: '#e8c040', leg: '#6a5a3a', chel: '#4a3a1a', hair: '#c0a050', belly: '#5a4a2a' }, 'imperial',
+    S('imperial', 'Imperial Jumper', 'Thyene imperialis', 7, 240, { ceph: '#3a2a1a', abd: '#c8441e', mark: '#f6f0e2', leg: '#c8b48e', chel: '#d08a4a', hair: '#f0e6d2', belly: '#d8c8a8' }, 'imperial',
       { stealth: .6, patience: .65, jump: .7, bold: .55, tactics: .6 }, { height: .65, foliage: .75, rear: .35, display: .35, activity: .5 },
-      'A measured foliage hunter with metallic scales.'),
+      'A measured foliage hunter with a red, white-barred abdomen and black tufted "horns" beside its eyes.'),
     S('magnolia', 'Magnolia Green Jumper', 'Lyssomanes viridis', 7.5, 260, { ceph: '#9adf8a', abd: '#8ad07a', mark: '#e05a3a', leg: '#b8f0a8', chel: '#9adf8a', hair: '#d8ffc8', belly: '#a8e898' }, 'magnolia',
       { stealth: .65, patience: .55, jump: .7, bold: .45, tactics: .55 }, { height: .9, foliage: .95, rear: .3, display: .2, activity: .55 }, 
       'Translucent green and long-legged. Lives almost entirely on elevated leaves.', { translucent: true }),
@@ -609,6 +609,42 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       { stealth: .6, patience: .85, jump: .75, bold: .9, tactics: .65 }, { height: .55, foliage: .45, rear: .35, display: .15, activity: .35 },
       'A mature, powerful but patient hunter. The largest and most imposing in the collection.', { minStage: 5 }),
   ];
+
+  // ---------------- Species look + gait ----------------
+  // Per-species body plan, read by Draw.spider (shape/hair) and SpiderAI (gait). Multipliers are relative to the base jumper.
+  // cL/cW/cH: cephalothorax length/width/height · aL/aW/aH: abdomen · flat: 0..1 lower, flatter body
+  // legLen: all legs · front: extra length of pair I · legW: leg thickness · frontW: pair I thickness
+  // fuzz: body hair fringe · legHair: dense short leg hair · bristle: long pale bristles (bristleCol) · fringe: dark leg brushes (Portia)
+  // tufts: 'brow' (eyebrow tufts) | 'horn' (black horns beside the eyes) | 'lash' (long stiff eyelashes) | 'ragged' (debris tufts)
+  // palp: 'plain' | 'fluffy' | 'flag' (bright white) | 'pompom' (big fluffy balls) · chel: fang size · irid: 0 none, 1 green, 2 blue-green, 3 purple
+  // eye: front-eye size · antennae: pair I held up like ant antennae
+  // gait: bouncy | patient | heavy | skittish | brisk | stopgo | glide | hop | shuffle | twitchy | ant | choppy
+  const LOOK_BASE = { cL: 1, cW: 1, cH: 1, aL: 1, aW: 1, aH: 1, flat: 0, legLen: 1, front: 1, legW: 1, frontW: 1.3, fuzz: 0.9, legHair: 0, bristle: 0, bristleCol: null, fringe: 0, tufts: null, tuftCol: null, palp: 'plain', palpCol: null, chel: 1, irid: 0, eye: 1, eyeCol: null, antennae: false, gait: 'brisk', note: '' };
+  const PHID = { cL: 1.05, cW: 1.05, cH: 1.1, aW: 1.05, legLen: 0.95, front: 1.08, legW: 1.15, frontW: 1.6, fuzz: 1.1, legHair: 0.8, bristle: 0.8, tufts: 'brow', palp: 'fluffy', chel: 1.2, irid: 2 };
+  JT.LOOK = {
+    bold:        Object.assign({}, PHID, { gait: 'bouncy', palpCol: '#f4f1ea', note: 'Bulky, black fuzz, white leg bristles, eyebrow tufts, green fangs. Bouncy.' }),
+    regal:       Object.assign({}, PHID, { fuzz: 1.3, legHair: 1, bristle: 1, gait: 'patient', note: 'Bulky tan fuzzball, long white bristles, eyebrow tufts, iridescent fangs. Patient.' }),
+    orange:      Object.assign({}, PHID, { aL: 1.1, aW: 1.15, aH: 1.1, legW: 1.2, fuzz: 1.3, legHair: 1, bristle: 1, chel: 1.25, gait: 'heavy', note: 'Heaviest: big round abdomen, dense fuzz, white bristles. Slow and heavy.' }),
+    canopy:      Object.assign({}, PHID, { cL: 0.97, cW: 1, cH: 1.05, aL: 0.95, legW: 1.05, frontW: 1.4, fuzz: 1, legHair: 0.7, bristle: 0.5, chel: 1.1, irid: 3, gait: 'skittish', note: 'Compact Phidippus, fuzzy, purple fangs. Skittish, darts upward.' }),
+    putnam:      Object.assign({}, PHID, { fuzz: 1, bristle: 0.6, chel: 1.1, gait: 'patient', note: 'Bulky, fuzzy, eyebrow tufts, green fangs. Deliberate.' }),
+    johnson:     Object.assign({}, PHID, { fuzz: 0.7, legHair: 0.5, bristle: 0.4, chel: 1.15, gait: 'bouncy', note: 'Bulky, glossier, red back, teal fangs. Bold, bouncy.' }),
+    cardinal:    Object.assign({}, PHID, { fuzz: 1.1, legHair: 0.6, bristle: 0.5, frontW: 1.5, gait: 'brisk', note: 'Bulky, red fuzz, black legs, blue-green fangs. Scurries like a velvet ant.' }),
+    apache:      Object.assign({}, PHID, { fuzz: 1.2, legHair: 0.8, bristle: 0.8, irid: 1, gait: 'brisk', note: 'Large and bulky, orange fuzz, black hairy legs, green fangs. Direct.' }),
+    zebra:       { cL: 0.95, cW: 0.9, cH: 0.75, aL: 1.12, aW: 0.8, aH: 0.7, flat: 0.35, legLen: 0.85, front: 1, legW: 0.85, frontW: 1.15, fuzz: 0.35, legHair: 0.3, palp: 'plain', palpCol: '#f2f2ee', chel: 0.9, eye: 1.05, gait: 'stopgo', note: 'Small and flat, long narrow abdomen, short legs, sparse hair. Jerky stop-start.' },
+    graywall:    { cL: 1.05, cW: 1, cH: 0.6, aL: 1.2, aW: 0.85, aH: 0.55, flat: 0.6, legLen: 0.9, front: 1, legW: 0.95, frontW: 1.25, fuzz: 0.3, palp: 'fluffy', palpCol: '#e8e2d4', chel: 0.9, gait: 'glide', note: 'Very flat and long, short flat-lying hair. Still, then glides and darts.' },
+    pantropical: { cL: 1.05, cW: 1, cH: 1.15, aL: 1.05, legW: 1.05, frontW: 1.35, fuzz: 0.5, bristle: 0.2, palp: 'fluffy', palpCol: '#efe8da', gait: 'brisk', note: 'Robust with a high head, striped. Brisk patrol.' },
+    arc:         { aL: 0.95, legW: 1, frontW: 1.3, fuzz: 0.55, legHair: 0.3, palp: 'plain', gait: 'hop', note: 'Compact, white-edged dark body with an arch. Quick hops.' },
+    emerald:     { aL: 1.05, aW: 0.9, legW: 1, front: 1.1, frontW: 1.45, fuzz: 0.7, legHair: 0.6, bristle: 0.3, tufts: 'brow', palp: 'fluffy', irid: 1, gait: 'hop', note: 'Sleek iridescent green, hairy front legs, green fangs. Hops through leaves.' },
+    peacock:     { cL: 1.05, aL: 0.85, aW: 1, aH: 0.62, legLen: 0.85, legW: 0.9, frontW: 1.1, fuzz: 0.3, palp: 'plain', chel: 0.8, eye: 1.1, gait: 'shuffle', note: 'Tiny, flat fan-flap abdomen, short legs. Small hops and side-shuffles.' },
+    twinflag:    { cW: 0.95, aW: 0.9, legW: 0.95, frontW: 1.25, fuzz: 0.4, palp: 'flag', palpCol: '#f8f6ee', chel: 0.9, gait: 'stopgo', note: 'Small and dark, bright white palp "flags". Hasty stop-and-go, waves palps in pauses.' },
+    imperial:    { cW: 1.15, cH: 0.7, aW: 0.8, aH: 0.7, flat: 0.3, legW: 0.95, frontW: 1.25, fuzz: 0.35, bristle: 0.45, bristleCol: '#1a1410', tufts: 'horn', tuftCol: '#120c08', palp: 'plain', palpCol: '#e4d6b8', chel: 0.9, gait: 'patient', note: 'Flat wide head, black horn tufts, pale spiny legs, red barred abdomen. Measured.' },
+    magnolia:    { cW: 0.9, cH: 0.85, aL: 1.15, aW: 0.7, aH: 0.7, legLen: 1.3, front: 1.55, legW: 0.6, frontW: 0.95, fuzz: 0.1, bristle: 0.25, bristleCol: '#f2fff0', palp: 'plain', chel: 1.2, gait: 'twitchy', note: 'Delicate translucent green, very long thin front legs, slim abdomen. Twitchy sway.' },
+    ant:         { legLen: 1.1, front: 1.1, legW: 0.7, frontW: 0.8, fuzz: 0, palp: 'plain', chel: 1.1, antennae: true, gait: 'ant', note: 'Ant body with waist, glossy, front legs up as antennae. Quick zig-zags.' },
+    paradise:    { aL: 0.9, legW: 1, frontW: 1.3, fuzz: 0.6, bristle: 0.3, palp: 'fluffy', palpCol: '#efe4cc', gait: 'hop', note: 'Small and compact, pale palps, red fangs/face. Lively display hops.' },
+    giant:       { cL: 1.05, cW: 1.05, cH: 1.05, aL: 1.05, aW: 1.05, legLen: 1.1, front: 1.22, legW: 1.1, frontW: 1.5, fuzz: 1.1, legHair: 0.6, bristle: 0.7, tufts: 'lash', tuftCol: '#e8dcc4', palp: 'fluffy', chel: 1.1, gait: 'heavy', note: 'Big and leggy, long front legs, long stiff eyelash bristles. Slow, powerful.' },
+    portia:      { cL: 0.9, cW: 0.85, cH: 0.9, aL: 0.8, aW: 0.75, aH: 0.75, legLen: 1.3, front: 1.25, legW: 0.6, frontW: 0.75, fuzz: 0.3, fringe: 1, tufts: 'ragged', tuftCol: '#2a1e14', palp: 'pompom', palpCol: '#e6dac2', chel: 0.8, eye: 1.08, eyeCol: '#6a4418', gait: 'choppy', note: 'Skinny, long thin legs with dark fringes, ragged debris outline, fluffy palps. Slow choppy robot walk.' },
+  };
+  JT.SPECIES.forEach(s => { s.look = Object.assign({}, LOOK_BASE, JT.LOOK[s.id] || {}); });
   JT.SPECIES_BY_ID = {}; JT.SPECIES.forEach(s => JT.SPECIES_BY_ID[s.id] = s);
 
   JT.STAGES = ['Tiny Sling', 'Sling', 'Juvenile', 'Sub-adult', 'Young Adult', 'Adult'];
@@ -2310,6 +2346,35 @@ input[type=range]{accent-color:#c9a25c;width:140px}
   const sp_ = (sp) => JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0];
   AI.len = (sp) => sp_(sp).len * JT.STAGE_SCALE[M.clamp(sp.stage, 0, 5)];
   AI.jump = (sp) => (14 + AI.len(sp) * 3.0) * (0.75 + sp.traits.jump * 0.4) * (sp.soft > 0 ? 0.7 : 1) * elder(sp);
+  // ---------------- species gaits ----------------
+  // speed: travel-speed factor while going · go/stop: duration ranges (s) of walking bursts and pauses · snap: how fast it stops/starts
+  const GAIT = AI.GAIT = {
+    bouncy:   { speed: 1.05, go: [1.2, 2.5], stop: [0.08, 0.2] },
+    patient:  { speed: 0.9,  go: [1.0, 2.2], stop: [0.2, 0.6] },
+    heavy:    { speed: 0.82, go: [1.5, 3.0], stop: [0.2, 0.5] },
+    skittish: { speed: 1.15, go: [0.5, 1.4], stop: [0.1, 0.35] },
+    brisk:    { speed: 1.05, go: [1.5, 3.0], stop: [0.05, 0.15] },
+    stopgo:   { speed: 1.3,  go: [0.3, 0.8], stop: [0.15, 0.45], snap: 18 },
+    glide:    { speed: 0.95, go: [2.0, 4.0], stop: [0.3, 0.9] },
+    hop:      { speed: 1.05, go: [0.6, 1.4], stop: [0.1, 0.3] },
+    shuffle:  { speed: 0.95, go: [0.4, 0.9], stop: [0.1, 0.3] },
+    twitchy:  { speed: 1.0,  go: [0.3, 0.9], stop: [0.1, 0.4], snap: 20 },
+    ant:      { speed: 1.15, go: [2.0, 4.0], stop: [0.05, 0.12] },
+    choppy:   { speed: 1.0,  go: [0.25, 0.6], stop: [0.25, 0.9], snap: 14 }, // Portia: slow, choppy, irregular pauses
+  };
+  const gaitOf = (sp) => GAIT[(sp_(sp).look || {}).gait] || GAIT.brisk;
+  /** Mean travel-speed factor of a gait (bursts and pauses averaged): used for stuck/timeout estimates. */
+  AI.gaitAvg = (sp) => { const G = gaitOf(sp); const g = (G.go[0] + G.go[1]) / 2, st = (G.stop[0] + G.stop[1]) / 2; return G.speed * g / (g + st); };
+  function gaitTick(sp, dt) {
+    const G = gaitOf(sp);
+    sp._gT = (sp._gT == null ? JT.R() * G.go[1] : sp._gT) - dt;
+    if (sp._gT <= 0) { sp._gGo = !sp._gGo; const r = sp._gGo ? G.go : G.stop; sp._gT = r[0] + JT.R() * (r[1] - r[0]); }
+    sp._gPause = M.lerp(sp._gPause || 0, sp._gGo ? 0 : 1, Math.min(1, dt * (G.snap || 10)));
+    sp._gaitK = G.speed * (1 - 0.97 * sp._gPause);
+    // ant mimics weave from side to side while they travel (eased in and out, never while holding prey)
+    const zig = (sp_(sp).look || {}).gait === 'ant' && sp._moving && !sp.hold ? 1 : 0;
+    sp._zigK = M.lerp(sp._zigK || 0, zig, Math.min(1, dt * 3));
+  }
   AI.speed = (sp) => (9 + AI.len(sp) * 0.9) * (0.7 + sp.pers.activity * 0.5) * elder(sp) * (sp.soft > 0 ? 0.6 : 1);
   function elder(sp) { return sp.stage === 5 && sp.adultDays > 20 ? Math.max(0.8, 1 - (sp.adultDays - 20) * 0.006) : 1; }
   // jumpers walk, cling and jump — they never just drop off a ledge (no free-fall 'drop' edges).
@@ -2525,6 +2590,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     if (!M.finite3(sp.pos)) { const b = Nav.supportBelow(hab, [hab.dims.w / 2, 0, hab.dims.d / 2]); sp.pos = b.pos; sp.sup = b.sup; sp._route = null; setState(sp, 'idle'); }
     if (sp.hold) { const p = hab.preyById(sp.hold); if (p) { p.pos = AI.mouth(hab, sp); p.sup = JT.deepClone(sp.sup); p.fwd = sp.fwd; } }
     // micro animation drivers
+    gaitTick(sp, dt);
     sp._breath = (sp._breath || 0) + dt * (sp.state === 'sleep' ? 1.2 : 2.4);
     const sneak = sp.state === 'stalk' || sp.state === 'creep';
     if (!sneak && sp.state !== 'crouch') { sp._low = 0; sp._watched = 0; }
@@ -2578,14 +2644,15 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       if (sp._prepStep !== st) { sp._prepStep = st; sp._prepT = 0.28 + JT.R() * 0.22; sp._routeStart = (sp._routeStart || hab.time) + sp._prepT; }
       if (sp._prepT > 0) { sp._prepT -= dt; faceToward(sp, st.pos, dt, 6); return 'moving'; }
     } else sp._prepT = 0;
-    return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1), {
+    const gk = !urgent && !sp._air && sp._gaitK != null && (!HUNT.has(sp.state) || gaitOf(sp) === GAIT.choppy) ? sp._gaitK : 1; // species gait: bursts and pauses (never mid-air; hunts stay smooth except Portia's choppy stalk)
+    return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1) * gk, {
       onLaunch: (st) => { if (st.mode === 'jump') { sp._anchor = sp.pos.slice(); hab.event('jump', { sp }); } },
       onLand: (st) => { if (sp._anchor) { hab.addSilk(sp._anchor, sp.pos, 'drag'); sp._anchor = null; hab.event('journal', { id: 'safety', sp, soft: true }); } },
       onStep: (d, dir) => { if (JT.R() < 0.12) hab.nudge(d, dir[0] * AI.len(sp) * 0.08, dir[2] * AI.len(sp) * 0.08); },
     });
   }
   function routeTo(hab, sp, gsup, gpos, carry) { const r = Nav.route(hab, sp.sup, sp.pos, gsup, gpos, AI.caps(sp, carry)); sp._route = r; sp._routeStart = hab.time; return r; }
-  function stuck(hab, sp) { const r = sp._route; if (!r) return false; const expect = (r.cost || 10) / Math.max(1, AI.speed(sp) * 0.4) + 6; return hab.time - (sp._routeStart || 0) > expect * 2.2; }
+  function stuck(hab, sp) { const r = sp._route; if (!r) return false; const expect = (r.cost || 10) / Math.max(1, AI.speed(sp) * Math.min(1, AI.gaitAvg(sp)) * 0.4) + 6; return hab.time - (sp._routeStart || 0) > expect * 2.2; }
 
   // ---------------- state handlers ----------------
   const H = AI.H = {};
@@ -4882,7 +4949,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     ctx.stroke(); ctx.restore();
   }
   function sheen(ctx, P, e, V, kind, t) { // iridescence that shifts with viewing angle
-    const h = ((V.yaw * 57 + (kind === 2 ? 200 : 140) + Math.sin(t * 0.7) * 25) % 360 + 360) % 360;
+    const h = ((V.yaw * 57 + (kind === 3 ? 290 : kind === 2 ? 200 : 140) + Math.sin(t * 0.7) * 25) % 360 + 360) % 360;
     ctx.save(); ctx.beginPath(); ctx.ellipse(P[0], P[1], e.r1, e.r2, e.ang, 0, 6.283); ctx.clip();
     const g = ctx.createLinearGradient(P[0] - e.r1, P[1] - e.r1, P[0] + e.r1, P[1] + e.r1);
     g.addColorStop(0, 'hsla(' + h + ',90%,60%,0)'); g.addColorStop(0.45, 'hsla(' + h + ',90%,62%,0.42)'); g.addColorStop(0.6, 'hsla(' + ((h + 60) % 360) + ',90%,65%,0.3)'); g.addColorStop(1, 'hsla(' + h + ',90%,60%,0)');
@@ -4966,7 +5033,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     putnam: () => [0, 1, 2, 3, 4].map(k => dot(0.4 - k * 0.25, (k % 2 ? 1 : -1) * 0.3, 0.09)),
     red: () => [0, 1, 2].map(k => ({ t: 'line', p: [[-0.1 - k * 0.3, -0.4], [-0.3 - k * 0.3, 0], [-0.1 - k * 0.3, 0.4]], w: 0.08, c: 'dark', a: 0.5 })).concat([dot(0.5, 0, 0.12)]),
     johnson: () => [stripe(0, 0.32, '#141414')],
-    imperial: () => [band(-0.13, 0.15), band(-0.53, 0.15)],
+    imperial: () => [stripe(0, 0.42, '#1a120c', -0.85, 0.75, 0.9), band(0.42, 0.1, 'mark', 0.42), band(0.12, 0.1, 'mark', 0.42), band(-0.18, 0.1, 'mark', 0.4), band(-0.48, 0.09, 'mark', 0.36), stripe(0.82, 0.1, 'mark', -0.5, 0.6, 0.6), stripe(-0.82, 0.1, 'mark', -0.5, 0.6, 0.6)],
     magnolia: () => [dot(0.1, -0.2, 0.45, '#ffffff', 0.2)],
     ant: () => [],
     paradise: () => [stripe(0.62, 0.15), stripe(-0.62, 0.15), stripe(0, 0.14)],
@@ -4991,10 +5058,63 @@ input[type=range]{accent-color:#c9a25c;width:140px}
   }
   function sortDraw(parts) { parts.sort((a, b) => b.d - a.d); for (const q of parts) q.f(); }
 
+  // ---------- species hair helpers (all screen-space, one path per call) ----------
+  /** Hairs along a projected segment A→B, alternating sides, angled toward the tip. */
+  function hairs(ctx, A, B, w, n, len, col, lw, tilt, seed) {
+    const dx = B[0] - A[0], dy = B[1] - A[1]; const l = Math.hypot(dx, dy) || 1; const ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+    for (let k = 0; k < n; k++) {
+      const t = (k + 0.5) / n, sd = k % 2 ? 1 : -1; const bx = A[0] + dx * t + nx * sd * w * 0.42, by = A[1] + dy * t + ny * sd * w * 0.42;
+      const ll = len * (0.72 + ((k * 7 + seed) % 5) * 0.11); ctx.moveTo(bx, by); ctx.lineTo(bx + (nx * sd + ux * tilt) * ll, by + (ny * sd + uy * tilt) * ll);
+    }
+    ctx.stroke();
+  }
+  /** Radial puff of hair around a screen point (fluffy palps). */
+  function puff(ctx, P, r, col, n, lw) {
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+    for (let k = 0; k < n; k++) { const a = k / n * 6.283 + (k % 3) * 0.2; const r0 = r * 0.55, r1 = r * (1.25 + (k % 4) * 0.12); ctx.moveTo(P[0] + Math.cos(a) * r0, P[1] + Math.sin(a) * r0); ctx.lineTo(P[0] + Math.cos(a) * r1, P[1] + Math.sin(a) * r1); }
+    ctx.stroke();
+  }
+  /** Tufts sticking out of a body part along a 3D direction: [u, v, dir, len] with dir in world space. */
+  function tuftSet(ctx, V, pt, list, col, lw, curl) {
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.beginPath();
+    for (const [u, v, d, len] of list) {
+      const a = surf(pt, u, v); const b = M.add(a, M.mul(d, len)); const A = V.P(a), B = V.P(b);
+      if (curl) { const m = V.P(M.add(M.lerp3(a, b, 0.5), M.mul(curl, len * 0.35))); ctx.moveTo(A[0], A[1]); ctx.quadraticCurveTo(m[0], m[1], B[0], B[1]); }
+      else { ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }
+    }
+    ctx.stroke();
+  }
+  /** Head tufts per species: eyebrow tufts, imperial "horns", giant "eyelashes", Portia's ragged tufts. */
+  function headTufts(ctx, V, cph, LK, L, px, fg, sg, nh, pal) {
+    const kind = LK.tufts; const lw = (k) => Math.max(0.5, L * V.s * k);
+    if (kind === 'brow' && px > 22) {
+      const l = []; for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) { const d = M.norm(M.add(M.add(M.mul(nh, 1), M.mul(fg, 0.25 + 0.1 * k)), M.mul(sg, sd * (0.3 + 0.08 * k)))); l.push([0.74 - 0.05 * k, sd * (0.32 + 0.09 * k), d, L * (0.06 + 0.012 * (k % 2 ? 1 : 2))]); }
+      tuftSet(ctx, V, cph, l, LK.tuftCol || '#15100b', lw(0.007), fg);
+    } else if (kind === 'horn' && px > 12) {
+      const l = []; for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const d = M.norm(M.add(M.add(nh, M.mul(sg, sd * (0.45 + 0.1 * k))), M.mul(fg, 0.2 - 0.12 * k))); l.push([0.6 - 0.04 * k, sd * (0.68 + 0.03 * k), d, L * (0.13 - 0.02 * k)]); }
+      tuftSet(ctx, V, cph, l, LK.tuftCol || '#120c08', lw(0.016), null);
+    } else if (kind === 'lash' && px > 20) {
+      const l = []; for (const sd of [-1, 1]) for (let k = 0; k < 5; k++) { const d = M.norm(M.add(M.add(M.mul(fg, 0.85), M.mul(nh, 0.75)), M.mul(sg, sd * 0.15 * k))); l.push([0.8 - 0.035 * k, sd * (0.22 + 0.1 * k), d, L * (0.12 + 0.015 * (k % 3))]); }
+      tuftSet(ctx, V, cph, l, LK.tuftCol || '#e8dcc4', lw(0.006), M.mul(nh, -1));
+    } else if (kind === 'ragged' && px > 14) {
+      const l = [], l2 = []; for (const sd of [-1, 1]) { for (const [u, v] of [[0.55, 0.62], [0.1, 0.75], [-0.35, 0.65]]) { const d = M.norm(M.add(M.mul(sg, sd * 0.8), M.mul(nh, 0.7))); l.push([u, sd * v, d, L * 0.06]); } l2.push([0.25, sd * 0.4, M.norm(M.add(nh, M.mul(sg, sd * 0.4))), L * 0.05]); }
+      tuftSet(ctx, V, cph, l, LK.tuftCol || '#2a1e14', lw(0.016), null); tuftSet(ctx, V, cph, l2, sh(pal.hair, 0.25), lw(0.012), null);
+    }
+  }
+
   // ============================== JUMPING SPIDER ==============================
   D.spider = function (ctx, V, sp, fr, o) {
     const S = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0]; const pal0 = o.palette || S.pal; const L = o.len;
-    const { f, s, n } = fr; const p = fr.p; const t = o.time || 0;
+    let { f, s, n } = fr; let p = fr.p; const t = o.time || 0;
+    const LK = S.look || {}; const gait = LK.gait; const gp = sp._gPause || 0;
+    // species gait offsets (visual only): ant mimics weave in zig-zags, magnolia greens sway and twitch
+    if (!o.thumb && !o.airborne && !o.curled && !o.tucked && !o.hug && !o.meal) {
+      let lat = 0, ang = 0;
+      const zk = sp._zigK || 0; if (zk > 0.01) { const ph = (sp._walk || 0) * 0.55 + ((sp.seed || 1) % 7); lat += L * 0.18 * Math.sin(ph) * zk; ang += Math.atan(0.31 * Math.cos(ph)) * zk; }
+      if (gait === 'twitchy') { lat += L * (0.015 * Math.sin(t * 1.7 + (sp.seed || 0)) + 0.012 * gp * Math.sin(t * 13)); ang += 0.05 * gp * Math.sin(t * 9.3); }
+      if (lat || ang) { const ca = Math.cos(ang), sa = Math.sin(ang); const f2 = M.add(M.mul(f, ca), M.mul(s, sa)), s2 = M.sub(M.mul(s, ca), M.mul(f, sa)); f = f2; s = s2; p = M.add(p, M.mul(fr.s, lat)); }
+    }
     const paleK = o.ghost ? 0.72 : (sp.soft > 0 ? Math.min(0.6, sp.soft / 120 * 0.65) : 0);
     const C = (c) => paleK > 0 ? mix(c, '#efe6d6', paleK) : hex6(c);
     const pal = {}; for (const k in pal0) pal[k] = C(pal0[k]);
@@ -5003,7 +5123,8 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     const crouch = sp._crouch || 0, raise = sp._legRaise || 0, moving = sp._moving ? 1 : 0;
     const breath = Math.sin(sp._breath || 0) * 0.015; const ant = !!S.antShape;
     const flat = sp._flat || 0, strK = sp._stretchK || 0, wipe = sp._wipe || 0, flick = sp._flick || 0, hang = o.hang || 0;
-    const h0 = L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) + L * 0.035 * strK;
+    const wph = (sp._walk || 0) * Math.PI; const bob = moving && !o.airborne ? Math.abs(Math.sin(wph)) * (gait === 'bouncy' ? 0.03 : gait === 'hop' ? 0.022 : gait === 'heavy' ? 0.01 : gait === 'stopgo' ? 0.012 : 0) : 0;
+    const h0 = L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) * (1 - 0.45 * (LK.flat || 0)) + L * 0.035 * strK + L * bob;
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
     if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha);
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb; // seen from below: belly colours
@@ -5018,38 +5139,46 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     const parts = [];
     const bodyCol = (c, belly) => under ? mix(c, belly, 0.75) : c;
     // --- cephalothorax (+ eyes) ---
-    const cc = W(0.13 * L, 0, h0 + L * (ant ? 0.06 : 0.1));
-    const cph = Part(cc, M.mul(fg, L * (ant ? 0.2 : 0.25)), M.mul(sg, L * (ant ? 0.115 : 0.2)), M.mul(nh, L * (ant ? 0.1 : 0.15)));
+    const cL = ant ? 1 : LK.cL || 1, cW = ant ? 1 : LK.cW || 1, cH = ant ? 1 : LK.cH || 1, dF = (cL - 1) * 0.375 * L; // dF: how far the face moves forward
+    const cc = W((0.13 + 0.125 * (cL - 1)) * L, 0, h0 + L * (ant ? 0.06 : 0.1 * cH));
+    const cph = Part(cc, M.mul(fg, L * (ant ? 0.2 : 0.25 * cL)), M.mul(sg, L * (ant ? 0.115 : 0.2 * cW)), M.mul(nh, L * (ant ? 0.1 : 0.15 * cH)));
     parts.push({ d: V.depth(cc), f: () => {
-      blob(ctx, V, cph.c, cph.ax, cph.ay, cph.az, bodyCol(pal.ceph, pal.belly), { lod, gloss: S.pattern === 'ant' || S.pattern === 'johnson' ? 0.8 : 0.45, fuzz: lod === 2 && !ant ? 0.9 : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: (S.pattern === 'emerald' || S.pattern === 'imperial') ? 1 : 0, time: t });
+      blob(ctx, V, cph.c, cph.ax, cph.ay, cph.az, bodyCol(pal.ceph, pal.belly), { lod, gloss: S.pattern === 'ant' || S.pattern === 'johnson' ? 0.8 : 0.45, fuzz: lod === 2 && !ant ? (LK.fuzz != null ? LK.fuzz : 0.9) : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: S.pattern === 'emerald' ? 1 : 0, time: t });
       if (lod > 0 && !under) {
         const dk = sh(pal.ceph, -0.45);
         decals(ctx, V, cph, [{ t: 'poly', p: [[0.98, -0.2], [0.55, -0.62], [0.5, 0], [0.55, 0.62], [0.98, 0.2]], c: dk, a: 0.55 }].concat(CEPH_PAT[S.pattern] ? [stripe(0.82, 0.32, 'mark', -0.6, 0.7, 0.85), stripe(-0.82, 0.32, 'mark', -0.6, 0.7, 0.85)] : []).concat(S.pattern === 'magnolia' ? [dot(0.6, 0, 0.32, '#e05a3a')] : []), { mark: pal.mark, dark: dk }, alpha);
       }
       // eyes: big anterior medians (with catch-lights), laterals, posteriors
-      const ae = 0.088 * (S.len < 6 ? 1.15 : 1); const eyes = [[0.93, 0.3, ae, 1], [0.93, -0.3, ae, 1], [0.8, 0.7, 0.032, 0], [0.8, -0.7, 0.032, 0], [-0.3, 0.82, 0.028, 0], [-0.3, -0.82, 0.028, 0]];
+      const ae = 0.088 * (S.len < 6 ? 1.15 : 1) * (LK.eye || 1) / Math.sqrt(cL * cW); const eyes = [[0.93, 0.3, ae, 1], [0.93, -0.3, ae, 1], [0.8, 0.7, 0.032, 0], [0.8, -0.7, 0.032, 0], [-0.3, 0.82, 0.028, 0], [-0.3, -0.82, 0.028, 0]];
       for (const [u, v, r, big] of eyes) {
         const fc = facing(cph, u, v, V); if (fc < -0.15) continue;
         const ep = surf(cph, u, v); const P = V.P(ep); const rr = r * L * V.s; if (rr < 0.45) continue;
         ctx.globalAlpha = alpha * M.clamp((fc + 0.15) * 4, 0, 1);
         if (rr < 1.4) { ctx.fillStyle = '#050403'; ctx.beginPath(); ctx.arc(P[0], P[1], rr, 0, 6.283); ctx.fill(); continue; }
-        const g = ctx.createRadialGradient(P[0], P[1], rr * 0.1, P[0], P[1], rr); g.addColorStop(0, big ? '#2a1c12' : '#120c08'); g.addColorStop(0.55, '#0a0705'); g.addColorStop(1, '#000');
+        const g = ctx.createRadialGradient(P[0], P[1], rr * 0.1, P[0], P[1], rr); g.addColorStop(0, big ? (LK.eyeCol || '#2a1c12') : '#120c08'); g.addColorStop(0.55, '#0a0705'); g.addColorStop(1, '#000');
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P[0], P[1], rr, 0, 6.283); ctx.fill();
-        if (big && rr > 2.5) { ctx.strokeStyle = 'rgba(120,90,60,0.35)'; ctx.lineWidth = Math.max(0.5, rr * 0.12); ctx.beginPath(); ctx.arc(P[0], P[1], rr * 0.62, 0, 6.283); ctx.stroke(); }
+        if (big && rr > 2.5) { ctx.strokeStyle = LK.eyeCol ? 'rgba(190,130,60,0.55)' : 'rgba(120,90,60,0.35)'; ctx.lineWidth = Math.max(0.5, rr * 0.12); ctx.beginPath(); ctx.arc(P[0], P[1], rr * 0.62, 0, 6.283); ctx.stroke(); }
         const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * 0.55)); const shine = big ? 0.92 : 0.7;
         ctx.fillStyle = 'rgba(255,255,255,' + shine + ')'; ctx.beginPath(); ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(0.5, rr * (big ? 0.32 : 0.35)), 0, 6.283); ctx.fill();
         if (big && rr > 2) { ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(P[0] - gp[0] * 0.7, P[1] - gp[1] * 0.7 + rr * 0.15, Math.max(0.4, rr * 0.13), 0, 6.283); ctx.fill(); }
       }
       ctx.globalAlpha = alpha;
+      if (LK.tufts && lod > 0 && !under) headTufts(ctx, V, cph, LK, L, px, fg, sg, nh, pal);
     } });
     if (ant) { const nc = W(-0.08 * L, 0, h0 + L * 0.05); parts.push({ d: V.depth(nc), f: () => blob(ctx, V, nc, M.mul(f, L * 0.07), M.mul(s, L * 0.055), M.mul(n, L * 0.055), pal.ceph, { lod, gloss: 0.7 }) }); }
     // --- abdomen (raised while stalking, plump when fed) ---
     const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06; const af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))), an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
-    const ac = M.add(W(ant ? -0.33 * L : -0.27 * L, 0, h0 + L * 0.09), M.mul(an, L * 0.02));
-    const abd = Part(ac, M.mul(af, L * (ant ? 0.23 : 0.3) * (0.95 + fat * 0.05)), M.mul(s, L * (ant ? 0.13 : 0.22) * fat), M.mul(an, L * (ant ? 0.13 : 0.19) * fat));
+    const aL = ant ? 1 : LK.aL || 1, aW = ant ? 1 : LK.aW || 1, aH = ant ? 1 : LK.aH || 1;
+    const ac = M.add(W(ant ? -0.33 * L : -(0.27 + 0.24 * (aL - 1) + 0.125 * (cL - 1)) * L, 0, h0 + L * 0.09 * (0.6 + 0.4 * aH)), M.mul(an, L * 0.02));
+    const abd = Part(ac, M.mul(af, L * (ant ? 0.23 : 0.3 * aL) * (0.95 + fat * 0.05)), M.mul(s, L * (ant ? 0.13 : 0.22 * aW) * fat), M.mul(an, L * (ant ? 0.13 : 0.19 * aH) * fat));
     parts.push({ d: V.depth(ac), f: () => {
-      blob(ctx, V, abd.c, abd.ax, abd.ay, abd.az, bodyCol(pal.abd, pal.belly), { lod, gloss: ant ? 0.9 : 0.6, fuzz: lod === 2 && !ant ? 1 : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: S.pattern === 'emerald' ? 1 : S.pattern === 'peacock' ? 2 : 0, time: t });
+      blob(ctx, V, abd.c, abd.ax, abd.ay, abd.az, bodyCol(pal.abd, pal.belly), { lod, gloss: ant ? 0.9 : 0.6, fuzz: lod === 2 && !ant ? (LK.fuzz != null ? LK.fuzz * 1.1 : 1) : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: S.pattern === 'emerald' ? 1 : S.pattern === 'peacock' ? 2 : 0, time: t });
       if (lod > 0 && !under) decals(ctx, V, abd, patFor(S, sp.seed), { mark: pal.mark, dark: sh(pal.abd, -0.5) }, alpha);
+      if (LK.tufts === 'ragged' && lod > 0 && px > 14 && !under) { // debris-like tufts break up the outline
+        const l = [], l2 = []; for (const sd of [-1, 1]) { for (const [u, v] of [[0.45, 0.75], [-0.1, 0.85], [-0.6, 0.65]]) l.push([u, sd * v, M.norm(M.add(M.mul(s, sd), M.mul(an, 0.5))), L * 0.07]); l2.push([-0.2, sd * 0.35, M.norm(M.add(an, M.mul(af, -0.3))), L * 0.06]); }
+        l.push([-0.92, 0, M.norm(M.add(M.mul(af, -1), M.mul(an, 0.6))), L * 0.07]);
+        tuftSet(ctx, V, abd, l, LK.tuftCol || '#2a1e14', Math.max(0.5, L * V.s * 0.018), null); tuftSet(ctx, V, abd, l2, sh(pal.mark, 0.1), Math.max(0.5, L * V.s * 0.016), null);
+      }
       if (lod > 0 && under) decals(ctx, V, { c: abd.c, ax: abd.ax, ay: abd.ay, az: M.mul(abd.az, -1), la: abd.la, lb: abd.lb, lc: abd.lc }, [dot(-0.85, 0, 0.14, 'dark'), stripe(0, 0.12, 'dark', -0.6, 0.5, 0.4)], { dark: sh(pal.belly, -0.4) }, alpha);
     } });
     // peacock courtship fan (a flat flap: physically thin, so it may go edge-on)
@@ -5062,12 +5191,23 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     }
     // --- chelicerae (iridescent) + palps ---
     for (const sd of [-1, 1]) {
-      const chc = M.add(W(0.33 * L, sd * L * 0.055, h0 + L * 0.02), M.mul(fg, L * 0.04));
-      parts.push({ d: V.depth(chc) - 0.01, f: () => blob(ctx, V, chc, M.mul(fg, L * 0.05), M.mul(sg, L * 0.045), M.mul(n, L * 0.07), pal.chel, { lod, gloss: 1, sheen: S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'canopy' || S.pattern === 'orange' ? 2 : 0, time: t }) });
-      const pw = (sp.state === 'groom' || wipe > 0.2 ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
-      const fl = flick * Math.sin(flick * 9.4 + sd * 0.8) * L * 0.06; // quick alternating palp flicks
-      const a = W(0.3 * L, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + pw, sd * L * 0.1, h0 + L * 0.06 + Math.abs(fl)), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + pw - Math.abs(fl) * 0.5, sd * L * 0.09, h0 + L * 0.0 + fl), M.mul(fg, L * 0.02));
-      parts.push({ d: V.depth(b) - 0.02, f: () => { limb(ctx, V, [a, b, c], [L * 0.04, L * 0.036], pal.leg, lod, null); if (lod > 0) blob(ctx, V, c, M.mul(fg, L * 0.035), M.mul(sg, L * 0.03), M.mul(n, L * 0.03), pal.hair, { lod, ink: false }); } });
+      const ck = LK.chel || 1;
+      const chc = M.add(W(0.33 * L + dF, sd * L * 0.055 * Math.sqrt(ck), h0 + L * 0.02), M.mul(fg, L * 0.04 * ck));
+      parts.push({ d: V.depth(chc) - 0.01, f: () => blob(ctx, V, chc, M.mul(fg, L * 0.05 * ck), M.mul(sg, L * 0.045 * Math.sqrt(ck)), M.mul(n, L * 0.07 * ck), pal.chel, { lod, gloss: 1, sheen: LK.irid || 0, time: t }) });
+      let pw = (sp.state === 'groom' || wipe > 0.2 ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
+      let fl = flick * Math.sin(flick * 9.4 + sd * 0.8) * L * 0.06; // quick alternating palp flicks
+      if (LK.palp === 'flag') pw += gp * Math.sin(t * 8 + sd * 1.3) * L * 0.05; // twin-flagged: waves its white palps in each pause
+      if (gait === 'choppy') { const jk = Math.sin(t * 4.2 + sd * 2.1 + (sp.seed || 0)); fl += L * 0.05 * Math.sign(jk) * Math.min(1, Math.abs(jk) * 4); } // Portia: palps jerk up and down
+      const a = W(0.3 * L + dF, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + dF + pw, sd * L * 0.1, h0 + L * 0.06 + Math.abs(fl)), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + dF + pw - Math.abs(fl) * 0.5, sd * L * 0.09, h0 + L * 0.0 + fl), M.mul(fg, L * 0.02));
+      const pk = LK.palp || 'plain', pc = LK.palpCol || pal.hair;
+      parts.push({ d: V.depth(b) - 0.02, f: () => {
+        limb(ctx, V, [a, b, c], [L * 0.04, L * 0.036], pal.leg, lod, null);
+        if (pk === 'flag') { limb(ctx, V, [M.lerp3(b, c, 0.15), c], [L * 0.055], pc, lod, null); blob(ctx, V, c, M.mul(fg, L * 0.045), M.mul(sg, L * 0.04), M.mul(n, L * 0.045), pc, { lod, ink: false, gloss: 0.3 }); return; }
+        if (lod === 0) return;
+        const r = pk === 'pompom' ? 0.065 : pk === 'fluffy' ? 0.045 : 0.035;
+        blob(ctx, V, c, M.mul(fg, L * r), M.mul(sg, L * r * 0.88), M.mul(n, L * r * 0.88), pc, { lod, ink: pk === 'pompom' });
+        const rr = r * L * V.s; if ((pk === 'pompom' || pk === 'fluffy') && rr > 2) puff(ctx, V.P(c), rr, pk === 'pompom' ? sh(pc, 0.15) : pc, pk === 'pompom' ? 14 : 9, Math.max(0.5, rr * 0.12));
+      } });
     }
     // --- 8 legs: coxa→femur→tibia→tarsus, tapered and inked; front legs stout ---
     const dorsal = M.dot(n, V.toCam) > 0.45;
@@ -5077,10 +5217,29 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     // held prey being secured / fed on: front legs (pair I, plus pair II for big prey) wrap around it
     const hg = o.hug && o.hug.k > 0.01 ? o.hug : null; let mc = null, hr = 0;
     let mp0 = null; if (hg) { mp0 = M.add(W(0.4 * L, 0, h0 * 0.35), M.mul(fg, L * 0.06)); mc = M.add(mp0, M.mul(fg, hg.pl * 0.25)); hr = Math.max(L * 0.07, hg.pl * 0.3); }
+    // leg hair by zoom detail: dense fuzz, long pale bristles (Phidippus), dark fringe brushes (Portia)
+    const legHair = (A, B, w, i, lk, seg) => {
+      if (lod === 0 || !A || !B) return;
+      const fr = LK.fringe || 0;
+      if (fr > 0 && px > 14 && (seg === 1 || i < 2)) { // brushes read even when small
+        const k0 = seg === 1 ? 0.2 : 0.35, k1 = seg === 1 ? 0.75 : 0.85; ctx.strokeStyle = LK.tuftCol || '#2a1e14'; ctx.lineWidth = w * (i < 2 ? 2.3 : 1.7) * fr; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(M.lerp(A[0], B[0], k0), M.lerp(A[1], B[1], k0)); ctx.lineTo(M.lerp(A[0], B[0], k1), M.lerp(A[1], B[1], k1)); ctx.stroke();
+        if (lod === 2 && px > 44) hairs(ctx, A, B, w * 2, 9, w * 1.1, LK.tuftCol || '#2a1e14', Math.max(0.5, w * 0.18), 0.7, lk);
+      }
+      if (lod < 2) return;
+      if ((LK.legHair || 0) > 0 && px > 60) hairs(ctx, A, B, w, Math.round(3 + 7 * LK.legHair * (i === 0 ? 1.3 : 1)), w * 0.55, pal.hair, Math.max(0.5, w * 0.12), 0.6, lk);
+      if ((LK.bristle || 0) > 0 && px > 44) { ctx.globalAlpha = alpha * 0.85; hairs(ctx, A, B, w, Math.round((2 + 4 * LK.bristle) * (i === 0 ? 1.3 : 1)), w * 1.3 + 1.5, LK.bristleCol || '#f2eee4', 0.55, 0.9, lk + 3); ctx.globalAlpha = alpha; }
+    };
     const sq = sp.state === 'subdue' ? 1 : 0.35; const seedP = ((sp.seed || 1) % 97) * 0.37;
     for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) {
-      const ph = (sp._walk || 0) * Math.PI + (i % 2) * Math.PI + (sd > 0 ? Math.PI : 0);
-      let fu = FU[i] * L + Math.sin(ph) * L * 0.12 * moving, fv = FV[i] * L * sd * (1 + crouch * 0.12), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * moving;
+      const lk = i * 2 + (sd > 0 ? 1 : 0); // leg index 0..7
+      const lg = (LK.legLen || 1) * (i === 0 ? LK.front || 1 : i === 1 ? 1 + ((LK.front || 1) - 1) * 0.35 : 1);
+      // Portia: every leg on its own rhythm (never in step), plus slow waving during its pauses
+      const ph = gait === 'choppy' ? (sp._walk || 0) * Math.PI * (1 + 0.17 * lk) + lk * 1.37 : (sp._walk || 0) * Math.PI + (i % 2) * Math.PI + (sd > 0 ? Math.PI : 0);
+      const sw = gait === 'glide' ? 0.7 : 1;
+      let fu = FU[i] * L * lg + Math.sin(ph) * L * 0.12 * moving * lg * sw, fv = FV[i] * L * sd * (1 + crouch * 0.12) * (1 + (lg - 1) * 0.6), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * moving * sw;
+      if (gait === 'choppy' && i < 3) fw += L * 0.06 * gp * Math.max(0, Math.sin(t * (1.3 + 0.37 * lk) + lk * 2.3));
+      if (LK.antennae && i === 0 && !o.curled && !o.tucked) { const ak = 1 - reach; fu += L * 0.1 * ak; fv *= 1 - 0.5 * ak; fw += L * (0.4 + 0.07 * Math.sin(t * 6.5 + sd * 1.9)) * ak; } // ant mimic: pair I up like antennae
       if (i === 0 && raise > 0) { fu += L * 0.2 * raise; fw += L * 0.18 * raise * (1 - 0.8 * fore); fv *= 1 - 0.1 * raise; }
       if (i < 2 && fore > 0.01) { // creeping in: pairs I+II point onward, each feeling forward on its own rhythm (never in step)
         const k = i * 2 + (sd > 0 ? 1 : 0);
@@ -5095,7 +5254,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       if (flat > 0.01) { fv *= 1 + 0.2 * flat; fu *= 1 + 0.06 * flat; }
       if (hang > 0.01) { fv *= 1 - 0.25 * hang; fw += L * 0.05 * hang; }
       if (o.airborne) { if (i < 2) { fu += L * 0.22; fw += L * 0.06; fv *= 0.8; } else { fu -= L * 0.3; fv *= 0.7; } }
-      if (i < 2 && reach > 0.01) { fu = M.lerp(fu, L * (0.98 - 0.16 * i), reach); fv = M.lerp(fv, sd * L * (0.2 + 0.15 * i), reach); fw = M.lerp(fw, h0 + L * (0.03 - 0.05 * i), reach); }
+      if (i < 2 && reach > 0.01) { fu = M.lerp(fu, L * (0.98 - 0.16 * i) * Math.sqrt(lg), reach); fv = M.lerp(fv, sd * L * (0.2 + 0.15 * i), reach); fw = M.lerp(fw, h0 + L * (0.03 - 0.05 * i), reach); }
       if (o.curled) { fu *= 0.35; fv *= 0.55; fw = h0 + L * 0.14; }
       else if (o.tucked) { fu *= 0.6; fv *= 0.56; fw = L * 0.03; }
       // legs attach under the carapace edge and always swing out to the side (never across the head)
@@ -5109,8 +5268,8 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       }
       const mid = M.lerp3(hip, foot, 0.4);
       const far = sd * M.dot(s, V.toCam) < -0.15 && !o.thumb; // far-side legs: keep the knee low so it never pokes up over the head
-      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1) * (i < 2 ? 1 - 0.65 * reach : 1) * (1 + 0.35 * hk))), M.mul(s, sd * L * (0.06 + 0.06 * hk)));
-      const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
+      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * Math.sqrt(lg) * sw * (1 - 0.35 * (LK.flat || 0)) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1) * (i < 2 ? 1 - 0.65 * reach : 1) * (1 + 0.35 * hk))), M.mul(s, sd * L * (0.06 + 0.06 * hk)));
+      const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33) * (1 + (lg - 1) * 0.5); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
       let ankle = M.add(M.lerp3(knee, foot, 0.62), M.mul(n, L * 0.05));
       if (hk > 0.001) { // embrace: knee lifted high and just outside the prey, tarsus hooking down and in around it
         const latTo = (q, v) => M.add(q, M.mul(sg, sd * v - M.dot(M.sub(q, mc), sg)));
@@ -5119,7 +5278,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
         const aH = latTo(M.add(M.add(foot, M.mul(fg, i === 0 ? -hr * 0.45 : 0)), M.mul(n, hr * 0.55 + L * 0.03)), hr * 0.95 + L * 0.03);
         ankle = M.lerp3(ankle, aH, hk);
       }
-      const wk = i === 0 ? (S.pattern === 'bold' || S.pattern === 'regal' || S.pattern === 'orange' || S.pattern === 'apache' ? 1.55 : 1.3) : 1;
+      const wk = (i === 0 ? (LK.frontW || 1.3) : 1) * (LK.legW || 1);
       const col = i === 0 ? sh(pal.leg, -0.04) : pal.leg;
       let kd = V.depth(knee) + (M.dot(M.sub(knee, cc), V.toCam) > 0 ? -0.02 : 0.02);
       // femur base tucks under the body when seen from above
@@ -5127,14 +5286,11 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       if (hk > 0.5 && far && !dorsal) { const md = Math.max(V.depth(cc), V.depth(mp0)) + 0.03; kd = md + 0.01; pd = md + 0.012; } // far arm wraps behind the meal
       parts.push({ d: pd, f: () => {
         const Sx = limb(ctx, V, [hip, knee], [L * 0.066 * wk], col, lod, null);
-        if (lod === 2 && i === 0 && px > 55) { // hair brush on front legs
-          ctx.strokeStyle = pal.hair; ctx.lineWidth = 0.7; ctx.beginPath();
-          for (let k = 1; k <= 5; k++) { const q = [M.lerp(Sx[0][0], Sx[1][0], k / 6), M.lerp(Sx[0][1], Sx[1][1], k / 6)]; ctx.moveTo(q[0], q[1]); ctx.lineTo(q[0] + (k % 2 ? 2 : -2), q[1] + 2.5); }
-          ctx.stroke();
-        }
+        legHair(Sx[0], Sx[1], L * 0.066 * wk * V.s, i, lk, 0);
       } });
       parts.push({ d: kd, f: () => {
-        const Sx = limb(ctx, V, [knee, ankle, foot], [L * 0.05 * wk, L * 0.03], col, lod, null);
+        const Sx = limb(ctx, V, [knee, ankle, foot], [L * 0.05 * wk, L * 0.03 * (LK.legW || 1)], col, lod, null);
+        legHair(Sx[0], Sx[1], L * 0.05 * wk * V.s, i, lk, 1);
         const kr = L * 0.066 * wk * V.s * 0.5; if (lod > 0 && kr > 0.8) { ctx.fillStyle = ring || sh(col, 0.06); ctx.beginPath(); ctx.arc(Sx[0][0], Sx[0][1], kr, 0, 6.283); ctx.fill(); }
       } });
     }
