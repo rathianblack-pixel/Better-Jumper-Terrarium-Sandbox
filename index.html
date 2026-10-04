@@ -945,6 +945,28 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     D('twigs', 'Twig Scatter', 'ground', 10, 'scatter', { kind: 'twigs', r: 22, col: '#6a5038', n: 9 }, { cover: .25, small: true }),
     D('cushionmoss', 'Cushion Moss', 'ground', 12, 'scatter', { kind: 'moss', r: 24, col: '#7aa83a' }, { cover: .3, small: true, moist: .7 }),
     D('clover', 'Clover Patch', 'ground', 12, 'scatter', { kind: 'clover', r: 18, col: '#4a8a3a' }, { cover: .4, small: true, moist: .4 }),
+    // --- Purpose-built additions: arid, arboreal, woodland, nano and panoramic builds ---
+    D('baskrock', 'Basking Boulder', 'decor', 45, 'rock', { w: 44, d: 36, h: 16, style: 'sand', round: true }, { platform: true, cover: .1, desc: 'Broad warm top — pair with a basking lamp' }),
+    D('sandsteps', 'Sandstone Steps', 'decor', 70, 'rock', { w: 44, d: 32, h: 46, style: 'sand', layers: 5 }, { platform: true, cover: .25, desc: 'Terraced climb from floor to mid-height' }),
+    D('chollawood', 'Cholla Wood', 'decor', 35, 'branch', { kind: 'forked', L: 54, h: 52, r: 2.4, col: '#c2b294' }, { small: true, desc: 'Bleached desert perch for scanning prey' }),
+    D('desertarch', 'Desert Root Arch', 'decor', 45, 'branch', { kind: 'arch', L: 66, h: 30, r: 3, col: '#a8906c' }, { cover: .2, desc: 'Shaded tunnel over open sand' }),
+    D('tallficus', 'Canopy Ficus', 'plants', 120, 'tree', { kind: 'ficus', h: 100, r: 3.4, spread: 54, leaf: '#3a7230' }, { cover: .6, desc: 'High leafy canopy for tall tanks' }),
+    D('bambooperch', 'Bamboo Perch', 'decor', 40, 'branch', { kind: 'perch', L: 44, h: 96, r: 2.2, col: '#b4a466' }, { small: true, desc: 'Steep perch that reaches the canopy' }),
+    D('skybridge', 'Canopy Vine Bridge', 'decor', 75, 'branch', { kind: 'vine', L: 120, h: 88, r: 1.8, col: '#5e4e34', leaves: '#4a8a34' }, { desc: 'High walkway between canopy perches' }),
+    D('liana', 'Hanging Liana', 'plants', 40, 'vine', { h: 110, leaf: '#3a7a2a' }, { stack: true, cover: .35, desc: 'Tall climbing route up to the lid' }),
+    D('birdsnest', "Bird's Nest Fern", 'plants', 40, 'broadleaf', { n: 10, h: 30, leafL: 24, leafW: 9, leaf: '#5a9a34', upright: true }, { stack: true, cover: .55, desc: 'Upright fronds, good ambush cover' }),
+    D('tillandsia', 'Tillandsia Cluster', 'plants', 30, 'rosette', { n: 14, L: 13, h: 9, leaf: '#a8bca8', tip: '#c86a8a', thin: true }, { stack: true, small: true, cover: .2, desc: 'Light epiphyte for perches and shelves' }),
+    D('mossystump', 'Tree Stump', 'decor', 45, 'tower', { r: 17, h: 24, style: 'wood' }, { platform: true, cover: .2, desc: 'Low, wide lookout over the floor' }),
+    D('fallenlog', 'Fallen Log', 'decor', 50, 'log', { L: 84, r: 9, style: 'wood' }, { platform: true, cover: .4, desc: 'Runway across the floor with shade beneath' }),
+    D('bluebells', 'Bluebells', 'plants', 30, 'flower', { n: 8, h: 30, petal: '#6a86e0', center: '#4a5ab0', spike: true }, { stack: true, cover: .3, flowers: true, small: true, desc: 'Draws flying prey to the woodland floor' }),
+    D('inkcaps', 'Ink Cap Mushrooms', 'plants', 30, 'mushroom', { n: 5, h: 20, cap: 4.5, col: '#d8d2c4', stem: '#efe8da' }, { stack: true, small: true, cover: .15, desc: 'Pale woodland mushrooms' }),
+    D('nanoledge', 'Nano Cork Ledge', 'decor', 20, 'rock', { w: 20, d: 15, h: 18, style: 'cork', ledge: true }, { platform: true, small: true, cover: .2, desc: 'Compact ledge for nano and breeder tanks' }),
+    D('pebblehide', 'Pebble Hide', 'decor', 25, 'hide', { w: 20, d: 16, h: 11, style: 'river', dome: true }, { cover: .9, small: true, desc: 'Tiny shelter for slings' }),
+    D('twigperch', 'Twig Perch', 'decor', 15, 'branch', { kind: 'perch', L: 32, h: 30, r: 1.5, col: '#6a4e34' }, { small: true, desc: 'Slender perch scaled for slings' }),
+    D('babytears', "Baby's Tears", 'plants', 15, 'rosette', { n: 18, L: 4, h: 3, leaf: '#8ac050', fat: true }, { stack: true, small: true, cover: .2, desc: 'Dense micro-foliage, holds humidity' }),
+    D('longlog', 'Long Hollow Log', 'decor', 85, 'log', { L: 124, r: 12, style: 'wood', hollow: true }, { cover: .8, desc: 'Spans wide tanks, shelter along its length' }),
+    D('slateridge', 'Slate Ridge', 'decor', 75, 'rock', { w: 96, d: 30, h: 20, style: 'slate', layers: 3 }, { platform: true, cover: .2, desc: 'Long platform for panoramic layouts' }),
+    D('grassbank', 'Grass Bank', 'plants', 30, 'grass', { n: 30, L: 40, h: 34, leaf: '#7aa040' }, { stack: true, cover: .6, desc: 'Wide band of cover for open floors' }),
   ];
   JT.DECOR_BY_ID = {}; JT.DECOR.forEach(d => JT.DECOR_BY_ID[d.id] = d);
 
@@ -978,30 +1000,30 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // ---------------- Presets ----------------
   // Themes: weighted pools. Generated adaptively for any enclosure shape.
   JT.PRESET_THEMES = {
-    cork:     { sub: 'coco',   bg: 'hollow',  tall: ['corktower', 'tallspire'], mid: ['corkbark', 'corkround', 'corkledge', 'driftwood'], plants: ['fern', 'pothos', 'creepfig', 'tallgrass'], ground: ['leaflitter', 'mosspatch', 'barkchips'] },
-    flower:   { sub: 'forest', bg: 'meadow',  tall: ['tinytree'], mid: ['flatstone', 'branchperch'], plants: ['pinkflowers', 'daisies', 'lavender', 'wildflowers', 'tallgrass'], ground: ['clover', 'mosspatch'] },
-    forest:   { sub: 'forest', bg: 'mossy',   tall: ['tinytree', 'forked'], mid: ['hollowlog', 'driftwood', 'riverstone'], plants: ['fern', 'maidenhair', 'glowshroom'], ground: ['oaklitter', 'mosspatch', 'pinecones', 'twigs'] },
-    paradise: { sub: 'jungle', bg: 'canopy',  tall: ['grandtree', 'corktower'], mid: ['rockmesa', 'canopybranch', 'corkbark'], plants: ['monstera', 'bromeliad', 'fern', 'orchid', 'pinkflowers'], ground: ['leaflitter', 'mosspatch'] },
+    cork:     { sub: 'coco',   bg: 'hollow',  tall: ['corktower', 'tallspire'], mid: ['corkbark', 'corkround', 'corkledge', 'driftwood'], plants: ['fern', 'pothos', 'creepfig', 'tallgrass', 'babytears'], ground: ['leaflitter', 'mosspatch', 'barkchips'] },
+    flower:   { sub: 'forest', bg: 'meadow',  tall: ['tinytree'], mid: ['flatstone', 'branchperch'], plants: ['pinkflowers', 'daisies', 'lavender', 'wildflowers', 'tallgrass', 'bluebells'], ground: ['clover', 'mosspatch'] },
+    forest:   { sub: 'forest', bg: 'mossy',   tall: ['tinytree', 'forked'], mid: ['hollowlog', 'driftwood', 'riverstone', 'mossystump', 'fallenlog'], plants: ['fern', 'maidenhair', 'glowshroom'], ground: ['oaklitter', 'mosspatch', 'pinecones', 'twigs'] },
+    paradise: { sub: 'jungle', bg: 'canopy',  tall: ['grandtree', 'corktower'], mid: ['rockmesa', 'canopybranch', 'corkbark'], plants: ['monstera', 'bromeliad', 'fern', 'orchid', 'pinkflowers', 'birdsnest', 'tillandsia'], ground: ['leaflitter', 'mosspatch'] },
     ruin:     { sub: 'moss',   bg: 'stone',   tall: ['slatepillar'], mid: ['minruin', 'flowerpot', 'slatestack'], plants: ['ivy', 'fern', 'creepfig', 'glowshroom'], ground: ['mosspatch', 'lichen'] },
-    canopy:   { sub: 'jungle', bg: 'canopy',  tall: ['grandtree', 'tallspire', 'canopybranch'], mid: ['forked', 'corkledge'], plants: ['bromeliad', 'monstera', 'climbvine', 'orchid'], ground: ['leaflitter'] },
-    vertical: { sub: 'coco',   bg: 'hollow',  tall: ['tallspire', 'mossstone', 'forked'], mid: ['corkledge', 'branchperch'], plants: ['climbvine', 'pothos', 'airplant', 'redbromeliad'], ground: ['mosspatch'] },
-    dry:      { sub: 'desert', bg: 'twilight',tall: ['forked'], mid: ['rockmesa', 'sandshelf', 'driftwood', 'rockcave'], plants: ['succulent', 'driedflowers', 'tallgrass', 'airplant'], ground: ['pebbles', 'twigs'] },
-    canyon:   { sub: 'clay',   bg: 'twilight',tall: ['slatepillar'], mid: ['rockmesa', 'slatestack', 'slateledge', 'rockcave'], plants: ['succulent', 'tallgrass', 'driedflowers'], ground: ['pebbles', 'lichen'] },
-    meadow:   { sub: 'forest', bg: 'meadow',  tall: ['branchperch'], mid: ['flatstone', 'riverstone', 'woodbridge'], plants: ['tallgrass', 'daisies', 'wildflowers', 'lavender', 'spiderplant'], ground: ['clover', 'mosspatch'] },
-    nursery:  { sub: 'coco',   bg: 'mossy',   tall: ['branchperch'], mid: ['corkround', 'woodhide'], plants: ['fittonia', 'mossrosette', 'pothos'], ground: ['mosspatch', 'leaflitter'] },
-    minimal:  { sub: 'coco',   bg: 'stone',   tall: ['branchperch'], mid: ['maghide', 'corkround'], plants: ['pothos'], ground: ['mosspatch'] },
-    jungle:   { sub: 'jungle', bg: 'canopy',  tall: ['ficus', 'mangrove'], mid: ['corkbark', 'rootarch', 'vinebridge'], plants: ['monstera', 'calathea', 'fern', 'bromeliad', 'pothos'], ground: ['leaflitter', 'magnolia'] },
-    mushroom: { sub: 'black',  bg: 'log',     tall: ['tinytree'], mid: ['hollowlog', 'corkbark', 'riverstone'], plants: ['glowshroom', 'fern', 'maidenhair', 'glowshroom'], ground: ['mosspatch', 'oaklitter'] },
-    rock:     { sub: 'gravel', bg: 'stone',   tall: ['slatepillar'], mid: ['slatestack', 'slateledge', 'riverstone', 'dewstone'], plants: ['fern', 'succulent', 'mossrosette'], ground: ['pebbles', 'lichen'] },
+    canopy:   { sub: 'jungle', bg: 'canopy',  tall: ['grandtree', 'tallspire', 'canopybranch', 'tallficus', 'skybridge', 'bambooperch'], mid: ['forked', 'corkledge'], plants: ['bromeliad', 'monstera', 'climbvine', 'orchid'], ground: ['leaflitter'] },
+    vertical: { sub: 'coco',   bg: 'hollow',  tall: ['tallspire', 'mossstone', 'forked', 'bambooperch'], mid: ['corkledge', 'branchperch'], plants: ['climbvine', 'pothos', 'airplant', 'redbromeliad', 'liana'], ground: ['mosspatch'] },
+    dry:      { sub: 'desert', bg: 'twilight',tall: ['forked'], mid: ['rockmesa', 'sandshelf', 'driftwood', 'rockcave', 'baskrock', 'chollawood', 'desertarch'], plants: ['succulent', 'driedflowers', 'tallgrass', 'airplant'], ground: ['pebbles', 'twigs'] },
+    canyon:   { sub: 'clay',   bg: 'twilight',tall: ['slatepillar'], mid: ['rockmesa', 'slatestack', 'slateledge', 'rockcave', 'sandsteps', 'baskrock'], plants: ['succulent', 'tallgrass', 'driedflowers'], ground: ['pebbles', 'lichen'] },
+    meadow:   { sub: 'forest', bg: 'meadow',  tall: ['branchperch'], mid: ['flatstone', 'riverstone', 'woodbridge'], plants: ['tallgrass', 'daisies', 'wildflowers', 'lavender', 'spiderplant', 'bluebells', 'grassbank'], ground: ['clover', 'mosspatch'] },
+    nursery:  { sub: 'coco',   bg: 'mossy',   tall: ['branchperch'], mid: ['corkround', 'woodhide', 'nanoledge', 'pebblehide', 'twigperch'], plants: ['fittonia', 'mossrosette', 'pothos'], ground: ['mosspatch', 'leaflitter'] },
+    minimal:  { sub: 'coco',   bg: 'stone',   tall: ['branchperch'], mid: ['maghide', 'corkround', 'nanoledge', 'twigperch'], plants: ['pothos', 'babytears', 'tillandsia'], ground: ['mosspatch'] },
+    jungle:   { sub: 'jungle', bg: 'canopy',  tall: ['ficus', 'mangrove'], mid: ['corkbark', 'rootarch', 'vinebridge'], plants: ['monstera', 'calathea', 'fern', 'bromeliad', 'pothos', 'birdsnest', 'tillandsia'], ground: ['leaflitter', 'magnolia'] },
+    mushroom: { sub: 'black',  bg: 'log',     tall: ['tinytree'], mid: ['hollowlog', 'corkbark', 'riverstone', 'longlog'], plants: ['glowshroom', 'fern', 'maidenhair', 'glowshroom', 'inkcaps'], ground: ['mosspatch', 'oaklitter'] },
+    rock:     { sub: 'gravel', bg: 'stone',   tall: ['slatepillar'], mid: ['slatestack', 'slateledge', 'riverstone', 'dewstone', 'slateridge'], plants: ['fern', 'succulent', 'mossrosette'], ground: ['pebbles', 'lichen'] },
     mosswall: { sub: 'moss',   bg: 'mossy',   tall: ['mosswall', 'mossstone'], mid: ['beadvine', 'mossmound', 'wm_fungi', 'wm_cork', 'maghide'], plants: ['toadstools', 'fern', 'echeveria', 'maidenhair', 'toadstools', 'glowshroom'], ground: ['cushionmoss', 'mosspatch'], back: true },
     barkwall: { sub: 'coco',   bg: 'hollow',  tall: ['barkwall', 'corktower'], mid: ['wm_cork', 'wm_staghorn', 'wm_cork', 'branchperch', 'corkround'], plants: ['fern', 'pothos', 'bromeliad', 'fittonia', 'mossrosette'], ground: ['leaflitter', 'mosspatch'], back: true },
     stonewall: { sub: 'gravel', bg: 'stone',  tall: ['stonewall', 'slatepillar'], mid: ['wm_slate', 'wm_pothos', 'wm_slate', 'riverstone', 'dewstone'], plants: ['ivy', 'fern', 'mossrosette', 'maidenhair'], ground: ['lichen', 'mosspatch', 'pebbles'], back: true },
-    leafwall: { sub: 'forest',  bg: 'log',    tall: ['leafwall', 'forked'], mid: ['wm_fungi', 'wm_cork', 'hollowlog', 'branchperch'], plants: ['toadstools', 'fern', 'glowshroom', 'maidenhair'], ground: ['oaklitter', 'leaflitter', 'twigs'], back: true },
-    trunkwall: { sub: 'forest', bg: 'mossy',  tall: ['trunkwall', 'tinytree'], mid: ['wm_fungi', 'wm_staghorn', 'wm_fungi', 'rootarch', 'mossmound'], plants: ['fern', 'toadstools', 'ivy', 'glowshroom'], ground: ['mosspatch', 'oaklitter', 'pinecones'], back: true },
+    leafwall: { sub: 'forest',  bg: 'log',    tall: ['leafwall', 'forked'], mid: ['wm_fungi', 'wm_cork', 'hollowlog', 'branchperch'], plants: ['toadstools', 'fern', 'glowshroom', 'maidenhair', 'inkcaps'], ground: ['oaklitter', 'leaflitter', 'twigs'], back: true },
+    trunkwall: { sub: 'forest', bg: 'mossy',  tall: ['trunkwall', 'tinytree'], mid: ['wm_fungi', 'wm_staghorn', 'wm_fungi', 'rootarch', 'mossmound', 'mossystump'], plants: ['fern', 'toadstools', 'ivy', 'glowshroom'], ground: ['mosspatch', 'oaklitter', 'pinecones'], back: true },
     rootwall: { sub: 'jungle',  bg: 'canopy', tall: ['rootwall', 'mangrove'], mid: ['wm_pothos', 'wm_cork', 'vinebridge', 'rootarch'], plants: ['monstera', 'calathea', 'fern', 'pothos', 'bromeliad'], ground: ['leaflitter', 'magnolia'], back: true },
-    sandwall: { sub: 'desert',  bg: 'twilight', tall: ['sandwall', 'forked'], mid: ['wm_drift', 'wm_slate', 'sandshelf', 'rockcave'], plants: ['succulent', 'echeveria', 'driedflowers', 'airplant'], ground: ['pebbles', 'twigs'], back: true },
+    sandwall: { sub: 'desert',  bg: 'twilight', tall: ['sandwall', 'forked'], mid: ['wm_drift', 'wm_slate', 'sandshelf', 'rockcave', 'chollawood', 'baskrock'], plants: ['succulent', 'echeveria', 'driedflowers', 'airplant'], ground: ['pebbles', 'twigs'], back: true },
     driftwall: { sub: 'clay',   bg: 'twilight', tall: ['driftwall', 'driftwood'], mid: ['wm_drift', 'wm_staghorn', 'wm_drift', 'flatstone'], plants: ['airplant', 'succulent', 'tallgrass', 'redbromeliad'], ground: ['pebbles', 'lichen'], back: true },
-    feeding:  { sub: 'coco',   bg: 'mossy',   tall: ['branchperch'], mid: ['feedledge', 'corkbark'], plants: ['pothos', 'fern'], ground: ['mosspatch'] },
+    feeding:  { sub: 'coco',   bg: 'mossy',   tall: ['branchperch'], mid: ['feedledge', 'corkbark', 'nanoledge'], plants: ['pothos', 'fern'], ground: ['mosspatch'] },
   };
   // preset name -> [theme, habitat types]
   JT.PRESETS = [
@@ -1192,7 +1214,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     return G.hull(pts);
   }
   ARCH.backwall = function (B, p, sc) {
-    const rng = B.rng, h = Math.max(20, p.h * sc), w = p.w, d = p.d, c = d * 0.45, S = p.style || 'mosswall', cfg = WALLS[S] || WALLS.mosswall;
+    const rng = B.rng, h = Math.max(20, p.h * sc), w = p.w, d = p.d, AF = Math.max(1, Math.sqrt((w * h) / (92 * 140))), c = d * 0.45, S = p.style || 'mosswall', cfg = WALLS[S] || WALLS.mosswall;
     // front face (local -z) as a gently irregular / convex polyline so bark, trunks and stone read as real material
     const N = cfg.bulge || cfg.jit ? 8 : 1, x0 = -w / 2 + c, x1 = w / 2 - c;
     const jz = []; for (let i = 0; i <= N; i++) jz.push(i === 0 || i === N ? 0 : (rng() - 0.5) * cfg.jit);
@@ -1207,9 +1229,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     B.solids.push(base); const ti = B.top(top, h);
     B.front = base.slice(0, N + 1).map(q => [q[0], q[1] - 0.6]); // used to snap wall-mounted pieces
     // climbing routes up the front face, broken by integrated ledges the jumper can stop and perch on
-    const routes = [-0.32, 0, 0.32].map(u => u * w + (rng() - 0.5) * 6);
+    const nR = Math.max(3, Math.round(w / 34)); const routes = []; for (let i = 0; i < nR; i++) routes.push((i / (nR - 1) - 0.5) * 0.66 * w * (nR > 3 ? 1.36 : 1) + (rng() - 0.5) * 6);
     const ledgeAt = {}; // route index -> [heights]
-    for (let k = 0; k < cfg.ledges; k++) { const r = k % 3 === 0 ? 0 : k % 3 === 1 ? 2 : 1; (ledgeAt[r] = ledgeAt[r] || []).push(h * (k === 0 ? 0.38 : k === 1 ? 0.6 : 0.78) + (rng() - 0.5) * 8); }
+    const nL = Math.round(cfg.ledges * nR / 3 * Math.min(1.6, Math.max(1, h / 140))); for (let k = 0; k < nL; k++) { const r = (k * 2 + Math.floor(k / nR)) % nR; const kk = Math.floor(k / nR) % 3; (ledgeAt[r] = ledgeAt[r] || []).push(h * (kk === 0 ? 0.38 + (r % 2) * 0.1 : kk === 1 ? 0.6 : 0.78) + (rng() - 0.5) * 8); }
     routes.forEach((x, r) => {
       const zf = zAt(x); const hs = (ledgeAt[r] || []).sort((a, b) => a - b);
       let y = 0, start = null;
@@ -1244,51 +1266,51 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     for (const sd of [-1, 1]) {
       if (S === 'mosswall') {
         const greens = ['#5f8f2e', '#4a7a26', '#79a83a', '#3f6a22', '#8ab848'];
-        for (let k = 0; k < 16; k++) tuft(sd, (rng() - 0.5) * (w - 8), 4 + rng() * (h - 10), 2.5 + rng() * 3.2, greens[k % greens.length]);
-        for (let k = 0; k < 5; k++) shelfs(sd, (rng() - 0.5) * (w - 16), h * (0.2 + 0.7 * rng()), 2 + (k % 2), k % 3 === 0 ? ['#e0a050'] : ['#cf6a2e']);
-        for (let k = 0; k < 6; k++) sprig(sd, (rng() - 0.5) * (w - 10), 8 + rng() * (h - 20), 4 + (k % 3), '#4f8a34');
+        for (let k = 0; k < Math.round(16 * AF); k++) tuft(sd, (rng() - 0.5) * (w - 8), 4 + rng() * (h - 10), 2.5 + rng() * 3.2, greens[k % greens.length]);
+        for (let k = 0; k < Math.round(5 * AF); k++) shelfs(sd, (rng() - 0.5) * (w - 16), h * (0.2 + 0.7 * rng()), 2 + (k % 2), k % 3 === 0 ? ['#e0a050'] : ['#cf6a2e']);
+        for (let k = 0; k < Math.round(6 * AF); k++) sprig(sd, (rng() - 0.5) * (w - 10), 8 + rng() * (h - 20), 4 + (k % 3), '#4f8a34');
       } else if (S === 'barkwall') {
-        for (let k = 0; k < 18; k++) tuft(sd, RX(), RY(), 1.2 + rng() * 1.6, ['#a8b890', '#c4ccb0', '#8fa47a'][k % 3]); // lichen rosettes
-        for (let k = 0; k < 7; k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2.4, ['#5f8f2e', '#4a7a26'][k % 2]);
-        for (let k = 0; k < 3; k++) shelfs(sd, RX(), RY(20, 20), 2, ['#c8a070', '#b08050', '#d8b888']);
-        for (let k = 0; k < 4; k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 5);
+        for (let k = 0; k < Math.round(18 * AF); k++) tuft(sd, RX(), RY(), 1.2 + rng() * 1.6, ['#a8b890', '#c4ccb0', '#8fa47a'][k % 3]); // lichen rosettes
+        for (let k = 0; k < Math.round(7 * AF); k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2.4, ['#5f8f2e', '#4a7a26'][k % 2]);
+        for (let k = 0; k < Math.round(3 * AF); k++) shelfs(sd, RX(), RY(20, 20), 2, ['#c8a070', '#b08050', '#d8b888']);
+        for (let k = 0; k < Math.round(4 * AF); k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 5);
       } else if (S === 'stonewall') {
-        for (let k = 0; k < 4; k++) ivyRun(sd, RX(), h - 4 - rng() * 30, 10 + (rng() * 12 | 0), '#3e7a2e');
-        for (let k = 0; k < 16; k++) tuft(sd, RX(), RY(), 1.1 + rng() * 1.5, ['#c8c890', '#a8b088', '#d8c070'][k % 3]);
-        for (let k = 0; k < 5; k++) sprig(sd, RX(), RY(10, 20), 5, '#558a3a', 'lance', 6);
-        for (let k = 0; k < 6; k++) tuft(sd, RX(), RY(), 2.4 + rng() * 2, '#4f7a2a');
+        for (let k = 0; k < Math.round(4 * AF); k++) ivyRun(sd, RX(), h - 4 - rng() * 30, 10 + (rng() * 12 | 0), '#3e7a2e');
+        for (let k = 0; k < Math.round(16 * AF); k++) tuft(sd, RX(), RY(), 1.1 + rng() * 1.5, ['#c8c890', '#a8b088', '#d8c070'][k % 3]);
+        for (let k = 0; k < Math.round(5 * AF); k++) sprig(sd, RX(), RY(10, 20), 5, '#558a3a', 'lance', 6);
+        for (let k = 0; k < Math.round(6 * AF); k++) tuft(sd, RX(), RY(), 2.4 + rng() * 2, '#4f7a2a');
       } else if (S === 'leafwall') {
         const browns = ['#8a5a2e', '#a0682e', '#6e4426', '#b8803e', '#7a5a34', '#c08a48', '#5e3e22'];
         const nL = Math.round(w * h / 70);
         for (let k = 0; k < nL; k++) { const L = 4 + rng() * 4.5; flat(sd, RX(), 2 + rng() * (h - 4), L, L * (0.45 + rng() * 0.2), rng() * 6.28, browns[k % browns.length], rng() < 0.45 ? 'oak' : rng() < 0.5 ? 'oval' : 'lance', { vein: 'rgba(60,36,18,0.6)' }); }
-        for (let k = 0; k < 5; k++) { const x = RX(), y = RY(10, 10), a = rng() * 6.28, L = 10 + rng() * 10; const z = F(sd, x) + sd * 0.6; B.prim({ t: 'tube', pts: [[x, y, z], [x + Math.cos(a) * L * 0.5, y + Math.sin(a) * L * 0.5, z], [x + Math.cos(a + 0.2) * L, y + Math.sin(a + 0.2) * L, z]], r0: 0.6, r1: 0.35, col: '#5a4030', style: 'stem', nv: nvOf(sd) }); }
-        for (let k = 0; k < 2; k++) shelfs(sd, RX(), RY(20, 20), 2, ['#e8d8b8', '#d8c098']);
+        for (let k = 0; k < Math.round(5 * AF); k++) { const x = RX(), y = RY(10, 10), a = rng() * 6.28, L = 10 + rng() * 10; const z = F(sd, x) + sd * 0.6; B.prim({ t: 'tube', pts: [[x, y, z], [x + Math.cos(a) * L * 0.5, y + Math.sin(a) * L * 0.5, z], [x + Math.cos(a + 0.2) * L, y + Math.sin(a + 0.2) * L, z]], r0: 0.6, r1: 0.35, col: '#5a4030', style: 'stem', nv: nvOf(sd) }); }
+        for (let k = 0; k < Math.round(2 * AF); k++) shelfs(sd, RX(), RY(20, 20), 2, ['#e8d8b8', '#d8c098']);
       } else if (S === 'trunkwall') {
-        for (let k = 0; k < 6; k++) shelfs(sd, RX(), RY(14, 20), 2 + (k % 2), ['#d89048', '#c87830', '#e8b060', '#a85a28'], 3.6);
-        for (let k = 0; k < 3; k++) ivyRun(sd, RX(), h - 4 - rng() * 40, 14, '#356e2a');
-        for (let k = 0; k < 10; k++) tuft(sd, RX(), RY(), 2 + rng() * 2.6, ['#5f8f2e', '#4a7a26', '#79a83a'][k % 3]);
+        for (let k = 0; k < Math.round(6 * AF); k++) shelfs(sd, RX(), RY(14, 20), 2 + (k % 2), ['#d89048', '#c87830', '#e8b060', '#a85a28'], 3.6);
+        for (let k = 0; k < Math.round(3 * AF); k++) ivyRun(sd, RX(), h - 4 - rng() * 40, 14, '#356e2a');
+        for (let k = 0; k < Math.round(10 * AF); k++) tuft(sd, RX(), RY(), 2 + rng() * 2.6, ['#5f8f2e', '#4a7a26', '#79a83a'][k % 3]);
       } else if (S === 'rootwall') {
         const rc = ['#6a4a30', '#5a3e28', '#7a5838', '#4e3422'];
-        for (let k = 0; k < 11; k++) {
+        for (let k = 0; k < Math.round(11 * AF); k++) {
           let px = RX(), py = h - rng() * 10; const pts = [[px, py, F(sd, px) + sd * 1.2]]; const r0 = 1.4 + rng() * 1.4;
           while (py > 2) { px += (rng() - 0.5) * 9; px = M.clamp(px, -w / 2 + 6, w / 2 - 6); py -= 6 + rng() * 8; pts.push([px, Math.max(1, py), F(sd, px) + sd * (0.8 + rng() * 1.4)]); }
           B.prim({ t: 'tube', pts, r0, r1: r0 * 0.35, col: rc[k % rc.length], style: 'bark', nv: nvOf(sd) });
         }
-        for (let k = 0; k < 8; k++) tuft(sd, RX(), RY(), 2 + rng() * 2.4, ['#4a7a26', '#5f8f2e'][k % 2]);
-        for (let k = 0; k < 4; k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 6);
+        for (let k = 0; k < Math.round(8 * AF); k++) tuft(sd, RX(), RY(), 2 + rng() * 2.4, ['#4a7a26', '#5f8f2e'][k % 2]);
+        for (let k = 0; k < Math.round(4 * AF); k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 6);
       } else if (S === 'sandwall') {
-        for (let k = 0; k < 9; k++) { const x = RX(), y = RY(); for (let j = 0; j < 7; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 3) * 0.7, 2 + rng() * 1.6, 1.1, shade('#8aa07a', (rng() - .5) * .2), '#c09080', 'fat', 0.1 + rng() * 0.3, y, { nv: nvOf(sd) }); }
-        for (let k = 0; k < 10; k++) tuft(sd, RX(), RY(), 1 + rng() * 1.3, ['#c8a050', '#b8b878', '#d0b070'][k % 3]);
-        for (let k = 0; k < 3; k++) sprig(sd, RX(), RY(10, 30), 5, '#7a8a4a', 'lance', 5);
+        for (let k = 0; k < Math.round(9 * AF); k++) { const x = RX(), y = RY(); for (let j = 0; j < 7; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 3) * 0.7, 2 + rng() * 1.6, 1.1, shade('#8aa07a', (rng() - .5) * .2), '#c09080', 'fat', 0.1 + rng() * 0.3, y, { nv: nvOf(sd) }); }
+        for (let k = 0; k < Math.round(10 * AF); k++) tuft(sd, RX(), RY(), 1 + rng() * 1.3, ['#c8a050', '#b8b878', '#d0b070'][k % 3]);
+        for (let k = 0; k < Math.round(3 * AF); k++) sprig(sd, RX(), RY(10, 30), 5, '#7a8a4a', 'lance', 5);
       } else if (S === 'driftwall') {
-        for (let k = 0; k < 7; k++) { const x = RX(), y = RY(10, 10); for (let j = 0; j < 9; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 4) * 0.38, 4 + rng() * 4, 0.7, shade('#9aaa98', (rng() - .5) * .2), '#c8c8b8', 'lance', -0.6 + rng() * 1.4, y, { nv: nvOf(sd) }); }
-        for (let k = 0; k < 16; k++) tuft(sd, RX(), RY(), 1 + rng() * 1.6, ['#c8ccb0', '#a8b490', '#e0d8a0'][k % 3]);
-        for (let k = 0; k < 4; k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2, '#6a8a3a');
+        for (let k = 0; k < Math.round(7 * AF); k++) { const x = RX(), y = RY(10, 10); for (let j = 0; j < 9; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 4) * 0.38, 4 + rng() * 4, 0.7, shade('#9aaa98', (rng() - .5) * .2), '#c8c8b8', 'lance', -0.6 + rng() * 1.4, y, { nv: nvOf(sd) }); }
+        for (let k = 0; k < Math.round(16 * AF); k++) tuft(sd, RX(), RY(), 1 + rng() * 1.6, ['#c8ccb0', '#a8b490', '#e0d8a0'][k % 3]);
+        for (let k = 0; k < Math.round(4 * AF); k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2, '#6a8a3a');
       }
     }
     // crest planting
     const crest = { mosswall: ['#5f8f2e', '#4a7a26', '#79a83a'], barkwall: ['#5f8f2e', '#a8b890'], stonewall: ['#4f7a2a', '#6a9a3a'], leafwall: ['#8a5a2e', '#a0682e', '#6e4426'], trunkwall: ['#4a7a26', '#5f8f2e'], rootwall: ['#4a7a26', '#3f6a22'], sandwall: ['#8aa07a', '#b8b878'], driftwall: ['#a8b490', '#6a8a3a'] }[S] || ['#5f8f2e'];
-    for (let k = 0; k < 9; k++) { const x = -w / 2 + 6 + (w - 12) * k / 8; B.prim({ t: 'tuft', o: [x, h + 0.8, (rng() - 0.5) * d * 0.5], r: (S === 'sandwall' || S === 'driftwall' ? 2 : 3.5) + rng() * 3, col: crest[k % crest.length], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h }); }
+    for (let k = 0; k < Math.round(9 * AF); k++) { const x = -w / 2 + 6 + (w - 12) * k / 8; B.prim({ t: 'tuft', o: [x, h + 0.8, (rng() - 0.5) * d * 0.5], r: (S === 'sandwall' || S === 'driftwall' ? 2 : 3.5) + rng() * 3, col: crest[k % crest.length], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h }); }
     B.height = h + 4; B.coverR = w * 0.45;
   };
 
@@ -1611,9 +1633,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const def = JT.DECOR_BY_ID[inst.type];
     const rng = JT.makeRng(inst.seed || 1);
     const B = new Builder(rng); B.inst = inst;
-    const nominal = def.p.h || 10;
+    const pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h }) : def.p; // back walls span the whole back of their tank
+    const nominal = pp.h || 10;
     const sc = Math.min(1, Math.max(0.35, (maxH - baseY - 6) / nominal));
-    ARCH[def.arche](B, def.p, sc);
+    ARCH[def.arche](B, pp, sc);
     const X = makeXf(inst, baseY);
     const g = { id: inst.id, type: inst.type, def, baseY, height: B.height, coverR: B.coverR, cover: inst.bare ? (def.cover || 0) * 0.3 : def.cover,
       prims: [], paths: [], tops: [], solids: [], water: [], flowers: [], extent: [] };
@@ -2086,7 +2109,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       this.data = Object.assign({ id: JT.newId('h'), name: 'Habitat', type: 'standard', substrate: 'coco', bg: 'mossy', humidity: 0.6, age: 0,
         decor: [], spiders: [], prey: [], remains: [], drops: [], silk: [] }, data || {});
       this.geoms = {}; this.nav = null; this._geomVersion = 0;
-      this.rebuild();
+      this.rebuild(); this._fitWalls();
     }
     get dims() { return JT.HABITATS[this.data.type] || JT.HABITATS.standard; }
     get decor() { return this.data.decor; }
@@ -2156,8 +2179,27 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       }
       return { ok: true, parent: null, parentTop: 0, baseY: 0, geom: g, x, z, rot: s.rot, my, wall: s.id };
     }
+    /** A back wall always fills the back of the tank: full width (the back chord of a round jar) and full height. */
+    wallFit() {
+      const W = this.dims.w, D = this.dims.d, H = this.dims.h, dep = 10;
+      if (this.dims.shape === 'circle') { const R = W / 2, zb = D / 2 + R * 0.62; return { x: W / 2, z: zb - dep / 2, rot: 0, ww: Math.round(2 * Math.sqrt(R * R - (R * 0.62) ** 2) - 6), wh: H - 6 }; }
+      return { x: W / 2, z: D - 2 - dep / 2, rot: 0, ww: W - 6, wh: H - 6 };
+    }
+    backWall() { return this.data.decor.find(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall') || null; }
+    _canWall(def, type, seed, ignoreId) {
+      const F = this.wallFit(); const old = this.backWall(); const skip = old ? old.id : null;
+      const inst = { id: '_probe', type, x: F.x, z: F.z, rot: 0, seed: seed || 1, ww: F.ww, wh: F.wh };
+      const g = JT.Geo.build(inst, 0, this.dims.h);
+      for (const d of this.data.decor) {
+        if (d.id === ignoreId || d.id === skip || d.parent) continue; const og = this.geoms[d.id]; if (!og || og.def.mount || og.def.cat === 'ground') continue;
+        const hit = og.solids.length ? og.solids.some(s2 => g.solids.some(s1 => G.polysOverlap(s1, s2))) : (og.contacts || []).some(c => g.solids.some(s1 => G.pointInPoly(c[0], c[1], s1)));
+        if (hit) return { ok: false, reason: 'Clear the back first: ' + og.def.name + ' is in the way' };
+      }
+      return { ok: true, parent: null, parentTop: 0, baseY: 0, geom: g, x: F.x, z: F.z, rot: 0, ww: F.ww, wh: F.wh, wallFit: true, replaces: skip };
+    }
     canPlace(type, x, z, rot, seed, ignoreId, my) {
       const def = JT.DECOR_BY_ID[type]; if (!def) return { ok: false, reason: 'Unknown item' };
+      if (def.arche === 'backwall') return this._canWall(def, type, seed, ignoreId);
       if (this.data.decor.length >= 48 && !ignoreId) return { ok: false, reason: 'Habitat is full of decor' };
       if (def.mount) return this._canMount(def, type, x, z, seed, ignoreId, my);
       const inst = { id: '_probe', type, x, z, rot: rot || 0, seed: seed || 1 };
@@ -2205,12 +2247,40 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     addDecor(type, x, z, rot, seed, placedBy, my, opts) {
       const chk = this.canPlace(type, x, z, rot, seed, null, my);
       if (!chk.ok) return null;
+      if (chk.wallFit && chk.replaces) { // swap the wall's style in place: mounts stay on it
+        const w = this.decorById(chk.replaces); if (this.game && placedBy) this.game.refund(this.game.decorValue(w));
+        Object.assign(w, { type, seed: seed || w.seed, x: chk.x, z: chk.z, rot: 0, ww: chk.ww, wh: chk.wh, preset: !placedBy && w.preset, novel: !!placedBy }); delete w.bought;
+        this.rebuild(); this._resnapMounts(w.id); return w;
+      }
       const inst = { id: JT.newId('d'), type, x, z, rot: rot || 0, seed: seed || ((JT.R() * 1e9) | 0), parent: chk.parent || null, parentTop: chk.parentTop || 0, placedAt: this.time, novel: !!placedBy };
       if (chk.wall) { inst.x = chk.x; inst.z = chk.z; inst.rot = chk.rot; inst.my = chk.my; inst.wall = chk.wall; }
+      if (chk.wallFit) { inst.x = chk.x; inst.z = chk.z; inst.rot = 0; inst.ww = chk.ww; inst.wh = chk.wh; }
       if (opts && opts.bare && JT.DECOR_BY_ID[type].arche === 'tree') inst.bare = true; // tree without its leaves
       this.data.decor.push(inst);
       this.rebuild();
       return inst;
+    }
+    _resnapMounts(wallId) {
+      let moved = false;
+      for (const m of this.data.decor.filter(d => d.wall === wallId)) { const def = JT.DECOR_BY_ID[m.type]; const c = this._canMount(def, m.type, m.x, m.z, m.seed, m.id, m.my); if (c.ok) { m.x = c.x; m.z = c.z; m.rot = c.rot; m.my = c.my; m.wall = c.wall; moved = true; } }
+      if (moved) this.rebuild();
+    }
+    /** Older saves: free-standing back-wall panels become one wall across the whole back; pieces in its way move forward. */
+    _fitWalls() {
+      const walls = this.data.decor.filter(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall');
+      if (!walls.length || (walls.length === 1 && walls[0].ww)) return false;
+      const keep = walls[0], F = this.wallFit();
+      for (const w of walls.slice(1)) { this.data.decor.filter(d => d.wall === w.id).forEach(m => { m.wall = keep.id; }); }
+      this.data.decor = this.data.decor.filter(d => !walls.includes(d) || d === keep);
+      Object.assign(keep, { x: F.x, z: F.z, rot: 0, ww: F.ww, wh: F.wh, parent: null });
+      this.rebuild();
+      const wg = this.geoms[keep.id];
+      for (const d of this.data.decor.slice()) {
+        if (d === keep || d.parent || d.wall) continue; const og = this.geoms[d.id]; if (!og || og.def.cat === 'ground') continue;
+        if (!og.solids.some(s2 => wg.solids.some(s1 => G.polysOverlap(s1, s2))) && !(og.contacts || []).some(c => wg.solids.some(s1 => G.pointInPoly(c[0], c[1], s1)))) continue;
+        for (let k = 1; k <= 12; k++) { const z = d.z - k * 4; if (this.canPlace(d.type, d.x, z, d.rot, d.seed, d.id, d.my).ok) { d.z = z; break; } }
+      }
+      this.rebuild(); this._resnapMounts(keep.id); return true;
     }
     /** Remove decor; stacked children are dropped to a legitimate new support (or removed). */
     removeDecor(id) {
@@ -4411,7 +4481,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   /** Generate a calm, minimal themed layout for the target enclosure: one hero piece off-centre at the back, a
       quieter partner on the other third, small plant groups tucked round their bases, a little ground cover and
       open floor left in front (room to watch a hunt). Mirrored at random so presets don't all look alike. */
-  P.generate = function (hab, themeId, seed) {
+  P.generate = function (hab, themeId, seed, vary) {
     const th = JT.PRESET_THEMES[themeId]; if (!th) return;
     const rng = JT.makeRng(seed || ((JT.R() * 1e9) | 0));
     hab.data.decor = []; hab.rebuild();
@@ -4419,7 +4489,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const t = hab.data.type, W = hab.dims.w, D = hab.dims.d;
     const compact = t === 'nano' || t === 'breeder', wide = W >= 240, tall = hab.dims.h >= 140;
     const fits = (id) => !!JT.DECOR_BY_ID[id] && (!compact || JT.DECOR_BY_ID[id].small);
-    const pickFrom = (arr, i) => { const a = arr.filter(fits); return a.length ? a[i % a.length] : null; };
+    const offs = new Map(); // each generation rotates through the theme pools, so newer pieces show up too (fixed layouts pass vary = false)
+    const pickFrom = (arr, i) => { const a = arr.filter(fits); if (!a.length) return null; const k = arr.join(); if (!offs.has(k)) offs.set(k, vary === false ? 0 : rng.int(0, a.length - 1)); return a[(i + offs.get(k)) % a.length]; };
     const flip = rng() < 0.5; const X = (f) => (flip ? 1 - f : f) * W;
     // place near an anchor: the exact spot first, then a widening spiral (front side preferred when asked)
     const near = (type, ax, az, rad, front) => {
@@ -4450,7 +4521,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const heroId = pickFrom(th.tall.filter(fits).length ? th.tall : th.tall.concat(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount), ['corkround', 'branchperch', 'flatstone']), 0);
       hero = near(heroId, X(compact ? 0.38 : 0.33), D * (tall ? 0.55 : 0.6), 16, false);
       anchors.push(hero);
-      if (!compact) anchors.push(near(pickFrom(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount), 0), X(0.7), D * 0.45, 18, false));
+      const midFree = th.mid.filter(id => !JT.DECOR_BY_ID[id].mount);
+      if (!compact) anchors.push(near(pickFrom(midFree, 0), X(0.7), D * 0.45, 18, false));
+      else if (midFree.some(fits)) anchors.push(near(pickFrom(midFree, 0), X(0.74), D * 0.5, 12, false)); // nano / breeder: a perch plus one small ledge or hide
+      // tall tanks: a climbing route up beside the hero so the height is usable
+      const climb = tall && hero && !plants.slice(0, 2).some(id => id && JT.DECOR_BY_ID[id].arche === 'vine') && th.plants.concat(th.tall).find(id => JT.DECOR_BY_ID[id] && JT.DECOR_BY_ID[id].arche === 'vine');
+      if (climb) near(climb, hero.x + (flip ? 1 : -1) * (radiusOf(hero) + 6), hero.z + 4, 10, false);
       if (wide) anchors.push(near(pickFrom(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount), 1), X(0.9), D * 0.3, 14, false));
     }
     // plants: a group of two or three at the hero, one or two at its partner, maybe one up on the hero
@@ -4478,7 +4554,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     return ok;
   };
   /** Moss Tower (Vertical Tower 100 x 84): the minimal moss-wall layout, fixed so every new tower looks the same. */
-  P.tower = function (hab) { P.generate(hab, 'mosswall', 5); };
+  P.tower = function (hab) { P.generate(hab, 'mosswall', 5, false); };
   /** Hand-arranged Starter Terrarium (Standard 200 x 90): a cork tower on the left third with a pothos on top, a flat
       stone on the right third, small plant groups at their feet, open floor in the middle for hunting. */
   P.starter = function (hab) {
@@ -4524,7 +4600,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const a = tall ? new JT.Habitat({ name: 'Moss Tower', type: 'tower', substrate: 'moss', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this);
       if (tall) JT.Presets.tower(a); else JT.Presets.starter(a);
       if (tall) this.state.towerGift = true;
-      const bolt = a.addSpider('bold', { name: 'Bolt', stage: 2, meals: 1, sat: 0.55 }); bolt.pos = a.randomFloorPoint(); bolt.sup = { k: 'floor' };
+      const bolt = a.addSpider('bold', { name: 'Bolt', stage: 2, meals: 1, sat: 0.55 }); bolt.paid = 0; bolt.pos = a.randomFloorPoint(); bolt.sup = { k: 'floor' };
       a.addPrey('fruitfly', 5); a.addPrey('housefly', 1); a.addPrey('cricket', 1);
       // the other tanks start as blank canvases: just substrate, ready to be built (or filled from a preset)
       const b = new JT.Habitat({ name: 'Canopy Habitat', type: 'arboreal', substrate: 'jungle', bg: 'canopy' }, this);
@@ -4555,7 +4631,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (this.state.towerGift || !Game.isPortrait() || this.habs.some(h => h.data.type === 'tower')) return false;
       this.state.towerGift = true;
       const t = new JT.Habitat({ name: 'Moss Tower', type: 'tower', substrate: 'moss', bg: 'mossy' }, this); JT.Presets.tower(t);
-      const sp = t.addSpider('regal', { name: 'Moss', stage: 1, sat: 0.6 }); sp.pos = t.randomFloorPoint(); sp.sup = { k: 'floor' };
+      const sp = t.addSpider('regal', { name: 'Moss', stage: 1, sat: 0.6 }); sp.paid = 0; sp.pos = t.randomFloorPoint(); sp.sup = { k: 'floor' };
       t.addPrey('fruitfly', 5);
       this.habs.push(t); this.state.slots = Math.max(this.state.slots, this.habs.length); this.state.active = this.habs.length - 1; this.selectedId = sp.id;
       this._gifted = true; this.save(); return true;
@@ -4625,6 +4701,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     dailyIncome(h) { const a = this.appeal(h); return h.spiders.length ? 10 + h.spiders.length * 6 + a : Math.round(a * 0.5); }
     spend(n) { if (this.state.coins < n) return false; this.state.coins -= n; this.emit('coins', { amount: -n }); return true; }
     refund(n) { this.state.coins += n; }
+    /** Full refunds: what was paid for a piece (preset pieces were free), a jumper, or a unit of live food. */
+    decorValue(inst) { const d = JT.DECOR_BY_ID[inst.type]; return inst.bought != null ? inst.bought : inst.preset || !d ? 0 : d.price; }
+    spiderValue(sp) { if (sp.paid != null) return sp.paid; const S = JT.SPECIES.find(x => x.id === sp.species); return S ? (S.starter ? 25 : S.price || 0) : 0; }
+    preyValue(p) { return p.paid ? Math.round(p.paid) : 0; }
 
     // ---------------- habitat shelf ----------------
     buySlot() { const n = this.state.slots; if (n >= 8) return false; const price = JT.SLOT_PRICES[n]; if (!this.spend(price)) return false; this.state.slots++; return true; }
@@ -4640,7 +4720,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const old = hab.dims; const items = hab.sortedDecor().map(d => Object.assign({}, d, { fx: d.x / old.w, fz: d.z / old.d }));
       hab.data.type = type; hab.data.decor = []; hab.rebuild();
       let refund = 0;
-      for (const it of items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed, null, it.my).ok) hab.addDecor(it.type, x, z, it.rot, it.seed, false, it.my); else refund += Math.round(JT.DECOR_BY_ID[it.type].price * 0.5); }
+      for (const it of items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed, null, it.my).ok) hab.addDecor(it.type, x, z, it.rot, it.seed, false, it.my); else refund += this.decorValue(it); }
       hab.decor.forEach(d => { d.novel = false; });
       const scaleE = (e) => { e.pos = [e.pos[0] / old.w * hab.dims.w, e.pos[1], e.pos[2] / old.d * hab.dims.d]; };
       hab.spiders.forEach(scaleE); hab.prey.forEach(scaleE); hab.data.remains.forEach(scaleE); hab.data.drops = []; hab.data.silk = [];
@@ -6997,7 +7077,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const W = this.cssW, H = this.cssH; const portrait = H > W * 1.1;
       // tall screens: swing the camera round so the tank's long side runs up the screen ("tall setup")
       const tall = portrait && dm.w > dm.d * 1.3 && this.cam.mode === 'iso'; // front / back stay square on to their side
-      const yaw = C.yaw + (tall ? 0.73 : 0), pitch = C.pitch + (tall ? 0.12 : 0);
+      const isoP = portrait && this.cam.mode === 'iso'; // portrait iso: a lower, more eye-level angle so tall tanks read as tall
+      const yaw = C.yaw + (tall ? 0.73 : 0), pitch = C.pitch + (isoP ? (tall ? -0.12 : -0.14) : 0);
       const tmp = new JT.View(yaw, pitch, 1, 0, 0, c);
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
       const availH = H * (portrait ? 0.62 : 0.78), availW = (W - (this.insetL || 0)) * (portrait ? 0.94 : 0.88);
@@ -7380,6 +7461,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.delay.connect(lp); lp.connect(fb); fb.connect(this.delay); lp.connect(comp);
       for (const k of ['music', 'ambience', 'effects']) { const g = c.createGain(); g.connect(comp); this.buses[k] = g; }
       this.buses.music.connect(this.delay);
+      this._lofiChain(c);
       this.started = true; this.apply();
     },
     /** play one silent sample inside the gesture: required by iOS Safari to really start the context */
@@ -7406,6 +7488,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     // ---- effects ----
     sfx(name) {
       if (!this.started) return;
+      if (name === 'strike' || name === 'strikeFly') this.swell(0.25); else if (name === 'molt') this.swell(0.6); else if (name === 'journal') this.swell(0.35);
       switch (name) {
         case 'click': this.tone('effects', 880, 0.08, { type: 'triangle', vol: 0.08 }); break;
         case 'place': this.noise('effects', 0.18, { f: 500, q: 0.8, vol: 0.18 }); this.tone('effects', 220, 0.15, { type: 'sine', vol: 0.12, to: 140 }); break;
@@ -7427,20 +7510,86 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         case 'error': this.tone('effects', 200, 0.18, { type: 'square', vol: 0.04, lp: 900 }); break;
       }
     },
+    // ---- lo-fi music: detuned electric piano, soft drums, vinyl crackle and tape wobble ----
+    /** Signal path: notes -> lofi in -> soft saturation -> tape lowpass -> wobbling delay -> swell gain -> music bus. */
+    _lofiChain(c) {
+      const inp = c.createGain(), sat = c.createWaveShaper(), lp = c.createBiquadFilter(), wob = c.createDelay(0.1), out = c.createGain();
+      const cv = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; cv[i] = Math.tanh(x * 1.6) / Math.tanh(1.6); } sat.curve = cv;
+      lp.type = 'lowpass'; lp.frequency.value = 2400; lp.Q.value = 0.5; wob.delayTime.value = 0.016;
+      for (const [f, a] of [[0.33, 0.0016], [5.3, 0.00016]]) { const l = c.createOscillator(), g = c.createGain(); l.frequency.value = f; g.gain.value = a; l.connect(g); g.connect(wob.delayTime); l.start(); }
+      inp.gain.value = 1.5; inp.connect(sat); sat.connect(lp); lp.connect(wob); wob.connect(out); out.connect(this.buses.music);
+      this.buses.lofi = inp; this._lo = { lp, out, swell: 0, bar: 0, n: 0, prog: null, crackle: null };
+      // vinyl: sparse pops and dust over faint hiss, looped
+      const len = c.sampleRate * 4, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.018;
+      for (let k = 0; k < 70; k++) { const at = Math.floor(Math.random() * (len - 60)), amp = (Math.random() < 0.15 ? 0.9 : 0.35) * (Math.random() < 0.5 ? -1 : 1); for (let j = 0; j < 40; j++) d[at + j] += amp * Math.exp(-j / 5) * (j % 2 ? -0.6 : 1); }
+      const src = c.createBufferSource(); src.buffer = buf; src.loop = true; const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1100; const vg = c.createGain(); vg.gain.value = 0;
+      src.connect(hp); hp.connect(vg); vg.connect(this.buses.music); src.start(); this._lo.crackle = vg;
+    },
+    /** gentle lift on catches, molts and journal moments */
+    swell(a) { if (this._lo) { this._lo.swell = Math.min(1, this._lo.swell + a); this._lo.lift = true; } },
+    // hand-written loops as MIDI voicings: [bass, ...chord]
+    LOFI: {
+      day: [
+        [[38, 53, 57, 60, 64], [43, 53, 59, 64, 69], [36, 52, 55, 59, 62], [45, 55, 61, 65, 67]],   // Dm9  G13  Cmaj9  A7b13
+        [[41, 57, 60, 64, 67], [40, 55, 59, 62, 64], [45, 55, 59, 60, 64], [43, 53, 57, 60, 62]],   // Fmaj9  Em7  Am9  G9sus
+        [[36, 52, 55, 59, 62], [45, 55, 60, 64, 67], [38, 53, 57, 60, 64], [43, 53, 59, 62, 65]],   // Cmaj9  Am7  Dm9  G7
+      ],
+      night: [
+        [[45, 55, 59, 60, 64], [41, 52, 57, 59, 64], [38, 53, 57, 60, 64], [40, 50, 56, 59, 65]],   // Am9  Fmaj7#11  Dm9  E7b9
+        [[38, 53, 57, 60, 64], [45, 55, 59, 60, 64], [46, 50, 53, 57, 62], [40, 50, 56, 59, 62]],   // Dm9  Am9  Bbmaj7  E7
+      ],
+      day_mel: [69, 72, 74, 76, 79, 81, 84], night_mel: [64, 67, 69, 72, 74, 76],
+    },
+    _ep(t, m, vol, dur) { // detuned Rhodes-ish voice: two slightly detuned sines + a quick bell-like tine
+      const f = 440 * Math.pow(2, (m - 69) / 12), dl = Math.max(0, t - this.ctx.currentTime);
+      this.tone('lofi', f * 0.9975, dur, { type: 'sine', vol, att: 0.012, delay: dl });
+      this.tone('lofi', f * 1.0025, dur * 0.9, { type: 'sine', vol: vol * 0.8, att: 0.012, delay: dl });
+      this.tone('lofi', f * 2, 0.5, { type: 'sine', vol: vol * 0.28, att: 0.004, delay: dl });
+    },
+    _lofi(game, night) {
+      const c = this.ctx, L = this._lo, now = c.currentTime, nt = night > 0.5, bpm = nt ? 62 : 74, beat = 60 / bpm;
+      // continuous parameters: brighter tape by day, quieter in observe mode, swell decays
+      const dtt = Math.min(0.5, now - (L._last || now)); L._last = now; L.swell = Math.max(0, L.swell - dtt * 0.12);
+      const obs = root.JT && JT.UI && JT.UI.obs; const day = 1 - night;
+      if (!L._tk || now - L._tk > 0.2) { L._tk = now;
+        L.lp.frequency.setTargetAtTime(1150 + day * 1500 + L.swell * 900, now, 0.6);
+        L.out.gain.setTargetAtTime((obs ? 0.5 : 1) * (1 + L.swell * 0.45), now, 0.8);
+        L.crackle.gain.setTargetAtTime(nt ? 0.07 : 0.045, now, 1);
+      }
+      if (L.bar < now - 1) L.bar = now + 0.15; // first start or returning from background
+      if (L.bar - now > 0.35) return;
+      // schedule one bar
+      const t0 = L.bar, rnd = Math.random;
+      if (L.night !== nt) L.n = 0;
+      if (!L.prog || L.n % 8 === 0) { const P = this.LOFI[nt ? 'night' : 'day']; L.prog = P[Math.floor(rnd() * P.length)]; L.night = nt; }
+      const ch = L.prog[L.n % 4], sw = beat * 0.16; // swing
+      const cv = nt ? 0.022 : 0.026;
+      ch.slice(1).forEach((m, i) => this._ep(t0 + i * 0.022 + rnd() * 0.01, m, cv * (1 - i * 0.08), beat * 3.6));
+      if (rnd() < (nt ? 0.35 : 0.6)) ch.slice(2).forEach((m, i) => this._ep(t0 + beat * 2.5 + sw + i * 0.018, m, cv * 0.55, beat * 1.2)); // push
+      const bf = 440 * Math.pow(2, (ch[0] - 69) / 12), dl = (x) => Math.max(0, x - now);
+      this.tone('lofi', bf, beat * 1.8, { type: 'triangle', vol: 0.075, att: 0.02, lp: 320, delay: dl(t0) });
+      this.tone('lofi', bf * (rnd() < 0.5 ? 1.5 : 1), beat * 1.2, { type: 'triangle', vol: 0.055, att: 0.02, lp: 320, delay: dl(t0 + beat * 2) });
+      // soft drums (day: kick, brushed snare, swung hats; night: kick and rim only)
+      const kick = (x, v) => this.tone('lofi', 95, 0.28, { type: 'sine', vol: v, att: 0.004, to: 42, delay: dl(x) });
+      kick(t0, nt ? 0.09 : 0.12); if (!nt) kick(t0 + beat * 2.5 + sw, 0.07); if (!nt && rnd() < 0.4) kick(t0 + beat * 1.5 + sw, 0.05);
+      if (!nt) { for (const b of [1, 3]) this.noise('lofi', 0.2, { f: 1700, q: 0.7, vol: 0.05, att: 0.006, delay: dl(t0 + beat * b) });
+        for (let e = 0; e < 8; e++) if (e % 2 === 0 || rnd() < 0.5) this.noise('lofi', 0.04, { ft: 'highpass', f: 7000, vol: e % 2 ? 0.012 : 0.02, att: 0.002, delay: dl(t0 + e * beat / 2 + (e % 2 ? sw : 0)) }); }
+      else { this.noise('lofi', 0.05, { f: 2400, q: 3, vol: 0.03, delay: dl(t0 + beat * 3) });
+        if (this.set.ambience > 0.01) for (const b of [0.5, 2.5]) if (rnd() < 0.6) for (let i = 0; i < 3; i++) this.tone('ambience', 4300 + rnd() * 150, 0.045, { type: 'sine', vol: 0.018, delay: dl(t0 + beat * b + i * 0.08) }); } // crickets
+      // occasional short melody (always after a swell)
+      if (L.lift || rnd() < (nt ? 0.22 : 0.32)) {
+        const sc = this.LOFI[nt ? 'night_mel' : 'day_mel']; let k = Math.floor(rnd() * (sc.length - 2)); const len = 3 + Math.floor(rnd() * 3); let x = t0 + beat * (rnd() < 0.5 ? 1 : 2);
+        for (let i = 0; i < len; i++) { const f = 440 * Math.pow(2, (sc[k] - 69) / 12); this.tone('lofi', f, beat * 0.9, { type: 'triangle', vol: L.lift ? 0.04 : 0.03, att: 0.015, lp: 1900, vib: 4.5, vibAmt: 2.5, delay: dl(x) }); x += beat * (rnd() < 0.6 ? 0.5 : 1) + (i % 2 ? 0 : sw * 0.5); k = Math.max(0, Math.min(sc.length - 1, k + (rnd() < 0.5 ? -1 : 1) * (1 + Math.floor(rnd() * 2)))); }
+        L.lift = false;
+      }
+      L.bar = t0 + beat * 4; L.n++;
+    },
     // ---- generative music + ambience ----
     update(dt, game) {
       if (!this.started || !game) return; const s = this.set; if (s.muted) return;
       const night = 1 - game.daylight();
-      this._musT -= dt;
-      if (s.music > 0.01 && this._musT <= 0) {
-        // slow pentatonic phrases over soft pads (D major pentatonic; lower and sparser at night)
-        const roots = [146.83, 123.47, 164.81, 110]; const r = roots[this._chord % roots.length];
-        if (Math.random() < 0.55) { this._chord++; [1, 1.5, 2, 2.5].forEach((m, i) => this.tone('music', r * m, 5.5, { type: 'sine', vol: 0.035 - i * 0.005, att: 1.6, lp: 900 })); }
-        const scale = [293.66, 329.63, 369.99, 440, 493.88, 587.33, 659.25];
-        const notes = 1 + Math.floor(Math.random() * 3);
-        for (let i = 0; i < notes; i++) { const f = scale[Math.floor(Math.random() * scale.length)] * (night > 0.5 ? 0.5 : 1); this.tone('music', f, 1.8, { type: 'triangle', vol: 0.045, att: 0.02, lp: 2400, delay: i * (0.35 + Math.random() * 0.3) }); }
-        this._musT = 2.6 + Math.random() * 3.2;
-      }
+      if (s.music > 0.01) this._lofi(game, night);
       this._ambT -= dt;
       if (s.ambience > 0.01 && this._ambT <= 0) {
         const hab = game.hab; const prey = hab ? hab.prey : []; const has = (id) => prey.some(p => p.type === id);
@@ -7723,7 +7872,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); this.syncDrawerSpace(); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
     refreshCardsAfford() { document.querySelectorAll('#drawerBody .card[data-price]').forEach(c => c.classList.toggle('disabled', +c.dataset.price > this.game.state.coins)); },
     decorCard(d) {
-      const c = el('div', 'card'); c.dataset.price = d.price; c.title = d.name + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
+      const c = el('div', 'card'); c.dataset.price = d.price; c.title = d.name + (d.desc ? ' — ' + d.desc : '') + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
       c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112)));
       c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price + ''));
       const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean).join(', '); if (tg) c.title += ' — ' + tg;
@@ -7756,7 +7905,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const h = this.hab; const n = p.count || 1;
         if (h.prey.length + n > JT.PREY_CAP) { this.toast('This habitat already has plenty of live food (' + JT.PREY_CAP + ' max).'); A().sfx('error'); return; }
         if (!this.game.spend(p.price)) { this.toast('Not enough coins.'); A().sfx('error'); return; }
-        h.addPrey(p.id, n); A().sfx('rustle'); this.toast('Released ' + (n > 1 ? n + ' ' : 'a ') + esc(p.name) + '.');
+        h.addPrey(p.id, n).forEach(q => { q.paid = p.price / n; }); A().sfx('rustle'); this.toast('Released ' + (n > 1 ? n + ' ' : 'a ') + esc(p.name) + '.');
         $('drawerTitle').textContent = h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live';
       };
       return c;
@@ -7767,7 +7916,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.cancelMode(); const d = JT.DECOR_BY_ID[type];
       this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false, bare: false };
       const lv = $('modeLeaves'); lv.classList.toggle('hidden', d.arche !== 'tree'); lv.textContent = 'Leaves: on';
-      this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.remove('hidden'); $('modeDone').classList.remove('hidden');
+      this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.toggle('hidden', d.arche === 'backwall'); $('modeDone').classList.remove('hidden');
       if (this.isMobile()) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); }
       // start the ghost in the middle so touch users see it immediately
       const r = this.cv.getBoundingClientRect(); this.updateGhost(r.width / 2, r.height * 0.55);
@@ -7783,6 +7932,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       p.x = pt.x; p.z = pt.z; p.y = pt.y; p.my = pt.my;
       const chk = h.canPlace(p.type, p.x, p.z, p.rot, p.seed, null, p.my);
       if (chk.wall) { p.x = chk.x; p.z = chk.z; p.rot = chk.rot; p.my = chk.my; }
+      if (chk.wallFit) { p.x = chk.x; p.z = chk.z; p.rot = 0; }
       const price = JT.DECOR_BY_ID[p.type].price; p.ok = chk.ok && this.game.state.coins >= price; p.reason = chk.ok ? (p.ok ? '' : 'Not enough coins') : chk.reason;
       let geom = p.bare ? null : chk.geom; if (!geom) { try { geom = JT.Geo.build({ id: '_ghost', type: p.type, x: p.x, z: p.z, rot: p.rot, seed: p.seed, bare: p.bare }, chk.baseY || pt.y || 0, h.dims.h); } catch (e) { geom = null; } }
       if (geom) geom.id = '_ghost';
@@ -7807,18 +7957,18 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     startRemove() {
       this.cancelMode(); this.mode = 'remove'; this.cv.classList.add('removing'); $('modeBar').classList.remove('hidden');
       $('modeRotate').classList.add('hidden'); $('modeLeaves').classList.add('hidden'); $('modeDone').classList.add('hidden');
-      $('modeText').innerHTML = '<b>Remove</b> · tap decor for a half refund, or live food and leftovers to take them out <span class="hint">· Esc to finish</span>';
+      $('modeText').innerHTML = '<b>Remove</b> · tap decor for a full refund, or live food and leftovers to take them out <span class="hint">· Esc to finish</span>';
       this.refreshHeader();
     },
     removeAt(sx, sy) {
       const h = this.hab; const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
       if (!hit) { this.toast('Nothing to remove there.'); return; }
       if (hit.kind === 'spider') { this.showPanel(hit.ent.id); this.toast('Use the jumper card to rehome a jumper.'); return; }
-      if (hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.toast('Released the ' + esc(d.name) + ' outside.'); return; }
+      if (hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; const ref = this.game.preyValue(hit.ent); h.removeEntity(hit.ent, 'player'); if (ref) { this.game.refund(ref); this.bumpCoins(); } A().sfx('remove'); this.toast('Released the ' + esc(d.name) + ' outside' + (ref ? ' · +' + ref + ' coins' : '') + '.'); return; }
       if (hit.kind === 'remains') { h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.toast(hit.ent.cat === 'exuvia' ? 'Collected a shed exoskeleton.' : 'Removed leftovers.'); return; }
       if (hit.kind === 'decor') {
         const removed = h.removeDecor(hit.ent.id); let refund = 0;
-        for (const r of removed) { const d = JT.DECOR_BY_ID[r.type]; if (!r.preset) refund += Math.floor(d.price * 0.5); }
+        for (const r of removed) refund += this.game.decorValue(r);
         this.game.refund(refund); this.bumpCoins(); A().sfx('remove'); this.R.hover = null;
         const nm = JT.DECOR_BY_ID[hit.ent.type].name;
         this.toast('Removed ' + esc(nm) + (removed.length > 1 ? ' and ' + (removed.length - 1) + ' item(s) resting on it' : '') + (refund ? ' · +' + refund + ' coins' : ' · preset pieces return no coins'));
@@ -7892,7 +8042,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       $('pFollow').onclick = () => { this.game.selectedId = sp.id; if (follow) this.unfollow(); else this.follow(sp.id); this.renderPanel(true); };
       $('pRemove').onclick = () => {
         if (!root.confirm('Rehome ' + sp.name + ' outside the collection? This cannot be undone.')) return;
-        h.removeEntity(sp, 'player'); const ref = Math.floor(speciesPrice(S) * 0.5); this.game.refund(ref); this.bumpCoins();
+        const ref = this.game.spiderValue(sp); h.removeEntity(sp, 'player'); this.game.refund(ref); this.bumpCoins();
         this.toast(esc(sp.name) + ' was gently rehomed' + (ref ? ' · +' + ref + ' coins' : '') + '.'); this.hidePanel(); this.game.selectedId = h.spiders[0] ? h.spiders[0].id : null; this.refreshHeader(); this.game.save();
       };
     },
@@ -7953,7 +8103,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         b.onclick = () => {
           if (!g.spend(price)) { this.toast('Not enough coins.'); return; }
           if (!st.species.includes(S.id)) st.species.push(S.id);
-          const sp = h.addSpider(S.id, { stage: S.minStage != null ? S.minStage : (S.starter ? 1 : 2) });
+          const sp = h.addSpider(S.id, { stage: S.minStage != null ? S.minStage : (S.starter ? 1 : 2) }); sp.paid = price;
           g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('place');
           this.toast('Welcome, ' + esc(sp.name) + ' the ' + esc(S.name) + '!'); g.save();
         };
@@ -7998,12 +8148,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /** Empty the tank being viewed (only this one). Coins stay; the journal starts over without re-paying bonuses. */
     resetTank() {
       const g = this.game, h = this.hab; if (!h) return;
-      if (!root.confirm('Reset ' + h.data.name + '? All decor, plants, prey, jumpers, silk and retreats in this tank are removed and the journal starts over. Coins are kept.')) return;
+      if (!root.confirm('Reset ' + h.data.name + '? All decor, plants, prey, jumpers, silk and retreats in this tank are removed and the journal starts over. Everything you bought is refunded in full.')) return;
       if (this.obs) this.toggleObserve(false);
       this.closeModal(); this.hidePanel(); if (this.R.cam.mode === 'follow') this.unfollow();
-      h.resetTank(); g.state.journal = {}; g.selectedId = null;
+      let refund = 0; for (const d of h.decor) refund += g.decorValue(d); for (const sp of h.spiders) refund += g.spiderValue(sp); for (const p of h.prey) if (!p.owner) refund += g.preyValue(p);
+      h.resetTank(); g.state.journal = {}; g.selectedId = null; if (refund) g.refund(refund);
       this.R.cur = null; this.R._speck = null; this.refreshHeader(); this.bumpCoins(); g.save();
-      this.toast('Tank reset. A clean slate.'); A().sfx('rustle');
+      this.toast('Tank reset. A clean slate' + (refund ? ' · +' + refund + ' coins refunded' : '') + '.'); A().sfx('rustle');
     },
     manageModal() {
       const g = this.game, st = g.state; const w = el('div');
@@ -8020,7 +8171,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const sel = el('select'); for (const t in JT.HABITATS) { const o = el('option', '', JT.HABITATS[t].name + (t === h.data.type ? ' (current)' : ' — ' + JT.HABITATS[t].price)); o.value = t; if (t === h.data.type) o.selected = true; sel.appendChild(o); }
         const cb = el('button', 'modal-btn', 'Change'); cb.onclick = () => {
           const t = sel.value; if (t === h.data.type) return; if (st.coins < JT.HABITATS[t].price) { this.toast('Not enough coins.'); return; }
-          if (!root.confirm('Change to ' + JT.HABITATS[t].name + '? Decor that no longer fits is refunded at 50%.')) return;
+          if (!root.confirm('Change to ' + JT.HABITATS[t].name + '? Decor that no longer fits is refunded in full.')) return;
           g.changeType(h, t); this.R.cur = null; this.refreshHeader(); this.bumpCoins(); this.manageModal(); this.toast('Enclosure changed to ' + JT.HABITATS[t].name + '.');
         };
         r2.appendChild(sel); r2.appendChild(cb); c.appendChild(r2);
@@ -8030,7 +8181,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         (st.customPresets || []).forEach((p, k) => { const o = el('option', '', 'Custom: ' + esc(p.name)); o.value = 'c:' + k; ps.appendChild(o); });
         const ap = el('button', 'modal-btn', 'Apply / Regenerate'); ap.onclick = () => {
           if (!root.confirm('Replace all decor in ' + h.data.name + ' with this layout? Current decor is removed (no refund for preset pieces).')) return;
-          let refund = 0; for (const d of h.decor) if (!d.preset) refund += Math.floor(JT.DECOR_BY_ID[d.type].price * 0.5);
+          let refund = 0; for (const d of h.decor) refund += g.decorValue(d);
           const v = ps.value; if (v[0] === 't') JT.Presets.generate(h, v.slice(2), (JT.R() * 1e9) | 0); else JT.Presets.applyCustom(h, st.customPresets[+v.slice(2)]);
           h.decor.forEach(d => { d.preset = true; }); g.refund(refund); this.bumpCoins(); this.R._speck = null;
           this.toast('New layout ready' + (refund ? ' · +' + refund + ' coins for your old pieces' : '') + '.'); this.manageModal();
