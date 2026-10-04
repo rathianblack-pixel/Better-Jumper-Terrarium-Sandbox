@@ -126,8 +126,11 @@ button.wanting{animation:wanting 3.6s ease-in-out infinite}
 .pbtns button{font-variant:small-caps;letter-spacing:.08em;font-size:15px}
 
 /* ---------- zoom ---------- */
-#zoomCtl{position:absolute;left:calc(8px + var(--sal));bottom:calc(70px + var(--sab));display:flex;flex-direction:column;z-index:7}
-#zoomCtl button{font-size:14px;color:var(--dim);font-variant:small-caps;letter-spacing:.08em}
+/* phone camera buttons 1 / 2 / 3 (desktop picks the camera in the top bar) */
+#camCtl{position:absolute;left:calc(8px + var(--sal));bottom:calc(70px + var(--sab));display:none;flex-direction:column;z-index:7}
+#camCtl button{font-size:17px;color:var(--dim);letter-spacing:0;font-variant-numeric:lining-nums}
+#camCtl button.on{color:var(--accent)}
+#camCtl button.on::after{transform:scaleX(1);left:1em;right:1em}
 
 /* ---------- placement bar ---------- */
 #modeBar{position:absolute;left:50%;transform:translateX(-50%);top:calc(60px + var(--sat));display:flex;align-items:center;gap:4px;padding:6px 46px;background:radial-gradient(ellipse at center,rgba(12,8,4,.66),rgba(12,8,4,.4) 55%,rgba(12,8,4,0) 75%);z-index:11;font-size:15px;max-width:96vw;text-shadow:var(--shadow);white-space:nowrap}
@@ -137,7 +140,7 @@ button.wanting{animation:wanting 3.6s ease-in-out infinite}
 #modeBar button{font-variant:small-caps;letter-spacing:.08em}
 
 /* ---------- observation ---------- */
-body.observe #top,body.observe #toolbar,body.observe #drawer,body.observe #spiderPanel,body.observe #zoomCtl,body.observe #dock{display:none!important}
+body.observe #top,body.observe #toolbar,body.observe #drawer,body.observe #spiderPanel,body.observe #camCtl,body.observe #dock{display:none!important}
 #obsHud{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(8px + var(--sab));padding:26px 70px 6px;background:radial-gradient(ellipse at 50% 70%,rgba(12,8,4,.6),rgba(12,8,4,.3) 50%,rgba(12,8,4,0) 72%);text-align:center;z-index:12;width:min(640px,100vw);text-shadow:var(--shadow)}
 .obs-tag{font-size:13px;color:var(--faint);font-variant:small-caps;letter-spacing:.16em}
 #obsName{font-size:21px;color:var(--ink);margin-top:2px}
@@ -240,7 +243,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
  #spiderPanel:not(.expanded) .full{display:none}
  #spiderPanel:not(.expanded) .mini{display:flex;gap:4px;align-items:center;font-size:13.5px;color:var(--dim);margin-top:0}
  #spiderPanel:not(.expanded) .mini button{font-variant:small-caps;letter-spacing:.08em;font-size:14px}
- #zoomCtl{bottom:calc(60px + var(--sab));left:calc(2px + var(--sal))}
+ #camCtl{display:flex;bottom:calc(60px + var(--sab));left:calc(2px + var(--sal))}
  #modeBar{top:auto;bottom:calc(56px + var(--sab));flex-wrap:wrap;justify-content:center;white-space:normal;padding:16px 20px 4px;width:100vw;max-width:none;background:linear-gradient(rgba(12,8,4,0),rgba(12,8,4,.6) 40%,rgba(12,8,4,.7));text-align:center}
  #modeText{flex-basis:100%;font-size:14px}
  #modalWrap{padding-top:calc(10px + var(--sat))}
@@ -249,7 +252,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 20px}
  #toasts{top:auto;bottom:calc(64px + var(--sab));padding:8px 10px;width:min(72vw,520px)}
  body.drawer-open #toasts{bottom:calc(var(--drawerH,0px) + 48px + var(--sab))}
- body.drawer-open #zoomCtl{display:none}
+ body.drawer-open #camCtl{display:none}
  .toast{font-size:14px}
  #dock button{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;font-size:min(14px,3.45vw);letter-spacing:.02em;padding:0 1px}
  #spiderPanel .mini{flex-wrap:wrap}
@@ -268,7 +271,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
  #spiderPanel{left:auto;right:0;top:0;bottom:0;width:300px;max-height:none;padding:calc(46px + var(--sat)) calc(12px + var(--sar)) 12px 44px;background:linear-gradient(to left,rgba(12,8,4,.72),rgba(12,8,4,.55) 70%,rgba(12,8,4,0))}
  #spiderPanel h3{font-size:22px}
  #spiderPanel .x{top:calc(38px + var(--sat))}
- #zoomCtl{display:none}
+ #camCtl{left:calc(108px + var(--sal));bottom:calc(4px + var(--sab))}
  #toasts{top:calc(40px + var(--sat));bottom:auto;left:calc(104px + (100vw - 404px) / 2);width:min(420px,calc(100vw - 420px))}
  body.drawer-open #toasts{top:calc(40px + var(--sat));bottom:auto}
  #modeBar{left:calc(104px + var(--sal));width:auto;right:0;bottom:0}
@@ -290,7 +293,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     <button id="habPicker" class="mobile-only habpick txt"></button>
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
     <div id="cams" class="seg desktop-only" aria-label="Camera">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="follow" title="Follow the selected jumper (3)">Follow</button><button data-cam="reverse" title="Reverse (4)">Reverse</button>
+      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="reverse" title="Reverse (3)">Reverse</button><button data-cam="follow" title="Follow the selected jumper (4 or F)">Follow</button>
     </div>
     <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
     <div id="timeMode" class="seg desktop-only" aria-label="Time of day">
@@ -321,8 +324,8 @@ input[type=range]{accent-color:#c9a25c;width:140px}
 
   <aside id="spiderPanel" class="hidden"></aside>
 
-  <div id="zoomCtl">
-    <button id="zoomIn" title="Zoom in (+)">In</button><button id="zoomOut" title="Zoom out (-)">Out</button><button id="zoomReset" title="Reset view (0)">Fit</button>
+  <div id="camCtl" aria-label="Camera">
+    <button data-cam="iso" title="Isometric (tap again to re-centre)">1</button><button data-cam="observer" title="Observer (tap again to re-centre)">2</button><button data-cam="reverse" title="Reverse (tap again to re-centre)">3</button>
   </div>
 
   <div id="modeBar" class="hidden">
@@ -5533,8 +5536,12 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       const r = this.cv.getBoundingClientRect(); const k = this.qualityScale;
       this.cssW = Math.max(50, r.width || root.innerWidth || 800); this.cssH = Math.max(50, r.height || root.innerHeight || 600);
       const w = Math.round(this.cssW * k), h = Math.round(this.cssH * k);
-      if (this.cv.width !== w || this.cv.height !== h) { this.cv.width = w; this.cv.height = h; this.bgCache = {}; }
-      this.k = k;
+      if (this.cv.width !== w || this.cv.height !== h) { this.cv.width = w; this.cv.height = h; this.bgCache = {}; this._skPrev = null; }
+      this.k = k; this._cw = this.cv.clientWidth; this._ch = this.cv.clientHeight;
+      // phone held sideways: the dock is a column on the left, so frame the tank in the space to its right
+      const dock = root.document && root.document.getElementById('dock');
+      const side = root.matchMedia && root.matchMedia('(max-height:500px) and (orientation:landscape)').matches;
+      this.insetL = side && dock ? Math.max(0, Math.min(this.cssW * 0.4, dock.getBoundingClientRect().right)) : 0;
     }
     /** Forget every cached picture (after loading a different save). */
     resetCaches() { this._baseL = null; this._st = null; this._skPrev = null; this.bgCache = {}; this.motes = null; this._speck = null; this.cur = null; if (this.fcam) this.fcam.st = null; }
@@ -5542,7 +5549,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
     zoomBy(f, sx, sy) {
       if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.zoom(f); return; }
       const z0 = this.cam.zoom; const z = M.clamp(z0 * f, 0.6, 5); if (z === z0) return;
-      if (sx != null) { const cx = this.cssW / 2 + this.cam.pan[0], cy = this.cssH / 2 + this.cam.pan[1]; const k = z / z0; this.cam.pan[0] += (sx - cx) * (1 - k); this.cam.pan[1] += (sy - cy) * (1 - k); }
+      if (sx != null) { const cx = (this.insetL || 0) + (this.cssW - (this.insetL || 0)) / 2 + this.cam.pan[0], cy = this.cssH / 2 + this.cam.pan[1]; const k = z / z0; this.cam.pan[0] += (sx - cx) * (1 - k); this.cam.pan[1] += (sy - cy) * (1 - k); }
       this.cam.zoom = z; this.clampPan();
     }
     panBy(dx, dy) {
@@ -5564,7 +5571,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       const yaw = C.yaw + (tall ? (this.cam.mode === 'observer' ? 1.2 : 0.73) : 0), pitch = C.pitch + (tall ? 0.12 : 0);
       const tmp = new JT.View(yaw, pitch, 1, 0, 0, c);
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
-      const availH = H * (portrait ? 0.62 : 0.78), availW = W * (portrait ? 0.94 : 0.88);
+      const availH = H * (portrait ? 0.62 : 0.78), availW = (W - (this.insetL || 0)) * (portrait ? 0.94 : 0.88);
       let s = Math.min(availW / (x1 - x0), availH / (y1 - y0));
       let center = c, offY = -(y0 + y1) / 2 * s;
       if (this.cam.mode === 'follow') {
@@ -5595,7 +5602,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
         }
       } else if (this.fcam) this.fcam.st = null;
       const kk = this.k;
-      this.V.set(cu.yaw, cu.pitch, cu.s * kk, (this.cssW / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
+      const il = this.insetL || 0; this.V.set(cu.yaw, cu.pitch, cu.s * kk, (il + (this.cssW - il) / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
       return this.V;
     }
     /** CSS pixel -> world (x,z) at height y. */
@@ -5689,6 +5696,8 @@ input[type=range]{accent-color:#c9a25c;width:140px}
 
     // ---------------- main render ----------------
     render(dt) {
+      // the canvas must always match its on-screen box (after a rotation it can lag a frame or two behind)
+      { const c = this.cv, cw = c.clientWidth, ch = c.clientHeight; if (cw !== this._cw || ch !== this._ch || (cw > 0 && (Math.abs(c.width - cw * this.k) > 2 || Math.abs(c.height - ch * this.k) > 2))) this.resize(); }
       this.time += dt; const game = this.game; const hab = game.hab; if (!hab) return;
       if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05; if (this.set.quality === 'auto') { if (this.fps < 26 && this.time > 4 && !this._autoLow && (this.frameMs || 0) > 14) { this._autoLow = true; this._lowT = 0; this.resize(); }
           // drop back to full sharpness once rendering is clearly cheap again (e.g. the camera came to rest)
@@ -6462,7 +6471,8 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       $('drawerClose').onclick = () => this.closeDrawer();
       $('modalClose').onclick = () => this.closeModal();
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
-      $('zoomIn').onclick = () => this.R.zoomBy(1.25); $('zoomOut').onclick = () => this.R.zoomBy(0.8); $('zoomReset').onclick = () => this.R.resetView();
+      // phone camera buttons: 1 iso, 2 observer, 3 reverse; tapping the current camera again re-centres the view
+      document.querySelectorAll('#camCtl button').forEach(b => b.onclick = () => { if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
       $('modeRotate').onclick = () => this.rotatePlace(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.cancelMode();
       $('obsExit').onclick = () => this.toggleObserve(false);
       document.addEventListener('keydown', (e) => this.key(e));
@@ -6471,7 +6481,11 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
       document.addEventListener('pointerdown', (e) => { this.ptrType = e.pointerType || 'mouse'; A().start(); const pop = $('popover'); if (!pop.classList.contains('hidden') && !pop.contains(e.target) && e.target !== $('btnSound')) pop.classList.add('hidden'); }, true);
       this.bindCanvas();
-      root.addEventListener('resize', () => { this.R.resize(); });
+      // rotation: phones often report the old size in the first resize event, so re-measure after layout settles too
+      // (the renderer also re-checks the canvas size every frame and fixes any mismatch)
+      const remeasure = () => { this.R.resize(); requestAnimationFrame(() => this.R.resize()); setTimeout(() => this.R.resize(), 250); setTimeout(() => this.R.resize(), 700); };
+      root.addEventListener('resize', remeasure); root.addEventListener('orientationchange', remeasure);
+      if (root.visualViewport) root.visualViewport.addEventListener('resize', remeasure);
     },
     bindCanvas() {
       const cv = this.cv; const P = new Map(); let pinch = null, drag = null;
@@ -6516,7 +6530,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       if (k === 'o' || k === 'O') { this.toggleObserve(); return; }
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
-      if (k === '1') this.setCam('iso'); else if (k === '2') this.setCam('observer'); else if (k === '3') this.setCam('follow'); else if (k === '4') this.setCam('reverse');
+      if (k === '1') this.setCam('iso'); else if (k === '2') this.setCam('observer'); else if (k === '3') this.setCam('reverse'); else if (k === '4') this.setCam('follow'); else if (k === 'f' || k === 'F') this.toggleFollow();
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
       else if (k === 'Enter' && this.mode === 'place') this.modeDone();
@@ -6529,7 +6543,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       const tabs = $('habTabs'); tabs.innerHTML = '';
       g.habs.forEach((h, i) => { const b = el('button', i === st.active ? 'on' : '', esc(h.data.name)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); });
       $('habPicker').textContent = g.hab.data.name;
-      document.querySelectorAll('#cams button').forEach(b => b.classList.toggle('on', b.dataset.cam === this.R.cam.mode));
+      document.querySelectorAll('#cams button, #camCtl button').forEach(b => b.classList.toggle('on', b.dataset.cam === this.R.cam.mode));
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
       const fol = this.R.cam.mode === 'follow' && !this.obs; document.querySelectorAll('#dock button[data-dock="follow"]').forEach(b => b.classList.toggle('on', fol));
@@ -6885,7 +6899,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
       add('Remove', () => { this.closeModal(); this.startRemove(); });
       add('Journal', () => this.journalModal());
       sect('Camera');
-      for (const m of ['iso', 'observer', 'follow', 'reverse']) add(JT.CAMS[m].label, () => { this.closeModal(); if (m === 'follow') this.follow(this.game.selectedId); else this.setCam(m); }, this.R.cam.mode === m);
+      for (const m of ['iso', 'observer', 'reverse', 'follow']) add(JT.CAMS[m].label, () => { this.closeModal(); if (m === 'follow') this.follow(this.game.selectedId); else this.setCam(m); }, this.R.cam.mode === m);
       sect('Time');
       for (const [m, lab] of [['auto', 'Natural'], ['day', 'Always day'], ['night', 'Always night']]) add(lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
       sect('Settings');
@@ -7028,7 +7042,7 @@ input[type=range]{accent-color:#c9a25c;width:140px}
         e('Building', 'Decor, Plants and Substrate open the shop strip. Pick a piece and place it; it shows whether it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>Esc</kbd> cancels. Removing refunds half.') +
         e('Warmth', 'A Basking Lamp throws a warm pool of light. Jumpers bask there in the morning, when it is cool and after a meal. Tap the lamp to switch it on or off. At night it draws moths and flies.') +
         e('Care', 'Mist to leave droplets for drinking. Springtails and isopods seek out husks and shed skins and nibble them away; more springtails clean faster. Clean tidies husks at once.') +
-        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Observer, <kbd>3</kbd> Follow, <kbd>4</kbd> Reverse. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
+        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Observer, <kbd>3</kbd> Reverse, <kbd>4</kbd> or <kbd>F</kbd> Follow. On a phone, the 1 2 3 buttons switch camera; tap the current one again to re-centre. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
         e('Journal', 'Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Coins buy more shelf slots and enclosures.') + '</div>');
     },
 
