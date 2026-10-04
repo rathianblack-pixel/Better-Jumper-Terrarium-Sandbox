@@ -298,6 +298,7 @@ body.story #popover{background:radial-gradient(ellipse at center,rgba(241,232,21
 body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,212,0.47) 40%,rgba(241,232,212,0.73))}
 @media (max-width:820px) and (orientation:portrait),(max-width:560px),(max-height:500px) and (orientation:landscape){body.story #spiderPanel{background:linear-gradient(rgba(241,232,212,0.76),rgba(241,232,212,0.61) 70%,rgba(241,232,212,0.00))}body.story #modeBar{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,212,0.63) 40%,rgba(241,232,212,0.73))}body.story #popover{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,212,0.86) 30%,rgba(241,232,212,0.95))}}
 @media (max-height:500px) and (orientation:landscape){body.story #dock{background:linear-gradient(to right,rgba(241,232,212,0.65),rgba(241,232,212,0.37) 70%,rgba(241,232,212,0.00))}body.story #spiderPanel{background:linear-gradient(to left,rgba(241,232,212,0.76),rgba(241,232,212,0.58) 70%,rgba(241,232,212,0.00))}}
+#noGL { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); max-width: 320px; padding: 18px 22px; background: #f3ead8; color: #2b2219; border: 1px solid #b9a888; border-radius: 10px; font: 16px/1.45 Georgia, serif; text-align: center; z-index: 50; }
 
 </style>
 </head>
@@ -313,7 +314,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     <button id="habPicker" class="mobile-only habpick txt"></button>
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
     <div id="cams" class="seg desktop-only" aria-label="Camera">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Observer (2)">Observer</button><button data-cam="reverse" title="Reverse (3)">Reverse</button><button data-cam="follow" title="Follow the selected jumper (4 or F)">Follow</button>
+      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Front (2)">Front</button><button data-cam="reverse" title="Back (3)">Back</button><button data-cam="follow" title="Follow the selected jumper (4 or F)">Follow</button>
     </div>
     <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
     <div id="timeMode" class="seg desktop-only" aria-label="Time of day">
@@ -345,12 +346,13 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="camCtl" aria-label="Camera">
-    <button data-cam="iso" title="Isometric (tap again to re-centre)">1</button><button data-cam="observer" title="Observer (tap again to re-centre)">2</button><button data-cam="reverse" title="Reverse (tap again to re-centre)">3</button>
+    <button data-cam="iso" title="Isometric (tap again to re-centre)">1</button><button data-cam="observer" title="Front (tap again to re-centre)">2</button><button data-cam="reverse" title="Back (tap again to re-centre)">3</button>
   </div>
 
   <div id="modeBar" class="hidden">
     <span id="modeText"></span>
     <button id="modeRotate" class="txt">Rotate</button>
+    <button id="modeLeaves" class="txt hidden">Leaves</button>
     <button id="modeDone" class="txt strong">Done</button>
     <button id="modeCancel" class="txt">Cancel</button>
   </div>
@@ -1302,9 +1304,9 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
       if (k === 'grand' && i % 2 === 0) { const s2 = br[3]; const e2 = [s2[0] + Math.cos(a + 0.9) * 14, s2[1] + 8, s2[2] + Math.sin(a + 0.9) * 10]; const b2 = bez(s2, [s2[0] + Math.cos(a + 0.9) * 7, s2[1] + 6, s2[2] + Math.sin(a + 0.9) * 5], e2, 3); tube(b2, r * 0.3, r * 0.16); B.path(b2, r * 0.3, 'branch', { flex: 0.35 }); ends.push(e2); }
     }
     ends.push(trunk[trunk.length - 1]);
-    // foliage clusters around branch ends (render only; branch ends are the perches)
+    // foliage clusters around branch ends (render only; branch ends are the perches). Bare variant: no leaves.
     const leafCol = p.leaf;
-    for (const e of ends) {
+    if (!(B.inst && B.inst.bare)) for (const e of ends) {
       const n = k === 'grand' ? 26 : k === 'bonsai' ? 22 : 16;
       const cr = k === 'grand' ? 13 : k === 'bonsai' ? 9 : 9;
       for (let q = 0; q < n; q++) {
@@ -1479,7 +1481,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     const sc = Math.min(1, Math.max(0.35, (maxH - baseY - 6) / nominal));
     ARCH[def.arche](B, def.p, sc);
     const X = makeXf(inst, baseY);
-    const g = { id: inst.id, type: inst.type, def, baseY, height: B.height, coverR: B.coverR, cover: def.cover,
+    const g = { id: inst.id, type: inst.type, def, baseY, height: B.height, coverR: B.coverR, cover: inst.bare ? (def.cover || 0) * 0.3 : def.cover,
       prims: [], paths: [], tops: [], solids: [], water: [], flowers: [], extent: [] };
     for (const pr of B.prims) {
       const q = Object.assign({}, pr);
@@ -1515,6 +1517,16 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     // base footprint used for overlap rules
     if (g.solids.length) g.foot = G.hull([].concat(...g.solids));
     else { const r = def.arche === 'scatter' ? def.p.r : def.arche === 'branch' ? 5 : def.arche === 'tree' ? (def.p.pot ? 9 : 6) : 6; g.foot = G.circlePoly(inst.x, inst.z, r, r * (def.arche === 'scatter' ? 0.7 : 1), 10); }
+    // soft footprints: trunks, stems and logs that touch the ground (floor walkers go round them; their own climb paths still connect)
+    g.soft = [];
+    for (const pr of g.prims) {
+      const segs = pr.t === 'tube' && pr.style !== 'blade' && pr.style !== 'plank' && Math.max(pr.r0, pr.r1) >= 0.9 ? pr.pts.map((q, i) => [q, M.lerp(pr.r0, pr.r1, i / Math.max(1, pr.pts.length - 1))])
+        : pr.t === 'log' ? [[pr.a, pr.r], [pr.b, pr.r]] : pr.t === 'pot' ? [[pr.o, pr.r], [[pr.o[0], pr.o[1] + 0.1, pr.o[2]], pr.r]] : null;
+      if (!segs) continue;
+      for (let i = 0; i + 1 < segs.length; i++) { const pts = [];
+        for (let k = 0; k <= 6; k++) { const t = k / 6; const q = M.lerp3(segs[i][0], segs[i + 1][0], t), r = M.lerp(segs[i][1], segs[i + 1][1], t); if (q[1] - r < baseY + 3) for (let a = 0; a < 8; a++) pts.push([q[0] + Math.cos(a * 0.785) * (r + 0.4), q[2] + Math.sin(a * 0.785) * (r + 0.4)]); }
+        if (pts.length >= 8) { const h = G.hull(pts); h.soft = true; g.soft.push(h); } }
+    }
     // contact points of non-solid objects (path points resting on the support)
     g.contacts = [];
     for (const pa of g.paths) for (const pt of pa.pts) if (pt[1] - baseY < 1.25) g.contacts.push([pt[0], pt[2]]);
@@ -1524,6 +1536,41 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     if (B.lampLocal) { const hd = X.P(B.lampLocal); g.lamp = { head: hd, pool: [hd[0], baseY, hd[2]], r: def.p.pool || 24 }; g.lampOn = inst.on !== false; }
     g.flexible = g.paths.some(p => p.flex > 0.2) || def.cat === 'plants';
     return g;
+  };
+
+  // ---- solid volumes of decor primitives (render-side de-penetration + tests) ----
+  const Solid = JT.Solid = {};
+  function segD(p, a, b) { const ab = M.sub(b, a); const L2 = M.dot(ab, ab) || 1; const t = Math.max(0, Math.min(1, M.dot(M.sub(p, a), ab) / L2)); return [M.dist(p, M.add(a, M.mul(ab, t))), t]; }
+  function edgeD(x, z, P) { let m = 1e9; for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length]; const ex = c[0] - a[0], ez = c[1] - a[1]; const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (z - a[1]) * ez) / (ex * ex + ez * ez || 1))); m = Math.min(m, Math.hypot(a[0] + ex * t - x, a[1] + ez * t - z)); } return m; }
+  /** How deep a point sits inside one primitive (0 = outside). */
+  Solid.depth = function (pt, pr) {
+    if (pr.t === 'prism') { if (pt[1] <= pr.y0 || pt[1] >= pr.y1) return 0; let P = pr.poly; if (pr.topPoly && pr.topPoly.length === P.length) { const k = (pt[1] - pr.y0) / (pr.y1 - pr.y0); P = P.map((q, i) => [M.lerp(q[0], pr.topPoly[i][0], k), M.lerp(q[1], pr.topPoly[i][1], k)]); } if (!G.pointInPoly(pt[0], pt[2], P)) return 0; return Math.min(edgeD(pt[0], pt[2], P), pr.y1 - pt[1], pt[1] - pr.y0); }
+    if (pr.t === 'tube') { let best = 0; for (let i = 0; i + 1 < pr.pts.length; i++) { const r = segD(pt, pr.pts[i], pr.pts[i + 1]); const rr = M.lerp(pr.r0, pr.r1, (i + r[1]) / (pr.pts.length - 1)); if (rr - r[0] > best) best = rr - r[0]; } return best; }
+    if (pr.t === 'log') { const d = segD(pt, pr.a, pr.b)[0]; if (d >= pr.r) return 0; if (pr.hollow) return d < pr.r * 0.72 ? 0 : Math.min(pr.r - d, d - pr.r * 0.72); if (pr.half && pt[1] < Math.min(pr.a[1], pr.b[1])) return 0; return pr.r - d; }
+    if (pr.t === 'cap') { const ry = pr.cone ? pr.r * 0.95 : pr.r * 0.42; const dx = (pt[0] - pr.o[0]) / pr.r, dy = (pt[1] - pr.o[1]) / ry, dz = (pt[2] - pr.o[2]) / pr.r; if (dy < -0.15) return 0; const q = Math.hypot(dx, Math.max(0, dy), dz); return q < 1 ? (1 - q) * ry : 0; }
+    if (pr.t === 'pot') { const d = Math.hypot(pt[0] - pr.o[0], pt[2] - pr.o[2]); if (pt[1] < pr.o[1] || pt[1] > pr.o[1] + pr.h || d > pr.r) return 0; return Math.min(pr.r - d, pr.o[1] + pr.h - pt[1]); }
+    if (pr.t === 'lamp') { const d = M.dist(pt, pr.o); return d < pr.r ? pr.r - d : 0; }
+    return 0;
+  };
+  /** Solid primitives of a geometry with a bounding box (cached). */
+  Solid.of = function (g) {
+    if (g._solid) return g._solid;
+    const list = g.prims.filter(pr => pr.t === 'prism' || pr.t === 'log' || pr.t === 'cap' || pr.t === 'pot' || pr.t === 'lamp' || (pr.t === 'tube' && pr.style !== 'blade' && pr.style !== 'plank' && Math.max(pr.r0, pr.r1) >= 0.8));
+    const bb = [1e9, 1e9, 1e9, -1e9, -1e9, -1e9]; const add = (x, y, z, r) => { bb[0] = Math.min(bb[0], x - r); bb[1] = Math.min(bb[1], y - r); bb[2] = Math.min(bb[2], z - r); bb[3] = Math.max(bb[3], x + r); bb[4] = Math.max(bb[4], y + r); bb[5] = Math.max(bb[5], z + r); };
+    for (const pr of list) { if (pr.poly) for (const q of pr.poly.concat(pr.topPoly || [])) { add(q[0], pr.y0, q[1], 0); add(q[0], pr.y1, q[1], 0); } if (pr.pts) for (const q of pr.pts) add(q[0], q[1], q[2], Math.max(pr.r0, pr.r1)); if (pr.t === 'log') { add(pr.a[0], pr.a[1], pr.a[2], pr.r); add(pr.b[0], pr.b[1], pr.b[2], pr.r); } if (pr.o) add(pr.o[0], pr.o[1] + (pr.h || 0), pr.o[2], pr.r); if (pr.o) add(pr.o[0], pr.o[1], pr.o[2], pr.r); }
+    return (g._solid = { list, bb });
+  };
+  /** Deepest penetration of a point into a geometry: {d, pr}. */
+  Solid.at = function (g, pt, pad) {
+    const S = Solid.of(g), b = S.bb; pad = pad || 0; let best = null;
+    if (pt[0] < b[0] - pad || pt[1] < b[1] - pad || pt[2] < b[2] - pad || pt[0] > b[3] + pad || pt[1] > b[4] + pad || pt[2] > b[5] + pad) return null;
+    for (const pr of S.list) { const d = Solid.depth(pt, pr); if (d > 0 && (!best || d > best.d)) best = { d, pr }; }
+    return best;
+  };
+  /** Outward direction from a primitive at a point (numerical gradient of depth). */
+  Solid.grad = function (pt, pr) {
+    const e = 0.25, f = (q) => Solid.depth(q, pr); const gx = f([pt[0] - e, pt[1], pt[2]]) - f([pt[0] + e, pt[1], pt[2]]), gy = f([pt[0], pt[1] - e, pt[2]]) - f([pt[0], pt[1] + e, pt[2]]), gz = f([pt[0], pt[1], pt[2] - e]) - f([pt[0], pt[1], pt[2] + e]);
+    const L = Math.hypot(gx, gy, gz); return L > 1e-6 ? [gx / L, gy / L, gz / L] : [0, 1, 0];
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1579,6 +1626,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
       const g = geoms[inst.id]; if (!g || !g.solids.length) continue;
       const r = nav.regions[supRegion(inst)]; if (r) for (const s of g.solids) r.obstacles.push(s);
     }
+    for (const inst of hab.decor) { const g = geoms[inst.id]; if (!g || !g.soft || !g.soft.length) continue; const r = nav.regions[supRegion(inst)]; if (r) for (const s of g.soft) r.obstacles.push(s); }
     const addNode = (n) => { n.id = nav.nodes.length; nav.nodes.push(n); nav.adj.push([]); if (n.region) nav.regions[n.region].nodes.push(n.id); return n.id; };
     const addEdge = (a, b, e) => { nav.adj[a].push(Object.assign({ to: b }, e)); };
     const both = (a, b, e) => { addEdge(a, b, e); addEdge(b, a, Object.assign({}, e, e.s != null ? { rev: true } : {})); };
@@ -1718,7 +1766,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
   }
 
   Nav.regionClear = function (nav, r, A, B) {
-    for (const o of r.obstacles) if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o)) return false;
+    for (const o of r.obstacles) if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)))) return false;
     if (r.poly) { for (let k = 1; k < 4; k++) { const t = k / 4; if (!G.pointInPoly(M.lerp(A[0], B[0], t), M.lerp(A[2], B[2], t), r.poly)) return false; } }
     return true;
   };
@@ -2019,11 +2067,12 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
       }
       return { ok: true, parent, parentTop, baseY, geom: g };
     }
-    addDecor(type, x, z, rot, seed, placedBy, my) {
+    addDecor(type, x, z, rot, seed, placedBy, my, opts) {
       const chk = this.canPlace(type, x, z, rot, seed, null, my);
       if (!chk.ok) return null;
       const inst = { id: JT.newId('d'), type, x, z, rot: rot || 0, seed: seed || ((JT.R() * 1e9) | 0), parent: chk.parent || null, parentTop: chk.parentTop || 0, placedAt: this.time, novel: !!placedBy };
       if (chk.wall) { inst.x = chk.x; inst.z = chk.z; inst.rot = chk.rot; inst.my = chk.my; inst.wall = chk.wall; }
+      if (opts && opts.bare && JT.DECOR_BY_ID[type].arche === 'tree') inst.bare = true; // tree without its leaves
       this.data.decor.push(inst);
       this.rebuild();
       return inst;
@@ -3816,16 +3865,6 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
   const P = JT.Presets = {};
   P.forType = (type) => JT.PRESETS.filter(p => p[2].includes(type)).map(p => ({ name: p[0], theme: p[1] }));
 
-  function tryPlace(hab, type, rng, region, tries, rots) {
-    const W = hab.dims.w, D = hab.dims.d;
-    for (let k = 0; k < (tries || 25); k++) {
-      const x = region ? rng.range(region[0], region[1]) : rng.range(10, W - 10);
-      const z = region && region[2] != null ? rng.range(region[2], region[3]) : rng.range(12, D - 12);
-      const rot = rots ? rng.pick(rots) : rng.int(0, 3); const seed = (rng() * 1e9) | 0;
-      if (hab.canPlace(type, x, z, rot, seed).ok) return hab.addDecor(type, x, z, rot, seed);
-    }
-    return null;
-  }
   function stackOn(hab, type, rng) {
     const plats = hab.decor.filter(d => JT.DECOR_BY_ID[d.type].platform && hab.geoms[d.id] && hab.geoms[d.id].tops.length);
     for (let k = 0; k < 12 && plats.length; k++) {
@@ -3836,59 +3875,85 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     }
     return null;
   }
-  /** Generate a themed layout adapted to the target enclosure. */
+  /** Generate a calm, minimal themed layout for the target enclosure: one hero piece off-centre at the back, a
+      quieter partner on the other third, small plant groups tucked round their bases, a little ground cover and
+      open floor left in front (room to watch a hunt). Mirrored at random so presets don't all look alike. */
   P.generate = function (hab, themeId, seed) {
     const th = JT.PRESET_THEMES[themeId]; if (!th) return;
     const rng = JT.makeRng(seed || ((JT.R() * 1e9) | 0));
     hab.data.decor = []; hab.rebuild();
     hab.data.substrate = th.sub; hab.data.bg = th.bg;
     const t = hab.data.type, W = hab.dims.w, D = hab.dims.d;
-    const compact = t === 'nano' || t === 'breeder';
-    const filt = (arr) => { const a = compact ? arr.filter(id => JT.DECOR_BY_ID[id].small) : arr; return a.length ? a : arr; };
-    const area = W * D / 18000;
-    const nTall = compact ? 1 : Math.max(1, Math.round(area * 0.9 + (hab.dims.h > 130 ? 1 : 0)));
-    const nMid = compact ? 1 : Math.round(1.5 + area * 1.2);
-    const nPlant = compact ? 3 : Math.round(3 + area * 2.2);
-    const nGround = compact ? 2 : Math.round(2 + area);
-    const tall = filt(th.tall), mid = filt(th.mid), plants = filt(th.plants), ground = filt(th.ground);
-    let i0 = 0;
-    if (th.back && JT.DECOR_BY_ID[th.tall[0]].arche === 'backwall') { if (tryPlace(hab, th.tall[0], rng, [W / 2 - 2, W / 2 + 2, D - 9, D - 7], 10, [0])) i0 = 1; }
-    for (let i = i0; i < nTall; i++) { const seg = W / nTall; tryPlace(hab, tall[i % tall.length], rng, [seg * i + seg * 0.2, seg * (i + 1) - seg * 0.2, D * 0.35, D * 0.75]); }
-    const mounts = mid.filter(id => JT.DECOR_BY_ID[id].mount), loose = mid.filter(id => !JT.DECOR_BY_ID[id].mount);
-    if (i0) for (const id of mounts) tryPlace(hab, id, rng, null, 6); // hang the wall pieces first
-    for (let i = 0; i < nMid; i++) if (loose.length) tryPlace(hab, loose[i % loose.length], rng);
-    for (let i = 0; i < nPlant; i++) { const id = plants[i % plants.length]; if (!(rng() < 0.35 && JT.DECOR_BY_ID[id].stack && stackOn(hab, id, rng))) tryPlace(hab, id, rng); }
-    for (let i = 0; i < nGround; i++) tryPlace(hab, ground[i % ground.length], rng);
-    if (!hab.decor.some(d => JT.DECOR_BY_ID[d.type].water)) tryPlace(hab, 'waterdish', rng);
+    const compact = t === 'nano' || t === 'breeder', wide = W >= 240, tall = hab.dims.h >= 140;
+    const fits = (id) => !!JT.DECOR_BY_ID[id] && (!compact || JT.DECOR_BY_ID[id].small);
+    const pickFrom = (arr, i) => { const a = arr.filter(fits); return a.length ? a[i % a.length] : null; };
+    const flip = rng() < 0.5; const X = (f) => (flip ? 1 - f : f) * W;
+    // place near an anchor: the exact spot first, then a widening spiral (front side preferred when asked)
+    const near = (type, ax, az, rad, front) => {
+      if (!type) return null;
+      for (let k = 0; k < 36; k++) {
+        const r = k === 0 ? 0 : rad * (0.25 + 0.75 * k / 36); let a = k * 2.399 + rng() * 0.6; if (front) a = Math.PI + 0.5 + (a % (Math.PI - 1.0));
+        const x = M.clamp(ax + Math.cos(a) * r, 8, W - 8), z = M.clamp(az + Math.sin(a) * r * 0.75, 8, D - 8);
+        const rot = rng.int(0, 3), sd = (rng() * 1e9) | 0;
+        if (hab.canPlace(type, x, z, rot, sd).ok) return hab.addDecor(type, x, z, rot, sd);
+      }
+      return null;
+    };
+    const radiusOf = (inst) => { const g = inst && hab.geoms[inst.id]; if (!g || !g.foot) return 6; return Math.sqrt(Math.abs(JT.G.polyArea(g.foot)) / Math.PI); };
+    // a small group of plants tucked round the front and sides of a piece
+    const tuck = (inst, kinds, n) => { if (!inst) return; const c = [inst.x, inst.z]; const R0 = radiusOf(inst);
+      for (let i = 0; i < n; i++) { const id = kinds[i % kinds.length]; if (!id) continue; const a = Math.PI + 0.35 + (i / Math.max(1, n - 1 || 1)) * (Math.PI - 0.7) + (rng() - 0.5) * 0.3; const d = R0 + 3 + rng() * 5;
+        near(id, c[0] + Math.cos(a) * d, c[1] + Math.sin(a) * d * 0.8, 10, false); } };
+    const plants = [pickFrom(th.plants, 0), pickFrom(th.plants, 1), pickFrom(th.plants, 2)];
+    const anchors = [];
+    // back-wall themes: the wall is the hero; hang one or two mounts on it
+    let hero = null;
+    if (th.back && JT.DECOR_BY_ID[th.tall[0]].arche === 'backwall') {
+      hero = near(th.tall[0], W / 2, D - 8, 3, false);
+      if (hero) { const mounts = th.mid.filter(id => JT.DECOR_BY_ID[id].mount); for (let i = 0; i < (compact ? 1 : 2) && i < mounts.length; i++) { for (let k = 0; k < 8; k++) { const x = X(0.25 + 0.5 * i + (rng() - 0.5) * 0.1), sd = (rng() * 1e9) | 0; if (hab.canPlace(mounts[i], x, D - 9, 0, sd).ok) { hab.addDecor(mounts[i], x, D - 9, 0, sd); break; } } } }
+      const free = pickFrom(th.tall.slice(1).concat(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount)), 0);
+      if (!compact && free) anchors.push(near(free, X(0.78), D * 0.42, 14, false));
+    } else {
+      const heroId = pickFrom(th.tall.filter(fits).length ? th.tall : th.tall.concat(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount), ['corkround', 'branchperch', 'flatstone']), 0);
+      hero = near(heroId, X(compact ? 0.38 : 0.33), D * (tall ? 0.55 : 0.6), 16, false);
+      anchors.push(hero);
+      if (!compact) anchors.push(near(pickFrom(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount), 0), X(0.7), D * 0.45, 18, false));
+      if (wide) anchors.push(near(pickFrom(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount), 1), X(0.9), D * 0.3, 14, false));
+    }
+    // plants: a group of two or three at the hero, one or two at its partner, maybe one up on the hero
+    if (hero) tuck(hero, [plants[0], plants[1] || plants[0], plants[0]], compact ? 2 : 3);
+    if (anchors[1]) tuck(anchors[1], [plants[1] || plants[0], plants[2] || plants[0]], wide ? 2 : 1 + (rng() < 0.5 ? 1 : 0));
+    if (anchors[2]) tuck(anchors[2], [plants[2] || plants[0]], 1);
+    if (!compact && hero && JT.DECOR_BY_ID[hero.type].platform && rng() < 0.7) { const small = th.plants.filter(id => JT.DECOR_BY_ID[id].stack && JT.DECOR_BY_ID[id].small); if (small.length) stackOn(hab, small[0], rng); }
+    // ground cover: a single patch where the plants gather; a second one on bigger floors
+    const g0 = pickFrom(th.ground, 0), g1 = pickFrom(th.ground, 1);
+    if (hero) near(g0, hero.x + (flip ? -1 : 1) * 10, Math.max(14, hero.z - radiusOf(hero) - 8), 14, true);
+    if (!compact && anchors[1] && g1) near(g1, anchors[1].x, Math.max(14, anchors[1].z - radiusOf(anchors[1]) - 6), 12, true);
+    // water tucked by a front corner, near the partner piece
+    if (!hab.decor.some(d => JT.DECOR_BY_ID[d.type].water)) near('waterdish', X(compact ? 0.8 : 0.86), D * 0.2, 12, false) || near('waterdish', X(0.6), D * 0.25, 60, false) || near('waterdish', W / 2, D / 2, Math.max(W, D), false);
     hab.decor.forEach(d => { d.novel = false; });
   };
   P.saveCustom = function (game, hab, name) {
-    const items = hab.sortedDecor().map(d => ({ type: d.type, fx: d.x / hab.dims.w, fz: d.z / hab.dims.d, rot: d.rot, seed: d.seed, my: d.my }));
+    const items = hab.sortedDecor().map(d => ({ type: d.type, fx: d.x / hab.dims.w, fz: d.z / hab.dims.d, rot: d.rot, seed: d.seed, my: d.my, bare: d.bare || undefined }));
     game.state.customPresets.push({ name, items, sub: hab.data.substrate, bg: hab.data.bg, from: hab.data.type });
   };
   P.applyCustom = function (hab, preset) {
     hab.data.decor = []; hab.rebuild();
     hab.data.substrate = preset.sub; hab.data.bg = preset.bg; let ok = 0;
-    for (const it of preset.items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed, null, it.my).ok) { hab.addDecor(it.type, x, z, it.rot, it.seed, false, it.my); ok++; } }
+    for (const it of preset.items) { const x = it.fx * hab.dims.w, z = it.fz * hab.dims.d; if (hab.canPlace(it.type, x, z, it.rot, it.seed, null, it.my).ok) { hab.addDecor(it.type, x, z, it.rot, it.seed, false, it.my, { bare: it.bare }); ok++; } }
     hab.decor.forEach(d => { d.novel = false; });
     return ok;
   };
-  /** Hand-arranged Moss Tower (Vertical Tower 100 x 84): a living back wall for tall/portrait screens. */
-  P.tower = function (hab) {
-    const L = [['mosswall', 50, 74, 0], ['cushionmoss', 30, 22, 0], ['mosspatch', 74, 50, 0], ['beadvine', 50, 52, 0], ['mossmound', 34, 44, 0],
-      ['toadstools', 34, 44, 0], ['toadstools', 80, 64, 0], ['fern', 13, 58, 0], ['maidenhair', 88, 26, 0], ['echeveria', 64, 20, 0], ['echeveria', 22, 12, 1],
-      ['waterdish', 84, 12, 0], ['glowshroom', 14, 30, 0], ['toadstools', 58, 64, 0], ['pothos', 22, 66, 0], ['mossstone', 90, 46, 0], ['wm_fungi', 28, 70, 0], ['wm_pothos', 72, 70, 0]];
-    let s = 23;
-    for (const [t, x, z, r] of L) { s += 7; let ok = false; const rr = JT.makeRng(s); for (let k = 0; k < 40 && !ok; k++) { const sp = k === 0 ? 0 : 3 + k * 0.6; const xx = x + (k ? (rr() - 0.5) * 2 * sp : 0), zz = z + (k ? (rr() - 0.5) * 2 * sp : 0); if (hab.canPlace(t, xx, zz, r, s).ok) { hab.addDecor(t, xx, zz, r, s); ok = true; } } }
-    hab.data.substrate = 'moss'; hab.data.bg = 'mossy';
-    hab.decor.forEach(d => { d.novel = false; });
-  };
-  /** Hand-arranged Starter Terrarium (Standard 200 x 90). */
+  /** Moss Tower (Vertical Tower 100 x 84): the minimal moss-wall layout, fixed so every new tower looks the same. */
+  P.tower = function (hab) { P.generate(hab, 'mosswall', 5); };
+  /** Hand-arranged Starter Terrarium (Standard 200 x 90): a cork tower on the left third with a pothos on top, a flat
+      stone on the right third, small plant groups at their feet, open floor in the middle for hunting. */
   P.starter = function (hab) {
-    const L = [['mosspatch', 40, 62, 0], ['leaflitter', 150, 70, 0], ['waterdish', 172, 22, 0], ['corkbark', 120, 70, 0], ['corktower', 30, 38, 0], ['driftwood', 92, 40, 1],
-      ['fern', 63, 66, 0], ['tallgrass', 186, 55, 0], ['succulent', 128, 70, 0], ['glowshroom', 14, 72, 0], ['flatstone', 150, 38, 0], ['pinkflowers', 108, 22, 0], ['tinytree', 62, 24, 0], ['pothos', 30, 38, 0], ['oaklitter', 92, 75, 0]];
+    const L = [['corktower', 64, 56, 0], ['fern', 44, 44, 0], ['glowshroom', 84, 40, 0], ['mosspatch', 60, 30, 0],
+      ['flatstone', 140, 50, 0], ['tallgrass', 160, 64, 0], ['succulent', 124, 36, 0], ['leaflitter', 150, 28, 0], ['waterdish', 178, 20, 0]];
     let s = 11;
-    for (const [t, x, z, r] of L) { s += 7; if (hab.canPlace(t, x, z, r, s).ok) hab.addDecor(t, x, z, r, s); }
+    for (const [t, x, z, r] of L) { s += 7; const rr = JT.makeRng(s); for (let k = 0; k < 30; k++) { const sp = k ? 2 + k * 0.5 : 0; const xx = x + (k ? (rr() - 0.5) * 2 * sp : 0), zz = z + (k ? (rr() - 0.5) * 2 * sp : 0); if (hab.canPlace(t, xx, zz, r, s).ok) { hab.addDecor(t, xx, zz, r, s); break; } } }
+    const tower = hab.decor.find(d => d.type === 'corktower'); if (tower) { const g = hab.geoms[tower.id]; const tp = g && g.tops[g.tops.length - 1]; if (tp) { const c = JT.G.centroid(tp.poly); if (hab.canPlace('pothos', c[0], c[1], 0, 5).ok) hab.addDecor('pothos', c[0], c[1], 0, 5); } }
     hab.data.substrate = 'coco'; hab.data.bg = 'mossy';
     hab.decor.forEach(d => { d.novel = false; });
   };
@@ -3901,6 +3966,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
   'use strict';
   const JT = root.JT, M = JT.M;
   const DAY = JT.DAY = 480;
+  const JOURNAL_BONUS = 20, MOLT_BONUS = 30; // first sighting of a behaviour; each molt
   const SAVE_KEY = 'jumperTerrarium.save', SET_KEY = 'jumperTerrarium.settings', VERSION = 3;
 
   // localStorage can throw in privacy modes: every access is wrapped.
@@ -3920,17 +3986,16 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
 
     newGame() {
       JT.game = this;
-      this.state = { v: VERSION, coins: 400, time: DAY * 0.3, catches: 0, species: JT.SPECIES.filter(s => s.starter).map(s => s.id), journal: {}, active: 0, slots: 3, timeMode: 'auto', customPresets: [], nextId: 1, habitats: [] };
+      this.state = { v: VERSION, coins: 600, time: DAY * 0.3, catches: 0, species: JT.SPECIES.filter(s => s.starter).map(s => s.id), journal: {}, active: 0, slots: 3, timeMode: 'auto', customPresets: [], nextId: 1, habitats: [], paidDay: Math.floor(DAY * 0.3 / DAY) };
       const tall = Game.isPortrait();
       const a = tall ? new JT.Habitat({ name: 'Moss Tower', type: 'tower', substrate: 'moss', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this);
       if (tall) JT.Presets.tower(a); else JT.Presets.starter(a);
       if (tall) this.state.towerGift = true;
       const bolt = a.addSpider('bold', { name: 'Bolt', stage: 2, meals: 1, sat: 0.55 }); bolt.pos = a.randomFloorPoint(); bolt.sup = { k: 'floor' };
       a.addPrey('fruitfly', 5); a.addPrey('housefly', 1); a.addPrey('cricket', 1);
-      const b = new JT.Habitat({ name: 'Canopy Habitat', type: 'arboreal' }, this); JT.Presets.generate(b, 'canopy', 7);
-      const c = tall ? new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Wide Habitat', type: 'wide' }, this);
-      if (tall) JT.Presets.starter(c); else JT.Presets.generate(c, 'meadow', 9);
-      b.decor.forEach(d => { d.preset = true; }); c.decor.forEach(d => { d.preset = true; });
+      // the other tanks start as blank canvases: just substrate, ready to be built (or filled from a preset)
+      const b = new JT.Habitat({ name: 'Canopy Habitat', type: 'arboreal', substrate: 'jungle', bg: 'canopy' }, this);
+      const c = tall ? new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Wide Habitat', type: 'wide', substrate: 'forest', bg: 'meadow' }, this);
       this.habs = [a, b, c];
       this.selectedId = bolt.id;
       this.save();
@@ -4002,6 +4067,9 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
       if (this._lite >= 1) { for (const h of this.habs) if (h !== active) h.update(this._lite, false); this._lite = 0; }
       for (const h of this.habs) h.data.age = (h.data.age || 0) + dt / DAY;
       this._saveT = (this._saveT || 0) + dt; if (this._saveT > 20) { this._saveT = 0; this.save(); }
+      // each morning every display earns from its appeal (paid for at most 3 missed days)
+      const day = Math.floor(this.state.time / DAY); if (this.state.paidDay == null) this.state.paidDay = day;
+      if (day > this.state.paidDay) { const n = Math.min(3, day - this.state.paidDay); this.state.paidDay = day; let tot = 0; for (const h of this.habs) tot += this.dailyIncome(h); tot *= n; if (tot > 0) { this.state.coins += tot; this.emit('coins', { amount: tot }); this.emit('toast', { text: '<span class="sc">Morning</span> Your displays earned ' + tot + ' coins' + (n > 1 ? ' over ' + n + ' days' : '') + '.<span class="sub">Lovelier, livelier displays earn more.</span>', cls: 'journal', ms: 5200 }); } }
       if (!this.state.species.includes('portia') && this.state.catches >= 30) { this.state.species.push('portia'); this.emit('toast', { text: 'Portia unlocked after 30 successful catches.' }); }
     }
 
@@ -4009,9 +4077,19 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     onEvent(hab, type, info) {
       const watched = hab === this.hab && this.viewing;
       if (type === 'meal') { this.state.coins += info.value || 0; this.state.catches++; if (watched) this.emit('coins', { amount: info.value, sp: info.sp }); }
-      if (type === 'journal') { if (!watched) return; const id = info.id; const first = !this.state.journal[id]; this.state.journal[id] = (this.state.journal[id] || 0) + 1; if (first) { const e = JT.JOURNAL.find(j => j.id === id); if (e) this.emit('journal', { entry: e, sp: info.sp }); } return; }
+      if (type === 'journal') { if (!watched) return; const id = info.id; const first = !this.state.journal[id]; this.state.journal[id] = (this.state.journal[id] || 0) + 1; if (first) { const e = JT.JOURNAL.find(j => j.id === id); if (e) { this.state.coins += JOURNAL_BONUS; this.emit('journal', { entry: e, sp: info.sp, bonus: JOURNAL_BONUS }); this.emit('coins', { amount: JOURNAL_BONUS }); } } return; }
+      if (type === 'molt') { this.state.coins += MOLT_BONUS; info.bonus = MOLT_BONUS; if (watched) this.emit('coins', { amount: MOLT_BONUS }); }
       if (watched) this.emit(type, info);
     }
+    /** Appeal of a display: variety of decor, plants, and how well its jumpers are doing (0..~100). */
+    appeal(h) {
+      const types = new Set(); let plants = 0, pieces = 0;
+      for (const d of h.decor) { const def = JT.DECOR_BY_ID[d.type]; if (!def) continue; types.add(d.type); pieces++; if (def.cat === 'plants') plants++; }
+      const happy = h.spiders.filter(s => s.sat > 0.35).length;
+      return Math.round(Math.min(16, types.size) * 2.5 + Math.min(12, plants) * 1.5 + Math.min(20, pieces) * 0.5 + happy * 8);
+    }
+    /** Coins a display earns each morning: a small base for every jumper living there, plus its appeal. Empty displays earn half. */
+    dailyIncome(h) { const a = this.appeal(h); return h.spiders.length ? 10 + h.spiders.length * 6 + a : Math.round(a * 0.5); }
     spend(n) { if (this.state.coins < n) return false; this.state.coins -= n; this.emit('coins', { amount: -n }); return true; }
     refund(n) { this.state.coins += n; }
 
@@ -4020,8 +4098,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     createHabitat(type, name) {
       if (this.habs.length >= this.state.slots) return null; const price = Math.round(JT.HABITATS[type].price * 0.5);
       if (!this.spend(price)) return null;
-      const h = new JT.Habitat({ name: name || JT.HABITATS[type].name, type }, this);
-      JT.Presets.generate(h, (JT.Presets.forType(type)[0] || { theme: 'cork' }).theme);
+      const h = new JT.Habitat({ name: name || JT.HABITATS[type].name, type }, this); // blank canvas: substrate only
       this.habs.push(h); return h;
     }
     /** Replace enclosure format; decor/animals are reconciled to the new geometry rather than corrupting the save. */
@@ -4044,7 +4121,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { art: 'story', quality: 'auto', hd2d: true, tilt: true, bloom: true, grain: true, music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false },
+    defaults: { quality: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false },
     load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k]) out[k] = s[k]; return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
@@ -4774,9 +4851,25 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
     const s = M.norm(M.cross(n, f));
     let p = M.add(e.pos, M.mul(n, (fr.r || 0) + (extraLift || 0)));
     if (e.sup && e.sup.d && hab) { const sw = hab.swayAt(e.sup.d, e.pos[1]); if (sw) p = M.add(p, sw); }
+    if (hab && JT.Solid && e.sup && e.sup.k !== 'air') p = D.unclip(hab, e, p, n);
     return { p, f, s, n };
   };
 
+  /** Keep a critter's drawn body out of decor solids: lift it off the piece it stands on, slide it round others. */
+  D.unclip = function (hab, e, p, n) {
+    const L = e.species ? JT.SpiderAI.len(e) : e.type && JT.PREY_BY_ID[e.type] ? (JT.PREY_BY_ID[e.type].len || 3) : 0; if (!L) return p;
+    const lift = Math.min(L * 0.3, 2.2); let moved = 0;
+    for (let it = 0; it < 3; it++) {
+      const c = M.add(p, M.mul(n, lift)); let hit = null, hg = null;
+      for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g) continue; const h = JT.Solid.at(g, c, 0.1); if (h && h.d > 0.08 && (!hit || h.d > hit.d)) { hit = h; hg = inst.id; } }
+      if (!hit) break;
+      let dir;
+      if (e.sup.d === hg) dir = n; // own support: step out along the surface normal
+      else { const gr = JT.Solid.grad(c, hit.pr); dir = M.sub(gr, M.mul(n, M.dot(gr, n))); dir = M.len(dir) > 0.2 ? M.norm(dir) : gr; }
+      const step = Math.min(hit.d + 0.15, L * 1.2); p = M.add(p, M.mul(dir, step)); moved += step; if (moved > L * 2 + 3) break;
+    }
+    return p;
+  };
   function ctxEll(ctx, V, c, ax, ay, fill) {
     const C = V.P(c), A = V.J(ax), B = V.J(ay);
     if (Math.abs(A[0] * B[1] - A[1] * B[0]) < 0.05) return;
@@ -5921,8 +6014,7 @@ body.story #dock{background:linear-gradient(rgba(241,232,212,0.00),rgba(241,232,
 /* Jumper Terrarium — storybook renderer, part 2: WebGL painter. Draws the whole terrarium as ink-and-watercolour:
    cream paper, soft washes, wobbly ink outlines. Decor and plants are real 3D meshes (built once), so turning the
    camera is cheap; critters are drawn with the 2D art code into a sprite sheet each frame and placed in the 3D scene
-   (depth tested, so leaves in front of them hide them), then given an ink edge. Falls back to the classic 2D renderer
-   when WebGL is not available. */
+   (depth tested, so leaves in front of them hide them), then given an ink edge. */
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M, G = JT.G, GM = JT.GLMesh;
@@ -5945,7 +6037,7 @@ void main(){ vec3 p=aP+uSway*aW; vec3 q=proj(p);
   const MESH_FS = `
 precision highp float;
 varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;
-uniform vec3 uL; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; ${LAMPS}
+uniform vec3 uL; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; ${LAMPS}
 void main(){
   if(vWP.y<-0.05) discard;
   if(uPass>0.5){ gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*uAlpha, uAlpha); return; }
@@ -5966,6 +6058,7 @@ void main(){
   float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;
   col*=0.9+0.2*nz.r;
   col=mix(col, vec3(0.95,0.91,0.82), 0.07);
+  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); }
   vec3 o=grade(col, vWP);
   if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);
   o=mix(o, uGhost.rgb, uGhost.a);
@@ -5974,6 +6067,10 @@ void main(){
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
   const TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}
 void main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`;
+  const MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}
+varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`;
+  const MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}
+void main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`;
   const SCR_VS = `attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aUV; gl_Position=vec4(aXY,0.999,1.0); }`;
   const SCR_FS = `precision highp float; varying vec2 vUV; uniform sampler2D uTex; uniform vec4 uCol; uniform float uMode; uniform vec2 uRes; uniform vec2 uJit;
 void main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*uCol.rgb,1.0); return; }
@@ -6010,7 +6107,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.gl = gl; this.cv = canvas; this.R = R; this.gl2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
       this.uintOK = this.gl2 || !!gl.getExtension('OES_element_index_uint');
       this.P = {
-        mesh: this.prog(MESH_VS, MESH_FS), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS),
+        mesh: this.prog(MESH_VS, MESH_FS), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS),
       };
       this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
@@ -6033,7 +6130,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     texFrom(cv, repeat) { const gl = this.gl; const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv); this.texParams(repeat); return t; }
     texParams(repeat, mip) { const gl = this.gl; const w = repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE; gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); }
     buf(data, kind) { const gl = this.gl; const b = gl.createBuffer(); const t = kind === 'idx' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER; gl.bindBuffer(t, b); gl.bufferData(t, data, gl.STATIC_DRAW); return b; }
-    view(P, V) { const gl = this.gl; gl.uniform3f(P.u.uC, V.c[0], V.c[1], V.c[2]); gl.uniform4f(P.u.uRot, V.cy_, V.sy_, V.cp, V.sp); gl.uniform4f(P.u.uScr, V.s, V.cx, V.cy, 0); gl.uniform2f(P.u.uRes, this.cv.width, this.cv.height); }
+    view(P, V) { const gl = this.gl; gl.uniform3f(P.u.uC, V.c[0], V.c[1], V.c[2]); gl.uniform4f(P.u.uRot, V.cy_, V.sy_, V.cp, V.sp); gl.uniform4f(P.u.uScr, V.s, V.cx, V.cy, 0); const r = this._res; gl.uniform2f(P.u.uRes, r ? r[0] : this.cv.width, r ? r[1] : this.cv.height); }
     light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); }
 
     // ---------- generated textures ----------
@@ -6082,7 +6179,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (let i = 0; i < 40; i++) this.wash(s, rng() * 512, rng() * 58, 3 + rng() * 7, rng() < 0.5 ? S.speck[1] : S.speck[0], 0.5, rng, 0.6);
       s.fillStyle = 'rgba(40,25,12,0.6)'; s.fillRect(0, 0, 512, 2);
       if (this.gT) { this.gl.deleteTexture(this.gT.t); this.gl.deleteTexture(this.gT.s); }
-      this.gT = { key, t: this.texFrom(c, false), s: this.texFrom(side, true) }; return this.gT;
+      const one = mkCanvas(1, 1), oc = one.getContext('2d'); oc.drawImage(c, 0, 0, 1, 1); const px = oc.getImageData(0, 0, 1, 1).data;
+      this.gT = { key, t: this.texFrom(c, false), s: this.texFrom(side, true), avg: [px[0] / 255, px[1] / 255, px[2] / 255] }; return this.gT;
     }
 
     // ---------- static geometry ----------
@@ -6113,7 +6211,20 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const len = Math.min(70, Math.max(4, g.height) * ll / Math.max(0.3, L[1])) * (solid ? 0.8 : 0.65); const cc = [fc[0] + dir[0] * len * 0.45, fc[1] + dir[1] * len * 0.45];
         decal(cc[0], g.baseY + 0.05, cc[1], [dir[0] * (r + len * 0.5), dir[1] * (r + len * 0.5)], [-dir[1] * r * 0.9, dir[0] * r * 0.9], 0.3); }
       const shb = sh.length ? this.buf(new Float32Array(sh)) : null; if (shb) del.push(shb);
-      this.hg = { key, floor, nf: fl.length / 5, side, sides, shb, nsh: sh.length / 6, meshes, del }; return this.hg;
+      // soil heaped round everything that stands in the substrate, so nothing looks set down on top of it
+      const mv = []; const Lx = Lh[0] / ll, Lz = Lh[1] / ll;
+      const ring = (poly, inset, w, hgt) => { if (!poly || poly.length < 3) return; const c = G.centroid(poly); if (G.polyArea(poly) < 0) poly = poly.slice().reverse();
+        const nP = poly.length; const rows = [[-inset, hgt, 1, 0.8], [w * 0.3, hgt * 0.75, 1, 0.9], [w * 0.65, hgt * 0.3, 0.75, 0.88], [w, 0.02, 0, 0.9]];
+        const pts = rows.map(([d, y, a, b0]) => poly.map((q, i) => { const pv = poly[(i - 1 + nP) % nP], nx = poly[(i + 1) % nP]; let ex = nx[0] - pv[0], ez = nx[1] - pv[1]; const l = Math.hypot(ex, ez) || 1; let ox = ez / l, oz = -ex / l; if (ox * (q[0] - c[0]) + oz * (q[1] - c[1]) < 0) { ox = -ox; oz = -oz; }
+          const x = q[0] + ox * d, z = q[1] + oz * d; const sh2 = b0 + 0.12 * (ox * Lx + oz * Lz); return [x, y, z, x / dm.w, z / dm.d, a, sh2]; }));
+        for (let r = 0; r + 1 < rows.length; r++) for (let i = 0; i < nP; i++) { const j = (i + 1) % nP; const A = pts[r][i], B = pts[r][j], C = pts[r + 1][j], D2 = pts[r + 1][i]; mv.push(...A, ...B, ...C, ...A, ...C, ...D2); } };
+      const smooth = (poly) => { if (poly.length > 24) return poly; const out = []; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; out.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]); } return out; };
+      for (const { inst, g } of meshes) { if (inst.parent || g.baseY > 0.5 || g.def.cat === 'ground' || g.def.arche === 'wallmount' || g.def.arche === 'scatter' || inst.type === 'heatlamp') continue;
+        for (const so of g.solids) ring(smooth(so), 1.0, g.def.arche === 'backwall' ? 3.2 : 2.6, 1.15);
+        for (const so of (g.soft || [])) ring(smooth(so), 0.6, 2.3, 1.0);
+        if (!g.solids.length && !(g.soft && g.soft.length) && g.contacts && g.contacts.length) { const cs = g.contacts; let poly; if (cs.length >= 3) poly = G.hull(cs.map(q => q.slice())); if (!poly || Math.abs(G.polyArea(poly)) < 4) { const c = G.centroid(cs.length >= 3 ? cs : [cs[0], cs[0], cs[0]]); poly = G.circlePoly(c[0], c[1], 1.4, 1.4, 10); } else poly = G.expandPoly(poly, 0.8); ring(smooth(poly), 0.8, 2.4, 1.05); } }
+      const mb = mv.length ? this.buf(new Float32Array(mv)) : null; if (mb) del.push(mb);
+      this.hg = { key, floor, nf: fl.length / 5, side, sides, shb, nsh: sh.length / 6, meshes, del, mb, nm: mv.length / 7 }; return this.hg;
     }
 
     // ---------- per-frame ----------
@@ -6144,18 +6255,21 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
       const outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; const lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k;
       P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]);
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
       const drawList = hg.meshes.filter(o => visible(o.g));
       for (const pass of [0, 1]) {
         gl.uniform1f(P.u.uPass, pass ? 0 : 1);
-        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawMesh(P, o.m); }
+        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
       }
       // ink strokes on decor
       P = this.use(this.P.line); this.view(P, V); this.light(P); gl.uniform1f(P.u.uLW, lw); gl.uniform1f(P.u.uMinW, 0.6 * k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
       for (const o of drawList) { if (!o.m.lb) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
+      // soil mounds (depth tested against the decor, not written, soft edges)
+      if (hg.mb) { P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, hg.mb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1]], 7); gl.drawArrays(gl.TRIANGLES, 0, hg.nm); }
       // placement ghost
       if (this.R.ghost && this.R.ghost.geom) this.drawGhost(V, this.R.ghost);
       // critters & small things as sprites, then silk
@@ -6167,6 +6281,37 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
     boundsOf(g) { const pts = []; for (const e of (g.extent.length ? g.extent : g.foot || [])) pts.push([e[0], g.baseY, e[1]]); let c = [0, 0, 0]; if (!pts.length) return { c: g.center, r: 20 }; for (const p of pts) c = M.add(c, p); c = M.mul(c, 1 / pts.length); c[1] = g.baseY + g.height / 2; let r = g.height / 2 + 4; for (const p of pts) r = Math.max(r, Math.hypot(p[0] - c[0], p[2] - c[2]) + g.height / 2); return { c, r }; }
+    /** Shop thumbnail of one decor geometry, painted like the habitat (ink + wash) into a 2D canvas. V: view in thumbnail pixels. */
+    thumb(g, V, size) {
+      const gl = this.gl; if (this.lost) return null; const S = size * 2; const m = GM.build(g); if (!m.n) return null;
+      this._tfb = this._tfb || {}; let T = this._tfb[S];
+      if (!T) { const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, S, S, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        const rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, rb); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, S, S);
+        const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+        T = this._tfb[S] = { fb, tex, rb }; }
+      const keepF = this.F; this.F = { night: 0, grade: [1, 1, 1], lamps: [], lampU: new Float32Array(16) }; this._res = [S, S]; this.resetAttribs();
+      const W2 = new JT.View(V.yaw, V.pitch, V.s * 2, V.cx * 2, V.cy * 2, V.c);
+      try {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); gl.viewport(0, 0, S, S); gl.clearColor(0, 0, 0, 0); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); m.lb = m.nl ? this.buf(m.lines) : null; m.lib = m.nl ? this.buf(m.lidx, 'idx') : null; }
+        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
+        const Lg = JT.LIGHT; let P = this.use(this.P.mesh); this.view(P, W2); this.light(P);
+        gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, W2.toCam[0], W2.toCam[1], W2.toCam[2]); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
+        gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, M.clamp(S / 110, 1.4, 3)); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0); gl.uniform3f(P.u.uSoil, 0.5, 0.4, 0.3);
+        for (const pass of [1, 0]) { gl.uniform1f(P.u.uPass, pass); this.drawMesh(P, m); }
+        if (m.lb) { P = this.use(this.P.line); this.view(P, W2); this.light(P); gl.uniform1f(P.u.uLW, M.clamp(S / 90, 1, 2.4)); gl.uniform1f(P.u.uMinW, 1); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0); gl.uniform3f(P.u.uSway, 0, 0, 0);
+          gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); this.drawLines(P, m.lb, m.lib, m.nl); }
+        const px = new Uint8Array(S * S * 4); gl.readPixels(0, 0, S, S, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        const big = mkCanvas(S, S), bc = big.getContext('2d'); const id = bc.createImageData(S, S);
+        for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = ((S - 1 - y) * S + x) * 4, o = (y * S + x) * 4; const a = px[i + 3]; const k = a ? 255 / a : 0; id.data[o] = Math.min(255, px[i] * k); id.data[o + 1] = Math.min(255, px[i + 1] * k); id.data[o + 2] = Math.min(255, px[i + 2] * k); id.data[o + 3] = a; }
+        bc.putImageData(id, 0, 0);
+        const c = mkCanvas(size, size), cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high'; cx.drawImage(big, 0, 0, size, size); return c;
+      } finally {
+        this.free(m); g._mesh = null; gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, this.cv.width, this.cv.height); gl.depthMask(true); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        this.F = keepF; this._res = null; this.resetAttribs();
+      }
+    }
+    resetAttribs() { const gl = this.gl; const n = this._maxA || (this._maxA = Math.min(16, gl.getParameter(gl.MAX_VERTEX_ATTRIBS))); for (let i = 0; i < n; i++) gl.disableVertexAttribArray(i); this.cur = null; }
     free(m) { const gl = this.gl; for (const k of ['vb', 'ib', 'lb', 'lib']) { if (m[k]) gl.deleteBuffer(m[k]); m[k] = null; } }
     drawMesh(P, m) { const gl = this.gl; gl.bindBuffer(gl.ARRAY_BUFFER, m.vb); this.attribs(P, [['aP', 3], ['aN', 3], ['aO', 3], ['aC', 3], ['aC2', 3], ['aW', 1], ['aF', 1]], GM.STRIDE); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ib); const u32 = m.idx instanceof Uint32Array; if (u32 && !this.uintOK) return; gl.drawElements(gl.TRIANGLES, m.idx.length, u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); }
     drawLines(P, lb, lib, nl) { const gl = this.gl; gl.bindBuffer(gl.ARRAY_BUFFER, lb); this.attribs(P, [['aA', 3], ['aB', 3], ['aS', 2], ['aW', 1], ['aAl', 1], ['aCol', 3], ['aSw', 2]], 15); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, lib); const u32 = nl * 4 > 65000; if (u32 && !this.uintOK) return; gl.drawElements(gl.TRIANGLES, nl * 6, u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); }
@@ -6180,7 +6325,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     drawGhost(V, gh) {
       const gl = this.gl; const g = gh.geom; const m = GM.build(g); if (!m.n) return;
       if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); }
-      const P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.enable(gl.BLEND); gl.depthMask(false); gl.uniform3f(P.u.uSway, 0, 0, 0);
+      const P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.enable(gl.BLEND); gl.depthMask(false); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0);
       gl.uniform1f(P.u.uAlpha, gh.ok ? 0.8 : 0.5); gl.uniform4f(P.u.uGhost, gh.ok ? 0.45 : 0.9, gh.ok ? 0.85 : 0.3, gh.ok ? 0.45 : 0.25, 0.3); gl.uniform1f(P.u.uPass, 0); this.drawMesh(P, m);
       gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0);
     }
@@ -6243,24 +6388,18 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 
 </script>
 <script>
-/* Jumper Terrarium — renderer: camera rigs, backgrounds, substrate, depth-sorted scene, effects,
-   post-processing, picking, placement ghost, thumbnails and portraits. */
+/* Jumper Terrarium — renderer: camera rigs, frame loop (the GL painter draws the scene; a 2D overlay carries effects),
+   picking, placement, thumbnails and portraits. */
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M, G = JT.G, D = JT.Draw, sh = JT.shade;
   const CAMS = {
     iso: { yaw: 0.52, pitch: 0.66, label: 'Isometric' },
-    observer: { yaw: 0.0, pitch: 0.36, label: 'Observer' },
+    observer: { yaw: 0.26, pitch: 0.44, label: 'Front' }, // id kept for saves: the front of the tank, turned a little for depth
     follow: { yaw: 0.45, pitch: 0.5, label: 'Follow' },
-    reverse: { yaw: Math.PI + 0.35, pitch: 0.6, label: 'Reverse' },
+    reverse: { yaw: Math.PI + 0.26, pitch: 0.5, label: 'Back' }, // the back of the tank, turned a little
   };
   JT.CAMS = CAMS;
-  let filterOK = null;
-  function supportsFilter() {
-    if (filterOK !== null) return filterOK;
-    try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; filterOK = c.filter === 'blur(2px)'; } catch (e) { filterOK = false; }
-    return filterOK;
-  }
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
 
   class Renderer {
@@ -6272,14 +6411,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
       this.fps = 60; this._autoLow = false; this.time = 0;
       this.V = new JT.View(0.5, 0.6, 1, 0, 0, [0, 0, 0]);
-      this.glc = root.document && root.document.getElementById('glview'); this.gp = null; this.setArt();
+      this.glc = root.document && root.document.getElementById('glview'); this.gp = null; this.initGL();
       this.resize();
     }
     get qualityScale() {
       const q = this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality;
       const dpr = root.devicePixelRatio || 1;
-      if (this.gp) return q === 'low' ? Math.min(1.25, dpr) : q === 'high' ? Math.min(2.5, dpr) : Math.min(2, dpr); // the GPU painter is cheap per pixel
-      return q === 'low' ? Math.min(1, dpr) * 0.75 : q === 'high' ? Math.min(2, dpr) : Math.min(1.25, dpr);
+      return q === 'low' ? Math.min(1.25, dpr) : q === 'high' ? Math.min(2.5, dpr) : Math.min(2, dpr);
     }
     get quality() { return this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality; }
     resize() {
@@ -6296,14 +6434,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
     /** Forget every cached picture (after loading a different save). */
     resetCaches() { this._baseL = null; this._st = null; this._skPrev = null; this.bgCache = {}; this.motes = null; this._speck = null; this.cur = null; if (this.fcam) this.fcam.st = null; }
-    /** Storybook (WebGL ink & watercolour) or Classic (2D canvas) art. Falls back to Classic without WebGL. */
-    setArt() {
-      const want = this.set.art !== 'classic' && !!this.glc && !!JT.GLPaint;
-      if (want && !this.gp && !this._glFail) { try { this.gp = new JT.GLPaint(this.glc, this); } catch (e) { console.warn('storybook renderer unavailable:', e && e.message); this._glFail = true; this.gp = null; } }
-      if (!want && this.gp) { this.gp = null; this.glc.width = 1; this.glc.height = 1; this._glFail = false; }
+    /** The WebGL ink & watercolour painter (the only renderer). Without WebGL a short notice is shown instead. */
+    initGL() {
+      if (!this.gp && !this._glFail && this.glc && JT.GLPaint) { try { this.gp = new JT.GLPaint(this.glc, this); } catch (e) { console.warn('WebGL unavailable:', e && e.message); this._glFail = true; this.gp = null; } }
       if (this.glc) this.glc.style.display = this.gp ? 'block' : 'none';
-      root.document && root.document.body && root.document.body.classList.toggle('story', !!this.gp);
-      this._skPrev = null; this._st = null; if (this.cssW) this.resize();
+      const doc = root.document; if (doc && doc.body) { doc.body.classList.add('story'); if (this._glFail && !doc.getElementById('noGL')) { const d = doc.createElement('div'); d.id = 'noGL'; d.textContent = 'Jumper Terrarium needs WebGL to draw the terrarium. Try another browser, or turn on hardware acceleration.'; doc.body.appendChild(d); } }
     }
     get storybook() { return !!this.gp; }
     setMode(m) { if (!CAMS[m]) return; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
@@ -6328,8 +6463,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const c = [dm.w / 2, top * 0.38, dm.d / 2];
       const W = this.cssW, H = this.cssH; const portrait = H > W * 1.1;
       // tall screens: swing the camera round so the tank's long side runs up the screen ("tall setup")
-      const tall = portrait && dm.w > dm.d * 1.3 && this.cam.mode !== 'follow';
-      const yaw = C.yaw + (tall ? (this.cam.mode === 'observer' ? 1.2 : 0.73) : 0), pitch = C.pitch + (tall ? 0.12 : 0);
+      const tall = portrait && dm.w > dm.d * 1.3 && this.cam.mode === 'iso'; // front / back stay square on to their side
+      const yaw = C.yaw + (tall ? 0.73 : 0), pitch = C.pitch + (tall ? 0.12 : 0);
       const tmp = new JT.View(yaw, pitch, 1, 0, 0, c);
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
       const availH = H * (portrait ? 0.62 : 0.78), availW = (W - (this.insetL || 0)) * (portrait ? 0.94 : 0.88);
@@ -6370,89 +6505,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     unproject(sx, sy, y) { return this.V.unproject(sx * this.k, sy * this.k, y); }
     project(p) { const q = this.V.P(p); return [q[0] / this.k, q[1] / this.k]; }
 
-    // ---------------- background ----------------
-    background(bgId) {
-      const key = bgId + this.cv.width + 'x' + this.cv.height; if (this.bgCache[key]) return this.bgCache[key];
-      const B = JT.BACKGROUNDS[bgId] || JT.BACKGROUNDS.mossy; const W = this.cv.width, H = this.cv.height;
-      const c = mkCanvas(W, H), g = c.getContext('2d');
-      const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, B.sky[0]); gr.addColorStop(0.55, B.sky[1]); gr.addColorStop(1, B.sky[2]);
-      g.fillStyle = gr; g.fillRect(0, 0, W, H);
-      // soft foliage/bokeh blobs drawn small and upscaled = natural blur without filters
-      const sw = Math.max(40, W >> 3), shh = Math.max(30, H >> 3); const s = mkCanvas(sw, shh), sg = s.getContext('2d');
-      const rng = JT.makeRng(JT.hashStr(bgId));
-      for (let i = 0; i < 70; i++) {
-        const x = rng() * sw, y = rng() * shh * 0.95, r = (0.04 + rng() * 0.16) * sw; sg.globalAlpha = 0.18 + rng() * 0.35;
-        sg.fillStyle = rng.pick(B.blobs); sg.beginPath(); sg.ellipse(x, y, r, r * (0.6 + rng() * 0.6), rng() * 3, 0, 6.283); sg.fill();
-      }
-      sg.globalAlpha = 1;
-      for (let i = 0; i < 22; i++) { const x = rng() * sw, y = rng() * shh * 0.7, r = 0.5 + rng() * 1.6; sg.globalAlpha = 0.25 + rng() * 0.4; sg.fillStyle = B.light; sg.beginPath(); sg.arc(x, y, r, 0, 6.283); sg.fill(); }
-      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-      const s2 = mkCanvas(sw * 2, shh * 2); s2.getContext('2d').drawImage(s, 0, 0, sw * 2, shh * 2);
-      g.drawImage(s2, 0, 0, W, H);
-      // light shafts
-      g.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < 4; i++) {
-        const x = W * (0.15 + i * 0.22 + rng() * 0.08), w = W * (0.04 + rng() * 0.06);
-        const lg = g.createLinearGradient(0, 0, 0, H * 0.9); lg.addColorStop(0, hexA(B.light, 0.16 * B.shafts)); lg.addColorStop(1, hexA(B.light, 0));
-        g.fillStyle = lg; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + w, 0); g.lineTo(x + w * 2.6 - W * 0.12, H * 0.9); g.lineTo(x - W * 0.12, H * 0.9); g.closePath(); g.fill();
-      }
-      g.globalCompositeOperation = 'source-over';
-      // naturalist shelf: dark wood plane at the bottom
-      const sy = H * 0.86; const wg = g.createLinearGradient(0, sy, 0, H); wg.addColorStop(0, '#3a2414'); wg.addColorStop(0.1, '#2a180c'); wg.addColorStop(1, '#140b05');
-      g.fillStyle = wg; g.fillRect(0, sy, W, H - sy);
-      g.strokeStyle = 'rgba(200,160,90,0.25)'; g.lineWidth = Math.max(1, H * 0.003); g.beginPath(); g.moveTo(0, sy); g.lineTo(W, sy); g.stroke();
-      const vg = g.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.25, W / 2, H * 0.5, Math.max(W, H) * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)');
-      g.fillStyle = vg; g.fillRect(0, 0, W, H);
-      this.bgCache = {}; this.bgCache[key] = c; return c;
-    }
 
-    // ---------------- substrate ----------------
     floorPoly(hab) {
       const dm = hab.dims;
       if (dm.shape === 'circle') return G.circlePoly(dm.w / 2, dm.d / 2, dm.w / 2, dm.d / 2, 44);
       return [[0, 0], [dm.w, 0], [dm.w, dm.d], [0, dm.d]];
-    }
-    drawSlab(ctx, V, hab, night) {
-      const S = JT.SUBSTRATES[hab.data.substrate] || JT.SUBSTRATES.coco; const poly = this.floorPoly(hab);
-      const layers = [[0, -7, S.mid, S.dark], [-7, -9, '#5a3a22', '#3e2715'], [-9, -15, '#4a2e18', '#24140a']];
-      const n = poly.length; const c = G.centroid(poly);
-      // contact shadow of the whole display on the shelf
-      const p0 = V.P([c[0], -15, c[1] + 4]); const rx = hab.dims.w * 0.62 * V.s, ry = hab.dims.d * 0.62 * V.s * V.sp;
-      ctx.save(); ctx.translate(p0[0], p0[1]); ctx.scale(1, Math.max(0.15, ry / rx)); const sg = ctx.createRadialGradient(0, 0, rx * 0.5, 0, 0, rx); sg.addColorStop(0, 'rgba(0,0,0,0.5)'); sg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, 0, rx, 0, 6.283); ctx.fill(); ctx.restore();
-      for (const [ya, yb, ca, cb] of layers) {
-        const faces = [];
-        for (let i = 0; i < n; i++) {
-          const a = poly[i], b = poly[(i + 1) % n]; const nx = b[1] - a[1], nz = -(b[0] - a[0]);
-          const out = M.norm([nx, 0, nz]); const facing = M.dot(out, V.toCam);
-          if (facing <= 0) continue;
-          faces.push({ a, b, f: facing, d: V.depth([(a[0] + b[0]) / 2, ya, (a[1] + b[1]) / 2]) });
-        }
-        faces.sort((x, y) => y.d - x.d);
-        for (const F of faces) {
-          const A = V.P([F.a[0], ya, F.a[1]]), B = V.P([F.b[0], ya, F.b[1]]), C2 = V.P([F.b[0], yb, F.b[1]]), D2 = V.P([F.a[0], yb, F.a[1]]);
-          const lit = M.clamp(0.55 + 0.45 * (F.f - 0.3), 0.3, 1.1);
-          const gg = ctx.createLinearGradient(0, A[1], 0, D2[1]); gg.addColorStop(0, sh(ca, (lit - 0.8) * 0.5)); gg.addColorStop(1, sh(cb, (lit - 0.8) * 0.5));
-          ctx.fillStyle = gg; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.lineTo(C2[0], C2[1]); ctx.lineTo(D2[0], D2[1]); ctx.closePath(); ctx.fill();
-          if (ya === 0) { ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = Math.max(0.5, V.s * 0.3); for (let k = 1; k < 4; k++) { const t = k / 4; const y = ya + (yb - ya) * t; const P1 = V.P([F.a[0], y, F.a[1]]), P2 = V.P([F.b[0], y, F.b[1]]); ctx.beginPath(); ctx.moveTo(P1[0], P1[1] + Math.sin(k * 3) * 1.5); ctx.lineTo(P2[0], P2[1]); ctx.stroke(); } }
-        }
-      }
-      // brass/gold trim on the plinth
-      ctx.strokeStyle = 'rgba(201,162,92,0.55)'; ctx.lineWidth = Math.max(1, V.s * 0.35);
-      ctx.beginPath(); for (let i = 0; i <= n; i++) { const q = V.P([poly[i % n][0], -9, poly[i % n][1]]); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.stroke();
-      // top surface
-      ctx.beginPath(); for (let i = 0; i < n; i++) { const q = V.P([poly[i][0], 0, poly[i][1]]); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath();
-      const t0 = V.P([c[0], 0, 0]), t1 = V.P([c[0], 0, hab.dims.d]);
-      const tg = ctx.createLinearGradient(t0[0], t0[1], t1[0], t1[1]); tg.addColorStop(0, sh(S.top, -0.12)); tg.addColorStop(1, sh(S.top, 0.06));
-      ctx.fillStyle = tg; ctx.fill();
-      ctx.save(); ctx.clip();
-      const key = hab.data.substrate + hab.data.type;
-      if (!this._speck || this._speck.key !== key) { const rng = JT.makeRng(JT.hashStr(key)); const pts = []; const N = Math.round(hab.dims.w * hab.dims.d / 22); for (let i = 0; i < N; i++) pts.push([rng() * hab.dims.w, rng() * hab.dims.d, rng() < 0.5 ? 0 : 1, 0.25 + rng() * 0.6, rng()]); this._speck = { key, pts }; }
-      const lo = this.quality === 'low';
-      for (let i = 0; i < this._speck.pts.length; i += lo ? 3 : 1) { const s = this._speck.pts[i]; const q = V.P([s[0], 0, s[1]]); const r = s[3] * V.s; ctx.fillStyle = S.speck[s[2]]; ctx.globalAlpha = 0.55 + s[4] * 0.4; ctx.fillRect(q[0] - r, q[1] - r * V.sp, r * 2, r * 2 * V.sp); }
-      ctx.globalAlpha = 1;
-      // humidity darkening
-      const hum = hab.data.humidity || 0.5; if (hum > 0.6) { ctx.fillStyle = 'rgba(20,12,4,' + ((hum - 0.6) * 0.35) + ')'; ctx.fillRect(0, 0, this.cv.width, this.cv.height); }
-      ctx.restore();
     }
 
     // ---------------- main render ----------------
@@ -6460,39 +6517,18 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // the canvas must always match its on-screen box (after a rotation it can lag a frame or two behind)
       { const c = this.cv, cw = c.clientWidth, ch = c.clientHeight; if (cw !== this._cw || ch !== this._ch || (cw > 0 && (Math.abs(c.width - cw * this.k) > 2 || Math.abs(c.height - ch * this.k) > 2))) this.resize(); }
       this.time += dt; const game = this.game; const hab = game.hab; if (!hab) return;
-      if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05; if (this.set.quality === 'auto' && this.gp) { // GPU-bound phones: settle once on a lighter resolution if the frame rate stays low
-          this._slowT = this.fps < 45 && this.time > 5 ? (this._slowT || 0) + dt : 0; if (this._slowT > 3 && !this._autoLow) { this._autoLow = true; this.resize(); } }
-        else if (this.set.quality === 'auto') { if (this.fps < 26 && this.time > 4 && !this._autoLow && (this.frameMs || 0) > 14) { this._autoLow = true; this._lowT = 0; this.resize(); }
-          // drop back to full sharpness once rendering is clearly cheap again (e.g. the camera came to rest)
-          else if (this._autoLow) { this._lowT = (this.frameMs || 99) < 6 ? (this._lowT || 0) + dt : 0; if (this._lowT > 8) { this._autoLow = false; this.resize(); } } } }
+      if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05;
+        // GPU-bound phones: settle once on a lighter resolution if the frame rate stays low
+        if (this.set.quality === 'auto') { this._slowT = this.fps < 45 && this.time > 5 ? (this._slowT || 0) + dt : 0; if (this._slowT > 3 && !this._autoLow) { this._autoLow = true; this.resize(); } } }
+      this._dt = dt;
       const V = this.updateView(hab, dt);
-      if (this.gp && !this.gp.lost) { this.renderStory(V, hab, dt); return; }
-      const post = this.quality !== 'low' && this.set.hd2d;
-      const ctx = this.ctx; // post-processing works in place: no full-screen scene copy
-      this._dt = dt; this.beginLayers(V);
-      const lamps = hab.lampsOn ? hab.lampsOn() : [];
-      // Still camera: the whole static picture (background, substrate, decor, remains, silk + grading) is kept as ONE
-      // finished image. Each frame blits it once and repaints only small rectangles around the things that move.
-      const skey = this.staticKey(V, hab, post, lamps);
-      const still = skey !== null && skey === this._skPrev; this._skPrev = skey; this._composed = false;
-      if (still) {
-        const night = this._nq; const rects = this.dirtyRects(V, hab);
-        if (rects && (!this._st || this._st.key !== skey)) this.buildStatic(V, hab, night, post, lamps, skey);
-        if (rects) { this.compose(ctx, V, hab, night, post, lamps, rects, dt); this._composed = true; return; }
-      }
-      const night = 1 - game.daylight();
-      this.drawFrame(ctx, V, hab, night, post, lamps, null);
-      this.drawEffects(ctx, V, hab, dt);
-      if (post) { this.postProcess(ctx, this.cv, night); if (this._st) this._st.key = null; } // blur buffers now hold this frame
-      else this.nightGrade(ctx, night);
-      if (lamps.length) this.drawLampGlow(ctx, V, hab, lamps, night);
-      if (this.set.debug) this.drawDebug(ctx, V, hab);
+      if (this.gp && !this.gp.lost) this.renderStory(V, hab, dt);
     }
     /** Storybook frame: the GPU paints the scene; the 2D canvas on top only carries effects, labels and edit outlines. */
     renderStory(V, hab, dt) {
       const night = 1 - this.game.daylight(); const lamps = hab.lampsOn ? hab.lampsOn() : [];
-      const scene = this.drawScene(null, V, hab, night, 'collect');
-      try { this.gp.frame(V, hab, night, lamps, scene); } catch (e) { console.error('storybook frame', e); this._glErr = (this._glErr || 0) + 1; if (this._glErr > 30) { this._glFail = true; this.set.art = 'classic'; this.setArt(); } }
+      const scene = this.collectScene(V, hab, night);
+      try { this.gp.frame(V, hab, night, lamps, scene); } catch (e) { if ((this._glErr = (this._glErr || 0) + 1) < 5) console.error('storybook frame', e); }
       const ctx = this.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, this.cv.width, this.cv.height);
       if (this.ghost && this.ghost.geom) this.drawGhostFoot(ctx, V, this.ghost);
       if (this.hover && this.hover.kind === 'decor') { const g = hab.geoms[this.hover.ent.id]; if (g) this.outlineDecor(ctx, V, g, 'rgba(200,70,50,0.9)'); }
@@ -6505,81 +6541,17 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       g.foot.forEach((q, i) => { const s = V.P([q[0], g.baseY + 0.2, q[1]]); if (i) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); }); ctx.closePath();
       ctx.fillStyle = col + '0.18)'; ctx.fill(); ctx.strokeStyle = col + '0.9)'; ctx.lineWidth = 2 * this.k; ctx.setLineDash([6 * this.k, 4 * this.k]); ctx.stroke(); ctx.restore();
     }
-    /** Background + substrate + lamp pools + depth-sorted scene. mode: null = everything, 'static', or a clip rect. */
-    drawFrame(ctx, V, hab, night, post, lamps, mode) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter && (ctx.filter = 'none');
-      ctx.drawImage(this.background(hab.data.bg), 0, 0);
-      this.drawBase(ctx, V, hab, night);
-      if (lamps.length) this.drawLampPools(ctx, V, hab, lamps, night, mode !== 'static');
-      this.drawScene(ctx, V, hab, night, mode);
-    }
-    /** Identity of everything in the static picture; null when something static is animating (or the user is editing). */
-    staticKey(V, hab, post, lamps) {
-      if (this.ghost || this.hover || this.set.debug || this.fx.length) return null;
-      for (const inst of hab.decor) if (inst._sw) return null;
-      const night = 1 - this.game.daylight(); this._nq = Math.round(night * 40) / 40;
-      const f = (x) => Math.round(x * 100);
-      let k = [V.yaw.toFixed(5), V.pitch.toFixed(5), V.s.toFixed(4), f(V.cx), f(V.cy), f(V.c[0]), f(V.c[1]), f(V.c[2]), this.cv.width, this.cv.height, this._nq,
-        hab.data.id, hab._geomVersion, hab.data.bg, hab.data.substrate, Math.round((hab.data.humidity || 0) * 20), this.quality, post, !!this.set.tilt, !!this.set.bloom, !!this.set.grain].join('|');
-      for (const L of lamps) k += '|L' + L.inst.id;
-      for (const r of hab.data.remains) k += '|r' + r.id + ':' + Math.round((r.clean != null ? r.clean : 1) * 20) + ':' + (r.pos ? f(r.pos[0]) + ',' + f(r.pos[2]) : '');
-      for (const d of hab.data.drops) k += '|d' + d.id;
-      for (const n of (hab.data.nests || [])) k += '|n' + n.id + ':' + (n.hole ? Math.round(n.hole.open * 10) : '') + ':' + Math.round((n.age || 0) / 30);
-      k += '|s' + hab.data.silk.length + (hab.data.silk.length ? ':' + hab.data.silk[hab.data.silk.length - 1].id : '');
-      return k;
-    }
-    buildStatic(V, hab, night, post, lamps, key) {
-      const W = this.cv.width, H = this.cv.height;
-      const st = this._st && this._st.cv.width === W && this._st.cv.height === H ? this._st : { cv: mkCanvas(W, H) };
-      const g = st.cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
-      this.drawFrame(g, V, hab, night, post, lamps, 'static');
-      if (post) this.postProcess(g, st.cv, night, false, true); else this.nightGrade(g, night);
-      st.key = key; this._st = st;
-    }
-    /** Rectangles (canvas px) around everything that moves; overlapping ones merged. null = too much motion, draw normally. */
-    dirtyRects(V, hab) {
-      const W = this.cv.width, H = this.cv.height, k = this.k; const R = [];
-      const add = (p, r) => { if (!p || !M.finite3(p)) return; const q = V.P(p); R.push([q[0] - r, q[1] - r, q[0] + r, q[1] + r]); };
-      const seg = (a, b, pad) => { if (!M.finite3(a) || !M.finite3(b)) return; const p = V.P(a), q = V.P(b); R.push([Math.min(p[0], q[0]) - pad, Math.min(p[1], q[1]) - pad, Math.max(p[0], q[0]) + pad, Math.max(p[1], q[1]) + pad]); };
-      for (const sp of hab.spiders) {
-        if (!M.finite3(sp.pos)) continue; const L = JT.SpiderAI.len(sp); const r = L * 1.7 * V.s + 10 * k; add(sp.pos, r);
-        if (sp._dangleOff) { const d = sp._dangleOff; add([sp.pos[0] + d.dx, sp.pos[1] - (d.depth || 0), sp.pos[2] + d.dz], r); seg(sp.pos, [sp.pos[0] + d.dx, sp.pos[1] - (d.depth || 0), sp.pos[2] + d.dz], r); }
-        if (sp._anchor && (sp._air || (sp.sup && sp.sup.k === 'air'))) seg(sp._anchor, sp.pos, 4 * k);
-        if (sp._air || (sp.sup && sp.sup.k === 'air')) add(JT.Nav.supportBelow(hab, sp.pos).pos, L * 0.6 * V.s + 6 * k);
-      }
-      for (const p of hab.prey) {
-        if (p.owner || p.buried || !M.finite3(p.pos)) continue; const def = JT.PREY_BY_ID[p.type]; if (!def) continue; const r = (def.len || 3) * 1.3 * V.s + 8 * k; add(p.pos, r);
-        if (p.sup && p.sup.k === 'air') add(JT.Nav.supportBelow(hab, p.pos).pos, def.len * 0.5 * V.s + 6 * k);
-      }
-      for (const lf of (hab._leaves || [])) add(lf.pos, 4 * V.s + 6 * k);
-      // clamp to screen, drop invisible, merge overlaps
-      let rs = []; for (const r of R) { const x0 = Math.max(0, Math.floor(r[0])), y0 = Math.max(0, Math.floor(r[1])), x1 = Math.min(W, Math.ceil(r[2])), y1 = Math.min(H, Math.ceil(r[3])); if (x1 > x0 && y1 > y0) rs.push([x0, y0, x1, y1]); }
-      let merged = true; while (merged) { merged = false; for (let i = 0; i < rs.length && !merged; i++) for (let j = i + 1; j < rs.length; j++) { const a = rs[i], b = rs[j]; if (a[0] <= b[2] + 2 && b[0] <= a[2] + 2 && a[1] <= b[3] + 2 && b[1] <= a[3] + 2) { rs[i] = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]; rs.splice(j, 1); merged = true; break; } } }
-      let area = 0; for (const r of rs) area += (r[2] - r[0]) * (r[3] - r[1]);
-      if (rs.length > 16 || area > W * H * 0.5) return null;
-      return rs;
-    }
-    compose(ctx, V, hab, night, post, lamps, rects, dt) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-      ctx.drawImage(this._st.cv, 0, 0);
-      for (const r of rects) {
-        ctx.save(); ctx.beginPath(); ctx.rect(r[0], r[1], r[2] - r[0], r[3] - r[1]); ctx.clip();
-        this.drawFrame(ctx, V, hab, night, post, lamps, r);
-        if (post) this.postProcess(ctx, this.cv, night, true, true); else this.nightGrade(ctx, night);
-        ctx.restore();
-      }
-      this.drawEffects(ctx, V, hab, dt);
-      if (lamps.length) this.drawLampGlow(ctx, V, hab, lamps, night);
-    }
-    drawScene(ctx, V, hab, night, mode) {
-      const items = []; const coll = mode === 'collect'; const stat = mode === 'static', rect = mode && mode !== 'static' && !coll ? mode : null;
-      const follow = this.cam.mode === 'follow' && !stat; const fsp = follow ? (hab.spider(this.game.selectedId) || hab.spiders[0]) : null; const xrays = [];
+    /** Everything that moves (critters, remains, drops, leaves, nests, silk) as sprite/line items for the GL painter. */
+    collectScene(V, hab, night) {
+      let ctx = null;
+      const items = [];
+      const follow = this.cam.mode === 'follow'; const fsp = follow ? (hab.spider(this.game.selectedId) || hab.spiders[0]) : null;
       const tgtId = fsp && fsp.target && fsp.target.kind === 'prey' ? fsp.target.id : null; /* the prey it is stalking */ const t = this.time; const geoms = hab.geoms; const sel = this.game.selectedId;
       const decDepth = {};
       // ground-layer decor first (moss, leaf litter, pebbles) + shadows
       const W = this.cv.width, H = this.cv.height, mg = 90 * this.k;
       const vis = (pos) => { const q = V.P(pos); return q[0] > -mg && q[0] < W + mg && q[1] > -mg && q[1] < H + mg; };
-      const onScreen = (pos) => { if (stat) return false; const q = V.P(pos); if (rect) return q[0] >= rect[0] && q[0] < rect[2] && q[1] >= rect[1] && q[1] < rect[3]; return q[0] > -mg && q[0] < W + mg && q[1] > -mg && q[1] < H + mg; };
+      const onScreen = (pos) => { const q = V.P(pos); return q[0] > -mg && q[0] < W + mg && q[1] > -mg && q[1] < H + mg; };
       for (const inst of hab.decor) {
         const g = geoms[inst.id]; if (!g) continue;
         const sway = inst._sw ? [inst._sw.x, 0, inst._sw.z] : null;
@@ -6587,10 +6559,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const c = g.foot ? G.centroid(g.foot) : [inst.x, inst.z];
         const dep = V.depth([c[0], g.baseY + Math.min(10, g.height * 0.25), c[1]]);
         decDepth[inst.id] = dep;
-        items.push({ d: dep, f: () => this.drawDecorCached(ctx, V, g, sway, night, t), inst });
       }
-      // wall-mounted pieces sit just in front of (or, seen from behind, just behind) their wall
-      for (const it of items) { const inst = it.inst; if (!inst || !inst.wall || decDepth[inst.wall] == null) continue; const wg = geoms[inst.wall]; const facing = wg && wg.out ? wg.out[0] * V.toCam[0] + wg.out[2] * V.toCam[2] >= 0 : true; it.d = decDepth[inst.wall] + (facing ? -0.3 : 0.3); decDepth[inst.id] = it.d; }
       const animalDepth = (e) => { let d = V.depth(e.pos); if (e.sup && e.sup.d && decDepth[e.sup.d] != null && decDepth[e.sup.d] < 1e8) d = Math.min(d, decDepth[e.sup.d] - 0.05); return d; };
       for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; const fr = D.frame(hab, r, 0.1); items.push({ d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}), p: r.pos, r: ((JT.PREY_BY_ID[r.type] || { len: 3 }).len || 3) * 1.3 + 2 }); }
       for (const w of hab.data.drops) { if (!M.finite3(w.pos)) continue; const fr = JT.Nav.supFrame(hab, w.sup); const pos = M.add(w.pos, M.mul(fr.n, (fr.r || 0) + 0.3)); items.push({ d: animalDepth(w) + 0.01, f: () => D.drop(ctx, V, w, pos), p: pos, r: (w.r || 0.6) * 2 + 1 }); }
@@ -6598,7 +6567,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (p.owner || p.buried || !M.finite3(p.pos) || !onScreen(p.pos)) continue; const def = JT.PREY_BY_ID[p.type]; if (!def) continue;
         const pd = animalDepth(p); const drawP = () => { const fr = D.frame(hab, p, 0.05); D.prey(ctx, V, p, fr, { time: t }); };
         items.push({ d: pd, f: drawP, p: p.pos, r: (def.len || 3) * 1.5 + 1.5, xr: !!(tgtId && p.id === tgtId), bias: p.sup && p.sup.k !== 'floor' && p.sup.k !== 'air' ? (def.len || 3) * 0.85 : (def.len || 3) * 0.3 });
-        if (tgtId && p.id === tgtId) { const q = V.P(p.pos); const r = (def.len || 3) * 1.4 * V.s + 8 * this.k; xrays.push({ d: pd, drawTo: (g) => { const keep = ctx; ctx = g; try { drawP(); } finally { ctx = keep; } }, box: [Math.floor(q[0] - r), Math.floor(q[1] - r), Math.ceil(q[0] + r), Math.ceil(q[1] + r)] }); }
         if (p.sup && p.sup.k === 'air') { const b = JT.Nav.supportBelow(hab, p.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, def.len * 0.4, 0.13 * M.clamp(1 - (p.pos[1] - b.pos[1]) / 80, 0.2, 1)), p: b.pos, r: def.len * 0.5 + 1, ground: true }); }
       }
       for (const sp of hab.spiders) {
@@ -6636,167 +6604,12 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         // live safety dragline paid out behind a jump
         if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; items.push({ ln: { a: an, b: sp2, w: 0.07, al: 0.32 - night * 0.1 }, d: V.depth(M.lerp3(an, sp2, 0.5)) - 0.05, f: () => { const a = V.P(an), b = V.P(sp2); ctx.strokeStyle = 'rgba(240,240,250,' + (0.32 - night * 0.1).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
         items.push({ d, f: () => draw(1), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
-        // follow / observe: remember the followed jumper so it can be shown through anything in front of it
-        if (follow && sp === fsp) { const q = V.P(fr.p); const r = L * 1.7 * V.s + 10 * this.k; xrays.push({ d, drawTo: (g) => { const keep = ctx; ctx = g; try { draw(1, true); } finally { ctx = keep; } }, box: [Math.floor(q[0] - r), Math.floor(q[1] - r), Math.ceil(q[0] + r), Math.ceil(q[1] + r)] }); }
-        else if (ventral && sp.id === sel) items.push({ noGL: true, d: d - 0.2 - 50, f: () => { ctx.globalAlpha = 0.3; D.spider(ctx, V, sp, fr, { len: L, time: t, alpha: 0.3, noShadow: true }); ctx.globalAlpha = 1; } });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)), p: b.pos, r: L * 0.55 + 1, ground: true }); }
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf), p: lf.pos, r: 3 }); }
       for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !vis(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0]; items.push({ d: V.depth(n.pos) - n.len * 0.7, f: () => D.nest(ctx, V, n, up, night), p: n.pos, r: (n.len || 6) * 1.3 + 3 }); }
       for (const k of hab.data.silk) items.push({ silk: k, d: V.depth(M.lerp3(k.a, k.b, 0.5)) - 0.1, f: () => D.silk(ctx, V, k, night) });
-      if (this.ghost && this.ghost.geom) {
-        const gh = this.ghost; const g = gh.geom; const c = G.centroid(g.foot || [[gh.x, gh.z]]);
-        items.push({ ghost: true, d: V.depth([c[0], g.baseY + 4, c[1]]), f: () => this.drawGhost(ctx, V, gh, night) });
-      }
-      if (coll) return { items, run: (it, c2, v2) => { const k0 = ctx, v0 = V; ctx = c2; V = v2; try { it.f(); } finally { ctx = k0; V = v0; } } };
-      items.sort((a, b) => b.d - a.d);
-      for (const it of items) { try { it.f(); } catch (e) { if (JT.DEV) console.warn(e); } ctx.globalAlpha = 1; }
-      for (const xray of xrays) { const main = ctx; try { ctx = this.xrayPrep(xray, items); if (ctx) { const m = ctx; for (const it of items) if (it.inst && it.d < xray.d - 1e-6) { try { it.f(); } catch (e) { if (JT.DEV) console.warn(e); } m.globalAlpha = 1; } ctx = main; this.xrayFinish(main, m, xray); } } finally { ctx = main; } }
-      // hover/selection highlight for decor in remove mode
-      if (this.hover && this.hover.kind === 'decor') { const g = geoms[this.hover.ent.id]; if (g) this.outlineDecor(ctx, V, g, 'rgba(230,90,70,0.9)'); }
-    }
-    /** X-ray for the followed jumper: a mask of everything in front of it (inside its box only). */
-    xrayPrep(xr, items) {
-      const W = this.cv.width, H = this.cv.height; const b = xr.box;
-      const x0 = Math.max(0, b[0]), y0 = Math.max(0, b[1]), x1 = Math.min(W, b[2]), y1 = Math.min(H, b[3]); if (x1 <= x0 || y1 <= y0) return null;
-      if (!items.some(it => it.inst && it.d < xr.d - 1e-6)) return null; // only decor & plants hide things
-      if (!this._xr || this._xr.width !== W || this._xr.height !== H) this._xr = mkCanvas(W, H);
-      const m = this._xr.getContext('2d'); m.setTransform(1, 0, 0, 1, 0, 0); m.globalAlpha = 1; m.globalCompositeOperation = 'source-over'; m.clearRect(x0, y0, x1 - x0, y1 - y0);
-      m.save(); m.beginPath(); m.rect(x0, y0, x1 - x0, y1 - y0); m.clip(); xr.r = [x0, y0, x1, y1]; return m;
-    }
-    /** Keep only the hidden parts of the jumper and lay them over the scene, softly see-through. */
-    xrayFinish(main, m, xr) {
-      m.restore(); const W = this.cv.width, H = this.cv.height; const [x0, y0, x1, y1] = xr.r; const w = x1 - x0, h = y1 - y0;
-      if (!this._xs || this._xs.width !== W || this._xs.height !== H) this._xs = mkCanvas(W, H);
-      const g = this._xs.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(x0, y0, w, h);
-      g.save(); g.beginPath(); g.rect(x0, y0, w, h); g.clip(); xr.drawTo(g); g.globalAlpha = 1;
-      g.globalCompositeOperation = 'destination-in'; g.drawImage(this._xr, x0, y0, w, h, x0, y0, w, h); g.restore(); // keep only the hidden parts
-      main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.globalAlpha = 0.6; main.drawImage(this._xs, x0, y0, w, h, x0, y0, w, h); main.restore();
-    }
-    // ---------------- cached layers (static geometry is drawn once per camera pose) ----------------
-    drawBaseDirect(ctx, V, hab, night) {
-      this.drawSlab(ctx, V, hab, night);
-      for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (g) D.decorShadow(ctx, V, g, night); }
-      for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (g && g.def.cat === 'ground' && !inst.parent) D.decor(ctx, V, g, { night, time: 0 }); }
-    }
-    drawBase(ctx, V, hab, night) {
-      const key = hab.data.id + '|' + hab._geomVersion + '|' + hab.data.substrate + '|' + hab.data.type + '|' + Math.round(night * 10) + '|' + Math.round((hab.data.humidity || 0) * 20) + '|' + this.quality;
-      if (!this._baseL || this._baseL.hab !== hab.data.id + '|' + hab._geomVersion) {
-        const dm = hab.dims; const pts = [];
-        for (const x of [-0.2 * dm.w, 0, dm.w, 1.2 * dm.w]) for (const z of [-0.2 * dm.d, 0, dm.d, 1.2 * dm.d]) for (const y of [-16, 2]) pts.push([x, y, z]);
-        for (const id in hab.geoms) { const g = hab.geoms[id]; if (g.def.cat === 'ground') pts.push([g.center[0], g.baseY + 8, g.center[2]]); }
-        this._baseL = { hab: hab.data.id + '|' + hab._geomVersion, pts, cov: covOf(pts), L: null };
-      }
-      const B = this._baseL;
-      this.layer(ctx, V, B, key, (g2, V2) => this.drawBaseDirect(g2, V2, hab, night), () => this.drawBaseDirect(ctx, V, hab, night), 0);
-    }
-    decorPoints(g) {
-      if (g._pts) return g._pts; const pts = []; const P = (p) => pts.push(p);
-      for (const e of g.extent) { P([e[0], g.baseY, e[1]]); P([e[0], g.baseY + g.height, e[1]]); }
-      for (const pr of g.prims) {
-        if (pr.o) { P(pr.o); if (pr.a) { const t = M.add(pr.o, pr.a); P(t); if (pr.b) { P(M.add(t, pr.b)); P(M.sub(t, pr.b)); P(M.add(pr.o, pr.b)); P(M.sub(pr.o, pr.b)); } } if (pr.r) { for (const d of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) P(M.add(pr.o, M.mul(d, pr.r * 1.5))); } }
-        if (pr.pts) for (const q of pr.pts) P(q);
-        if (pr.poly) for (const q of pr.poly) { P([q[0], pr.y0, q[1]]); P([q[0], pr.y1, q[1]]); }
-        if (pr.t === 'log') { P(pr.a); P(pr.b); }
-      }
-      if (!pts.length) P(g.center || [0, 0, 0]);
-      g._pts = pts.filter(q => q && isFinite(q[0]) && isFinite(q[1]) && isFinite(q[2])); return g._pts;
-    }
-    boundsOf(pts, V, m) {
-      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-      for (const p of pts) { const q = V.P(p); if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
-      return [Math.floor(x0 - m), Math.floor(y0 - m), Math.ceil(x1 + m), Math.ceil(y1 + m)];
-    }
-    decorBounds(g, V) { return this.boundsOf(this.decorPoints(g), V, 10 * this.k + 6 * V.s); }
-    /** Start-of-frame bookkeeping for the cached layers: a small time budget for re-rendering stale ones. */
-    beginLayers(V) {
-      const moving = !this._lastV || Math.abs(M.wrapAngle(V.yaw - this._lastV[0])) > 1e-5 || Math.abs(V.pitch - this._lastV[1]) > 1e-5 || Math.abs(V.s / this._lastV[2] - 1) > 1e-5;
-      this._lastV = [V.yaw, V.pitch, V.s]; this._moving = moving; this._stillT = moving ? 0 : (this._stillT || 0) + 1;
-      // ms of re-rendering allowed this frame (refreshes are spread over frames; nothing is ever wrong for long)
-      this._budget = moving ? 3 : 7; this._Pc = projM(V); this._sprPx = 0;
-    }
-    /**
-     * Draw one static layer through its cache. The cached image was rendered from some earlier camera pose; it is
-     * re-projected onto the current pose with the best-fitting 2D affine warp (exact for translation/zoom, and for
-     * rotation exact on the layer's main plane), so the camera can glide while almost nothing is redrawn.
-     * Layers whose warp error grows past a pixel or so are re-rendered within a per-frame time budget (worst first
-     * would need a sort; draw order is close enough), and once the camera rests every layer is made pixel-exact again.
-     * The cache is clipped to the viewport plus a margin, so close-up follow views stay small in memory.
-     */
-    layer(ctx, V, L, key, render, direct, minPx) {
-      const W = this.cv.width, H = this.cv.height; const S = L.L; const cov = L.cov;
-      const qC = V.P(cov.m); let A = null, err = 1e9, fb = null;
-      if (S) {
-        const w = warpFit(this._Pc, S.Ps, cov.S); A = w.A; err = w.err;
-        // blur from upscaling an old, smaller image counts as error too
-        const sc = Math.sqrt(Math.abs(A[0] * A[3] - A[1] * A[2])); const R = Math.max(S.fb[2] - S.fb[0], S.fb[3] - S.fb[1]) * 0.5;
-        if (sc > 1) err += (sc - 1) * R * 0.5; else err += (1 - sc) * R * 0.08;
-        if (S.key !== key) err += 20;
-        fb = mapRect(S.fb, A, S.q, qC, err);
-      } else fb = this.boundsOf(L.pts, V, 10 * this.k + 6 * V.s);
-      // cull: completely outside the screen
-      if (fb[2] < 0 || fb[0] > W || fb[1] > H || fb[3] < 0) { if (S && (fb[2] < -W || fb[0] > 2 * W || fb[1] > 2 * H || fb[3] < -H)) L.L = null; return; }
-      let ok = !!S;
-      if (ok && S.clip) { // the cached part must still cover the visible part
-        const vx0 = Math.max(0, fb[0]), vy0 = Math.max(0, fb[1]), vx1 = Math.min(W, fb[2]), vy1 = Math.min(H, fb[3]);
-        const inv = inv2(A);
-        for (const [x, y] of [[vx0, vy0], [vx1, vy0], [vx0, vy1], [vx1, vy1]]) {
-          const dx = x - qC[0], dy = y - qC[1]; const u = inv[0] * dx + inv[1] * dy + S.q[0], v = inv[2] * dx + inv[3] * dy + S.q[1];
-          if ((S.cl[0] && u < S.x - 1) || (S.cl[1] && v < S.y - 1) || (S.cl[2] && u > S.x + S.w + 1) || (S.cl[3] && v > S.y + S.h + 1)) { ok = false; break; }
-        }
-      }
-      // refresh policy: missing/uncovered -> now; while the camera glides only clearly-off layers that fit the budget;
-      // at rest, everything is brought back to exact a few per frame
-      const cost = S ? S.cost : 0; let want;
-      if (!ok) want = true;
-      else if (this._moving) want = (err > 6 && cost <= this._budget) || (err > 24 && this._budget > 0);
-      else want = err > 0.25 && this._budget > 0;
-      if (want) {
-        const t0 = performance.now(); const R = this.renderLayer(V, L, key, render);
-        if (R) { R.cost = (performance.now() - t0) + R.w * R.h / (W * H) * 4; this._budget -= R.cost; ctx.drawImage(R.cv, R.x, R.y); return; }
-      }
-      if (ok && err < Math.max(minPx || 0, 40)) {
-        const e = qC[0] + A[0] * (S.x - S.q[0]) + A[1] * (S.y - S.q[1]), f = qC[1] + A[2] * (S.x - S.q[0]) + A[3] * (S.y - S.q[1]);
-        if (Math.abs(A[0] - 1) < 1e-6 && Math.abs(A[3] - 1) < 1e-6 && Math.abs(A[1]) < 1e-6 && Math.abs(A[2]) < 1e-6) ctx.drawImage(S.cv, Math.round(e), Math.round(f));
-        else {
-          // only the part of the cached image that lands on screen (big savings for close-up views)
-          const iv = inv2(A); let u0 = 1e9, v0 = 1e9, u1 = -1e9, v1 = -1e9;
-          for (const [x, y] of [[0, 0], [W, 0], [0, H], [W, H]]) { const u = iv[0] * (x - e) + iv[1] * (y - f), v = iv[2] * (x - e) + iv[3] * (y - f); if (u < u0) u0 = u; if (u > u1) u1 = u; if (v < v0) v0 = v; if (v > v1) v1 = v; }
-          u0 = Math.max(0, Math.floor(u0) - 2); v0 = Math.max(0, Math.floor(v0) - 2); u1 = Math.min(S.w, Math.ceil(u1) + 2); v1 = Math.min(S.h, Math.ceil(v1) + 2);
-          if (u1 > u0 && v1 > v0) { ctx.setTransform(A[0], A[2], A[1], A[3], e, f); ctx.drawImage(S.cv, u0, v0, u1 - u0, v1 - v0, u0, v0, u1 - u0, v1 - v0); ctx.setTransform(1, 0, 0, 1, 0, 0); }
-        }
-        return;
-      }
-      direct();
-    }
-    renderLayer(V, L, key, render) {
-      const W = this.cv.width, H = this.cv.height; const mg = Math.round(Math.max(W, H) * 0.2);
-      const b = this.boundsOf(L.pts, V, 10 * this.k + 6 * V.s);
-      const x0 = Math.max(b[0], -mg), y0 = Math.max(b[1], -mg), x1 = Math.min(b[2], W + mg), y1 = Math.min(b[3], H + mg);
-      const w = x1 - x0, h = y1 - y0; if (w <= 0 || h <= 0) return null;
-      if (w * h > W * H * 2.6 || w > 8000 || h > 8000) return null;
-      const old = L.L; const cw = Math.ceil(w / 32) * 32, ch = Math.ceil(h / 32) * 32;
-      const cv = old && old.cv.width === cw && old.cv.height === ch ? old.cv : mkCanvas(cw, ch);
-      const g2 = cv.getContext('2d'); g2.setTransform(1, 0, 0, 1, 0, 0); g2.clearRect(0, 0, cw, ch);
-      g2.save(); g2.beginPath(); g2.rect(0, 0, w, h); g2.clip();
-      render(g2, new JT.View(V.yaw, V.pitch, V.s, V.cx - x0, V.cy - y0, V.c));
-      g2.restore();
-      const q = V.P(L.cov.m);
-      L.L = { key, cv, x: x0, y: y0, w, h, q: [q[0], q[1]], Ps: this._Pc.slice(), fb: b, clip: x0 > b[0] || y0 > b[1] || x1 < b[2] || y1 < b[3], cl: [x0 > b[0], y0 > b[1], x1 < b[2], y1 < b[3]] };
-      return L.L;
-    }
-    drawDecorCached(ctx, V, g, sway, night, t) {
-      if (sway || g.id === '_ghost') {
-        // swaying pieces are drawn live, but only when on screen
-        const q = V.P(g.center || [0, 0, 0]); const r = (Math.max(g.height || 0, g.coverR || 0) + 8) * V.s;
-        if (q[0] + r < 0 || q[0] - r > this.cv.width || q[1] + r < 0 || q[1] - r > this.cv.height) return;
-        D.decor(ctx, V, g, { sway, night, time: t }); return;
-      }
-      if (g._glow == null) g._glow = g.prims.some(p => p.glow);
-      const key = (g._glow ? 'n' + Math.round(night * 10) : '') + (g.lamp ? '|L' + (g.lampOn !== false) : '') + '|' + this.quality;
-      if (!g._lay) { const pts = this.decorPoints(g); g._lay = { pts, cov: covOf(pts), L: null }; }
-      if (g._spr === null) { g._lay.L = null; g._spr = undefined; } // explicit invalidation (lamp toggled)
-      this.layer(ctx, V, g._lay, key, (g2, V2) => D.decor(g2, V2, g, { night, time: t }), () => D.decor(ctx, V, g, { night, time: t }));
+      return { items, run: (it, c2, v2) => { const k0 = ctx, v0 = V; ctx = c2; V = v2; try { it.f(); } finally { ctx = k0; V = v0; } } };
     }
     pin(ctx, V, sp, L) {
       const q = V.P([sp.pos[0], sp.pos[1] + L * 0.6, sp.pos[2]]); const k = this.k; const y = q[1] - 14 * k + Math.sin(this.time * 3) * 2 * k;
@@ -6814,13 +6627,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const pf = { p: M.add(M.add(mp, M.mul(fg, pl * 0.25)), M.mul(sg, jit)), f: M.mul(fg, -1), s: M.mul(sg, -1), n };
       D.prey(ctx, V, p, pf, { held: true, curled: true, len: pl, time: this.time, alpha: 0.55 + 0.45 * full });
     }
-    drawGhost(ctx, V, gh, night) {
-      const g = gh.geom; ctx.save();
-      const col = gh.ok ? 'rgba(110,220,120,' : 'rgba(235,80,70,';
-      if (g.foot) { ctx.beginPath(); g.foot.forEach((q, i) => { const s = V.P([q[0], g.baseY + 0.2, q[1]]); if (i) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); }); ctx.closePath(); ctx.fillStyle = col + '0.25)'; ctx.fill(); ctx.strokeStyle = col + '0.9)'; ctx.lineWidth = 2 * this.k; ctx.setLineDash([6 * this.k, 4 * this.k]); ctx.stroke(); ctx.setLineDash([]); }
-      D.decor(ctx, V, g, { alpha: gh.ok ? 0.78 : 0.45, night, time: this.time });
-      ctx.restore(); ctx.globalAlpha = 1;
-    }
     outlineDecor(ctx, V, g, col) { const hull = this.decorScreenHull(g, V); if (!hull) return; ctx.strokeStyle = col; ctx.lineWidth = 2 * this.k; ctx.setLineDash([5 * this.k, 4 * this.k]); ctx.beginPath(); hull.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]); }
     decorScreenHull(g, V) {
       const pts = []; const ex = g.extent.length ? g.extent : (g.foot || []);
@@ -6832,39 +6638,12 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       void top; return G.hull(pts);
     }
 
-    // ---------------- effects ----------------
     // ---------------- basking lamp light ----------------
     lampSurface(hab, L) {
       const k = L.inst.id + '|' + hab._geomVersion; L.inst._ls = L.inst._ls && L.inst._ls.k === k ? L.inst._ls : { k, y: JT.Nav.supportBelow(hab, [L.pool[0], L.head[1] - 3, L.pool[2]]).pos[1] };
       return L.inst._ls.y;
     }
-    /** Warm pool on the surfaces under the lamp + longer, darker shadows cast away from it (drawn before night grading). */
-    drawLampPools(ctx, V, hab, lamps, night, withSpiders) {
-      ctx.save();
-      for (const L of lamps) {
-        const y = this.lampSurface(hab, L); const c = V.P([L.pool[0], y + 0.05, L.pool[2]]); const R = L.r * 1.05 * V.s;
-        // shadows: objects and jumpers near the light throw a soft shadow pointing away from it
-        ctx.globalCompositeOperation = 'source-over';
-        const sh = (pos, rad, hgt, a) => {
-          const dx = pos[0] - L.pool[0], dz = pos[2] - L.pool[2]; const dl = Math.hypot(dx, dz); if (dl > L.r * 2.2 || dl < 0.5) return;
-          const ux = dx / dl, uz = dz / dl; const len = Math.min(rad * 2.4, hgt * 0.5 + rad);
-          const q = V.P([pos[0] + ux * len * 0.55, pos[1] + 0.05, pos[2] + uz * len * 0.55]); const ax = V.J([ux * len * 0.7, 0, uz * len * 0.7]), ay = V.J([-uz * rad * 0.8, 0, ux * rad * 0.8]);
-          const rx = Math.hypot(ax[0], ax[1]), ry = Math.max(0.5, Math.hypot(ay[0], ay[1])); if (rx < 0.5) return;
-          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,10,4,' + (a * (1 - dl / (L.r * 2.2))).toFixed(3) + ')'); g.addColorStop(1, 'rgba(20,10,4,0)');
-          ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(Math.atan2(ax[1], ax[0])); ctx.scale(rx, ry); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.283); ctx.fill(); ctx.restore();
-        };
-        for (const inst of hab.decor) { if (inst.id === L.inst.id) continue; const g = hab.geoms[inst.id]; if (!g || g.def.arche === 'backwall' || g.def.arche === 'wallmount') continue; sh(g.center, Math.max(3, Math.min(14, g.coverR * 0.7)), g.height, 0.3); }
-        if (withSpiders !== false) for (const sp of hab.spiders) if (M.finite3(sp.pos) && Math.abs(sp.pos[1] - y) < 3) { const l = JT.SpiderAI.len(sp); sh(sp.pos, l * 0.5, l * 0.6, 0.35); }
-        // the warm pool itself
-        ctx.globalCompositeOperation = 'screen';
-        ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(1, Math.max(0.15, V.sp));
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); const a = 0.3 + night * 0.1;
-        g.addColorStop(0, 'rgba(255,196,120,' + a.toFixed(3) + ')'); g.addColorStop(0.45, 'rgba(255,170,90,' + (a * 0.55).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,150,70,0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
-      }
-      ctx.restore();
-    }
-    /** Additive bulb glow and lit highlights; drawn after grading so it stays visible at night. */
+    /** Additive bulb glow and lit highlights on the overlay canvas. */
     drawLampGlow(ctx, V, hab, lamps, night) {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';
       for (const L of lamps) {
@@ -6916,47 +6695,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.fx = this.fx.filter(f => f.t < f.life); ctx.globalAlpha = 1;
     }
 
-    // ---------------- post ----------------
-    nightGrade(ctx, night) {
-      if (night <= 0.01) return; ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(' + Math.round(255 - night * 165) + ',' + Math.round(255 - night * 145) + ',' + Math.round(255 - night * 90) + ',1)'; ctx.fillRect(0, 0, this.cv.width, this.cv.height); ctx.restore();
-    }
-    postProcess(out, sc, night, reuse, fixedGrain) {
-      // in place, few full-screen passes: blurred tilt bands (only where the mask is non-zero), bloom, night grade,
-      // then ONE pre-baked overlay holding warm tint + vignette + film grain (jittered each frame so the grain lives)
-      const W = this.cv.width, H = this.cv.height; const st = this.set;
-      out.setTransform(1, 0, 0, 1, 0, 0); out.globalCompositeOperation = 'source-over'; out.globalAlpha = 1;
-      if (st.tilt || st.bloom) {
-        const w4 = Math.max(8, W >> 2), h4 = Math.max(8, H >> 2), w8 = Math.max(4, W >> 3), h8 = Math.max(4, H >> 3);
-        if (!this.b4 || this.b4.width !== w4 || this.b4.height !== h4) { this.b4 = mkCanvas(w4, h4); this.b8 = mkCanvas(w8, h8); this.bm = mkCanvas(w8, h8); this._tg = null; }
-        const g4 = this.b4.getContext('2d'), g8 = this.b8.getContext('2d');
-        if (!reuse) { g4.globalCompositeOperation = 'copy'; g4.drawImage(sc, 0, 0, w4, h4); g8.globalCompositeOperation = 'copy'; g8.drawImage(this.b4, 0, 0, w8, h8); }
-        out.imageSmoothingEnabled = true;
-        if (st.tilt) {
-          const m = this.bm.getContext('2d'); if (!reuse) { m.globalCompositeOperation = 'copy'; m.drawImage(this.b8, 0, 0); }
-          if (!this._tg) { const g = m.createLinearGradient(0, 0, 0, h8); g.addColorStop(0, 'rgba(0,0,0,0.95)'); g.addColorStop(0.24, 'rgba(0,0,0,0)'); g.addColorStop(0.78, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.85)'); this._tg = g; }
-          if (!reuse) { m.globalCompositeOperation = 'destination-in'; m.fillStyle = this._tg; m.fillRect(0, 0, w8, h8); m.globalCompositeOperation = 'source-over'; }
-          const ya = Math.ceil(h8 * 0.25), yb = Math.floor(h8 * 0.77), sy = H / h8;
-          out.drawImage(this.bm, 0, 0, w8, ya, 0, 0, W, ya * sy);
-          out.drawImage(this.bm, 0, yb, w8, h8 - yb, 0, yb * sy, W, (h8 - yb) * sy);
-        }
-        if (st.bloom) { out.globalCompositeOperation = 'screen'; out.globalAlpha = 0.13 + night * 0.08; out.drawImage(this.b8, 0, 0, W, H); out.globalAlpha = 1; out.globalCompositeOperation = 'source-over'; }
-      }
-      this.nightGrade(out, night);
-      const J = 24; const okey = W + 'x' + H + '|' + Math.round(night * 20) + '|' + !!st.grain;
-      if (this._ovk !== okey) {
-        const ow = W + J, oh = H + J; const o = this._ov && this._ov.width === ow && this._ov.height === oh ? this._ov : mkCanvas(ow, oh); const g = o.getContext('2d');
-        g.globalCompositeOperation = 'copy'; g.fillStyle = 'rgba(255,196,128,' + (0.045 * (1 - night)).toFixed(3) + ')'; g.fillRect(0, 0, ow, oh); g.globalCompositeOperation = 'source-over';
-        const cx = ow / 2, cy = J / 2 + H * 0.48; const vg = g.createRadialGradient(cx, cy, Math.min(W, H) * 0.35, cx, J / 2 + H * 0.5, Math.hypot(W, H) * 0.58);
-        vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,0,' + (0.42 + night * 0.15).toFixed(2) + ')'); g.fillStyle = vg; g.fillRect(0, 0, ow, oh);
-        if (st.grain) {
-          if (!this.noise) { this.noise = mkCanvas(128, 128); const ng = this.noise.getContext('2d'); const id = ng.createImageData(128, 128); for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() < 0.5 ? 0 : 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = Math.random() * 255; } ng.putImageData(id, 0, 0); }
-          g.globalAlpha = 0.07; g.fillStyle = g.createPattern(this.noise, 'repeat'); g.fillRect(0, 0, ow, oh); g.globalAlpha = 1;
-        }
-        this._ov = o; this._ovk = okey;
-      }
-      const jx = st.grain && !fixedGrain ? (Math.random() * J) | 0 : J / 2, jy = st.grain && !fixedGrain ? (Math.random() * J) | 0 : J / 2;
-      out.drawImage(this._ov, jx, jy, W, H, 0, 0, W, H);
-    }
 
     // ---------------- picking ----------------
     /** sx, sy in CSS pixels. Animals take priority, then remains/drops/silk, then decor. */
@@ -7025,7 +6763,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const q of pts) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
         const s = Math.min(size * 0.84 / Math.max(1, x1 - x0), size * 0.84 / Math.max(1, y1 - y0));
         V.set(0.52, 0.62, s, size / 2 - (x0 + x1) / 2 * s, size / 2 - (y0 + y1) / 2 * s, [0, 0, 0]);
-        D.decorShadow(ctx, V, g, 0); D.decor(ctx, V, g, { night: 0, time: 0 });
+        const gc = G.centroid(g.foot || [[0, 0]]); const q = V.P([gc[0], g.baseY, gc[1]]); const rr = Math.max(8, Math.sqrt(Math.abs(G.polyArea(g.foot || [[0, 0], [1, 0], [0, 1]]))) * V.s * 0.75);
+        const sg = ctx.createRadialGradient(q[0], q[1], 0, q[0], q[1], rr); sg.addColorStop(0, 'rgba(60,40,20,0.28)'); sg.addColorStop(1, 'rgba(60,40,20,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(q[0], q[1], rr, rr * 0.5, 0, 0, 6.283); ctx.fill();
+        const art = this.gp && this.gp.thumb(g, V, size); if (art) ctx.drawImage(art, 0, 0);
       } catch (e) { if (JT.DEV) console.warn(e); }
       this.thumbs[key] = c; return c;
     }
@@ -7045,41 +6785,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
   }
 
-  // ---- affine re-projection maths for cached layers ----
-  /** Linear part of the projection (2x3, row-major) for a view. */
-  function projM(V) { const s = V.s; return [s * V.cy_, 0, -s * V.sy_, -s * V.sp * V.sy_, -s * V.cp, -s * V.sp * V.cy_]; }
-  /** Mean and covariance of a point cloud (the shape of a layer). */
-  function covOf(pts) {
-    const m = [0, 0, 0]; for (const p of pts) { m[0] += p[0]; m[1] += p[1]; m[2] += p[2]; } const n = Math.max(1, pts.length); m[0] /= n; m[1] /= n; m[2] /= n;
-    const S = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-    for (const p of pts) { const d = [p[0] - m[0], p[1] - m[1], p[2] - m[2]]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) S[i * 3 + j] += d[i] * d[j]; }
-    for (let i = 0; i < 9; i++) S[i] /= n; for (let i = 0; i < 3; i++) S[i * 4] += 0.01;
-    return { m, S };
-  }
-  function mulPS(P, S) { const o = [0, 0, 0, 0, 0, 0]; for (let r = 0; r < 2; r++) for (let j = 0; j < 3; j++) { let v = 0; for (let k = 0; k < 3; k++) v += P[r * 3 + k] * S[k * 3 + j]; o[r * 3 + j] = v; } return o; }
-  function mulPT(X, P) { const o = [0, 0, 0, 0]; for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) { let v = 0; for (let k = 0; k < 3; k++) v += X[r * 3 + k] * P[c * 3 + k]; o[r * 2 + c] = v; } return o; }
-  function inv2(A) { const d = A[0] * A[3] - A[1] * A[2]; const id = Math.abs(d) > 1e-12 ? 1 / d : 0; return [A[3] * id, -A[1] * id, -A[2] * id, A[0] * id]; }
-  /** Best 2x2 warp A with Pc ≈ A·Ps over the layer's points (least squares), and the ~2-sigma pixel error left over. */
-  function warpFit(Pc, Ps, S) {
-    const PsS = mulPS(Ps, S), B = mulPT(PsS, Ps), C = mulPT(mulPS(Pc, S), Ps); const Bi = inv2(B);
-    const A = [C[0] * Bi[0] + C[1] * Bi[2], C[0] * Bi[1] + C[1] * Bi[3], C[2] * Bi[0] + C[3] * Bi[2], C[2] * Bi[1] + C[3] * Bi[3]];
-    const Rm = [0, 0, 0, 0, 0, 0]; for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) Rm[r * 3 + k] = Pc[r * 3 + k] - (A[r * 2] * Ps[k] + A[r * 2 + 1] * Ps[3 + k]);
-    const RS = mulPS(Rm, S); const T = mulPT(RS, Rm); const err = 2 * Math.sqrt(Math.max(0, T[0] + T[3]));
-    return { A, err };
-  }
-  /** Screen rect cached under an old pose -> bounding rect under the current pose (padded by the warp error). */
-  function mapRect(r, A, qS, qC, pad) {
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const [x, y] of [[r[0], r[1]], [r[2], r[1]], [r[0], r[3]], [r[2], r[3]]]) { const dx = x - qS[0], dy = y - qS[1]; const u = qC[0] + A[0] * dx + A[1] * dy, v = qC[1] + A[2] * dx + A[3] * dy; if (u < x0) x0 = u; if (u > x1) x1 = u; if (v < y0) y0 = v; if (v > y1) y1 = v; }
-    pad = Math.min(pad, 60); return [x0 - pad, y0 - pad, x1 + pad, y1 + pad];
-  }
-  function hexA(hex, a) { const v = parseInt(hex.slice(1), 16); return 'rgba(' + (v >> 16) + ',' + ((v >> 8) & 255) + ',' + (v & 255) + ',' + a + ')'; }
   function blobShadow(ctx, V, pos, r, a) { const q = V.P(pos); const rx = Math.max(1, r * V.s); ctx.fillStyle = 'rgba(0,0,0,' + a + ')'; ctx.beginPath(); ctx.ellipse(q[0], q[1], rx, rx * Math.max(0.25, V.sp), 0, 0, 6.283); ctx.fill(); }
-  function selRing(ctx, V, fr, L, t) {
-    const c = fr.p; const r = L * 0.95; ctx.save(); ctx.strokeStyle = 'rgba(232,196,110,' + (0.55 + 0.25 * Math.sin(t * 3)) + ')'; ctx.lineWidth = Math.max(1, V.s * 0.25); ctx.beginPath();
-    for (let i = 0; i <= 28; i++) { const a = i / 28 * 6.283; const p = M.add(c, M.add(M.mul(fr.f, Math.cos(a) * r), M.mul(fr.s, Math.sin(a) * r))); const q = V.P(p); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }
-    ctx.stroke(); ctx.restore();
-  }
   JT.Renderer = Renderer;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -7254,9 +6960,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       $('drawerClose').onclick = () => this.closeDrawer();
       $('modalClose').onclick = () => this.closeModal();
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
-      // phone camera buttons: 1 iso, 2 observer, 3 reverse; tapping the current camera again re-centres the view
+      // phone camera buttons: 1 iso, 2 front, 3 back; tapping the current camera again re-centres the view
       document.querySelectorAll('#camCtl button').forEach(b => b.onclick = () => { if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
-      $('modeRotate').onclick = () => this.rotatePlace(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.cancelMode();
+      $('modeRotate').onclick = () => this.rotatePlace(); $('modeLeaves').onclick = () => this.toggleLeaves(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.cancelMode();
       $('obsExit').onclick = () => this.toggleObserve(false);
       document.addEventListener('keydown', (e) => this.key(e));
       // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
@@ -7313,6 +7019,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (k === 'o' || k === 'O') { this.toggleObserve(); return; }
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
+      if ((k === 'l' || k === 'L') && this.mode === 'place') { this.toggleLeaves(); return; }
       if (k === '1') this.setCam('iso'); else if (k === '2') this.setCam('observer'); else if (k === '3') this.setCam('reverse'); else if (k === '4') this.setCam('follow'); else if (k === 'f' || k === 'F') this.toggleFollow();
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
@@ -7365,8 +7072,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (t === 'coins') { this.bumpCoins();  if (this.tab) this.refreshCardsAfford(); }
       else if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
-      else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); }
-      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
+      else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + (d.bonus ? ' · +' + d.bonus + ' coins' : '') + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); }
+      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.' + (d.bonus ? ' +' + d.bonus + ' coins' : ''), '', 3500); A().sfx('molt'); }
       else if (t === 'toast') this.toast(d.text, d.cls, d.ms);
     },
 
@@ -7467,7 +7174,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     // ------------------------------------------------ placement & removal
     startPlace(type) {
       this.cancelMode(); const d = JT.DECOR_BY_ID[type];
-      this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false };
+      this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false, bare: false };
+      const lv = $('modeLeaves'); lv.classList.toggle('hidden', d.arche !== 'tree'); lv.textContent = 'Leaves: on';
       this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.remove('hidden'); $('modeDone').classList.remove('hidden');
       if (this.isMobile()) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); }
       // start the ghost in the middle so touch users see it immediately
@@ -7477,7 +7185,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     setModeText() {
       const p = this.place; if (!p) return; const d = JT.DECOR_BY_ID[p.type]; const touch = this.ptrType !== 'mouse';
       const st = p.ok ? '<span class="ok">fits here</span>' : '<span class="bad">' + esc(p.reason || 'Not here') + '</span>';
-      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> ' + d.price + ' · ' + st + ' · <span class="hint">' + (touch ? 'drag to move' : 'click to place, R rotates, Esc cancels') + '</span>';
+      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> ' + d.price + ' · ' + st + ' · <span class="hint">' + (touch ? 'drag to move' : 'click to place, R rotates' + (d.arche === 'tree' ? ', L leaves' : '') + ', Esc cancels') + '</span>';
     },
     updateGhost(sx, sy) {
       const p = this.place; if (!p) return; const h = this.hab; const pt = this.R.placementPoint(sx, sy, h, p.type);
@@ -7485,16 +7193,18 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const chk = h.canPlace(p.type, p.x, p.z, p.rot, p.seed, null, p.my);
       if (chk.wall) { p.x = chk.x; p.z = chk.z; p.rot = chk.rot; p.my = chk.my; }
       const price = JT.DECOR_BY_ID[p.type].price; p.ok = chk.ok && this.game.state.coins >= price; p.reason = chk.ok ? (p.ok ? '' : 'Not enough coins') : chk.reason;
-      let geom = chk.geom; if (!geom) { try { geom = JT.Geo.build({ id: '_ghost', type: p.type, x: p.x, z: p.z, rot: p.rot, seed: p.seed }, chk.baseY || pt.y || 0, h.dims.h); } catch (e) { geom = null; } }
+      let geom = p.bare ? null : chk.geom; if (!geom) { try { geom = JT.Geo.build({ id: '_ghost', type: p.type, x: p.x, z: p.z, rot: p.rot, seed: p.seed, bare: p.bare }, chk.baseY || pt.y || 0, h.dims.h); } catch (e) { geom = null; } }
       if (geom) geom.id = '_ghost';
       this.R.ghost = { geom, ok: p.ok, x: p.x, z: p.z }; this.setModeText();
     },
+    /** Trees can be placed with or without their leaves. */
+    toggleLeaves() { const p = this.place; if (!p || JT.DECOR_BY_ID[p.type].arche !== 'tree') return; p.bare = !p.bare; $('modeLeaves').textContent = p.bare ? 'Leaves: off' : 'Leaves: on'; A().sfx('click'); this.updateGhostAtCurrent(); },
     rotatePlace() { const p = this.place; if (!p) return; p.rot = (p.rot + 1) % 4; A().sfx('click'); this.updateGhostAtCurrent(); },
     confirmPlace() {
       const p = this.place; if (!p) return; const h = this.hab; const d = JT.DECOR_BY_ID[p.type];
       if (!p.ok) { this.toast(esc(p.reason || 'Cannot place here.')); A().sfx('error'); return; }
       if (!this.game.spend(d.price)) { this.toast('Not enough coins.'); return; }
-      const inst = h.addDecor(p.type, p.x, p.z, p.rot, p.seed, true, p.my);
+      const inst = h.addDecor(p.type, p.x, p.z, p.rot, p.seed, true, p.my, { bare: p.bare });
       if (!inst) { this.game.refund(d.price); this.toast('That spot is no longer free.'); return; }
       inst.bought = d.price; A().sfx('place');
       this.toast('Placed ' + esc(d.name) + (inst.parent ? ' (stacked)' : '') + '.');
@@ -7505,7 +7215,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     updateGhostAtCurrent() { const p = this.place; if (p && p.x != null) { const s = this.R.project([p.x, p.y || 0, p.z]); this.updateGhost(s[0], s[1]); } },
     startRemove() {
       this.cancelMode(); this.mode = 'remove'; this.cv.classList.add('removing'); $('modeBar').classList.remove('hidden');
-      $('modeRotate').classList.add('hidden'); $('modeDone').classList.add('hidden');
+      $('modeRotate').classList.add('hidden'); $('modeLeaves').classList.add('hidden'); $('modeDone').classList.add('hidden');
       $('modeText').innerHTML = '<b>Remove</b> · tap decor for a half refund, or live food and leftovers to take them out <span class="hint">· Esc to finish</span>';
       this.refreshHeader();
     },
@@ -7668,7 +7378,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     },
     habPickerModal() {
       const g = this.game; const w = el('div'); const list = el('div', 'sheet-list');
-      g.habs.forEach((h, i) => { const b = el('button', i === g.state.active ? 'on' : '', esc(h.data.name) + '<small class="muted">' + h.spiders.length + ' jumper(s)</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); }; list.appendChild(b); });
+      g.habs.forEach((h, i) => { const b = el('button', i === g.state.active ? 'on' : '', esc(h.data.name) + '<small class="muted">' + h.spiders.length + ' jumper(s) · earns ' + g.dailyIncome(h) + ' a day</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); }; list.appendChild(b); });
       const m = el('button', '', 'Manage habitats'); m.onclick = () => this.manageModal(); list.appendChild(m);
       w.appendChild(list); this.openModal('Your Habitats', w);
     },
@@ -7791,14 +7501,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
       w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
-      const ar = el('div', 'form-row'); ar.appendChild(el('label', '', 'Art style'));
-      const as = el('div', 'seg small'); for (const [v, l] of [['story', 'Storybook'], ['classic', 'Classic']]) { const b = el('button', (s.art || 'story') === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.setArt(); this.settingsModal(); }; as.appendChild(b); }
-      ar.appendChild(as); if (this.R._glFail) ar.appendChild(el('span', 'muted', 'Storybook needs WebGL — not available here')); w.appendChild(ar);
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
       const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
       q.appendChild(seg); w.appendChild(q);
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); };
-      tog('hd2d', 'HD-2D look', 'post-processing pass (off on Low quality)'); tog('tilt', 'Tilt-shift', 'miniature depth of field'); tog('bloom', 'Bloom', 'soft glow on highlights'); tog('grain', 'Film grain'); tog('debug', 'Debug overlay', 'navigation graph, routes, states');
+      tog('debug', 'Debug overlay', 'navigation graph, routes, states');
       w.appendChild(el('h4', '', 'Save data'));
       const r = el('div', 'form-row'); const b = el('button', 'modal-btn', 'Save now'); b.onclick = () => { this.game.save(); this.toast('Game saved.'); };
       const rs = el('button', 'modal-btn', 'Reset game…'); rs.onclick = () => { if (root.confirm('Start over? All habitats, jumpers and progress will be erased.')) { this.closeModal(); this.cancelMode(); this.game.reset(); this.R.cur = null; this.refreshHeader(); const sp = this.game.hab.spider(this.game.selectedId); if (sp) this.showPanel(sp.id); this.toast('A fresh start — welcome back!'); } };
@@ -7825,11 +7532,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         e('Your jumpers', 'Tap a jumper to follow it and see its card: one line on what it is doing, hunger, water, growth and personality. Tap empty space, or Follow again, to stop following.') +
         e('Feeding', 'Buy live food. Hungry jumpers hunt on their own. When the food runs out they patrol their perches, climb high to scan and lunge at anything that moves. The Food control gently glows while someone is waiting.') +
         e('Growth', 'After enough meals a jumper climbs somewhere high and sheltered, spins a silk retreat and molts. It stays soft and pale for a while afterwards.') +
-        e('Building', 'Decor, Plants and Substrate open the shop strip. Pick a piece and place it; it shows whether it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>Esc</kbd> cancels. Removing refunds half.') +
+        e('Building', 'New displays start bare: just substrate. Decor, Plants and Substrate open the shop strip. Pick a piece and place it; it shows whether it fits. Stack plants and pieces on platforms. <kbd>R</kbd> rotates, <kbd>L</kbd> trees with or without leaves, <kbd>Esc</kbd> cancels. Removing refunds half.') +
         e('Warmth', 'A Basking Lamp throws a warm pool of light. Jumpers bask there in the morning, when it is cool and after a meal. Tap the lamp to switch it on or off. At night it draws moths and flies.') +
         e('Care', 'Mist to leave droplets for drinking. Springtails and isopods seek out husks and shed skins and nibble them away; more springtails clean faster. Clean tidies husks at once.') +
-        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Observer, <kbd>3</kbd> Reverse, <kbd>4</kbd> or <kbd>F</kbd> Follow. On a phone, the 1 2 3 buttons switch camera; tap the current one again to re-centre. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
-        e('Journal', 'Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Coins buy more shelf slots and enclosures.') + '</div>');
+        e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Front, <kbd>3</kbd> Back, <kbd>4</kbd> or <kbd>F</kbd> Follow. On a phone, the 1 2 3 buttons switch camera; tap the current one again to re-centre. Scroll or pinch to zoom, drag to pan; while following, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
+        e('Coins', 'Every catch pays. Each morning every display earns coins from its appeal: more kinds of decor, more plants and well-fed jumpers earn more (see Habitats). A first sighting in the journal pays 20, every molt 30.') + e('Journal', 'Witnessed behaviours fill the Field Journal. Reach 30 catches to unlock Portia. Coins buy more shelf slots and enclosures.') + '</div>');
     },
 
     /** The Food control gently breathes while a hungry jumper has nothing left to hunt (no badge, no icon). */
