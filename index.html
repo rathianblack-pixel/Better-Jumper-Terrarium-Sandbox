@@ -672,6 +672,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // ---------------- Substrates ----------------
   // burrow: 0..1 plausibility for burrowing prey; moist: base dampness
+  /** Back walls are built from the tank's substrate: its colours on the wall's own surface pattern. */
+  JT.wallCols = function (sub) {
+    const S = JT.SUBSTRATES[sub] || JT.SUBSTRATES.coco; const c = JT._wallCols || (JT._wallCols = {}); if (c[sub]) return c[sub];
+    const hx = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), mix = (a, b, t) => '#' + hx(a).map((v, i) => Math.round(v + (hx(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+    return (c[sub] = { side: mix(S.top, S.mid, 0.45), top: S.top, mark: mix(S.mid, S.dark, 0.6), hi: mix(S.top, S.speck[0], 0.6) });
+  };
   JT.SUBSTRATES = {
     desert:  { name: 'Desert Sand',      price: 0,  top: '#d9b77e', mid: '#c49a5c', dark: '#9a7440', speck: ['#f0d6a2', '#b98e55'], burrow: 0.9, moist: 0.1 },
     coco:    { name: 'Coco Soil',        price: 0,  top: '#6b4529', mid: '#4f321d', dark: '#352113', speck: ['#8a5c3a', '#3b2516'], burrow: 1.0, moist: 0.5 },
@@ -841,6 +847,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // cat: decor | plants | ground. arche: geometry generator. p: params.
   // platform: can host stacked children. stack: may be stacked onto a platform.
   // cover: shelter strength. small: suitable for compact enclosures.
+  const W = (id, name, p, cover, desc, f) => D(id, name, 'walls', 0, 'wallmount', p, Object.assign({ mount: true, small: true, cover, desc, kit: true }, f || {}));
   const D = (id, name, cat, price, arche, p, f) => Object.assign({ id, name, cat, price, arche, p: p || {}, platform: false, stack: false, cover: 0, small: false }, f || {});
   JT.DECOR = [
     // --- Solid decor ---
@@ -888,12 +895,50 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     D('rootwall', 'Root Tangle Wall', 'walls', 90, 'backwall', { w: 92, d: 10, h: 140, style: 'rootwall' }, { cover: .6, wall: true }),
     D('sandwall', 'Sandstone Wall', 'walls', 85, 'backwall', { w: 92, d: 10, h: 140, style: 'sandwall' }, { cover: .35, wall: true }),
     D('driftwall', 'Driftwood Wall', 'walls', 85, 'backwall', { w: 92, d: 10, h: 140, style: 'driftwall' }, { cover: .4, wall: true }),
-    D('wm_cork', 'Wall Cork Shelf', 'walls', 20, 'wallmount', { kind: 'shelf', w: 16, d: 9, th: 3.5, style: 'cork', moss: true }, { mount: true, small: true, cover: .15 }),
-    D('wm_slate', 'Wall Slate Ledge', 'walls', 20, 'wallmount', { kind: 'shelf', w: 18, d: 8, th: 2.5, style: 'slate' }, { mount: true, small: true, cover: .1 }),
-    D('wm_drift', 'Wall Driftwood Perch', 'walls', 22, 'wallmount', { kind: 'shelf', w: 20, d: 6.5, th: 3, style: 'drift' }, { mount: true, small: true, cover: .1 }),
-    D('wm_fungi', 'Bracket Fungi Cluster', 'walls', 28, 'wallmount', { kind: 'fungi', w: 20 }, { mount: true, small: true, cover: .2 }),
-    D('wm_pothos', 'Hanging Pothos Pocket', 'walls', 30, 'wallmount', { kind: 'planter', w: 16 }, { mount: true, small: true, cover: .5 }),
-    D('wm_staghorn', 'Mounted Staghorn Fern', 'walls', 32, 'wallmount', { kind: 'staghorn', w: 18 }, { mount: true, small: true, cover: .45 }),
+    D('wm_cork', 'Cork Shelf', 'walls', 0, 'wallmount', { kind: 'shelf', w: 16, d: 9, th: 3.5, style: 'cork', moss: true }, { mount: true, small: true, cover: .15 }),
+    D('wm_slate', 'Slate Ledge', 'walls', 0, 'wallmount', { kind: 'shelf', w: 18, d: 8, th: 2.5, style: 'slate' }, { mount: true, small: true, cover: .1 }),
+    D('wm_drift', 'Driftwood Perch', 'walls', 0, 'wallmount', { kind: 'shelf', w: 20, d: 6.5, th: 3, style: 'drift' }, { mount: true, small: true, cover: .1 }),
+    D('wm_fungi', 'Bracket Fungi', 'walls', 0, 'wallmount', { kind: 'fungi', w: 20 }, { mount: true, small: true, cover: .2 }),
+    D('wm_pothos', 'Pothos Pocket', 'walls', 0, 'wallmount', { kind: 'planter', w: 16 }, { mount: true, small: true, cover: .5 }),
+    D('wm_staghorn', 'Staghorn Fern', 'walls', 0, 'wallmount', { kind: 'staghorn', w: 18 }, { mount: true, small: true, cover: .45 }),
+    // --- free wall decorations (kits per wall theme and tank type; see JT.WALL_KITS) ---
+    W('wk_mosscush', 'Moss Cushion', { kind: 'pad', w: 16, cols: ['#5f8f2e', '#4a7a26', '#79a83a'], n: 12, r: 2.8 }, .3, 'Soft cover on the face'),
+    W('wk_fernpocket', 'Fern Pocket', { kind: 'pocket', w: 14, plant: { arche: 'fern', p: { n: 6, L: 14, h: 10, leaf: '#4f8a34' } } }, .55, 'Fronds to hide behind'),
+    W('wk_maidenpocket', 'Maidenhair Pocket', { kind: 'pocket', w: 14, plant: { arche: 'fern', p: { n: 7, L: 11, h: 9, leaf: '#7ab04a', fine: true } } }, .5, 'Fine, airy cover'),
+    W('wk_glowcaps', 'Glow Caps', { kind: 'pocket', w: 12, pw: 11, plant: { arche: 'mushroom', p: { n: 4, h: 8, cap: 3, col: '#e8f0d0', glow: '#b0ffd0' } } }, .15, 'Soft night glow'),
+    W('wk_brompocket', 'Bromeliad Pocket', { kind: 'pocket', w: 14, plant: { arche: 'rosette', p: { n: 8, L: 11, h: 8, leaf: '#4a7a3a', tip: '#c04a5a', cup: true } } }, .45, 'Holds water to drink', { water: true }),
+    W('wk_redbrom', 'Red Bromeliad Pocket', { kind: 'pocket', w: 14, plant: { arche: 'rosette', p: { n: 8, L: 11, h: 8, leaf: '#8a2a2a', tip: '#e04a3a', cup: true } } }, .45, 'Holds water to drink', { water: true }),
+    W('wk_tilly', 'Air Plant Stub', { kind: 'stick', w: 10, L: 7, r: 1.4, up: 2, col: '#7a5a3a', tip: { arche: 'rosette', p: { n: 12, L: 8, h: 5, leaf: '#a8bca8', tip: '#c86a8a', thin: true } } }, .2, 'A perch topped with tillandsia'),
+    W('wk_orchidpocket', 'Orchid Pocket', { kind: 'pocket', w: 14, plant: { arche: 'flower', p: { n: 2, h: 16, petal: '#f0e0f8', center: '#c03a8a', orchid: true, leaves: true } } }, .3, 'Flowers draw in flies', { flowers: true }),
+    W('wk_flowerpocket', 'Flower Pocket', { kind: 'pocket', w: 13, plant: { arche: 'flower', p: { n: 5, h: 12, petal: '#f08ab0', center: '#f8e070', cluster: true } } }, .3, 'Flowers draw in flies', { flowers: true }),
+    W('wk_ivy', 'Ivy Trail', { kind: 'vine', w: 12, len: 34, n: 3, leaf: '#2f5e2a', col: '#3e5a28', leafL: 3.2, minY: 38 }, .35, 'A climbing route down the face'),
+    W('wk_hangvine', 'Hanging Vines', { kind: 'vine', w: 14, len: 60, n: 4, leaf: '#4a8a3a', col: '#4a6a2a', minY: 64 }, .35, 'Long climbing routes for tall tanks'),
+    W('wk_roots', 'Hanging Roots', { kind: 'vine', w: 12, len: 40, n: 4, col: '#5a4030', r: 0.6, wave: 2.2, minY: 44 }, .25, 'Bare roots to climb'),
+    W('wk_wirevine', 'Wire Vine', { kind: 'vine', w: 12, len: 36, n: 2, leaf: '#6a8a4a', col: '#5a4a3a', sparse: true, leafL: 2.2, shape: 'oval', minY: 40 }, .2, 'A slender climbing route'),
+    W('wk_lichen', 'Lichen Patch', { kind: 'pad', w: 16, cols: ['#a8b890', '#c4ccb0', '#8fa47a'], n: 14, r: 1.6 }, .1, 'Pale texture, a little cover'),
+    W('wk_mossband', 'Moss Band', { kind: 'pad', w: 26, hgt: 6, cols: ['#5f8f2e', '#4a7a26'], n: 16, r: 2.4 }, .3, 'A soft green band'),
+    W('wk_minimoss', 'Mini Moss', { kind: 'pad', w: 9, cols: ['#6a9a3a', '#8ab848'], n: 7, r: 1.8 }, .2, 'Tiny cover for slings'),
+    W('wk_leafpad', 'Dry Leaf Cluster', { kind: 'pad', mode: 'leaves', w: 14, cols: ['#8a5a2e', '#a0682e', '#6e4426'], n: 9 }, .45, 'Leaves to hide behind'),
+    W('wk_pods', 'Seed Pods', { kind: 'pad', w: 12, cols: ['#6a4a2a', '#4a3020', '#8a6a3a'], n: 8, r: 1.4 }, .1, 'Little bumps to perch between'),
+    W('wk_succpocket', 'Succulent Pocket', { kind: 'pocket', w: 12, pw: 11, plant: { arche: 'rosette', p: { n: 10, L: 6, h: 4, leaf: '#7ab0a0', fat: true } } }, .15, 'A tidy green rosette'),
+    W('wk_echpocket', 'Echeveria Pocket', { kind: 'pocket', w: 12, pw: 11, plant: { arche: 'rosette', p: { n: 12, L: 7, h: 5, leaf: '#d99280', tip: '#b04a58', fat: true } } }, .2, 'A dusty pink rosette'),
+    W('wk_rockfern', 'Rock Fern', { kind: 'pocket', w: 12, pw: 11, plant: { arche: 'fern', p: { n: 5, L: 10, h: 7, leaf: '#5a8a3a' } } }, .4, 'Small fronds in a crevice'),
+    W('wk_inkpocket', 'Ink Caps', { kind: 'pocket', w: 12, pw: 11, plant: { arche: 'mushroom', p: { n: 4, h: 9, cap: 2.6, col: '#d8d2c4', stem: '#efe8da' } } }, .15, 'Pale woodland mushrooms'),
+    W('wk_monpocket', 'Monstera Sprig', { kind: 'pocket', w: 15, plant: { arche: 'broadleaf', p: { n: 3, h: 12, leafL: 10, leafW: 8, leaf: '#2f6a2a', split: true } } }, .7, 'Broad leaves for shade'),
+    W('wk_drypocket', 'Dried Flowers', { kind: 'pocket', w: 12, plant: { arche: 'flower', p: { n: 5, h: 14, petal: '#c09a6a', center: '#8a6a4a', dried: true } } }, .2, 'Desert-dry stems'),
+    W('wk_grasspocket', 'Grass Tuft', { kind: 'pocket', w: 12, plant: { arche: 'grass', p: { n: 10, L: 10, h: 16, leaf: '#9aa860' } } }, .45, 'Wispy cover'),
+    W('wk_stub', 'Branch Stub', { kind: 'stick', w: 8, L: 12, r: 2, up: 4, col: '#5e4630' }, .1, 'A sturdy lookout perch'),
+    W('wk_twig', 'Twig', { kind: 'stick', w: 8, L: 11, r: 0.9, up: 6, lean: 0.6, fork: true, col: '#6a5038' }, .1, 'A slender perch'),
+    W('wk_cholla', 'Cholla Stick', { kind: 'stick', w: 8, L: 13, r: 1.8, up: 5, fork: true, col: '#c2b294', style: 'drift' }, .1, 'A bleached lookout perch'),
+    W('wk_rootloop', 'Root Loop', { kind: 'stick', w: 26, run: 24, L: 6, r: 1.3, up: -4, col: '#5a4030' }, .15, 'A looped root to walk along'),
+    W('wk_longbranch', 'Long Branch', { kind: 'stick', w: 44, run: 42, L: 8, r: 1.8, up: 4, drop: 6, col: '#5e4630', leaves: '#5a8a3a' }, .2, 'A long walkway across wide walls'),
+    W('wk_stoneledge', 'Stone Ledge', { kind: 'shelf', w: 16, d: 8, th: 3, style: 'rock' }, .1, 'A perch to rest on'),
+    W('wk_woodledge', 'Wood Ledge', { kind: 'shelf', w: 16, d: 8, th: 3, style: 'wood' }, .1, 'A perch to rest on'),
+    W('wk_sandledge', 'Sandstone Ledge', { kind: 'shelf', w: 18, d: 8, th: 3.2, style: 'sand' }, .1, 'A warm perch to rest on'),
+    W('wk_ledgerun', 'Long Ledge', { kind: 'shelf', w: 32, d: 8, th: 3, style: 'cork' }, .15, 'A long perch for wide walls'),
+    W('wk_tinyledge', 'Tiny Ledge', { kind: 'shelf', w: 10, d: 6, th: 2.2, style: 'cork' }, .1, 'A sling-sized perch'),
+    W('wk_brownbracket', 'Brown Brackets', { kind: 'fungi', w: 16, n: 2, s: 0.85, fcols: { side: '#7a4e2a', top: '#a06a3a', mark: '#4a2e18', hi: '#c08a50' } }, .2, 'Shelf fungi to perch on'),
+    W('wk_shellfungi', 'Shell Fungi', { kind: 'fungi', w: 16, n: 3, s: 0.75, fcols: { side: '#cfc6b0', top: '#e8e0cc', mark: '#9a8e74', hi: '#f4eee0' } }, .2, 'Pale shelf fungi to perch on'),
     D('beadvine', 'Cork Bead Vine', 'decor', 55, 'branch', { kind: 'beads', L: 84, h: 82, r: 1.4, col: '#6a4e34', leaves: '#5a8a3a' }, {}),
     D('mossmound', 'Moss Mound', 'decor', 25, 'rock', { w: 30, d: 24, h: 9, style: 'moss', round: true }, { platform: true, small: true, cover: .1 }),
     D('mangrove', 'Mangrove Root', 'decor', 85, 'branch', { kind: 'mangrove', L: 70, h: 70, r: 3.2, col: '#4a3a2c' }, { cover: .2 }),
@@ -968,6 +1013,30 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     D('grassbank', 'Grass Bank', 'plants', 30, 'grass', { n: 30, L: 40, h: 34, leaf: '#7aa040' }, { stack: true, cover: .6, desc: 'Wide band of cover for open floors' }),
   ];
   JT.DECOR_BY_ID = {}; JT.DECOR.forEach(d => JT.DECOR_BY_ID[d.id] = d);
+  JT.DECOR.forEach(d => { if (d.arche === 'wallmount') d.kit = true; });
+  JT.DECOR.forEach(d => { if (d.arche === 'backwall') d.desc = 'Built from your substrate, with its own free decor kit'; });
+  // Free wall decorations: each wall theme has its own kit, and the tank type adds a few pieces that suit its shape.
+  JT.WALL_CAP = 10;
+  JT.WALL_KITS = {
+    mosswall:  ['wk_mosscush', 'wm_fungi', 'wk_fernpocket', 'wk_glowcaps', 'wm_cork', 'wk_maidenpocket'],
+    barkwall:  ['wm_staghorn', 'wk_brompocket', 'wk_tilly', 'wm_cork', 'wk_orchidpocket', 'wm_pothos'],
+    stonewall: ['wm_slate', 'wk_ivy', 'wk_lichen', 'wk_succpocket', 'wk_rockfern', 'wk_stoneledge'],
+    leafwall:  ['wk_leafpad', 'wk_twig', 'wk_inkpocket', 'wk_pods', 'wk_brownbracket', 'wk_woodledge'],
+    trunkwall: ['wk_stub', 'wk_ivy', 'wm_fungi', 'wk_mossband', 'wm_staghorn', 'wk_woodledge'],
+    rootwall:  ['wk_roots', 'wm_pothos', 'wk_orchidpocket', 'wk_monpocket', 'wk_rootloop', 'wk_brompocket'],
+    sandwall:  ['wk_cholla', 'wk_succpocket', 'wk_tilly', 'wk_sandledge', 'wk_drypocket', 'wk_echpocket'],
+    driftwall: ['wm_drift', 'wk_tilly', 'wk_redbrom', 'wk_wirevine', 'wk_grasspocket', 'wk_shellfungi'],
+  };
+  JT.WALL_TANK_KITS = {
+    standard: ['wk_stub', 'wk_flowerpocket'], arboreal: ['wk_hangvine', 'wk_brompocket'], cube: ['wk_hangvine', 'wk_flowerpocket'], jar: ['wk_hangvine', 'wk_brompocket'], tower: ['wk_hangvine', 'wk_brompocket'],
+    wide: ['wk_longbranch', 'wk_ledgerun'], panoramic: ['wk_longbranch', 'wk_ledgerun'], nano: ['wk_tinyledge', 'wk_twig', 'wk_minimoss'], breeder: ['wk_tinyledge', 'wk_twig', 'wk_minimoss'],
+  };
+  /** The free pieces on offer for a habitat's wall: its theme kit first, then the tank-type extras (no duplicates). */
+  JT.wallKit = function (hab) {
+    const w = hab && hab.backWall && hab.backWall(); if (!w) return [];
+    const out = []; for (const id of (JT.WALL_KITS[w.type] || []).concat(JT.WALL_TANK_KITS[hab.data.type] || [])) if (JT.DECOR_BY_ID[id] && !out.includes(id)) out.push(id);
+    return out;
+  };
 
   // ---------------- Field journal ----------------
   JT.JOURNAL = [
@@ -1197,7 +1266,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // Each style: surface texture (draw-decor STY/makeTex), front-face shape, integrated ledges on the climbing
   // routes, and wall-mounted living details on both faces.
   const WALLS = {
-    mosswall:  { bulge: 0, jit: 0, ledges: 0, ledgeStyle: 'cork' },
+    mosswall:  { bulge: 0, jit: 0, ledges: 2, ledgeStyle: 'cork' },
     barkwall:  { bulge: 2.5, jit: 1.2, ledges: 2, ledgeStyle: 'cork' },
     stonewall: { bulge: 1, jit: 1.4, ledges: 3, ledgeStyle: 'slate' },
     leafwall:  { bulge: 1.5, jit: 0.8, ledges: 1, ledgeStyle: 'wood' },
@@ -1215,16 +1284,19 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   ARCH.backwall = function (B, p, sc) {
     const rng = B.rng, h = Math.max(20, p.h * sc), w = p.w, d = p.d, AF = Math.max(1, Math.sqrt((w * h) / (92 * 140))), c = d * 0.45, S = p.style || 'mosswall', cfg = WALLS[S] || WALLS.mosswall;
     // front face (local -z) as a gently irregular / convex polyline so bark, trunks and stone read as real material
-    const N = cfg.bulge || cfg.jit ? 8 : 1, x0 = -w / 2 + c, x1 = w / 2 - c;
+    const N = cfg.bulge || cfg.jit ? 8 : 1;
+    // square ends flush with the tank sides; in the round jar the ends follow the glass (half-width at a local depth zl)
+    const hwAt = (zl) => p.arc ? Math.max(4, Math.sqrt(Math.max(0, p.arc.R * p.arc.R - (zl - p.arc.cz) ** 2)) - 0.6) : w / 2;
+    const x1 = hwAt(-d / 2), x0 = -x1;
     const jz = []; for (let i = 0; i <= N; i++) jz.push(i === 0 || i === N ? 0 : (rng() - 0.5) * cfg.jit);
     const zAt = (x) => { const u = M.clamp((x - x0) / (x1 - x0), 0, 1); const k = Math.min(N - 1, Math.floor(u * N)), t = u * N - k; const q = 2 * u - 1; return -d / 2 - cfg.bulge * (1 - q * q) + M.lerp(jz[k], jz[k + 1], t); };
     const base = [];
     for (let i = 0; i <= N; i++) { const x = x0 + (x1 - x0) * i / N; base.push([x, zAt(x)]); }
-    base.push([w / 2, 0]);
-    base.push([x1, d / 2], [x0, d / 2]);
-    base.push([-w / 2, 0]);
-    const top = G.scalePoly(base, 0.97);
-    B.prim({ t: 'prism', poly: base, topPoly: top, y0: 0, y1: h, style: S });
+    base.push([hwAt(0), 0]);
+    base.push([hwAt(d / 2), d / 2], [-hwAt(d / 2), d / 2]);
+    base.push([-hwAt(0), 0]);
+    const top = base.map(q => q.slice()); // vertical sides: the ends stay flush all the way up
+    B.prim({ t: 'prism', poly: base, topPoly: top, y0: 0, y1: h, style: S, cols: p.cols });
     B.solids.push(base); const ti = B.top(top, h);
     B.front = base.slice(0, N + 1).map(q => [q[0], q[1] - 0.6]); // used to snap wall-mounted pieces
     // climbing routes up the front face, broken by integrated ledges the jumper can stop and perch on
@@ -1237,10 +1309,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       for (const yl of hs.concat([h])) {
         const crest = yl === h; let topIdx, dp = 0;
         if (!crest) {
-          const lw = 13 + rng() * 6; dp = 6 + rng() * 3; const th = cfg.ledgeStyle === 'fungus' ? 2.2 : 3 + rng() * 1.5;
-          const poly = halfDisc(x, zf, lw, dp, 8, rng, cfg.ledgeStyle === 'slate' || cfg.ledgeStyle === 'sand' ? 0.18 : 0.08);
-          B.prim({ t: 'prism', poly, topPoly: G.scalePoly(poly, cfg.ledgeStyle === 'fungus' ? 0.96 : 0.94), y0: yl - th, y1: yl, style: cfg.ledgeStyle, ws: [0, 0, -1] });
-          if (cfg.ledgeStyle === 'fungus') B.prim({ t: 'prism', poly: G.scalePoly(poly, 0.7), y0: yl - th - 1.6, y1: yl - th + 0.1, style: 'fungus', ws: [0, 0, -1] });
+          const lw = 10 + rng() * 4; dp = 4.5 + rng() * 1.8; const th = 2.4 + rng() * 0.8;
+          const poly = halfDisc(x, zf, lw, dp, 8, rng, 0.08);
+          B.prim({ t: 'prism', poly, topPoly: G.scalePoly(poly, 0.94), y0: yl - th, y1: yl, style: S, cols: p.cols, ws: [0, 0, -1] });
           topIdx = B.top(G.scalePoly(poly, 0.88), yl);
         } else topIdx = ti;
         const pts = start ? [start] : [[x, 0, zf - 1.6]]; const nrm = [];
@@ -1253,64 +1324,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
         if (!crest) { start = [x + 1.5, yl, zf - dp * 0.3]; start.top = topIdx; y = yl; }
       }
     });
-    // per-style living surface on both broad faces
-    const F = (sd, x) => sd < 0 ? zAt(x) - 0.6 : d / 2 + 0.6;
-    const nvOf = (sd) => [0, 0, sd];
-    const tuft = (sd, x, y, r, col) => B.prim({ t: 'tuft', o: [x, y, F(sd, x) + sd * 0.8], r, col, nv: nvOf(sd), seed: (rng() * 1e6) | 0, h: y });
-    const shelfs = (sd, x, y, n, cols, r0) => { for (let j = 0; j < n; j++) B.prim({ t: 'shelf', o: [x + j * 3.2 - 3, y - j * 2.6, F(sd, x)], r: (r0 || 3.2) + rng() * 2.4, col: cols[(j + (rng() * 3 | 0)) % cols.length], nv: nvOf(sd), h: y }); };
-    const sprig = (sd, x, y, n, col, shape, len) => { for (let j = 0; j < n; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - n / 2) * 0.45, (len || 7) + rng() * 4, 1.6, shade(col, (rng() - .5) * .2), null, shape || 'lance', -0.15 - rng() * 0.4, y, { nv: nvOf(sd) }); };
-    const flat = (sd, x, y, L, W, ang, col, shape, o2) => { const ca = Math.cos(ang), sa = Math.sin(ang); const z = F(sd, x) + sd * 0.3; return B.prim(Object.assign({ t: 'leaf', o: [x, y, z], a: [ca * L, sa * L, sd * L * 0.12], b: [-sa * W, ca * W, 0], col, shape: shape || 'oval', h: y, nv: nvOf(sd) }, o2 || {})); };
-    const ivyRun = (sd, x, yTop, len, col) => { let px = x, py = yTop; const pts = [[px, py, F(sd, px) + sd * 0.4]]; for (let k = 0; k < len; k++) { px += (rng() - 0.5) * 5; py -= 3 + rng() * 2; if (py < 2) break; pts.push([px, py, F(sd, px) + sd * 0.4]); const sdL = k % 2 ? 1 : -1; flat(sd, px, py, 2.6 + rng() * 1.2, 1.8, Math.PI / 2 + sdL * (0.9 + rng() * 0.5), shade(col, (rng() - 0.5) * 0.25), 'ivy'); } if (pts.length > 1) B.prim({ t: 'tube', pts, r0: 0.4, r1: 0.25, col: '#5a4a2a', style: 'stem', nv: nvOf(sd) }); };
-    const RX = () => (rng() - 0.5) * (w - 10), RY = (lo, hi) => (lo || 4) + rng() * (h - (lo || 4) - (hi || 8));
-    const p0 = B.prims.length; // everything from here on is surface dressing: kept inside the wall's edges below
-    for (const sd of [-1, 1]) {
-      if (S === 'mosswall') {
-        const greens = ['#5f8f2e', '#4a7a26', '#79a83a', '#3f6a22', '#8ab848'];
-        for (let k = 0; k < Math.round(16 * AF); k++) tuft(sd, (rng() - 0.5) * (w - 8), 4 + rng() * (h - 10), 2.5 + rng() * 3.2, greens[k % greens.length]);
-        for (let k = 0; k < Math.round(5 * AF); k++) shelfs(sd, (rng() - 0.5) * (w - 16), h * (0.2 + 0.7 * rng()), 2 + (k % 2), k % 3 === 0 ? ['#e0a050'] : ['#cf6a2e']);
-        for (let k = 0; k < Math.round(6 * AF); k++) sprig(sd, (rng() - 0.5) * (w - 10), 8 + rng() * (h - 20), 4 + (k % 3), '#4f8a34');
-      } else if (S === 'barkwall') {
-        for (let k = 0; k < Math.round(18 * AF); k++) tuft(sd, RX(), RY(), 1.2 + rng() * 1.6, ['#a8b890', '#c4ccb0', '#8fa47a'][k % 3]); // lichen rosettes
-        for (let k = 0; k < Math.round(7 * AF); k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2.4, ['#5f8f2e', '#4a7a26'][k % 2]);
-        for (let k = 0; k < Math.round(3 * AF); k++) shelfs(sd, RX(), RY(20, 20), 2, ['#c8a070', '#b08050', '#d8b888']);
-        for (let k = 0; k < Math.round(4 * AF); k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 5);
-      } else if (S === 'stonewall') {
-        for (let k = 0; k < Math.round(4 * AF); k++) ivyRun(sd, RX(), h - 4 - rng() * 30, 10 + (rng() * 12 | 0), '#3e7a2e');
-        for (let k = 0; k < Math.round(16 * AF); k++) tuft(sd, RX(), RY(), 1.1 + rng() * 1.5, ['#c8c890', '#a8b088', '#d8c070'][k % 3]);
-        for (let k = 0; k < Math.round(5 * AF); k++) sprig(sd, RX(), RY(10, 20), 5, '#558a3a', 'lance', 6);
-        for (let k = 0; k < Math.round(6 * AF); k++) tuft(sd, RX(), RY(), 2.4 + rng() * 2, '#4f7a2a');
-      } else if (S === 'leafwall') {
-        const browns = ['#8a5a2e', '#a0682e', '#6e4426', '#b8803e', '#7a5a34', '#c08a48', '#5e3e22'];
-        const nL = Math.round(w * h / 70);
-        for (let k = 0; k < nL; k++) { const L = 4 + rng() * 4.5; flat(sd, RX(), 2 + rng() * (h - 4), L, L * (0.45 + rng() * 0.2), rng() * 6.28, browns[k % browns.length], rng() < 0.45 ? 'oak' : rng() < 0.5 ? 'oval' : 'lance', { vein: 'rgba(60,36,18,0.6)' }); }
-        for (let k = 0; k < Math.round(5 * AF); k++) { const x = RX(), y = RY(10, 10), a = rng() * 6.28, L = 10 + rng() * 10; const z = F(sd, x) + sd * 0.6; B.prim({ t: 'tube', pts: [[x, y, z], [x + Math.cos(a) * L * 0.5, y + Math.sin(a) * L * 0.5, z], [x + Math.cos(a + 0.2) * L, y + Math.sin(a + 0.2) * L, z]], r0: 0.6, r1: 0.35, col: '#5a4030', style: 'stem', nv: nvOf(sd) }); }
-        for (let k = 0; k < Math.round(2 * AF); k++) shelfs(sd, RX(), RY(20, 20), 2, ['#e8d8b8', '#d8c098']);
-      } else if (S === 'trunkwall') {
-        for (let k = 0; k < Math.round(6 * AF); k++) shelfs(sd, RX(), RY(14, 20), 2 + (k % 2), ['#d89048', '#c87830', '#e8b060', '#a85a28'], 3.6);
-        for (let k = 0; k < Math.round(3 * AF); k++) ivyRun(sd, RX(), h - 4 - rng() * 40, 14, '#356e2a');
-        for (let k = 0; k < Math.round(10 * AF); k++) tuft(sd, RX(), RY(), 2 + rng() * 2.6, ['#5f8f2e', '#4a7a26', '#79a83a'][k % 3]);
-      } else if (S === 'rootwall') {
-        const rc = ['#6a4a30', '#5a3e28', '#7a5838', '#4e3422'];
-        for (let k = 0; k < Math.round(11 * AF); k++) {
-          let px = RX(), py = h - rng() * 10; const pts = [[px, py, F(sd, px) + sd * 1.2]]; const r0 = 1.4 + rng() * 1.4;
-          while (py > 2) { px += (rng() - 0.5) * 9; px = M.clamp(px, -w / 2 + 6, w / 2 - 6); py -= 6 + rng() * 8; pts.push([px, Math.max(1, py), F(sd, px) + sd * (0.8 + rng() * 1.4)]); }
-          B.prim({ t: 'tube', pts, r0, r1: r0 * 0.35, col: rc[k % rc.length], style: 'bark', nv: nvOf(sd) });
-        }
-        for (let k = 0; k < Math.round(8 * AF); k++) tuft(sd, RX(), RY(), 2 + rng() * 2.4, ['#4a7a26', '#5f8f2e'][k % 2]);
-        for (let k = 0; k < Math.round(4 * AF); k++) sprig(sd, RX(), RY(10, 20), 4, '#4f8a34', 'lance', 6);
-      } else if (S === 'sandwall') {
-        for (let k = 0; k < Math.round(9 * AF); k++) { const x = RX(), y = RY(); for (let j = 0; j < 7; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 3) * 0.7, 2 + rng() * 1.6, 1.1, shade('#8aa07a', (rng() - .5) * .2), '#c09080', 'fat', 0.1 + rng() * 0.3, y, { nv: nvOf(sd) }); }
-        for (let k = 0; k < Math.round(10 * AF); k++) tuft(sd, RX(), RY(), 1 + rng() * 1.3, ['#c8a050', '#b8b878', '#d0b070'][k % 3]);
-        for (let k = 0; k < Math.round(3 * AF); k++) sprig(sd, RX(), RY(10, 30), 5, '#7a8a4a', 'lance', 5);
-      } else if (S === 'driftwall') {
-        for (let k = 0; k < Math.round(7 * AF); k++) { const x = RX(), y = RY(10, 10); for (let j = 0; j < 9; j++) leaf(B, [x, y, F(sd, x)], (sd > 0 ? Math.PI / 2 : -Math.PI / 2) + (j - 4) * 0.38, 4 + rng() * 4, 0.7, shade('#9aaa98', (rng() - .5) * .2), '#c8c8b8', 'lance', -0.6 + rng() * 1.4, y, { nv: nvOf(sd) }); }
-        for (let k = 0; k < Math.round(16 * AF); k++) tuft(sd, RX(), RY(), 1 + rng() * 1.6, ['#c8ccb0', '#a8b490', '#e0d8a0'][k % 3]);
-        for (let k = 0; k < Math.round(4 * AF); k++) tuft(sd, RX(), RY(), 2.2 + rng() * 2, '#6a8a3a');
-      }
-    }
-    // crest planting
-    const crest = { mosswall: ['#5f8f2e', '#4a7a26', '#79a83a'], barkwall: ['#5f8f2e', '#a8b890'], stonewall: ['#4f7a2a', '#6a9a3a'], leafwall: ['#8a5a2e', '#a0682e', '#6e4426'], trunkwall: ['#4a7a26', '#5f8f2e'], rootwall: ['#4a7a26', '#3f6a22'], sandwall: ['#8aa07a', '#b8b878'], driftwall: ['#a8b490', '#6a8a3a'] }[S] || ['#5f8f2e'];
-    const nC = Math.max(5, Math.round((w - 16) / 15)); for (let k = 0; k < nC; k++) { const x = -x1 + 5 + (2 * x1 - 10) * k / (nC - 1); B.prim({ t: 'tuft', o: [x, h + 0.8, (rng() - 0.5) * d * 0.5], r: (S === 'sandwall' || S === 'driftwall' ? 2 : 3.5) + rng() * 3, col: crest[k % crest.length], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h }); }
+    // plain face: the texture comes from the material; dressing is the player's (free wall decorations)
+    const p0 = B.prims.length;
     // keep every tuft, shelf, leaf and root inside the wall's left / right edges (slide inward along the face)
     const lim = x1 - 0.5;
     for (let i = p0; i < B.prims.length; i++) { const q = B.prims[i]; let lo, hi;
@@ -1325,6 +1340,20 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   };
 
   // ---- wall-mounted pieces: snap onto a back wall's face (local -z points out from the wall) ----
+  /** Grow another archetype (a small plant, mushrooms...) into this builder, shifted by off: used for wall pockets and tips. */
+  function embed(B, arche, p, off) {
+    const S = new Builder(B.rng); S.inst = B.inst; ARCH[arche](S, p, 1);
+    const np = B.paths.length, nt = B.tops.length, T3 = (v) => [v[0] + off[0], v[1] + off[1], v[2] + off[2]], T2 = (v) => [v[0] + off[0], v[1] + off[2]];
+    for (const q of S.prims) {
+      if (q.o) q.o = T3(q.o); if (q.pts) q.pts = q.pts.map(T3); if (q.poly) q.poly = q.poly.map(T2); if (q.topPoly) q.topPoly = q.topPoly.map(T2);
+      if (q.y0 != null) q.y0 += off[1]; if (q.y1 != null) q.y1 += off[1]; if (q.h != null) q.h += off[1]; if (q.t === 'log') { q.a = T3(q.a); q.b = T3(q.b); }
+      B.prims.push(q);
+    }
+    for (const t of S.tops) B.tops.push({ poly: t.poly.map(T2), y: t.y + off[1] });
+    for (const pa of S.paths) B.paths.push(Object.assign({}, pa, { pts: pa.pts.map(T3), startTop: pa.startTop != null ? pa.startTop + nt : undefined, endTop: pa.endTop != null ? pa.endTop + nt : undefined }));
+    for (const w of S.water) B.water.push(Object.assign({}, w, { local: T3(w.local), top: w.top != null ? w.top + nt : undefined, path: w.path != null ? w.path + np : undefined }));
+    for (const f of S.flowers) B.flowers.push({ local: T3(f.local), path: f.path + np });
+  }
   ARCH.wallmount = function (B, p) {
     const rng = B.rng, y = (B.inst && B.inst.my) || 40, K = p.kind;
     const shelf = (x, z0, yl, lw, dp, th, style, jit) => { const poly = halfDisc(x, z0, lw, dp, 8, rng, jit); B.prim({ t: 'prism', poly, topPoly: G.scalePoly(poly, 0.94), y0: yl - th, y1: yl, style }); return { poly, ti: B.top(G.scalePoly(poly, 0.88), yl) }; };
@@ -1333,10 +1362,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       B.prim({ t: 'prism', poly: G.scalePoly(s1.poly, 0.62), y0: y - (p.th || 3.5) - 3, y1: y - (p.th || 3.5) + 0.2, style: p.style }); // bracket beneath
       if (p.moss) for (let k = 0; k < 4; k++) B.prim({ t: 'tuft', o: [(rng() - 0.5) * p.w * 0.7, y + 0.4, -p.d * (0.15 + rng() * 0.5)], r: 1.6 + rng() * 1.6, col: ['#5f8f2e', '#79a83a'][k % 2], nv: [0, 1, 0], seed: (rng() * 1e6) | 0, h: y });
     } else if (K === 'fungi') {
-      const spots = [[0, 0, 13, 7.5], [-7, -8, 10, 6], [6, -15, 8, 5]]; let prev = null;
+      const k = p.s || 1, spots = [[0, 0, 13, 7.5], [-7, -8, 10, 6], [6, -15, 8, 5]].slice(0, p.n || 3).map(q => q.map(v => v * k)); let prev = null;
       for (const [dx, dy, lw, dp] of spots) {
-        const s1 = shelf(dx, 0, y + dy, lw, dp, 2, 'fungus', 0.1);
-        B.prim({ t: 'prism', poly: G.scalePoly(s1.poly, 0.66), y0: y + dy - 3.4, y1: y + dy - 1.9, style: 'fungus' });
+        const poly = halfDisc(dx, 0, lw, dp, 8, rng, 0.1); B.prim({ t: 'prism', poly, topPoly: G.scalePoly(poly, 0.94), y0: y + dy - 2, y1: y + dy, style: 'fungus', cols: p.fcols });
+        const s1 = { poly, ti: B.top(G.scalePoly(poly, 0.88), y + dy) };
+        B.prim({ t: 'prism', poly: G.scalePoly(s1.poly, 0.66), y0: y + dy - 3.4, y1: y + dy - 1.9, style: 'fungus', cols: p.fcols });
         if (prev) { // short climb on the wall between neighbouring brackets
           const a = [dx, y + dy, -dp * 0.35], b = [prev.x, prev.y, -prev.dp * 0.35];
           B.path([a, [dx * 0.6 + prev.x * 0.4, y + dy + 1.6, -0.6], [prev.x * 0.6 + dx * 0.4, prev.y - 3.5, -0.6], b], 0.2, 'face', { flex: 0, nrm: [[0, 0, -1], [0, 0, -1], [0, 1, 0]], startTop: s1.ti, endTop: prev.ti, perch: false });
@@ -1357,6 +1387,35 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
         B.path(pts, 0.25, 'face', { flex: 0, nrm, endTop: ti, perch: false });
         B.prim({ t: 'tube', pts: pts.slice(0, n), r0: 0.35, r1: 0.5, col: '#4a6a2a', style: 'stem', nv: [0, 0, -1] });
         for (let k = 0; k < n - 1; k += 1) { const q = pts[k]; leaf(B, [q[0], q[1], q[2] - 0.3], -Math.PI / 2 + (k % 2 ? 0.9 : -0.9), 3 + rng() * 1.5, 2, shade('#4f8a30', (rng() - .5) * .25), null, 'heart', -0.6, q[1], { nv: [0, 0, -1], variegate: k % 3 ? null : '#d8d070' }); }
+      }
+    } else if (K === 'pocket') { // a small coir pocket with a plant growing out of it
+      const pw = p.pw || 13, dp = pw * 0.6, th = 7; const poly = halfDisc(0, 0, pw, dp, 8, rng, 0.04);
+      B.prim({ t: 'prism', poly: G.scalePoly(poly, 0.8), topPoly: poly, y0: y - th, y1: y, style: 'coir' });
+      B.top(G.scalePoly(poly, 0.8), y);
+      embed(B, p.plant.arche, p.plant.p, [0, y - 0.6, -dp * 0.45]);
+    } else if (K === 'stick') { // a branch stub out of the wall, or (run) a branch arching along it
+      const r = p.r || 1.6, col = p.col || '#6a4e34', st = p.style || 'bark'; let pts;
+      if (p.run) pts = bez([-p.run / 2, y - (p.drop || 0), 0.4], [0, y + (p.up || 3), -(p.L || 7)], [p.run / 2, y, 0.4], 10);
+      else pts = bez([0, y, 0.6], [(p.lean || 0) * p.L * 0.2, y + (p.up || 0) * 0.35, -p.L * 0.55], [(p.lean || 0) * p.L * 0.4, y + (p.up || 0), -p.L], 6);
+      B.prim({ t: 'tube', pts, r0: r, r1: r * (p.run ? 0.8 : 0.55), col, style: st }); B.path(pts, r, 'branch', { flex: 0.04 });
+      if (p.fork) { const s0 = pts[Math.floor(pts.length / 2)], f = bez(s0, [s0[0] + 2.5, s0[1] + 5, s0[2] - 1.5], [s0[0] + 4, s0[1] + 9, s0[2] - 2.5], 3); B.prim({ t: 'tube', pts: f, r0: r * 0.55, r1: r * 0.3, col, style: st }); B.path(f, r * 0.5, 'branch', { flex: 0.1 }); }
+      if (p.leaves) for (let k = 2; k < pts.length - 1; k += 2) leaf(B, pts[k], rng() * 6.28, 3.5 + rng() * 2, 2, shade(p.leaves, (rng() - .5) * .2), null, 'oval', 0.4, pts[k][1]);
+      if (p.tip) { const e = pts[pts.length - 1]; embed(B, p.tip.arche, p.tip.p, [e[0], e[1] + r * 0.6, e[2]]); }
+    } else if (K === 'vine') { // strands hanging down the face: climbable, with leaves (or bare roots)
+      const n = p.n || 3;
+      for (let v = 0; v < n; v++) {
+        const x = (v - (n - 1) / 2) * (p.gap || 3.5) + (rng() - 0.5) * 1.5, len = p.len * (0.65 + rng() * 0.45), m = Math.max(4, Math.round(len / 4)); const pts = [];
+        for (let k = 0; k <= m; k++) { const t = k / m; pts.push([x + Math.sin(t * 4 + v * 1.7) * (p.wave || 1.6), y - len * t, -0.8 - Math.sin(t * 3.1) * 0.5]); }
+        B.prim({ t: 'tube', pts, r0: p.r || 0.45, r1: (p.r || 0.45) * 0.6, col: p.col || '#4a6a2a', style: p.leaf ? 'stem' : 'bark', nv: [0, 0, -1] });
+        B.path(pts.slice().reverse(), 0.3, 'stem', { flex: 0.15, perch: false });
+        if (p.leaf) for (let k = 1; k < m; k += p.sparse ? 2 : 1) { const q = pts[k]; leaf(B, [q[0], q[1], q[2] - 0.3], -Math.PI / 2 + (k % 2 ? 0.9 : -0.9), (p.leafL || 3) + rng() * 1.5, (p.leafL || 3) * 0.65, shade(p.leaf, (rng() - .5) * .25), null, p.shape || 'heart', -0.6, q[1], { nv: [0, 0, -1] }); }
+      }
+      B.prim({ t: 'tuft', o: [0, y + 0.5, -0.9], r: 2.2, col: p.col || '#4a6a2a', nv: [0, 0, -1], seed: (rng() * 1e6) | 0, h: y });
+    } else if (K === 'pad') { // flat dressing that hugs the face: moss, lichen, dry leaves, seed pods
+      for (let k = 0; k < (p.n || 10); k++) {
+        const x = (rng() - 0.5) * p.w, yy = y + (rng() - 0.5) * (p.hgt || p.w * 0.7), col = p.cols[k % p.cols.length];
+        if (p.mode === 'leaves') { const ang = rng() * 6.28, L = 3.5 + rng() * 2.5, W = L * 0.55; B.prim({ t: 'leaf', o: [x, yy, -0.5 - rng() * 0.4], a: [Math.cos(ang) * L, Math.sin(ang) * L, -L * 0.12], b: [-Math.sin(ang) * W, Math.cos(ang) * W, 0], col, shape: 'oval', h: yy, nv: [0, 0, -1] }); }
+        else B.prim({ t: 'tuft', o: [x, yy, -0.7], r: (p.r || 2.4) * (0.55 + rng() * 0.7), col, nv: [0, 0, -1], seed: (rng() * 1e6) | 0, h: yy });
       }
     } else if (K === 'staghorn') {
       const plaque = [[-7, -2.4], [7, -2.4], [7, 0.8], [-7, 0.8]];
@@ -1643,7 +1702,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const def = JT.DECOR_BY_ID[inst.type];
     const rng = JT.makeRng(inst.seed || 1);
     const B = new Builder(rng); B.inst = inst;
-    const pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h }) : def.p; // back walls span the whole back of their tank
+    const pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h, arc: inst.arc || null, cols: JT.wallCols(inst.sub) }) : def.p; // back walls span the whole back of their tank
     const nominal = pp.h || 10;
     const sc = Math.min(1, Math.max(0.35, (maxH - baseY - 6) / nominal));
     ARCH[def.arche](B, pp, sc);
@@ -2142,6 +2201,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     rebuild() {
       this.geoms = {};
       const H = this.dims.h;
+      for (const d of this.data.decor) if ((JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall') { d.sub = this.data.substrate; d.arc = this.dims.shape === 'circle' ? { R: this.dims.w / 2, cz: this.dims.d / 2 - d.z } : null; }
       for (const inst of this.sortedDecor()) {
         if (inst.parent && !this.geoms[inst.parent]) inst.parent = null;
         let baseY = 0;
@@ -2177,7 +2237,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const s2 = this.mountSnap(a[0] + ex / L * u + s.g.out[0] * 3, a[1] + ez / L * u + s.g.out[2] * 3, ignoreId) || s;
       x = s2.px + s.g.out[0] * 0.3; z = s2.pz + s.g.out[2] * 0.3;
       if (my == null || !isFinite(my)) my = s.h * (0.3 + 0.5 * (((seed || 1) % 997) / 997));
-      my = M.clamp(my, def.p.kind === 'fungi' ? 22 : 12, s.h - 8);
+      my = M.clamp(my, def.p.kind === 'fungi' ? 22 : def.p.kind === 'vine' ? (def.p.len || 30) + 4 : 12, s.h - 8);
+      if (this.data.decor.filter(d => d.wall === s.id && d.id !== ignoreId).length >= JT.WALL_CAP) return { ok: false, reason: 'This wall already holds ' + JT.WALL_CAP + ' pieces' };
       const inst = { id: '_probe', type, x, z, rot: s.rot, seed: seed || 1, my };
       let g = JT.Geo.build(inst, 0, this.dims.h);
       { // keep the whole piece on the wall face, not hanging past its side
@@ -2197,13 +2258,13 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     /** A back wall always fills the back of the tank: full width (the back chord of a round jar) and full height. */
     wallFit() {
       const W = this.dims.w, D = this.dims.d, H = this.dims.h, dep = 10;
-      if (this.dims.shape === 'circle') { const R = W / 2, zb = D / 2 + R * 0.62; return { x: W / 2, z: zb - dep / 2, rot: 0, ww: Math.round(2 * Math.sqrt(R * R - (R * 0.62) ** 2) - 6), wh: H - 6 }; }
-      return { x: W / 2, z: D - 2 - dep / 2, rot: 0, ww: W - 6, wh: H - 6 };
+      if (this.dims.shape === 'circle') { const R = W / 2, zb = D / 2 + R * 0.62; return { x: W / 2, z: zb - dep / 2, rot: 0, ww: Math.round(2 * Math.sqrt(R * R - (R * 0.62 - dep / 2) ** 2)), wh: H - 6 }; }
+      return { x: W / 2, z: D - 0.4 - dep / 2, rot: 0, ww: W - 0.8, wh: H - 6 }; // flush with the back and both side panes
     }
     backWall() { return this.data.decor.find(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall') || null; }
     _canWall(def, type, seed, ignoreId) {
       const F = this.wallFit(); const old = this.backWall(); const skip = old ? old.id : null;
-      const inst = { id: '_probe', type, x: F.x, z: F.z, rot: 0, seed: seed || 1, ww: F.ww, wh: F.wh };
+      const inst = { id: '_probe', type, x: F.x, z: F.z, rot: 0, seed: seed || 1, ww: F.ww, wh: F.wh, sub: this.data.substrate, arc: this.dims.shape === 'circle' ? { R: this.dims.w / 2, cz: this.dims.d / 2 - F.z } : null };
       const g = JT.Geo.build(inst, 0, this.dims.h);
       for (const d of this.data.decor) {
         if (d.id === ignoreId || d.id === skip || d.parent) continue; const og = this.geoms[d.id]; if (!og || og.def.mount || og.def.cat === 'ground') continue;
@@ -2264,12 +2325,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (!chk.ok) return null;
       if (chk.wallFit && chk.replaces) { // swap the wall's style in place: mounts stay on it
         const w = this.decorById(chk.replaces); if (this.game && placedBy) this.game.refund(this.game.decorValue(w));
-        Object.assign(w, { type, seed: seed || w.seed, x: chk.x, z: chk.z, rot: 0, ww: chk.ww, wh: chk.wh, preset: !placedBy && w.preset, novel: !!placedBy }); delete w.bought;
+        Object.assign(w, { type, seed: seed || w.seed, x: chk.x, z: chk.z, rot: 0, ww: chk.ww, wh: chk.wh, fit: 2, preset: !placedBy && w.preset, novel: !!placedBy }); delete w.bought;
         this.rebuild(); this._resnapMounts(w.id); return w;
       }
       const inst = { id: JT.newId('d'), type, x, z, rot: rot || 0, seed: seed || ((JT.R() * 1e9) | 0), parent: chk.parent || null, parentTop: chk.parentTop || 0, placedAt: this.time, novel: !!placedBy };
       if (chk.wall) { inst.x = chk.x; inst.z = chk.z; inst.rot = chk.rot; inst.my = chk.my; inst.wall = chk.wall; }
-      if (chk.wallFit) { inst.x = chk.x; inst.z = chk.z; inst.rot = 0; inst.ww = chk.ww; inst.wh = chk.wh; }
+      if (chk.wallFit) { inst.x = chk.x; inst.z = chk.z; inst.rot = 0; inst.ww = chk.ww; inst.wh = chk.wh; inst.fit = 2; }
       if (opts && opts.bare && JT.DECOR_BY_ID[type].arche === 'tree') inst.bare = true; // tree without its leaves
       this.data.decor.push(inst);
       this.rebuild();
@@ -2283,11 +2344,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     /** Older saves: free-standing back-wall panels become one wall across the whole back; pieces in its way move forward. */
     _fitWalls() {
       const walls = this.data.decor.filter(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall');
-      if (!walls.length || (walls.length === 1 && walls[0].ww)) return false;
+      if (!walls.length || (walls.length === 1 && walls[0].ww && walls[0].fit === 2)) return false;
       const keep = walls[0], F = this.wallFit();
       for (const w of walls.slice(1)) { this.data.decor.filter(d => d.wall === w.id).forEach(m => { m.wall = keep.id; }); }
       this.data.decor = this.data.decor.filter(d => !walls.includes(d) || d === keep);
-      Object.assign(keep, { x: F.x, z: F.z, rot: 0, ww: F.ww, wh: F.wh, parent: null });
+      Object.assign(keep, { x: F.x, z: F.z, rot: 0, ww: F.ww, wh: F.wh, parent: null, fit: 2 });
       this.rebuild();
       const wg = this.geoms[keep.id];
       for (const d of this.data.decor.slice()) {
@@ -4529,7 +4590,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     let hero = null;
     if (th.back && JT.DECOR_BY_ID[th.tall[0]].arche === 'backwall') {
       hero = near(th.tall[0], W / 2, D - 8, 3, false);
-      if (hero) { const mounts = th.mid.filter(id => JT.DECOR_BY_ID[id].mount); for (let i = 0; i < (compact ? 1 : 2) && i < mounts.length; i++) { for (let k = 0; k < 8; k++) { const x = X(0.25 + 0.5 * i + (rng() - 0.5) * 0.1), sd = (rng() * 1e9) | 0; if (hab.canPlace(mounts[i], x, D - 9, 0, sd).ok) { hab.addDecor(mounts[i], x, D - 9, 0, sd); break; } } } }
+      if (hero) P.dressWall(hab, rng, compact ? 2 : 4, false);
       const free = pickFrom(th.tall.slice(1).concat(th.mid.filter(id => !JT.DECOR_BY_ID[id].mount)), 0);
       if (!compact && free) anchors.push(near(free, X(0.78), D * 0.42, 14, false));
     } else {
@@ -4556,6 +4617,28 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     // water tucked by a front corner, near the partner piece
     if (!hab.decor.some(d => JT.DECOR_BY_ID[d.type].water)) near('waterdish', X(compact ? 0.8 : 0.86), D * 0.2, 12, false) || near('waterdish', X(0.6), D * 0.25, 60, false) || near('waterdish', W / 2, D / 2, Math.max(W, D), false);
     hab.decor.forEach(d => { d.novel = false; });
+  };
+  /** Dress the back wall with a small, composed set of free pieces from its kit (replaces earlier kit pieces). */
+  P.dressWall = function (hab, rng, n, placedBy) {
+    const w = hab.backWall(); if (!w) return 0; rng = rng || JT.makeRng((JT.R() * 1e9) | 0);
+    const old = hab.data.decor.filter(d => d.wall === w.id && (JT.DECOR_BY_ID[d.type] || {}).kit);
+    if (old.length) { hab.data.decor = hab.data.decor.filter(d => !old.includes(d)); hab.rebuild(); }
+    const theme = (JT.WALL_KITS[w.type] || []).slice(), extra = (JT.WALL_TANK_KITS[hab.data.type] || []).filter(id => !theme.includes(id));
+    for (let i = theme.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [theme[i], theme[j]] = [theme[j], theme[i]]; }
+    const pick = theme.slice(0, Math.max(1, (n || 4) - (extra.length ? 1 : 0))); if (extra.length) pick.splice(1, 0, extra[Math.floor(rng() * extra.length)]);
+    const ww = w.ww || hab.dims.w, H = w.wh || hab.dims.h, flip = rng() < 0.5;
+    const slots = [[0.24, 0.6], [0.52, 0.36], [0.77, 0.7], [0.4, 0.84], [0.66, 0.2]].map(([fx, fy]) => [flip ? 1 - fx : fx, fy]);
+    let placed = 0;
+    for (let i = 0; i < pick.length; i++) {
+      const id = pick[i], def = JT.DECOR_BY_ID[id]; let sl = slots[i % slots.length];
+      if (def.p.kind === 'vine') sl = [sl[0], Math.max(sl[1], 0.72)]; // vines hang from high up
+      for (let k = 0; k < 10; k++) {
+        const x = w.x - ww / 2 + ww * M.clamp(sl[0] + (rng() - 0.5) * 0.08 * (1 + k * 0.3), 0.06, 0.94), my = H * M.clamp(sl[1] + (rng() - 0.5) * 0.06 * (1 + k * 0.4), 0.12, 0.9), sd = (rng() * 1e9) | 0;
+        const c = hab.canPlace(id, x, w.z - 8, 0, sd, null, my);
+        if (c.ok && hab.addDecor(id, c.x, c.z, c.rot, sd, placedBy, c.my)) { placed++; break; }
+      }
+    }
+    return placed;
   };
   P.saveCustom = function (game, hab, name) {
     const items = hab.sortedDecor().map(d => ({ type: d.type, fx: d.x / hab.dims.w, fz: d.z / hab.dims.d, rot: d.rot, seed: d.seed, my: d.my, bare: d.bare || undefined }));
@@ -4635,6 +4718,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
         delete this.state.habitats;
         if (!this.habs.length) return false;
         for (const h of this.habs) { h.rebuild(); for (const s of h.spiders) JT.SpiderAI.restore(h, s); h.validateRefs(); }
+        // wall decorations are free now: give back what was paid for wall pieces in older saves
+        let wr = 0; for (const h of this.habs) for (const d of h.data.decor) if ((JT.DECOR_BY_ID[d.type] || {}).kit && d.bought > 0) { wr += d.bought; d.bought = 0; }
+        if (wr) { this.state.coins += wr; this._wallRefund = wr; }
         this.state.active = M.clamp(this.state.active | 0, 0, this.habs.length - 1);
         this.giftTower();
         return true;
@@ -5126,7 +5212,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   const PR = {};
   // ---------- prisms (rocks, cork, hides, dish, ruins) ----------
   PR.prism = function (ctx, V, pr, g, P, o) {
-    const st = STY[pr.style] || STY.rock; const base = pr.poly, top = pr.topPoly || pr.poly; const n = base.length;
+    const st = pr.cols || STY[pr.style] || STY.rock; const base = pr.poly, top = pr.topPoly || pr.poly; const n = base.length;
     const c = JT.G.centroid(base);
     const faces = [];
     for (let i = 0; i < n; i++) {
@@ -5192,11 +5278,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     ctx.globalAlpha = o.alpha != null ? o.alpha : 1;
   };
   function makeTex(pr, g) {
-    const rng = JT.makeRng(hashId(g.id + pr.y0 + pr.style)); const st = STY[pr.style] || STY.rock; const n = pr.poly.length; const H = pr.y1 - pr.y0;
+    const rng = JT.makeRng(hashId(g.id + pr.y0 + pr.style)); const st = pr.cols || STY[pr.style] || STY.rock; const n = pr.poly.length; const H = pr.y1 - pr.y0;
     const out = [];
     for (let i = 0; i < n; i++) {
       const m = []; const a = pr.poly[i], b = pr.poly[(i + 1) % n]; const W = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      const S = pr.style;
+      const S = pr.cols ? 'plain' : pr.style; // substrate-built walls: plain speckle in their own colours (canvas fallback)
       if (S === 'slate' || S === 'sand' || S === 'ruin') {
         const rows = Math.max(2, Math.round(H / (S === 'slate' ? 3 : 4.5)));
         for (let r = 1; r < rows; r++) { const v = r / rows + (rng() - .5) * 0.04; m.push({ k: 'line', u0: 0, v0: v, u1: 1, v1: v + (rng() - .5) * 0.03, c: st.mark, a: 0.6, w: 0.22 }); }
@@ -5248,7 +5334,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     return out;
   }
   function topTex(pr, g) {
-    const rng = JT.makeRng(hashId(g.id + 'top' + pr.y1)); const st = STY[pr.style] || STY.rock; const tp = pr.topPoly || pr.poly; const c = JT.G.centroid(tp);
+    const rng = JT.makeRng(hashId(g.id + 'top' + pr.y1)); const st = pr.cols || STY[pr.style] || STY.rock; const tp = pr.topPoly || pr.poly; const c = JT.G.centroid(tp);
     const out = []; const area = JT.G.polyArea(tp); const n = Math.min(60, area / 18);
     for (let k = 0; k < n; k++) { const v = tp[Math.floor(rng() * tp.length)]; const t = Math.sqrt(rng()) * 0.9; const x = M.lerp(c[0], v[0], t), z = M.lerp(c[1], v[1], t); out.push({ x, z, r: 0.4 + rng() * (pr.style === 'cork' ? 1.6 : 0.9), c: rng() < 0.5 ? st.mark : st.hi, a: 0.4 }); }
     if (pr.style === 'cork' || pr.style === 'wood') for (let r = 1; r <= 3; r++) { const q = JT.G.scalePoly(tp, r / 4, c); for (let i = 0; i < q.length; i += 1) out.push({ x: q[i][0], z: q[i][1], r: 0.35, c: st.mark, a: 0.5 }); }
@@ -6451,7 +6537,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   const STYP = (s) => ({ cork: PAT.speck, coconut: PAT.speck, rock: PAT.speck, river: PAT.speck, drift: PAT.grain, driftwall: PAT.grain, slate: PAT.bands, sand: PAT.bands, ruin: PAT.bands, sandwall: PAT.bands, wood: PAT.grain, terracotta: PAT.grain, trunkwall: PAT.grain, barkwall: PAT.speck, mosswall: PAT.moss, moss: PAT.moss, leafwall: PAT.dots, rootwall: PAT.dots, stonewall: PAT.speck, fungus: PAT.bands, coir: PAT.dots, dish: 0 }[s] || 0);
   const B = {};
   B.prism = function (mb, pr, g) {
-    const STY = JT.Draw.STY; const st = STY[pr.style] || STY.rock; const base = pr.poly, top = pr.topPoly || pr.poly; const n = base.length; if (n < 3) return;
+    const STY = JT.Draw.STY; const st = pr.cols || STY[pr.style] || STY.rock; const base = pr.poly, top = pr.topPoly || pr.poly; const n = base.length; if (n < 3) return;
     const c = G.centroid(base); const ct = G.centroid(top); const side = rgb(st.side), topC = rgb(st.top), mark = rgb(st.mark), hi = rgb(st.hi); const pat = STYP(pr.style);
     const smooth = pr.round || pr.curved || pr.dome || ['rock', 'river', 'cork', 'coconut', 'drift', 'moss'].includes(pr.style) || n > 10;
     const H = pr.y1 - pr.y0; const ccw = G.polyArea(base) > 0;
@@ -7906,9 +7992,22 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => this.openDrawer(id); tabs.appendChild(b); }
       if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', 'Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
-      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Walls stand at the back; mounts hang where you point' : 'Choose a piece, then place it';
+      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Pick a wall, then dress it: wall decor is free' : 'Choose a piece, then place it';
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
-      if (tab === 'decor' || tab === 'plants' || tab === 'walls') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
+      if (tab === 'decor' || tab === 'plants') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
+      else if (tab === 'walls') {
+        for (const d of JT.DECOR.filter(x => x.arche === 'backwall')) body.appendChild(this.decorCard(d));
+        const kit = JT.wallKit(h), w = h.backWall();
+        if (!w) body.appendChild(el('div', 'sect', 'Add a wall for free wall decor'));
+        else {
+          body.appendChild(el('div', 'sect', 'Wall decor · free · ' + h.data.decor.filter(d => d.wall === w.id).length + '/' + JT.WALL_CAP));
+          const c = el('div', 'card'); c.title = 'Dress wall — place a small, composed set from this wall\'s kit (replaces earlier wall decor)';
+          c.appendChild(cloneCanvas(this.R.decorThumb(w.type, 0, 112))); c.appendChild(el('div', 'nm', 'Dress wall')); c.appendChild(el('div', 'pr', 'auto'));
+          c.onclick = () => { const n = JT.Presets.dressWall(h, null, 4, 'player'); A().sfx('place'); this.toast(n ? 'Dressed the wall with ' + n + ' pieces.' : 'No room on the wall.', 'quiet'); this.game.save(); this.openDrawer('walls'); };
+          body.appendChild(c);
+          for (const id of kit) body.appendChild(this.decorCard(JT.DECOR_BY_ID[id]));
+        }
+      }
       else if (tab === 'substrate') {
         for (const id in JT.SUBSTRATES) body.appendChild(this.substrateCard(id));
         body.appendChild(el('div', 'sect', 'Ground cover'));
@@ -7923,7 +8022,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     decorCard(d) {
       const c = el('div', 'card'); c.dataset.price = d.price; c.title = d.name + (d.desc ? ' — ' + d.desc : '') + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
       c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112)));
-      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price + ''));
+      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', d.price ? d.price + '' : 'free'));
       const tg = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean).join(', '); if (tg) c.title += ' — ' + tg;
       if (d.price > this.game.state.coins) c.classList.add('disabled');
       c.onclick = () => { if (d.price > this.game.state.coins) { this.toast('Not enough coins for ' + esc(d.name) + '.'); A().sfx('error'); return; } this.startPlace(d.id); };
@@ -7939,7 +8038,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       c.title = S.name + ' — ' + (S.burrow > 0.6 ? 'burrowable, ' : '') + (S.moist > 0.6 ? 'humid' : S.moist < 0.25 ? 'dry' : 'balanced');
       c.onclick = () => {
         if (cur) return; if (!this.game.spend(S.price)) { this.toast('Not enough coins.'); A().sfx('error'); return; }
-        h.data.substrate = id; this.R._speck = null; A().sfx('place'); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
+        h.data.substrate = id; if (h.backWall()) h.rebuild(); this.R._speck = null; // the wall is built from the substrate A().sfx('place'); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
       };
       return c;
     },
@@ -8381,6 +8480,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
+    if (restored && game._wallRefund) setTimeout(() => JT.UI.toast('Wall decorations are free now · +' + game._wallRefund + ' coins refunded for wall pieces you bought.', '', 6000), 2400);
     if (restored && game._gifted) setTimeout(() => JT.UI.toast('A <b>Moss Tower</b> made for portrait screens was added to your shelf — meet <b>Moss</b>, a young Regal Jumper.', '', 6500), 600);
     if (!restored) setTimeout(() => JT.UI.toast('Welcome! Meet <b>Bolt</b>, your Bold Jumper. Tap a jumper to see what it is doing, or press Observe to watch it up close.', '', 6000), 600);
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
