@@ -26,7 +26,8 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#120c07;color:var(--ink);font-family:var(--serif);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-font-smoothing:antialiased}
 #app{position:fixed;top:0;left:0;right:0;height:100%;height:100dvh}
-html.sa #app{height:100vh;height:100lvh}
+html.sa,html.sa body{height:100vh;height:100lvh;height:var(--fullH,100lvh)}
+html.sa #app{height:100vh;height:100lvh;height:var(--fullH,100lvh)}
 #glview{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
 #view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:default}
 #view.placing{cursor:crosshair}#view.removing{cursor:not-allowed}
@@ -7286,6 +7287,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.paper); gl.uniform1i(P.u.uTex, 0);
       gl.uniform1f(P.u.uMode, 1); gl.uniform2f(P.u.uRes, W, H); gl.uniform2f(P.u.uJit, 0, 0); gl.uniform4f(P.u.uCol, 1, 0.985, 0.95, 0.32 + night * 0.2); gl.drawArrays(gl.TRIANGLES, 0, 6);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      // once a second: read one pixel at the bottom edge and paint the page background with it, so any strip of
+      // screen the web view leaves uncovered (iOS home-screen apps) blends into the scene instead of showing a band
+      if (!this._edgeT || performance.now() - this._edgeT > 1000) { this._edgeT = performance.now(); try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        const c = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; if (c !== this._edgeC) { this._edgeC = c; document.documentElement.style.backgroundColor = c; document.body.style.backgroundColor = c; } } catch (e) { /* ignore */ } }
     }
     boundsOf(g) { const pts = []; for (const e of (g.extent.length ? g.extent : g.foot || [])) pts.push([e[0], g.baseY, e[1]]); let c = [0, 0, 0]; if (!pts.length) return { c: g.center, r: 20 }; for (const p of pts) c = M.add(c, p); c = M.mul(c, 1 / pts.length); c[1] = g.baseY + g.height / 2; let r = g.height / 2 + 4; for (const p of pts) r = Math.max(r, Math.hypot(p[0] - c[0], p[2] - c[2]) + g.height / 2); return { c, r }; }
     /** Shop thumbnail of one decor geometry, painted like the habitat (ink + wash) into a 2D canvas. V: view in thumbnail pixels. */
@@ -8105,12 +8110,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const fitStage = () => { const app = $('app'); if (!app) return;
         const sa = !!(navigator.standalone || (root.matchMedia && root.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches));
         document.documentElement.classList.toggle('sa', sa);
-        if (!sa) { app.style.height = ''; return; }
+        if (!sa) { app.style.height = ''; document.documentElement.style.removeProperty('--fullH'); return; }
         const port = root.innerHeight >= root.innerWidth; const sc = root.screen || { width: 0, height: 0 };
         const full = port ? Math.max(sc.width, sc.height) : Math.min(sc.width, sc.height);
         let h = Math.max(root.innerHeight, document.documentElement.clientHeight, probe.getBoundingClientRect().height || 0);
         if (full > h && full - h < 120) h = full;
-        app.style.height = Math.round(h) + 'px'; };
+        h = Math.round(h); document.documentElement.style.setProperty('--fullH', h + 'px'); app.style.height = h + 'px'; if (root.scrollY) root.scrollTo(0, 0);
+        this._screenInfo = { sa, inner: root.innerWidth + 'x' + root.innerHeight, screen: sc.width + 'x' + sc.height, lvh: Math.round(probe.getBoundingClientRect().height), app: h }; };
+      this._probe = probe;
       fitStage();
       const remeasure = () => { fitStage(); this.R.resize(); requestAnimationFrame(() => this.R.resize()); setTimeout(() => this.R.resize(), 250); setTimeout(() => this.R.resize(), 700); };
       root.addEventListener('resize', remeasure); root.addEventListener('orientationchange', remeasure);
@@ -8724,6 +8731,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: smooth while you touch or watch, 30 fps when idle')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); };
       tog('debug', 'Debug overlay', 'navigation graph, routes, states');
+      { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
+        const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();
+        const info = 'Screen ' + (root.screen ? screen.width + '×' + screen.height : '?') + ' · window ' + root.innerWidth + '×' + root.innerHeight + ' · large ' + (pr ? Math.round(pr.getBoundingClientRect().height) : '?') + ' · game ' + Math.round(app.height) + ' · safe bottom ' + sb + ' · ' + (sa ? 'home-screen app' : 'browser');
+        const r0 = el('div', 'form-row'); r0.appendChild(el('label', '', 'Screen info')); r0.appendChild(el('span', 'muted', info)); w.appendChild(r0); }
       w.appendChild(el('h4', '', 'Save data'));
       const r = el('div', 'form-row'); const b = el('button', 'modal-btn', 'Save now'); b.onclick = () => { this.game.save(); this.toast('Game saved.'); };
       const rs = el('button', 'modal-btn', 'Reset game…'); rs.onclick = () => { if (root.confirm('Start over? All habitats, jumpers and progress will be erased.')) { this.closeModal(); this.cancelMode(); this.game.reset(); this.R.cur = null; this.refreshHeader(); const sp = this.game.hab.spider(this.game.selectedId); if (sp) this.showPanel(sp.id); this.toast('A fresh start — welcome back!'); } };
