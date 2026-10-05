@@ -430,6 +430,24 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
  #app #spiderPanel{top:calc(56px + var(--sat))}
  #app #popover{left:auto;right:8px;width:300px;bottom:8px}
 }
+
+/* ---------- minimal build bar + compact jumper card (all layouts) ---------- */
+#app #modeBar,body #app #modeBar{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;white-space:nowrap;width:auto;max-width:calc(100vw - 16px);padding:4px 4px 4px 14px;border-radius:999px;text-align:left;min-height:0}
+#app #modeBar.hidden{display:none}
+#app #modeText{flex:0 1 auto;flex-basis:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:14px;margin-right:4px}
+#app #modeBar .mb{flex:0 0 auto;width:34px;height:34px;min-height:34px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;color:var(--ink);background:rgba(255,255,255,.28);border:1px solid var(--pillLine)}
+#app #modeBar .mb.go{background:var(--accent);color:#fff8ec;border-color:transparent}
+#app #modeBar .mb.hidden,#app #modeBar .txt.hidden{display:none}
+#app #modeBar .txt{flex:0 0 auto;font-size:13px;padding:0 8px}
+#spiderPanel .cthought{display:none}
+#app #spiderPanel:not(.expanded){width:auto;max-width:min(300px,calc(100vw - 16px));padding:8px 14px 9px;cursor:pointer;overflow:hidden}
+#app #spiderPanel:not(.expanded) h3{padding-right:0;font-size:17px}
+#app #spiderPanel:not(.expanded) .x,#app #spiderPanel:not(.expanded) .sci,#app #spiderPanel:not(.expanded) .state,#app #spiderPanel:not(.expanded) .full,#app #spiderPanel .mini{display:none}
+#app #spiderPanel:not(.expanded) .cthought{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px;font-size:13.5px;line-height:1.35;font-style:italic;color:var(--dim)}
+#app #spiderPanel.expanded{cursor:pointer}
+#app #spiderPanel.expanded .full{display:block}
+#app #spiderPanel .x{font-size:15px;width:28px;height:28px;min-height:28px;padding:0;letter-spacing:0;font-variant:normal;display:flex;align-items:center;justify-content:center}
+@media (max-width:820px) and (orientation:portrait),(max-width:560px){#app #spiderPanel:not(.expanded){right:auto}}
 </style>
 </head>
 <body>
@@ -486,10 +504,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   <div id="modeBar" class="hidden">
     <span id="modeText"></span>
-    <button id="modeRotate" class="txt">Rotate</button>
     <button id="modeLeaves" class="txt hidden">Leaves</button>
-    <button id="modeDone" class="txt strong">Done</button>
-    <button id="modeCancel" class="txt">Cancel</button>
+    <button id="modeRotate" class="mb" title="Rotate (R)" aria-label="Rotate"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg></button>
+    <button id="modeCancel" class="mb" title="Cancel (Esc)" aria-label="Cancel"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button id="modeDone" class="mb go" title="Done (Enter)" aria-label="Done"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
   </div>
 
   <div id="obsHud" class="hidden">
@@ -8055,6 +8073,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
       // phone camera buttons: 1 iso, 2 front, 3 back; tapping the current camera again re-centres the view
       document.querySelectorAll('#camCtl button').forEach(b => b.onclick = () => { if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
+      // taps on other controls (outside the jumper card) close it too; taps on the tank are handled in tap()
+      document.addEventListener('click', (e) => { if (!this.panelId || performance.now() - (this._panelAt || 0) < 350) return; const t = e.target; if (!t || !t.closest) return;
+        if (t.closest('#spiderPanel') || t === this.cv || t.id === 'glview' || t.closest('#modal')) return; this.hidePanel(); });
       $('modeRotate').onclick = () => this.rotatePlace(); $('modeLeaves').onclick = () => this.toggleLeaves(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.cancelMode();
       $('obsExit').onclick = () => this.toggleObserve(false);
       document.addEventListener('keydown', (e) => this.key(e));
@@ -8330,7 +8351,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     startPlace(type) {
       this.cancelMode(); const d = JT.DECOR_BY_ID[type];
       this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false, bare: false };
-      const lv = $('modeLeaves'); lv.classList.toggle('hidden', d.arche !== 'tree'); lv.textContent = 'Leaves: on';
+      const lv = $('modeLeaves'); lv.classList.toggle('hidden', d.arche !== 'tree'); lv.textContent = 'Leaves';
       this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.toggle('hidden', d.arche === 'backwall'); $('modeDone').classList.remove('hidden');
       if (this.isMobile()) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); }
       // start the ghost in the middle so touch users see it immediately
@@ -8340,10 +8361,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     setModeText() {
       const p = this.place; if (!p) return; const d = JT.DECOR_BY_ID[p.type]; const touch = this.ptrType !== 'mouse';
       const st = p.ok ? '<span class="ok">fits here</span>' : '<span class="bad">' + esc(p.reason || 'Not here') + '</span>';
-      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> ' + d.price + ' · ' + st + ' · <span class="hint">' + (touch ? 'drag to move' : 'click to place, R rotates' + (d.arche === 'tree' ? ', L leaves' : '') + ', Esc cancels') + '</span>';
+      $('modeText').innerHTML = '<b>' + esc(d.name) + '</b> · ' + d.price + ' · ' + st; void touch;
     },
-    updateGhost(sx, sy) {
-      const p = this.place; if (!p) return; const h = this.hab; const pt = this.R.placementPoint(sx, sy, h, p.type);
+    updateGhost(sx, sy) { const p = this.place; if (!p) return; this.applyGhost(this.R.placementPoint(sx, sy, this.hab, p.type)); },
+    applyGhost(pt) {
+      const p = this.place; if (!p) return; const h = this.hab;
       p.x = pt.x; p.z = pt.z; p.y = pt.y; p.my = pt.my;
       const chk = h.canPlace(p.type, p.x, p.z, p.rot, p.seed, null, p.my);
       if (chk.wall) { p.x = chk.x; p.z = chk.z; p.rot = chk.rot; p.my = chk.my; }
@@ -8354,7 +8376,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.R.ghost = { geom, ok: p.ok, x: p.x, z: p.z }; this.setModeText();
     },
     /** Trees can be placed with or without their leaves. */
-    toggleLeaves() { const p = this.place; if (!p || JT.DECOR_BY_ID[p.type].arche !== 'tree') return; p.bare = !p.bare; $('modeLeaves').textContent = p.bare ? 'Leaves: off' : 'Leaves: on'; A().sfx('click'); this.updateGhostAtCurrent(); },
+    toggleLeaves() { const p = this.place; if (!p || JT.DECOR_BY_ID[p.type].arche !== 'tree') return; p.bare = !p.bare; $('modeLeaves').textContent = p.bare ? 'No leaves' : 'Leaves'; A().sfx('click'); this.updateGhostAtCurrent(); },
     rotatePlace() { const p = this.place; if (!p) return; p.rot = (p.rot + 1) % 4; A().sfx('click'); this.updateGhostAtCurrent(); },
     confirmPlace() {
       const p = this.place; if (!p) return; const h = this.hab; const d = JT.DECOR_BY_ID[p.type];
@@ -8368,11 +8390,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this.game.state.coins < d.price) this.cancelMode(); else { this.updateGhostAtCurrent(); }
       if (this.isMobile()) { this.cancelMode(); if (this.tab) { $('drawer').classList.remove('hidden'); this.syncDrawerSpace(); } }
     },
-    updateGhostAtCurrent() { const p = this.place; if (p && p.x != null) { const s = this.R.project([p.x, p.y || 0, p.z]); this.updateGhost(s[0], s[1]); } },
+    updateGhostAtCurrent() { const p = this.place; if (!p || p.x == null) return; const d = JT.DECOR_BY_ID[p.type];
+      // re-check the same spot (wall pieces keep their height on the wall; re-projecting from the floor made them slide down)
+      if (d && d.mount) { this.applyGhost({ x: p.x, z: p.z, y: 0, my: p.my }); return; }
+      const s = this.R.project([p.x, p.y || 0, p.z]); this.updateGhost(s[0], s[1]); },
     startRemove() {
       this.cancelMode(); this.mode = 'remove'; this.cv.classList.add('removing'); $('modeBar').classList.remove('hidden');
       $('modeRotate').classList.add('hidden'); $('modeLeaves').classList.add('hidden'); $('modeDone').classList.add('hidden');
-      $('modeText').innerHTML = '<b>Remove</b> · tap decor for a full refund, or live food and leftovers to take them out <span class="hint">· Esc to finish</span>';
+      $('modeText').innerHTML = '<b>Remove</b> · <span class="hint">tap decor, food or leftovers</span>';
       this.refreshHeader();
     },
     removeAt(sx, sy) {
@@ -8405,15 +8430,15 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this.mode === 'remove') { this.removeAt(sx, sy); return; }
       const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
       if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); A().sfx('click'); return; }
+      if (this.panelId) this.hidePanel(); // a tap anywhere outside the jumper card closes it
       if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
       if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew.' : '.'), 'quiet'); return; }
       if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed skin. The springtails will find it.' : 'Leftovers. The springtails will tidy them.', 'quiet'); return; }
-      if (this.isMobile() && this.panelId) $('spiderPanel').classList.remove('expanded');
     },
 
     // ------------------------------------------------ spider panel
-    showPanel(id) { this.panelId = id; this.renaming = false; $('spiderPanel').classList.remove('hidden'); this.renderPanel(true); },
-    hidePanel() { this.panelId = null; $('spiderPanel').classList.add('hidden'); },
+    showPanel(id) { const P = $('spiderPanel'); if (id !== this.panelId || P.classList.contains('hidden')) P.classList.remove('expanded'); this.panelId = id; this.renaming = false; this._panelAt = performance.now(); P.classList.remove('hidden'); this.renderPanel(true); },
+    hidePanel() { this.panelId = null; this.renaming = false; const P = $('spiderPanel'); P.classList.add('hidden'); P.classList.remove('expanded'); },
     renderPanel(force) {
       if (this.renaming && !force) return; const P = $('spiderPanel'); const h = this.hab; const sp = h.spider(this.panelId);
       if (!sp) { this.hidePanel(); return; }
@@ -8427,11 +8452,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const line = AI.stateLine ? AI.stateLine(h, sp) : hl;
       const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
       const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
-      const html = '<button class="txt x" id="pClose" title="Close">Close</button>' +
+      const html = '<button class="txt x" id="pClose" title="Close" aria-label="Close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<h3 id="pHead">' + (this.renaming ? '<input id="pName" maxlength="18" value="' + esc(sp.name) + '">' : esc(sp.name)) + '</h3>' +
         '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
         '<div class="state">' + esc(line) + '</div>' +
-        '<div class="mini"><span>' + JT.STAGES[sp.stage] + ' · ' + hl + '</span><button class="txt" id="pMore">More</button></div>' +
+        '<div class="cthought">' + esc(sp.thought || line || '…') + '</div>' +
         '<div class="full">' +
         '<div class="rule"></div>' +
         meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
@@ -8446,8 +8471,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this._pKey = key;
       P.innerHTML = html;
       $('pClose').onclick = (e) => { e.stopPropagation(); this.hidePanel(); };
-      $('pMore').onclick = (e) => { e.stopPropagation(); P.classList.add('expanded'); };
-      $('pHead').onclick = () => { if (this.isMobile() && !this.renaming) P.classList.toggle('expanded'); };
+      // tapping the card flips compact <-> expanded (buttons and the name field keep their own taps)
+      P.onclick = (e) => { if (this.renaming || (e.target.closest && e.target.closest('button,input,a'))) return; P.classList.toggle('expanded'); A().sfx('click'); };
       $('pRename').onclick = () => {
         if (this.renaming) { const v = ($('pName').value || '').trim().slice(0, 18); if (v) sp.name = v; this.renaming = false; this.game.save(); this.renderPanel(true); }
         else { this.renaming = true; this.renderPanel(true); const i = $('pName'); i.focus(); i.select(); i.onkeydown = (e) => { if (e.key === 'Enter') $('pRename').click(); if (e.key === 'Escape') { this.renaming = false; this.renderPanel(true); } }; }
