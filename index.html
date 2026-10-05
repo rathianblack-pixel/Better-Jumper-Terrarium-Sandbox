@@ -100,6 +100,7 @@ button.wanting{animation:wanting 3.6s ease-in-out infinite}
 .card.disabled{opacity:.42;cursor:default}
 .card.disabled:hover canvas{transform:none}
 .card.cur .pr{color:var(--ok)}
+.card .pr.blend{font-variant:normal;letter-spacing:0;font-size:11px;line-height:1.25;white-space:normal}
 .cards .sect{flex:0 0 auto;writing-mode:vertical-rl;transform:rotate(180deg);color:var(--faint);font-variant:small-caps;letter-spacing:.12em;font-size:13px;text-align:center;padding:6px 10px;border-right:1px solid var(--rule);margin:8px 6px}
 
 /* ---------- jumper panel: unboxed text over a soft gradient ---------- */
@@ -151,6 +152,8 @@ body.observe #top,body.observe #toolbar,body.observe #drawer,body.observe #spide
 /* ---------- toasts: small fading lines of text ---------- */
 #toasts{position:absolute;left:50%;transform:translateX(-50%);top:calc(62px + var(--sat));display:flex;flex-direction:column;align-items:center;gap:2px;z-index:20;pointer-events:none;width:min(560px,92vw);padding:8px 40px 14px;background:radial-gradient(ellipse at center,rgba(12,8,4,.5),rgba(12,8,4,.2) 55%,rgba(12,8,4,0) 75%)}
 #toasts:empty{display:none}
+.toast.replay{pointer-events:auto;cursor:pointer}.toast.replay .rp{text-decoration:underline;text-underline-offset:2px;font-weight:600;white-space:nowrap}
+#replayHud{position:absolute;inset:0;z-index:40;cursor:pointer;box-shadow:inset 0 0 120px rgba(0,0,0,.45)}#replayHud.hidden{display:none}#replayHud .rpBadge{position:absolute;left:50%;top:calc(14px + var(--sat,0px));transform:translateX(-50%);padding:6px 14px;border-radius:999px;background:rgba(12,8,4,.62);color:#f4e6c4;font:600 14px/1.3 Georgia,serif;letter-spacing:.02em;white-space:nowrap}#replayHud .rpBadge span{font-weight:400;opacity:.75;margin-left:8px;font-size:12px}
 .toast{color:var(--ink);font-size:15px;line-height:1.4;text-align:center;text-shadow:var(--shadow);animation:tin 1s ease both;transition:opacity .9s ease,transform .9s ease}
 .toast.quiet{color:var(--dim);font-style:italic;font-size:14px}
 .toast .sc{font-variant:small-caps;letter-spacing:.14em;color:var(--accent);margin-right:.35em}
@@ -865,6 +868,22 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   ];
   JT.PREY_BY_ID = {}; JT.PREY.forEach(p => JT.PREY_BY_ID[p.id] = p);
   JT.PREY_CAP = 40;
+  /** How each kind of prey fights once caught (sim + render). esc: escape-chance factor, dur: subdue-time factor,
+      slip: how easily it knocks the jumper off unsteady footing, drag: how hard it hauls the pair around. */
+  JT.STRUGGLE = {
+    fly:    { esc: 1.1,  dur: 0.9,  slip: 1.3, drag: 0.8, lift: 1,   spin: 1 },
+    moth:   { esc: 1.0,  dur: 1.0,  slip: 1.2, drag: 0.6, lift: 0.5, flip: 0.35, dust: 1 },
+    kicker: { esc: 1.1,  dur: 1.0,  slip: 1.2, drag: 0.9, kick: 1,   flip: 0.3 },
+    locust: { esc: 1.25, dur: 1.0,  slip: 1.4, drag: 1.5, kick: 1.3, roll: 1, flip: 0.3 },
+    roach:  { esc: 1.15, dur: 1.0,  slip: 1.1, drag: 1.4, back: 1,   flip: 0.25 },
+    beetle: { esc: 0.9,  dur: 1.5,  slip: 0.8, drag: 0.7, push: 1 },
+    worm:   { esc: 0.7,  dur: 1.1,  slip: 1.2, drag: 0.6, whip: 1,   roll: 0.7, bounce: 1 },
+    cat:    { esc: 0.75, dur: 1.15, slip: 1.3, drag: 0.7, rear: 1,   thrash: 1, bounce: 0.6 },
+    jumper: { esc: 1.0,  dur: 1.0,  slip: 1.0, drag: 0.9, roll: 1 },
+    feeble: { esc: 0.5,  dur: 0.8,  slip: 0.5, drag: 0.3 },
+  };
+  JT.preyFamily = (d) => !d ? 'feeble' : d.shape === 'spider' ? 'jumper' : (d.id === 'silkworm' || d.id === 'hornworm') ? 'cat'
+    : ({ fly: 'fly', gnat: 'fly', moth: 'moth', lacewing: 'moth', cricket: 'kicker', locust: 'locust', roach: 'roach', beetle: 'beetle', worm: 'worm' })[d.shape] || 'feeble';
 
   // ---------------- Decor & plants ----------------
   // cat: decor | plants | ground. arche: geometry generator. p: params.
@@ -1034,7 +1053,26 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     D('longlog', 'Long Hollow Log', 'decor', 'log', { L: 124, r: 12, style: 'wood', hollow: true }, { cover: .8, desc: 'Spans wide tanks, shelter along its length' }),
     D('slateridge', 'Slate Ridge', 'decor', 'rock', { w: 96, d: 30, h: 20, style: 'slate', layers: 3 }, { platform: true, cover: .2, desc: 'Long platform for panoramic layouts' }),
     D('grassbank', 'Grass Bank', 'plants', 'grass', { n: 30, L: 40, h: 34, leaf: '#7aa040' }, { stack: true, cover: .6, desc: 'Wide band of cover for open floors' }),
+    // --- Colour-matched pieces: a jumper resting on one that shares its colours is harder for prey to spot ---
+    D('birchlog', 'Birch Log', 'decor', 'log', { L: 66, r: 8, style: 'birch' }, { platform: true, cover: .4, blend: ['zebra', 'bold', 'twinflag'], desc: 'White bark broken by black marks' }),
+    D('charredbranch', 'Charred Branch', 'decor', 'branch', { kind: 'forked', L: 60, h: 52, r: 2.6, col: '#2b2724', spots: '#9a958c' }, { blend: ['bold', 'johnson'], desc: 'Fire-blackened wood dusted with ash' }),
+    D('lichenstone', 'Lichen Stone', 'decor', 'rock', { w: 34, d: 26, h: 13, style: 'lichen', round: true }, { platform: true, small: true, cover: .1, blend: ['graywall', 'paradise'], desc: 'Grey stone crusted with pale lichen' }),
+    D('limestone', 'Limestone Block', 'decor', 'rock', { w: 40, d: 30, h: 20, style: 'limestone', layers: 2 }, { platform: true, stack: true, cover: .15, blend: ['graywall', 'pantropical'], desc: 'Pale grey block, a stackable platform' }),
+    D('mottledtrunk', 'Mottled Bark Trunk', 'decor', 'tower', { r: 12, h: 78, style: 'mottled', taper: .8 }, { platform: true, cover: .2, blend: ['giant', 'putnam', 'arc'], desc: 'Tall trunk of mottled brown bark' }),
+    D('orangelichen', 'Orange Lichen Branch', 'decor', 'branch', { kind: 'perch', L: 58, h: 50, r: 2.7, col: '#6e5c4a', spots: '#e07a26' }, { small: true, blend: ['canopy', 'apache'], desc: 'Grey-brown wood blotched with orange lichen' }),
+    D('terracottaledge', 'Terracotta Ledge', 'decor', 'rock', { w: 34, d: 22, h: 26, style: 'terracotta', ledge: true }, { platform: true, cover: .25, blend: ['orange', 'apache', 'imperial'], desc: 'Warm clay ledge in burnt orange' }),
+    D('redcroton', 'Red Croton', 'plants', 'broadleaf', { n: 7, h: 30, leafL: 17, leafW: 8, leaf: '#b8321e', leaf2: '#2a1a14', vein: '#f0a020', upright: true }, { stack: true, cover: .55, blend: ['cardinal', 'imperial', 'johnson'], desc: 'Red and black leaves with gold veins' }),
+    D('glassleaf', 'Glass Leaf Plant', 'plants', 'broadleaf', { n: 6, h: 24, leafL: 15, leafW: 10, leaf: '#b4e4a0', vein: '#e8f8dc' }, { stack: true, cover: .5, small: true, blend: ['magnolia'], desc: 'Pale, see-through green leaves' }),
+    D('emeraldfern', 'Emerald Fern', 'plants', 'fern', { n: 8, L: 32, h: 26, leaf: '#1e7a4c' }, { stack: true, cover: .6, small: true, blend: ['emerald'], desc: 'Deep green fronds with a metallic sheen' }),
+    D('bluefescue', 'Blue Fescue', 'plants', 'grass', { n: 22, L: 16, h: 26, leaf: '#6f95ac', stripe: '#b4cad6' }, { stack: true, cover: .45, small: true, blend: ['peacock'], desc: 'Fine, steel-blue grass' }),
+    D('marigolds', 'Orange Marigolds', 'plants', 'flower', { n: 7, h: 28, petal: '#f08a1e', center: '#b8501a', cluster: true }, { stack: true, cover: .3, flowers: true, small: true, blend: ['apache', 'canopy', 'orange'], desc: 'Bright orange blooms that draw in flies' }),
+    D('deadleafclump', 'Dead-Leaf Hanging Clump', 'plants', 'broadleaf', { n: 11, h: 34, leafL: 11, leafW: 6, leaf: '#7a5634', leaf2: '#4a3220', droop: true }, { stack: true, cover: .6, small: true, blend: ['portia', 'ant'], desc: 'Curled brown leaves hanging from a dry stem' }),
+    D('autumnlitter', 'Autumn Leaf Litter', 'ground', 'scatter', { kind: 'oak', r: 26, col: '#b8501e', col2: '#a8281a', n: 20 }, { cover: .6, small: true, moist: .4, blend: ['cardinal', 'johnson', 'apache', 'canopy', 'orange', 'imperial'], desc: 'Red and orange fallen leaves' }),
   ];
+  /** Short species name for compact labels ("Zebra", "Twin-flagged"). */
+  JT.shortName = (S) => S ? S.name.replace(/ (Jumper|Spider|Morph)$/, '') : '';
+  /** Which jumpers a piece camouflages, as a readable list. */
+  JT.blendNames = (d) => (d && d.blend || []).map(id => JT.shortName(JT.SPECIES_BY_ID && JT.SPECIES_BY_ID[id])).filter(Boolean);
   JT.DECOR_BY_ID = {}; JT.DECOR.forEach(d => JT.DECOR_BY_ID[d.id] = d);
   JT.DECOR.forEach(d => { if (d.arche === 'wallmount') d.kit = true; });
   JT.DECOR.forEach(d => { if (d.arche === 'backwall') d.desc = 'Built from your substrate, with its own free decor kit'; });
@@ -1086,6 +1124,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     { id: 'dangle', title: 'A Line of Silk', icon: '', text: 'A jumper dropped from a ledge on its dragline, hung a moment, then climbed back up.' },
     { id: 'restless', title: 'Restless Patrol', icon: '', text: 'With nothing left to hunt, a hungry jumper patrolled its perches and lunged at the smallest movement.' },
     { id: 'cleanup', title: 'Cleanup Crew', icon: '', text: 'Springtails or isopods found and cleaned up feeder remains.' },
+    { id: 'bigPrey', title: 'Bigger Than Itself', icon: '', text: 'A hungry jumper took on prey bigger than itself.' },
+    { id: 'shakenOff', title: 'Shaken Off!', icon: '', text: 'A big catch thrashed free of a jumper\'s grip and got away, groggy from the bite.' },
+    { id: 'giantMeal', title: 'A Giant Meal', icon: '', text: 'A jumper wrestled down and subdued prey far bigger than itself.' },
+    { id: 'finishWeak', title: 'Second Chance', icon: '', text: 'A jumper finished off a weakened escapee before it could recover.' },
   ];
 
   // ---------------- Presets ----------------
@@ -1455,7 +1497,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // ---- branches ----
   ARCH.branch = function (B, p, sc) {
     const rng = B.rng, L = p.L, h = p.h * sc, r = p.r, col = p.col, k = p.kind;
-    const tube = (pts, r0, r1, o) => B.prim(Object.assign({ t: 'tube', pts, r0, r1, col, style: 'bark' }, o || {}));
+    const tube = (pts, r0, r1, o) => B.prim(Object.assign({ t: 'tube', pts, r0, r1, col, style: 'bark', spots: p.spots || null }, o || {}));
     const P = (pts, rr, o) => B.path(pts, rr, 'branch', Object.assign({ flex: 0.08 }, o || {}));
     if (k === 'perch') {
       const pts = bez([-L / 2, 0, -3], [-L * 0.1, h * 0.75, 4], [L / 2, h, 0], 9); tube(pts, r * 1.2, r * 0.7); P(pts, r);
@@ -1624,11 +1666,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     for (let i = 0; i < p.n; i++) {
       const a = i / p.n * 6.28 + rng() * 0.6;
       const H = p.h * sc * (p.trailing ? 0.4 + rng() * 0.6 : 0.65 + rng() * 0.4);
-      const reach = p.trailing ? 6 + rng() * 10 : (p.upright ? 2 + rng() * 3 : 4 + rng() * 6);
+      const reach = p.trailing ? 6 + rng() * 10 : p.droop ? 3 + rng() * 5 : (p.upright ? 2 + rng() * 3 : 4 + rng() * 6);
       const end = [Math.cos(a) * reach, H, Math.sin(a) * reach * 0.8];
       const stem = bez([0, 0, 0], [Math.cos(a) * reach * 0.3, H * 0.7, Math.sin(a) * reach * 0.25], end, 5);
       B.prim({ t: 'tube', pts: stem, r0: 0.7, r1: 0.45, col: shade(p.leaf, -0.15), style: 'stem' });
-      const pitch = p.upright ? 1.05 : (p.roof ? -0.05 : 0.15 - rng() * 0.35);
+      const pitch = p.droop ? -0.75 - rng() * 0.45 : p.upright ? 1.05 : (p.roof ? -0.05 : 0.15 - rng() * 0.35);
       const L = p.leafL * (0.8 + rng() * 0.35), W = p.leafW * 0.5 * (0.8 + rng() * 0.3);
       const lf = leaf(B, end, a, L, W, shade(p.leaf, (rng() - .5) * .15), p.leaf2 || null, p.heart ? 'heart' : 'oval', pitch, end[1], { split: !!p.split, stripe: !!p.stripe, vein: p.vein || null, variegate: p.variegate || null });
       // nav: stem continues along the leaf midrib so a spider walks stem -> leaf surface without a jump
@@ -1697,7 +1739,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     } else if (k === 'twigs' || k === 'chips') {
       for (let i = 0; i < p.n; i++) { const q = rp(); const a = rng() * 6.28, L = k === 'twigs' ? 8 + rng() * 10 : 3 + rng() * 3; if (k === 'twigs') B.prim({ t: 'tube', pts: [[q[0], 0.6, q[2]], [q[0] + Math.cos(a) * L, 0.6, q[2] + Math.sin(a) * L * 0.7]], r0: 0.6, r1: 0.4, col: shade(p.col, (rng() - .5) * .3), style: 'bark' }); else leaf(B, q, a, L, L * 0.45, shade(p.col, (rng() - .5) * .3), null, 'chip', 0.02, 0); }
     } else {
-      for (let i = 0; i < p.n; i++) { const q = rp(); const big = k === 'magnolia'; leaf(B, q, rng() * 6.28, big ? 10 + rng() * 5 : 5 + rng() * 3, big ? 3.6 : 2.2, shade(p.col, (rng() - .5) * .35), shade(p.col, -.25), k === 'oak' ? 'oak' : 'oval', (rng() - .5) * 0.15, 0, { roll: (rng() - .5) * 0.4 }); }
+      for (let i = 0; i < p.n; i++) { const q = rp(); const big = k === 'magnolia'; leaf(B, q, rng() * 6.28, big ? 10 + rng() * 5 : 5 + rng() * 3, big ? 3.6 : 2.2, shade(p.col2 && rng() < 0.5 ? p.col2 : p.col, (rng() - .5) * .35), shade(p.col, -.25), k === 'oak' ? 'oak' : 'oval', (rng() - .5) * 0.15, 0, { roll: (rng() - .5) * 0.4 }); }
     }
     B.height = 2; B.coverR = r;
   };
@@ -2525,9 +2567,23 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     addRemains(kind, pos, sup, cat, extra) {
       const r = Object.assign({ id: JT.newId('r'), kind, cat: cat || 'husk', pos: pos.slice(), sup: JT.deepClone(sup), age: 0, clean: 1, ang: JT.R() * 6.28 }, extra || {});
       if (r.sup.k === 'air') { const b = Nav.supportBelow(this, pos); r.pos = b.pos; r.sup = b.sup; }
+      else if (this.remainsLoose(r)) { if (r.cat === 'exuvia') r.dropAt = 300; else this.dropRemains(r); } // husks drop off twigs, leaves and stems; a moult stays in its shelter a while
       this.data.remains.push(r);
       if (this.data.remains.length > 40) this.data.remains.shift();
       return r;
+    }
+    /** Remains on something that will not hold them: branches, stems, leaves, vines, plants, wall pieces (not flat tops of decor or floor). */
+    remainsLoose(r) {
+      const k = r.sup && r.sup.k; if (!k || k === 'floor') return false; if (k === 'air') return true;
+      if (k !== 'top') return true;
+      const g = this.geoms[r.sup.d]; const def = g && g.def; return !!(def && (def.cat === 'plants' || def.arche === 'wallmount'));
+    }
+    /** Let remains fall to the support underneath (animated in the renderer by r._fall). */
+    dropRemains(r) {
+      const ex = r.sup && r.sup.k === 'top' ? r.sup.d : null; const from = r.pos.slice();
+      const b = Nav.supportBelow(this, [from[0], from[1] - 0.2, from[2]], ex); if (!b || !M.finite3(b.pos)) return;
+      const h = Math.max(0, from[1] - b.pos[1]); r.pos = b.pos; r.sup = b.sup; r.dropAt = null;
+      if (h > 0.4) r._fall = { from, t: 0, dur: Math.min(1.2, 0.12 + Math.sqrt(h) * 0.09), spin: (JT.R() - 0.5) * 9, a0: r.ang || 0 };
     }
     addSilk(a, b, kind, decor) {
       if (!M.finite3(a) || !M.finite3(b)) return;
@@ -2605,6 +2661,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const d = this.data; let gone = false;
       for (const r of d.remains) {
         r.age += dt; if (r.clean == null || !isFinite(r.clean)) r.clean = 1;
+        if (r._fall) { r._fall.t += dt; r.ang = r._fall.a0 + r._fall.spin * Math.min(1, r._fall.t / r._fall.dur); if (r._fall.t >= r._fall.dur) r._fall = null; }
+        if (r.dropAt != null && r.age >= r.dropAt) { if (this.remainsLoose(r)) this.dropRemains(r); else r.dropAt = null; }
         const base = r.cat === 'exuvia' ? 1 / 1500 : r.cat === 'spider' ? 1 / 2400 : 1 / 900;
         r.clean -= dt * base * (0.5 + d.humidity);
         if (r.clean <= 0) gone = true;
@@ -2767,7 +2825,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     investigate: 15, inspect: 15, postFeed: 10, search: 35, sleepSeek: 30, sleep: 30,
     cleanEyes: 3, look: 3, scuttle: 3, stretch: 5, homeSeek: 3, baskSeek: 12, bask: 12, dangle: 45, scan: 34, lunge: 36,
     notice: 40, assess: 40, stalk: 40, creep: 41, crouch: 42, track: 40, peek: 40,
-    drinkSeek: 50, drink: 50, flee: 60, pounce: 75, fall: 75, subdue: 70, carry: 70, feed: 70,
+    drinkSeek: 50, drink: 50, flee: 60, pounce: 75, fall: 75, subdue: 70, secure: 70, carry: 70, feed: 70,
     moltSeek: 80, moltSilk: 85, premolt: 90, molting: 95, postMolt: 85, emerge: 86 };
   const HUNT = new Set(['notice', 'assess', 'stalk', 'creep', 'crouch', 'track', 'peek']);
   const MOLT = new Set(['moltSeek', 'moltSilk', 'premolt', 'molting', 'postMolt']);
@@ -2821,6 +2879,44 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   /** Is there anything left in the habitat this jumper could eat? */
   AI.preyAvailable = (hab, sp) => hab.data.prey.some(p => !p.owner && !p.buried && !p.dead && AI.huntableFor(sp, JT.PREY_BY_ID[p.type]));
   AI.hungerLevel = (sp) => sp.sat < 0.2 ? 2 : sp.sat < 0.4 ? 1 : 0;
+  /** Camouflage: the colour-matched piece a jumper of this species is sitting on (or the matching leaf litter it
+      is standing in), or null. Pieces list the species they suit in def.blend. */
+  AI.blendAt = function (hab, species, sup, pos) {
+    if (!sup || !pos) return null;
+    if (hab._blendN !== hab.data.decor.length || !(Math.abs((hab.time || 0) - (hab._blendChk || 0)) < 2)) { hab._blendN = hab.data.decor.length; hab._blendChk = hab.time || 0; hab._hasBlend = hab.data.decor.some(i => { const g = hab.geoms[i.id]; return g && g.def && g.def.blend; }); }
+    if (!hab._hasBlend) return null;
+    if (sup.d) { const g = hab.geoms[sup.d]; if (g && g.def && g.def.blend && g.def.blend.includes(species)) return g.def; }
+    if (sup.k === 'floor') for (const inst of hab.data.decor) { const g = hab.geoms[inst.id]; if (!g || !g.def || g.def.cat !== 'ground' || !g.def.blend || !g.def.blend.includes(species)) continue;
+      if (Math.hypot(pos[0] - g.center[0], pos[2] - g.center[2]) < g.coverR * 0.9) return g.def; }
+    return null;
+  };
+  /** Cached per jumper (re-checked twice a second). */
+  AI.blendPiece = function (hab, sp) {
+    if (!sp || sp._air || (sp.sup && sp.sup.k === 'air')) return null;
+    if (sp._blendAt != null && Math.abs(hab.time - sp._blendAt) < 0.5) return sp._blendDef || null;
+    sp._blendAt = hab.time; sp._blendDef = AI.blendAt(hab, sp.species, sp.sup, sp.pos); return sp._blendDef;
+  };
+  /** Biggest prey (length relative to its own) a jumper will take on: about its own size when fed, ~1.4x when
+      hungry, up to ~1.9x when starving; bold ones push it further. Never more than 2x (slings far less). */
+  AI.sizeLimit = function (sp) {
+    const sat = sp.sat; let k;
+    if (sat >= 0.62) k = 1.0; else if (sat >= 0.35) k = 1.0 + (0.62 - sat) / 0.27 * 0.4; else if (sat >= 0.18) k = 1.4 + (0.35 - sat) / 0.17 * 0.45; else k = 1.9;
+    k += ((sp.traits && sp.traits.bold) || 0.5) * 0.3 - 0.15;
+    return M.clamp(k, 0.8, sp.stage <= 1 ? 1.5 : sp.stage === 2 ? 1.75 : 2);
+  };
+  AI.ratioOf = (sp, e) => (e.species ? AI.len(e) : (e.len || (JT.PREY_BY_ID[e.type] || { len: 3 }).len || 3)) / Math.max(0.5, AI.len(sp));
+  /** Soft after a molt, or getting ready to molt: no big fights. */
+  AI.fragile = (sp) => sp.soft > 0 || MOLT.has(sp.state) || AI.moltReady(sp);
+  const KICKERS = new Set(['cricket', 'pinhead', 'leafhopper', 'locust', 'redrunner']);
+  const TINY = AI.TINY = new Set(['aphid', 'fruitfly', 'gnat']);
+  const famOf = (p) => JT.STRUGGLE[JT.preyFamily(p && JT.PREY_BY_ID[p.type])] || JT.STRUGGLE.feeble;
+  AI.famOf = famOf;
+  const pose = (sp) => sp._pz || (sp._pz = { r: 0, p: 0, l: 0, vr: 0, vp: 0, vl: 0, flipT: 0, flipS: 1 });
+  /** Prey detection multiplier: a matching jumper that keeps still (or sneaks) is about a quarter harder to see. */
+  AI.camoK = function (hab, sp) {
+    const still = (sp._speedNow || 0) < 0.5; const sneaking = sp.state === 'crouch' || sp.state === 'creep' || sp.state === 'stalk';
+    return (still || sneaking) && AI.blendPiece(hab, sp) ? 0.74 : 1;
+  };
 
   function usedNames() { const s = new Set(); if (JT.game) for (const h of JT.game.habs) for (const x of h.data.spiders) s.add(x.name); return s; }
   AI.create = function (hab, speciesId, o) {
@@ -2960,7 +3056,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const to = horiz(M.sub(e.pos, sp.pos)); const c = M.dot(f, to);
       const ang = c > 0.5 ? 1 : c > -0.2 ? 0.55 : 0.22;
       const v = e._vel ? Math.hypot(e._vel[0], e._vel[1], e._vel[2]) : 0;
-      const motion = v > 1 ? 1 : 0.28;
+      const motion = v > 1 || e.state === 'twitch' ? 1 : 0.28;
       const cover = Nav.coverAt(hab, e.pos);
       const covF = 1 - cover * (motion > 0.5 ? 0.45 : 0.85);
       const distF = Math.max(0, 1 - d / (R0 * (veryHungry ? 1.7 : 1)));
@@ -2976,18 +3072,22 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const def = isSpider ? null : JT.PREY_BY_ID[e.type];
     const L = AI.len(sp); const pl = isSpider ? AI.len(e) : def.len; const ratio = pl / L;
     const hungry = sp.sat < 0.35; const starving = sp.sat < 0.18;
-    const maxR = 0.9 + sp.traits.bold * 0.8 + (hungry ? 0.3 : 0) + (starving ? 0.2 : 0);
+    const wk = !isSpider && JT.PreyAI.weakK ? JT.PreyAI.weakK(e) : 0; // a groggy escapee is an easy second chance
+    const maxR = AI.sizeLimit(sp) + wk * 0.25;
     if (ratio > maxR) return -1;
+    if (ratio > 1 && AI.fragile(sp)) return -1; // never a big fight while soft or about to molt
     const crumbs = !isSpider && !def.huntable; // springtails: only worth it when starving
     if (ratio < 0.08 && L > 6 && !crumbs) return -1;
-    let danger = (isSpider ? 0.4 : def.danger) * ratio; if (isSpider && e.soft > 0) danger *= 0.3;
-    if (danger > sp.traits.bold * 0.8 + (hungry ? 0.3 : 0)) return -1;
+    let danger = (isSpider ? 0.4 : def.danger) * ratio * (1 - wk * 0.6); if (isSpider && e.soft > 0) danger *= 0.3;
+    if (danger > sp.traits.bold * 0.8 + (hungry ? 0.3 : 0) + (starving ? 0.25 : 0)) return -1;
     if (isSpider) { const el = AI.len(e); if (!(L > el * 1.35 || (e.soft > 0 && L > el * 0.95))) return -1; }
     const d = M.dist(sp.pos, e.pos);
     const nut = isSpider ? 0.6 : AI.nutOf(def);
     let s = nut * 10 - d * 0.04 - danger * 5 + (ratio > 0.25 && ratio < 1 ? 2 : 0) + (crumbs ? 2.5 : 0);
     const v = e._vel ? M.len(e._vel) : 0; if (v > 1) s += 1;
-    if (sp.mem.ignore[e.id] && !starving) s -= 8;
+    if (sp.mem.ignore[e.id] && !starving && !wk) s -= 8;
+    if (sp._wary && sp._wary[e.id] > hab.time && !wk) s -= 6; // the one that just threw it off
+    if (wk > 0) s += 3 + wk * 4;
     if (e.sup && e.sup.k === 'air') s -= 1.5;
     if (isSpider) s -= 2;
     return s;
@@ -3030,7 +3130,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (cur >= 60) return;
     if (sp.hyd < 0.3 && cur < 50 && !(sp._drinkFail > hab.time)) { if (startDrink(hab, sp)) return; }
     if (cur >= 50) return;
-    const canHunt = sp.soft < 40;
+    const canHunt = sp.soft < 40 && !(sp._hesitate > hab.time); // just shaken off: a few seconds of hesitation
     if (canHunt) perceive(hab, sp);
     if (canHunt && cur < 40) {
       const t = chooseTarget(hab, sp);
@@ -3148,7 +3248,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (sp.state === 'scan' || sp.state === 'lunge') sp._legRaise = M.lerp(sp._legRaise, sp.state === 'lunge' ? 1 : 0.45, Math.min(1, dt * 5));
     // pounce: front legs reach straight out at the prey; on contact they wrap around it (securing + feeding, not carrying)
     sp._reach = M.lerp(sp._reach || 0, sp.state === 'pounce' ? 1 : 0, Math.min(1, dt * (sp.state === 'pounce' ? 16 : 8)));
-    const hugT = sp.hold && (sp.state === 'subdue' || sp.state === 'feed' || (sp.state === 'fall' && sp._afterFall === 'subdue')) ? 1 : 0;
+    const hugT = sp.hold && (sp.state === 'subdue' || sp.state === 'secure' || sp.state === 'feed' || (sp.state === 'fall' && sp._afterFall === 'subdue')) ? 1 : 0;
     sp._hug = M.lerp(sp._hug || 0, hugT, Math.min(1, dt * (hugT ? 12 : 6)));
     // close approach: the first two leg pairs point forward at the prey while creeping and crouching
     sp._fore = M.lerp(sp._fore || 0, sp.state === 'creep' || sp.state === 'crouch' ? 1 : 0, Math.min(1, dt * 3));
@@ -3162,6 +3262,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     else { if (sp._hang) { sp._hang = null; sp._dangleOff = null; sp._dangleVis = 0; } sp._dangleVis = M.lerp(sp._dangleVis || 0, sp.state === 'dangle' ? (sp._dangleK || 0) : 0, Math.min(1, dt * (sp.state === 'dangle' ? 6 : 2.5))); }
     if (sp.state !== 'dangle' && !sp._hang && sp._dangleVis < 0.01) sp._dangleOff = null;
     if (sp.state !== 'subdue') sp._strug = 0;
+    if (sp._pz && sp.state !== 'subdue' && sp.state !== 'secure') { const P = sp._pz; P.flipT = 0; poseStep(P, dt); if (Math.abs(P.r) + Math.abs(P.p) + P.l + Math.abs(P.vr) + Math.abs(P.vp) + Math.abs(P.vl) < 0.01) sp._pz = null; }
     // palp flicks: little twitches, more often while alert
     sp._flickT = (sp._flickT == null ? JT.R() * 4 : sp._flickT) - dt;
     if (sp._flickT <= 0) { sp._flickT = (HUNT.has(sp.state) || sp.state === 'scan' ? 0.8 : 2.5) + JT.R() * 5; if (!NEST_STATES.has(sp.state) && sp.state !== 'feed') sp._flick = 1; }
@@ -3245,7 +3346,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const n = nodes[Math.floor(JT.R() * nodes.length)]; if (!n || n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
       if (M.dist(n.pos, sp.pos) < 8) continue;
       const g = n.decor && hab.geoms[n.decor]; const plant = g && g.def.cat === 'plants';
-      const s = S.prefs.height * (n.y / H0) * 5 + S.prefs.foliage * (plant ? 2.5 : 0) + (n.perch ? 1 : 0) + JT.R() * 2.5 - dj.dist[n.id] * 0.015 * (1.2 - act) + Nav.coverAt(hab, n.pos) * (1 - sp.traits.bold);
+      const s = S.prefs.height * (n.y / H0) * 5 + S.prefs.foliage * (plant ? 2.5 : 0) + (n.perch ? 1 : 0) + JT.R() * 2.5 - dj.dist[n.id] * 0.015 * (1.2 - act) + Nav.coverAt(hab, n.pos) * (1 - sp.traits.bold) + (AI.blendAt(hab, sp.species, n.sup, n.pos) ? 1.6 : 0);
       if (s > bs) { bs = s; best = n; }
     }
     if (best) {
@@ -3258,7 +3359,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   H.explore = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.8);
-    if (r === 'done' || r === 'none') { sp._route = null; setState(sp, 'lookout', sp._lookout ? 'Watching from a high lookout.' : 'Scanning the habitat.'); }
+    if (r === 'done' || r === 'none') { sp._route = null; const bl = AI.blendAt(hab, sp.species, sp.sup, sp.pos); setState(sp, 'lookout', bl ? 'Keeping still on the ' + bl.name.toLowerCase() + ' — its colours blend right in.' : sp._lookout ? 'Watching from a high lookout.' : 'Scanning the habitat.'); }
     else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
   };
   H.patrol = H.explore;
@@ -3305,6 +3406,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const heading = e.fwd ? horiz(e.fwd) : [1, 0, 0];
     const misses = sp.mem.misses || 0; const shift = misses >= 2 ? 1.6 : 1;
     const hungerW = sp.sat < 0.35 ? 1.6 : 1;
+    const bigT = sp.target.kind === 'prey' && AI.ratioOf(sp, e0) > 1.05; const kick = bigT && KICKERS.has(e0.type);
     const cands = [];
     for (const n of hab.nav.nodes) {
       if (n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
@@ -3344,6 +3446,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       // no needless detours: a winding route to a launch point that is not much better is worse than a direct one
       const straight = Math.max(8, M.dist(sp.pos, c.pos)); s -= Math.max(0, c.cost / straight - 1.6) * 1.3;
       if (sp.mem.blockPos && hab.time - sp.mem.blockPos.t < 10 && M.dist(c.pos, sp.mem.blockPos.pos) < 5) s -= 4;
+      if (bigT) { if (behind > 0.3) s += 1.5; if (elev > 4) s += 2; if (kick && behind > 0.55) s -= 4.5; } // big prey: rear or above, but never right behind powerful hind legs
+      if (AI.blendAt(hab, sp.species, c.sup, c.pos)) s += 0.6 + T.stealth * 0.8; // a colour-matched launch point hides the approach
       s += (JT.R() - 0.5) * 0.6 * (1 - T.tactics);
       c.score = s; c.behind = behind; c.elev = elev; c.cover = cover;
     }
@@ -3501,6 +3605,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     } else sp._watched = 0;
     const urgency = M.clamp((0.65 - sp.sat) / 0.5, 0, 1);
     pace *= (0.85 + 0.3 * urgency) * (1 - sp.traits.patience * 0.15);
+    if (sp.target && sp.target.kind === 'prey' && AI.ratioOf(sp, e) > 1.05) pace *= 0.72; // a big one: slow, careful approach
     pace = M.clamp(pace, 0.12, 1.25);
     sp._low = M.clamp(1.15 - pace, 0, 1);
     return paceTo(sp, pace, dt);
@@ -3593,6 +3698,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const watched = e && sp.target.kind === 'prey' && e.sup && e.sup.k !== 'air' && preyView(hab, sp, e).facing;
     setState(sp, 'crouch', watched ? 'Face to face — springing before it bolts.' : 'Crouching for the jump.');
     sp._crouchDur = quick || (watched ? 0.18 + JT.R() * 0.12 : Math.max(0.35, (0.5 + sp.traits.patience * 1.2) * (sp.sat < 0.35 ? 0.6 : 1)));
+    sp._bigT = !!(e && sp.target.kind === 'prey' && AI.ratioOf(sp, e) > 1.05);
+    if (sp._bigT && !watched && !quick) { sp._crouchDur *= 1.4; sp.thought = 'Big prey — waiting for it to keep still.'; }
   }
   H.crouch = function (hab, sp, dt) {
     const e = targetEnt(hab, sp); if (!e) return AI.dropTarget(hab, sp);
@@ -3601,29 +3708,36 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (!vis) { if (lostFor(hab, sp) > 0.5) replan(hab, sp, e); return; }
     const d = M.dist(sp.pos, e.pos);
     if (d > effJump(sp, e.pos) * 1.02) { if (e.sup.k === 'air') { setState(sp, 'track'); return; } replan(hab, sp, e); return; }
-    if (sp.st >= sp._crouchDur) { if (strikeOK(hab, sp, e, 1.02)) launchPounce(hab, sp, e); else replan(hab, sp, e); }
+    if (sp.st >= sp._crouchDur) {
+      // a big one is only jumped once it keeps still (it gives up waiting after a few seconds)
+      if (sp._bigT && e._vel && M.len(e._vel) > 1.5 && sp.st < sp._crouchDur + 3) return;
+      if (strikeOK(hab, sp, e, 1.02)) launchPounce(hab, sp, e); else replan(hab, sp, e);
+    }
   };
   function landingFor(hab, sp, e) {
     if (e.sup.k === 'air') return { pos: e.pos.slice(), sup: null };
-    const tac = sp.traits.tactics; const fl = 0.16 + M.dist(sp.pos, e.pos) / 220;
+    const tac = sp.traits.tactics; const fl = AI.pounceDur(M.dist(sp.pos, e.pos));
     const pr = predict(hab, sp, e, fl * tac);
     return { pos: pr.pos, sup: pr.sup };
   }
+  /** A real jumper's strike is explosive: about a tenth of a second whatever the distance. */
+  AI.pounceDur = (d) => M.clamp((0.16 + d / 220) * 0.42, 0.075, 0.16);
   function launchPounce(hab, sp, e) {
     const def = targetDef(hab, sp, e); const land = landingFor(hab, sp, e);
-    let to = land.sup ? AI.surfPt(hab, { pos: land.pos, sup: land.sup }, 0) : land.pos; if (e.sup.k === 'air') { const v = e._vel || [0, 0, 0]; to = M.add(e.pos, M.mul(v, 0.18 * sp.traits.tactics)); }
+    let to = land.sup ? AI.surfPt(hab, { pos: land.pos, sup: land.sup }, 0) : land.pos; if (e.sup.k === 'air') { const v = e._vel || [0, 0, 0]; to = M.add(e.pos, M.mul(v, AI.pounceDur(M.dist(sp.pos, e.pos)) * sp.traits.tactics)); }
     // launch from the surface the jumper is visibly on (never from inside a trunk) and only along a clear line
     const from = AI.surfPt(hab, sp, 0); const L = AI.len(sp);
     if (segBlocked(hab, AI.surfPt(hab, sp, L * 0.3), to, L * 0.5, lenOfE(e) * 0.5 + 0.8, 0.8) || segBlocked(hab, from, to, L * 0.5, lenOfE(e) * 0.5 + 0.8, 0.8)) { sp.mem.blockPos = { pos: sp.pos.slice(), t: hab.time }; replan(hab, sp, e); return; }
     const d = M.dist(from, to);
-    sp._air = { from, to, t: 0, dur: (0.16 + d / 220) * 0.75, apex: 0, straight: true, land: land.sup, launchY: sp.pos[1], tY: e.pos[1] };
-    sp.pos = from.slice(); sp._anchor = from.slice(); sp.sup = { k: 'air' }; sp._route = null;
+    sp._air = { from, to, t: 0, dur: AI.pounceDur(d), apex: 0, straight: true, ease: true, land: land.sup, launchY: sp.pos[1], tY: e.pos[1] };
+    sp._air.launchSup = sp.sup && sp.sup.k; sp.pos = from.slice(); sp._anchor = from.slice(); sp.sup = { k: 'air' }; sp._route = null;
     // the strike scatters everything else nearby
     if (sp.target.kind === 'prey') JT.PreyAI.alarm(hab, e.pos, 26, 0.95, e, sp);
     // prey reflex: alertness + hunter stealth; committed pounces on tiny jumpers stay fair
     let reflex = (def.reflex || 0.3) * (0.35 + 0.65 * M.clamp(e.alert || 0, 0, 1)) * (1 - sp.traits.stealth * 0.4);
     if (sp.target.kind === 'prey' && e.sup.k !== 'air') { const v = preyView(hab, sp, e); reflex *= v.back ? 0.45 : v.look > 0.35 ? 1.35 : 1; }
     if (sp.target.kind === 'prey' && e.type === 'tinyjumper') reflex = Math.min(reflex, 0.4);
+    if (sp.target.kind === 'prey' && JT.PreyAI.weakK) reflex *= 1 - 0.7 * JT.PreyAI.weakK(e);
     if (sp.target.kind === 'spider') reflex = Math.min(0.6, reflex + 0.15);
     if (JT.R() < reflex) {
       if (sp.target.kind === 'prey') JT.PreyAI.escape(hab, e, sp, true); else AI.escapeFrom(hab, e, sp);
@@ -3635,8 +3749,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   H.pounce = function (hab, sp, dt) {
     const A = sp._air; if (!A) { setState(sp, 'idle'); return; }
-    A.t += dt / A.dur; const t = Math.min(1, A.t);
-    const p = M.lerp3(A.from, A.to, t); // a pounce is a straight, flat strike — no arc
+    A.t += dt / A.dur; const t = Math.min(1, A.t); const te = A.ease ? 1 - (1 - t) * (1 - t) * (1 - 0.35 * t) : t; // explosive start, braking into the bite
+    const p = M.lerp3(A.from, A.to, te); // a pounce is a straight, flat strike — no arc
     const dir = M.sub(p, sp.pos); if (M.len(dir) > 1e-4) { sp._vel = M.mul(dir, 1 / dt); const hz = horiz(dir); if (M.len(hz) > 0) sp.fwd = hz; }
     sp.pos = p;
     const e = targetEnt(hab, sp);
@@ -3681,6 +3795,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     sp.mem.success[strat] = (sp.mem.success[strat] || 0) + 1;
     const def = JT.PREY_BY_ID[prey.type];
     if (prey.type === 'tinyjumper') hab.event('journal', { id: 'tinyCatch', sp });
+    sp._catchRatio = AI.ratioOf(sp, prey); sp._catchWeak = JT.PreyAI.weakK ? JT.PreyAI.weakK(prey) : 0; prey.weak = null; prey._flip = 0;
+    if (sp._catchRatio > 1.02) hab.event('journal', { id: 'bigPrey', sp });
+    if (sp._catchWeak > 0) hab.event('journal', { id: 'finishWeak', sp });
     if (A.launchY - A.tY > 8) hab.event('journal', { id: 'ambushHigh', sp });
     if (strat === 'rear' || strat === 'cover') hab.event('journal', { id: 'ambushCover', sp });
     if (nDecor >= 2) hab.event('journal', { id: 'stepping', sp });
@@ -3731,7 +3848,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const p = hab.preyById(sp.hold); if (!p) { setState(sp, 'idle'); return; }
     const def = JT.PREY_BY_ID[p.type]; const L = p.len || def.len; const ratio = L / AI.len(sp);
     const resume = sp._subdueResume; sp._subdueResume = null;
-    sp._subdueDur = resume || (def.struggle || 2) * M.clamp(ratio * 1.4, 0.5, 2.2) * (1.2 - sp.traits.bold * 0.4);
+    const F = famOf(p); const wk = resume ? 0 : (sp._catchWeak || 0);
+    sp._subdueDur = resume || (def.struggle || 2) * M.clamp(ratio * 1.4, 0.5, 2.2) * (1.2 - sp.traits.bold * 0.4) * F.dur * (1 - 0.6 * wk);
+    // grip: a big catch may thrash free (rare just over its own size, about 1 in 3 at twice its size); hungry, bold jumpers hold on better
+    if (!resume) { sp._escAt = -1; sp._catchWeak = 0;
+      if (ratio > 1.02 && p.type !== 'jumperMeal') { const hk = M.clamp((0.5 - sp.sat) / 0.35, 0, 1); const grip = M.clamp(1 - hk * 0.3 - (sp.traits.bold - 0.5) * 0.4, 0.55, 1.2);
+        const pEsc = M.clamp(Math.pow(ratio - 1, 1.35) * 0.36 * grip * F.esc * (1 - wk), 0, 0.45); if (JT.R() < pEsc) sp._escAt = sp._subdueDur * (0.22 + JT.R() * 0.4); } }
     // how hard the catch fights back depends on its size relative to the jumper: same size = a real fight
     sp._awayN = 0; sp._strug0 = M.clamp((ratio - 0.12) / 0.88, 0.04, 1.35); sp._strug = sp._strug0; sp._yankT = 0; sp._yank = null; sp._burst = 1;
     setState(sp, 'subdue', resume ? 'Still wrestling with the ' + preyName(def) + '.' : sp._strug0 > 0.7 ? 'Got it! Wrestling with the ' + preyName(def) + '…' : 'Got it! Holding on tight…');
@@ -3747,7 +3869,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const soft = pa && (pa.flower || (g.def.cat === 'plants' && pa.kind !== 'face')) ? 0.25 : 0;
     return M.clamp(0.2 + thin * 0.45 + steep * 0.25 + soft + (fr.flex || 0) * 0.3, 0, 1);
   }
-  function slipChance(hab, sp) { const f = footing(hab, sp); const I = sp._strug0 || 0; return f <= 0.01 || I < 0.35 ? 0 : M.clamp((I - 0.35) * f * 0.42, 0, 0.25); }
+  function slipChance(hab, sp) { const f = footing(hab, sp); const I = sp._strug0 || 0; const p = sp.hold && hab.preyById(sp.hold); return f <= 0.01 || I < 0.35 ? 0 : M.clamp((I - 0.35) * f * 0.42 * (p ? famOf(p).slip : 1), 0, 0.3); }
   AI.footing = footing;
   /** The fight knocks it off unsteady footing: it drops on its dragline and hangs there, still gripping the prey. */
   function startSlip(hab, sp) {
@@ -3780,22 +3902,114 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (Hg.phase === 'hold' && sp.st >= sp._subdueDur) { Hg.phase = 'climb'; p._struggle = 0; sp._strug = 0; sp.thought = 'Climbing back up its dragline with the ' + preyName(JT.PREY_BY_ID[p.type]) + '.'; }
       if (Hg.phase === 'climb') {
         p._struggle = 0; sp._strug = 0; Hg.k = Math.max(0, Hg.k - dt / 2.6);
-        if (Hg.k <= 0) { const o = sp._dangleOff; if (o) hab.addSilk(o.anchor, [o.anchor[0], o.anchor[1] - o.depth, o.anchor[2]], 'drag'); sp._hang = null; sp._dangleOff = null; sp._dangleVis = 0; startCarry(hab, sp); }
+        if (Hg.k <= 0) { const o = sp._dangleOff; if (o) hab.addSilk(o.anchor, [o.anchor[0], o.anchor[1] - o.depth, o.anchor[2]], 'drag'); sp._hang = null; sp._dangleOff = null; sp._dangleVis = 0; startSecure(hab, sp, 'climb'); }
       }
+      thrash(hab, sp, p, dt, true);
       return;
     }
-    // a big catch yanks the jumper around: it shuffles and pivots to keep its grip
+    if (sp._escAt > 0 && sp.st >= sp._escAt) { shakeOff(hab, sp, p, u); return; }
+    thrash(hab, sp, p, dt, false);
+    // a big catch yanks the jumper around: it shuffles and pivots to keep its grip (each kind of prey its own way)
     if (sp._strug > 0.3 && (sp._strug0 || 0) > 0.45) {
-      sp._yankT -= dt;
-      if (sp._yankT <= 0) { sp._yankT = 0.22 + JT.R() * 0.5; const f = horiz(sp.fwd || [1, 0, 0]); const sd = JT.R() < 0.5 ? 1 : -1; const back = JT.R() < 0.4 ? -1 : 0;
-        sp._yank = { dir: M.norm([-f[2] * sd + f[0] * back, 0, f[0] * sd + f[2] * back]), t: 0.14 + JT.R() * 0.1, turn: (JT.R() - 0.5) * 2.4 * sp._strug }; }
+      const F = famOf(p); sp._yankT -= dt;
+      if (sp._yankT <= 0) { sp._yankT = 0.22 + JT.R() * 0.5; const f = horiz(sp.fwd || [1, 0, 0]); let sd = JT.R() < 0.5 ? 1 : -1; let back = JT.R() < 0.4 ? -1 : 0; let t = 0.14 + JT.R() * 0.1, turn = (JT.R() - 0.5) * 2.4 * sp._strug;
+        if (F.back || F.push) { back = -1; sd *= 0.35; t += F.back ? 0.16 : 0.1; }           // sprinting / shoving: dragged backwards
+        else if (F.whip) { sd = (sp._ySide = -(sp._ySide || 1)); back = 0; }               // S-whips: side to side
+        else if (F.kick) { back = -1; sd *= 0.6; t *= 0.7; }                                // hind-leg kicks: short sharp shoves
+        if (F.spin || F.thrash) turn *= 2;
+        sp._yank = { dir: M.norm([-f[2] * sd + f[0] * back, 0, f[0] * sd + f[2] * back]), t, turn, k: F.drag || 1 }; }
       const Y = sp._yank;
       if (Y && Y.t > 0) {
-        Y.t -= dt; regionStep(hab, sp, Y.dir, AI.len(sp) * 1.1 * sp._strug * dt);
+        Y.t -= dt; regionStep(hab, sp, Y.dir, AI.len(sp) * 1.1 * sp._strug * dt * (Y.k || 1));
         if (sp.sup.k !== 'path') { const f = sp.fwd || [1, 0, 0]; const a = Y.turn * dt * 4; const c = Math.cos(a), sn = Math.sin(a); sp.fwd = M.norm([f[0] * c - f[2] * sn, 0, f[0] * sn + f[2] * c]); }
       }
     }
-    if (sp.st >= sp._subdueDur) { p._struggle = 0; sp._strug = 0; startCarry(hab, sp); }
+    if (sp.st >= sp._subdueDur) { p._struggle = 0; sp._strug = 0; if ((sp._catchRatio || 0) >= 1.5) hab.event('journal', { id: 'giantMeal', sp }); startSecure(hab, sp); }
+  };
+  /** Visual wrestling pose of the pair (roll / pitch / lift, sprung), kicked by the prey's own way of fighting. */
+  function thrash(hab, sp, p, dt, hanging) {
+    const P = pose(sp); const F = famOf(p); const k = sp._strug || 0; const big = M.clamp(sp._catchRatio || 0.5, 0.3, 2);
+    P.tT = (P.tT || 0) - dt;
+    if (P.tT <= 0 && k > 0.12) { P.tT = 0.18 + JT.R() * 0.45; const a = k * Math.min(1.4, big);
+      if (F.lift && !hanging && JT.R() < 0.55 * F.lift) P.vl += (1.6 + JT.R() * 2) * a;          // flies lift the pair off in little hops
+      if (F.kick) P.vp += (JT.R() < 0.5 ? 2.4 : -1.6) * a * F.kick;                                // kicks buck the pair
+      if (F.rear) P.vp += (2.6 + JT.R()) * a;                                                       // a caterpillar rears up (bull ride)
+      if (F.push && p.type === 'darkling') P.vp -= 1.4 * a;                                         // darkling raises its rear
+      if (F.roll || F.whip) P.vr += (JT.R() - 0.5) * 7 * a * (F.roll || 0.6);                     // rolling / whipping
+      if (F.bounce && !hanging) P.vl += 1.1 * a * F.bounce;
+      if (F.thrash || F.spin) P.vr += (JT.R() - 0.5) * 3 * a;
+      const fl = F.flip || (F.roll ? 0.15 : 0); if (fl && k > 0.35 && big > 0.7 && P.flipT <= 0 && JT.R() < fl * a * 0.6) { P.flipT = 0.45 + JT.R() * 0.4; P.flipS = JT.R() < 0.5 ? 1 : -1; } // the pair flips over
+    }
+    poseStep(P, dt);
+  }
+  function poseStep(P, dt) {
+    const h = Math.min(dt, 0.05); const tr = P.flipT > 0 ? Math.PI * 0.94 * P.flipS : 0; P.flipT = Math.max(0, P.flipT - dt);
+    P.vr += ((tr - P.r) * 38 - P.vr * 8) * h; P.r = M.clamp(P.r + P.vr * h, -3.3, 3.3);
+    P.vp += (-P.p * 55 - P.vp * 8) * h; P.p = M.clamp(P.p + P.vp * h, -0.8, 0.9);
+    P.vl += (-P.l * 45 - P.vl * 6) * h; P.l += P.vl * h; if (P.l < 0) { P.l = 0; P.vl = Math.abs(P.vl) * 0.25; } P.l = Math.min(P.l, 1.4);
+  }
+  AI.poseStep = poseStep;
+  /** The catch thrashes free: venom so far leaves it groggy; the jumper is thrown back on its dragline and hesitates. */
+  function shakeOff(hab, sp, p, u) {
+    const def = JT.PREY_BY_ID[p.type] || {}; const nm = preyName(def); const L = AI.len(sp);
+    sp.hold = null; sp._escAt = -1; sp._strug = 0; sp._yank = null; p._struggle = 0; p.owner = null; p.state = 'idle'; p.st = 0; p.full = 1;
+    // put the escapee down on real support beside the jumper
+    if (def.climb && sp.sup && sp.sup.k !== 'air' && Nav.validSup(hab, sp.sup)) { p.sup = JT.deepClone(sp.sup); p.pos = Nav.supPos(hab, p.sup, p.pos); }
+    else { const b = Nav.supportBelow(hab, [p.pos[0], p.pos[1] + 0.3, p.pos[2]]); if (b.pos[1] < p.pos[1] - 2) { p._route = { steps: [{ pos: b.pos, mode: 'drop', arrive: b.sup }], i: 0 }; p.sup = { k: 'air' }; p.state = 'walk'; } else { p.pos = b.pos; p.sup = b.sup; } }
+    JT.PreyAI.weaken(hab, p, M.clamp(u * 1.15, 0.1, 1));
+    if (p.state === 'idle') JT.PreyAI.escape(hab, p, sp, true);
+    sp._wary = sp._wary || {}; sp._wary[p.id] = hab.time + 20 + (1 - sp.traits.bold) * 20;
+    sp._hesitate = hab.time + 3 + (1 - sp.traits.bold) * 4; sp.stats.shaken = (sp.stats.shaken || 0) + 1;
+    hab.event('shaken', { sp, prey: p }); hab.event('journal', { id: 'shakenOff', sp });
+    sp._watchPos = p.pos.slice(); const P = pose(sp); P.vp += 3; P.flipT = 0;
+    // knocked back: off a perch it drops on its dragline to the nearest surface; on flat ground it is thrown back a body length or two
+    const reg = sp.sup && (sp.sup.k === 'floor' || sp.sup.k === 'top') ? hab.nav && hab.nav.regions[Nav.regionKey(sp.sup)] : null;
+    sp._afterFall = 'watch';
+    if (reg) {
+      const back = horiz(M.mul(sp.fwd || [1, 0, 0], -1)); const D = L * (1.3 + JT.R() * 0.8); const x = sp.pos[0] + back[0] * D, z = sp.pos[2] + back[2] * D;
+      const ok = (sp.sup.k === 'floor' ? Nav.inside(hab, x, z, 2) : G.pointInPoly(x, z, reg.poly)) && !reg.obstacles.some(o => G.pointInPoly(x, z, o));
+      if (ok) { const from = sp.pos.slice(), to = [x, sp.pos[1], z]; sp._air = { from, to, t: 0, dur: 0.32, apex: L * 0.6, land: JT.deepClone(sp.sup), fall: true }; sp._anchor = from; sp.sup = { k: 'air' }; sp._route = null; setState(sp, 'fall'); }
+      else startFall(hab, sp);
+    } else startFall(hab, sp);
+    sp.thought = 'Shaken off by the ' + nm + '! Backing off to regroup.';
+  }
+  AI._shakeOff = shakeOff;
+  /** Just after the bite takes hold: the jumper keeps still with its catch, last twitches fading, peering round in quick
+      head snaps. Then it picks a feeding spot, turns to face it and sets off carefully (tiny prey is eaten on the spot). */
+  function startSecure(hab, sp, after) {
+    const p = hab.preyById(sp.hold); if (!p) { setState(sp, 'idle'); return; }
+    const nm = p.type === 'jumperMeal' ? 'jumper' : preyName(JT.PREY_BY_ID[p.type] || { name: 'prey' }); const tiny = TINY.has(p.type);
+    const hk = M.clamp((0.5 - sp.sat) / 0.35, 0, 1);
+    let dur = (1.5 + sp.traits.patience * 2.5) * (1 - 0.22 * sp.traits.bold - 0.2 * hk); if (tiny) dur *= 0.45; if (after === 'climb') dur += 0.7;
+    sp._secDur = M.clamp(dur, tiny ? 0.6 : 1.5, after === 'climb' ? 4.7 : 4);
+    sp._secPeerT = 0.25; sp._secLiftT = 0.5 + JT.R() * sp._secDur * 0.5; sp._secSpot = null; sp._secFaceT = 0; sp._secTurn = 0; sp._tw = 0.2;
+    setState(sp, 'secure', after === 'climb' ? 'Back on top — pausing with the ' + nm + ' before moving on.' : tiny ? 'Holding the little ' + nm + ' a moment.' : 'Holding the ' + nm + ' still, making sure it is done.');
+  }
+  AI.startSecure = startSecure;
+  H.secure = function (hab, sp, dt) {
+    const p = hab.preyById(sp.hold); if (!p) { sp.hold = null; setState(sp, 'idle'); return; }
+    const u = M.clamp(sp.st / sp._secDur, 0, 1); const tiny = TINY.has(p.type); const L = AI.len(sp);
+    // last twitches, fading out
+    sp._twT = (sp._twT || 0) - dt; if (sp._twT <= 0) { sp._twT = 0.25 + JT.R() * 0.6; if (JT.R() < 0.5 * (1 - u)) sp._tw = 0.14 + JT.R() * 0.16 * (1 - u); }
+    sp._tw = Math.max(0, (sp._tw || 0) - dt * 0.5); p._struggle = sp._tw; p._anim = (p._anim || 0) + dt * (1 + 4 * sp._tw);
+    // peering around in quick head snaps
+    sp._secPeerT -= dt; if (sp._secPeerT <= 0) { sp._secPeerT = 0.45 + JT.R() * 0.7; const a = JT.R() * 6.28, r = 10 + JT.R() * 20; sp._glance = { pos: [sp.pos[0] + Math.cos(a) * r, sp.pos[1] + (JT.R() - 0.3) * 6, sp.pos[2] + Math.sin(a) * r], until: hab.time + 0.3 + JT.R() * 0.25 }; }
+    // now and then it lifts the meal and shifts round a little
+    if (sp.st >= sp._secLiftT) { sp._secLiftT = 1e9; pose(sp).vp += 2.2; sp._secTurn = (JT.R() - 0.5) * 1.6; }
+    if (sp._secTurn && sp.sup.k !== 'path') { const f = sp.fwd || [1, 0, 0]; const a = sp._secTurn * dt * 2; const c = Math.cos(a), sn = Math.sin(a); sp.fwd = M.norm([f[0] * c - f[2] * sn, 0, f[0] * sn + f[2] * c]); sp._secTurn *= Math.max(0, 1 - dt * 2.5); if (Math.abs(sp._secTurn) < 0.05) sp._secTurn = 0; }
+    poseStep(pose(sp), dt);
+    // another jumper close by: cut the pause short and take the meal away from it
+    sp._secIntT = (sp._secIntT || 0) - dt; if (sp._secIntT <= 0) { sp._secIntT = 0.3; const R = Math.max(9, L * 3.5); for (const o of hab.data.spiders) { if (o === sp || NEST_STATES.has(o.state) || o.state === 'sleep' || o.state === 'rest' || o.state === 'feed' || o.state === 'secure') continue; if (M.dist(o.pos, sp.pos) < R) { startCarry(hab, sp, { pos: o.pos.slice(), name: o.name }); return; } } }
+    // shaky footing (a twig tip, a flower head): get off it rather than wait
+    if (!tiny && sp.st > 0.5 && footing(hab, sp) > 0.6) { startCarry(hab, sp); return; }
+    if (sp.st < sp._secDur) return;
+    if (tiny) { startFeed(hab, sp); return; } // a mouthful: eaten right here
+    if (!sp._secSpot) { sp._secSpot = AI.chooseSpot(hab, sp, 'feed', true) || 'none'; sp._secFaceT = 0; }
+    const spot = sp._secSpot;
+    if (spot === 'none' || M.dist(spot.node.pos, sp.pos) < 4) { startFeed(hab, sp); return; }
+    const st0 = spot.route && spot.route.steps && spot.route.steps[0]; const first = st0 && M.dist(st0.pos, sp.pos) > 1 ? st0.pos : spot.node.pos;
+    sp._secFaceT += dt; if (sp.sup.k !== 'path') faceToward(sp, first, dt, 5);
+    if (sp._secFaceT > 0.55) startCarry(hab, sp, null, spot);
   };
   /** Score real reachable surfaces for feeding / molting / sleeping. Never returns a boundary. */
   /* Where a silk retreat (sleep or molt) may go: only flat, even ground with room for the hammock.
@@ -3841,7 +4055,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       let s;
       if (mode === 'feed') s = hgt * 6 * (0.6 + S.prefs.height) + (plant ? 3 : 0) + (g && !plant ? 1 : 0) + cover * 3 + quiet * 0.04 + traffic * 0.03 - c * 0.025;
       else if (mode === 'molt') s = hgt * 12 + (g ? 1.5 : 0) + cover * 4 + (n.perch ? 0.5 : 0) + quiet * 0.06 + traffic * 0.02 - c * 0.012;
-      else s = hgt * 3 * (0.5 + S.prefs.height) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0);
+      else s = hgt * 3 * (0.5 + S.prefs.height) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0) + (!nesting && AI.blendAt(hab, sp.species, n.sup, n.pos) ? 1.5 : 0);
       for (const o of others) if (o.retreat && o.retreat.pos && M.dist(o.retreat.pos, n.pos) < 10) s -= 4;
       if (avoid) { const ad = M.dist(avoid, n.pos); if (ad < 12) continue; s -= Math.max(0, 34 - ad) * 0.25; }
       if (s > bs) { bs = s; best = n; }
@@ -3851,8 +4065,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (!route) return null;
     return { node: best, route, high: best.y > 12, plant: !!(best.decor && hab.geoms[best.decor] && hab.geoms[best.decor].def.cat === 'plants') };
   };
-  function startCarry(hab, sp, from) {
-    const spot = AI.chooseSpot(hab, sp, 'feed', true, from ? from.pos : null);
+  function startCarry(hab, sp, from, chosen) {
+    const spot = chosen || AI.chooseSpot(hab, sp, 'feed', true, from ? from.pos : null);
     if (!spot || M.dist(spot.node.pos, sp.pos) < 4) { startFeed(hab, sp); return; }
     sp._route = spot.route; sp._routeStart = hab.time; sp._feedSpot = spot.node.pos.slice();
     const p = hab.preyById(sp.hold); const nm = p ? preyName(JT.PREY_BY_ID[p.type]) : 'meal';
@@ -3861,7 +4075,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   H.carry = function (hab, sp, dt) {
     if (!sp.hold || !hab.preyById(sp.hold)) { sp.hold = null; setState(sp, 'idle'); return; }
-    const r = move(hab, sp, dt, 0.75);
+    const r = move(hab, sp, dt, (sp._catchRatio || 0) > 1 ? 0.55 : 0.68); // slow and careful with its meal
     if (r === 'none' && sp.sup.k !== 'air') { startFeed(hab, sp); return; } // route invalidated: eat right here
     if (r === 'done') { if (sp._carrySafe) hab.event('journal', { id: 'safeMeal', sp }); startFeed(hab, sp); return; }
     if (stuck(hab, sp) && !sp._air) { sp._route = null; startFeed(hab, sp); }
@@ -3870,6 +4084,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     sp._route = null; const p = hab.preyById(sp.hold); if (!p) { setState(sp, 'idle'); return; }
     const def = JT.PREY_BY_ID[p.type];
     sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def);
+    const big = Math.max(0, (sp._catchRatio || 0) - 1); if (big > 0) { sp._feedDur *= 1 + big * 0.6; sp._feedNut *= 1 + big * 0.3; } // a big meal: longer feeding, more filling
     setState(sp, 'feed', 'Feeding on the ' + (p.type === 'jumperMeal' ? 'unlucky jumper' : preyName(def)) + '.');
   }
   H.feed = function (hab, sp, dt) {
@@ -4125,7 +4340,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6;
     const L = {
       notice: 'Has spotted prey', assess: 'Sizing up prey', peek: 'Looking for vanished prey', stalk: 'Stalking prey', creep: 'Creeping closer', crouch: 'About to pounce', track: 'Tracking a flyer', pounce: 'Pouncing',
-      subdue: 'Holding its catch', carry: 'Carrying its catch', feed: 'Feeding', postFeed: 'Resting after a meal', fall: 'Leaping to safety',
+      subdue: 'Holding its catch', secure: 'Holding its catch still', carry: 'Carrying its catch', feed: 'Feeding', postFeed: 'Resting after a meal', fall: 'Leaping to safety',
       drinkSeek: 'Going for a drink', drink: 'Drinking a droplet', sleepSeek: 'Heading to bed', sleep: 'Asleep in its retreat',
       moltSeek: 'Looking for a molting spot', moltSilk: 'Spinning a molting hammock', premolt: 'Waiting to molt', molting: 'Molting', postMolt: 'Hardening after a molt', emerge: 'Leaving its retreat',
       flee: 'Fleeing', avoid: 'Keeping its distance', display: 'Displaying', watch: 'Watching warily', investigate: 'Investigating', inspect: 'Inspecting something new',
@@ -4135,7 +4350,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     };
     if (st === 'patrol' || st === 'scan') return lvl >= 2 ? 'Very hungry · wandering restlessly' : st === 'scan' ? 'Hungry · scanning for movement' : 'Hungry · patrolling for prey';
     const base = L[st] || 'Settling';
-    if (lvl >= 2 && !HUNT.has(st) && !['feed', 'subdue', 'carry', 'pounce', 'lunge'].includes(st) && !MOLT.has(st)) return 'Very hungry · ' + base.toLowerCase();
+    if (lvl >= 2 && !HUNT.has(st) && !['feed', 'subdue', 'secure', 'carry', 'pounce', 'lunge'].includes(st) && !MOLT.has(st)) return 'Very hungry · ' + base.toLowerCase();
     if (lvl === 1 && !AI.preyAvailable(hab, sp) && !MOLT.has(st) && st !== 'feed') return 'Hungry · ' + base.toLowerCase();
     return base;
   };
@@ -4328,16 +4543,17 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (sp.stage === 5) sp.adultDays = (sp.adultDays || 0) + dt / DAY;
       if (sp.soft > 0) sp.soft = Math.max(0, sp.soft - dt);
       if (sp.sat < 0.5 && !sp.hold && JT.R() < dt * 0.01) {
-        const p = hab.data.prey.find(q => !q.owner && JT.PREY_BY_ID[q.type].huntable && JT.PREY_BY_ID[q.type].len < AI.len(sp) * 1.4);
+        const lim = AI.len(sp) * (sp.soft > 0 ? 1 : AI.sizeLimit(sp)); const p = hab.data.prey.find(q => !q.owner && JT.PREY_BY_ID[q.type].huntable && JT.PREY_BY_ID[q.type].len < lim);
         if (p) { const def = JT.PREY_BY_ID[p.type]; hab.removeEntity(p); sp.sat = Math.min(1, sp.sat + def.nut); sp.meals++; sp.catches++; hab.addRemains(p.type, sp.pos, sp.sup, 'husk'); hab.event('meal', { sp, offscreen: true }); }
       }
     }
     if (hab.data.humidity > 0.6) for (const d of hab.data.drops) d.life -= dt;
+    for (const p of hab.data.prey) if (p.weak) { p.weak.t -= dt; if (p.weak.t <= 0) { p.weak = null; p._flip = 0; if (p.state === 'twitch') p.state = 'idle'; } } // groggy escapees recover off-screen too
   };
 
   /** Observation-mode interest of what a spider is doing right now. */
   AI.interest = function (sp) {
-    const m = { pounce: 100, fall: 90, subdue: 90, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, peek: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35, lunge: 55, dangle: 58, bask: 30, scan: 26, patrol: 28, scuttle: 20, cleanEyes: 22, stretch: 24 };
+    const m = { pounce: 100, fall: 90, subdue: 90, secure: 70, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, peek: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35, lunge: 55, dangle: 58, bask: 30, scan: 26, patrol: 28, scuttle: 20, cleanEyes: 22, stretch: 24 };
     return m[sp.state] || 8;
   };
   /** Discoverable personality descriptors (revealed as the player watches). */
@@ -4357,7 +4573,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     sp._route = null; sp._air = null; sp._plan = null; sp._hang = null; sp._dangleOff = null; sp._glance = null; sp._dodge = null; sp._tVis = null;
     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }
     if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
-    if (sp.state === 'carry') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
+    if (sp.state === 'carry' || sp.state === 'secure') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
     if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type]; sp._feedDur = 6 + (def.nut || 0.5) * 28; sp._feedNut = def.nut || 0.5; } else sp.state = 'idle'; }
     if (sp.state === 'subdue') sp._subdueDur = sp._subdueDur || 1;
     if (sp.state === 'moltSeek') sp.state = 'idle';
@@ -4376,6 +4592,15 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   const PA = JT.PreyAI = {};
   const def = (p) => JT.PREY_BY_ID[p.type];
   PA.caps = (d) => ({ climb: !!d.climb, jump: d.id === 'tinyjumper' ? 30 : 0, drop: !!d.climb, carry: false });
+  /** Weakened escapee: a part dose of venom leaves it slow, dull-sensed and wobbly. It never dies of it and is fully
+      recovered two minutes later (dose fades linearly). A heavy dose can leave it on its back, legs twitching. */
+  PA.WEAK_T = 120;
+  PA.weaken = function (hab, p, dose) {
+    p.weak = { dose: M.clamp(dose, 0, 1), t: PA.WEAK_T };
+    if (dose > 0.45 && p.sup && p.sup.k !== 'air' && JT.R() < dose * 0.8) { p.state = 'twitch'; p.st = 0; p.dur = 2 + dose * 5; p._route = null; p._air = null; p._flip = 1; }
+  };
+  PA.weakK = (p) => p && p.weak ? p.weak.dose * M.clamp(p.weak.t / PA.WEAK_T, 0, 1) : 0;
+  const slowK = (p) => 1 - 0.6 * PA.weakK(p);
 
   PA.create = function (hab, type) {
     const d = JT.PREY_BY_ID[type]; const R = JT.R;
@@ -4388,7 +4613,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // ---------------- perception ----------------
   function nearestHunter(hab, p) { let b = null, bd = 60; for (const s of hab.data.spiders) { const d = M.dist(s.pos, p.pos); if (d < bd) { bd = d; b = s; } } return b; }
   function updateAlert(hab, p, d, dt) {
-    let a = 0; const range = (d.sense || 20) * 1.3;
+    const wk = PA.weakK(p); let a = 0; const range = (d.sense || 20) * 1.3 * (1 - 0.6 * wk);
     let nearest = null, nd = 1e9;
     for (const s of hab.data.spiders) {
       if (s.state === 'sleep' || s.state === 'premolt' || s.state === 'molting') continue;
@@ -4397,6 +4622,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const spd = s._speedNow || 0; const sneaking = s.state === 'crouch' || s.state === 'creep' || s.state === 'stalk';
       let vis = spd > 0.5 ? M.clamp(spd / 14, 0.3, 1.5) : 0.12;
       if (sneaking) vis *= 0.5;
+      const camo = JT.SpiderAI.camoK ? JT.SpiderAI.camoK(hab, s) : 1; vis *= camo; // colour-matched perch: harder to pick out
       vis *= 1 - s.traits.stealth * 0.5;
       const to = M.norm([s.pos[0] - p.pos[0], 0, s.pos[2] - p.pos[2]]);
       const cone = d.fly ? 0.85 : (M.dot(p.fwd || [1, 0, 0], to) > 0.3 ? 1 : 0.35);
@@ -4404,13 +4630,13 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const cov = 1 - Nav.coverAt(hab, s.pos) * 0.6;
       a += vis * cone * hgt * cov * (1 - dist / range);
       // a big shape this close is felt even when it keeps still (compound eyes, air currents, vibration)
-      const near = range * 0.42; if (dist < near) a += (1 - dist / near) * (sneaking ? 0.3 : 0.9) * (d.fly ? 1.3 : 1) * cov * (1 - s.traits.stealth * 0.3);
+      const near = range * 0.42; if (dist < near) a += (1 - dist / near) * (sneaking ? 0.3 : 0.9) * (d.fly ? 1.3 : 1) * cov * (1 - s.traits.stealth * 0.3) * (camo < 1 ? 0.8 : 1);
     }
     // nervous neighbours make a group jumpy
     if (nearest) { let nv = 0; for (const q of hab.data.prey) if (q !== p && !q.owner && (q.alert || 0) > 0.6 && M.dist(q.pos, p.pos) < 10) nv++; a += Math.min(3, nv) * 0.12; }
     const spooked = p._spook && hab.time < p._spook.until;
-    p.alert = M.clamp((p.alert || 0) + a * dt * 2.2 * (spooked ? 1.35 : 1) - dt * 0.12, spooked ? 0.3 : 0, 1.5);
-    if (p.alert > 1 && nearest && p.state !== 'flee' && p.state !== 'hop') PA.escape(hab, p, nearest, false);
+    p.alert = M.clamp((p.alert || 0) + a * dt * 2.2 * (spooked ? 1.35 : 1) * (1 - 0.5 * wk) - dt * 0.12, spooked ? 0.3 : 0, 1.5);
+    if (p.alert > 1 && nearest && p.state !== 'flee' && p.state !== 'hop' && p.state !== 'twitch') PA.escape(hab, p, nearest, false);
   }
 
   PA.startle = function (hab, p, amt) { p.alert = Math.min(1.2, (p.alert || 0) + amt); const d = def(p); if (d.fly && p.state !== 'fly' && JT.R() < 0.6) takeOff(hab, p, null); };
@@ -4428,11 +4654,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   /** Type-appropriate escape: flies scatter, crickets freeze then spring for cover, springtails pop away,
       runners dash for shelter, burrowers dig in. The escapee stays nervous (and avoids the spot) for a while. */
   PA.escape = function (hab, p, hunter, pounce, chained) {
-    const d = def(p); if (p.owner) return;
+    const d = def(p); if (p.owner || p.state === 'twitch') return;
     p.alert = Math.max(p.alert || 0, 0.45); const away = hunter ? M.norm([p.pos[0] - hunter.pos[0], 0, p.pos[2] - hunter.pos[2]]) : [1, 0, 0];
     if (p.buried) return;
     p._spook = { pos: (hunter || p).pos.slice(), until: hab.time + 25 + JT.R() * 25 };
     if (hunter && !chained) PA.alarm(hab, p.pos, 14, 0.55, p, hunter);
+    if (d.fly && PA.weakK(p) > 0.6 && JT.R() < 0.7) { p.state = 'twitch'; p.st = 0; p.dur = 0.8 + JT.R() * 1.5; p._route = null; return; } // too groggy to take off
     if (d.fly) { takeOff(hab, p, hunter); return; }
     if (d.burrow && p.sup.k === 'floor' && (JT.SUBSTRATES[hab.data.substrate] || {}).burrow > JT.R() * 1.2) { burrow(hab, p); return; }
     if (d.id === 'springtail') { hop(hab, p, rot(away, (JT.R() - 0.5) * 1.6), 5 + JT.R() * 8); return; }
@@ -4526,6 +4753,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // ---------------- update ----------------
   PA.update = function (hab, p, dt) {
+    if (p.weak) { p.weak.t -= dt; if (p.weak.t <= 0) { p.weak = null; p._flip = 0; if (p.state === 'twitch') { p.state = 'idle'; p.st = 0; } } }
     if (p.owner) return;
     const d = def(p); p.st += dt;
     const before = p.pos.slice();
@@ -4572,17 +4800,22 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (g) { p._route = Nav.route(hab, p.sup, p.pos, g.sup, g.pos, PA.caps(d)); if (p._route) p.state = 'walk'; }
   };
   PH.walk = function (hab, p, d, dt) {
-    const sp = d.spd * (d.slow ? 1 : 0.35) * (hab.daylight() < 0.3 && d.night ? 1.3 : 1);
+    const sp = d.spd * (d.slow ? 1 : 0.35) * (hab.daylight() < 0.3 && d.night ? 1.3 : 1) * slowK(p);
     const r = Loco.follow(hab, p, dt, sp);
     if (r !== 'moving') { p._route = null; p.state = p._clean ? 'clean' : 'idle'; p.st = 0; }
   };
   PH.flee = function (hab, p, d, dt) {
-    const r = Loco.follow(hab, p, dt, d.spd * (d.slow ? 1.2 : 1));
+    const r = Loco.follow(hab, p, dt, d.spd * (d.slow ? 1.2 : 1) * slowK(p));
     if (r !== 'moving') { p._route = null; p.state = 'idle'; p.st = 0; }
   };
   PH.hop = function (hab, p, d, dt) {
-    const r = Loco.follow(hab, p, dt, d.spd);
+    const r = Loco.follow(hab, p, dt, d.spd * slowK(p));
     if (r !== 'moving') { p._route = null; p.state = 'idle'; p.st = 0; p.dur = 0.5 + JT.R() * 2; }
+  };
+  /** Groggy from a part dose of venom: lying still (often on its back), legs twitching, then it rights itself. */
+  PH.twitch = function (hab, p, d, dt) {
+    p._anim = (p._anim || 0) + dt * 3;
+    if (p.st > p.dur) { p.state = 'idle'; p.st = 0; p.dur = 0.5 + JT.R() * 1.5; p._flip = 0; }
   };
   PH.freeze = function (hab, p, d, dt) { // dead still for a moment, then a spring for cover
     const h = p._fleeFrom && hab.spider(p._fleeFrom); const close = h && M.dist(h.pos, p.pos) < (d.sense || 20) * 0.35;
@@ -4612,7 +4845,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const H = hab.dims.h; const night = hab.daylight() < 0.3;
     if (!p._goal || (p._goalT = (p._goalT || 0) + dt) > 14) { p._goal = lampGoal(hab, p, d) || pickLanding(hab, p, null); p._goalT = 0; }
     const g = p._goal; const to = g ? M.sub(g.pos, p.pos) : [0, 0, 0]; const dist = M.len(to);
-    const cruise = d.spd * (d.id === 'moth' && !night ? 0.6 : 1);
+    const cruise = d.spd * (d.id === 'moth' && !night ? 0.6 : 1) * (1 - 0.5 * PA.weakK(p));
     let want = dist > 0.01 ? M.mul(M.norm(to), Math.min(cruise, dist * 2.5 + 2)) : [0, 0, 0];
     const wob = d.id === 'moth' ? 10 : d.id === 'lacewing' ? 4 : d.id === 'housefly' || d.id === 'bluebottle' ? 14 : 7;
     const t = p._anim || 0; const ph = (p.seed % 100) / 10;
@@ -4635,9 +4868,18 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     }
   };
   /** Cleaners actively look for husks AND molt skins, then gather in a loose ring around them. */
+  /** Cleaners only come for remains once they have lain a while (60-90 s, set per item), never while still falling,
+      and not while a jumper close by is feeding, guarding its catch, moulting or still soft. */
+  const BUSY_NEAR = new Set(['feed', 'postFeed', 'secure', 'subdue', 'emerge']);
+  PA.remainsReady = function (hab, r) {
+    if (r._fall) return false; if (r.ripe == null) r.ripe = 60 + JT.R() * 30; if ((r.age || 0) < r.ripe) return false;
+    for (const sp of hab.data.spiders) { if (M.dist(sp.pos, r.pos) > 15) continue; if (BUSY_NEAR.has(sp.state) || (JT.SpiderAI.MOLT && JT.SpiderAI.MOLT.has(sp.state)) || sp.soft > 0) return false; }
+    return true;
+  };
   function seekRemains(hab, p, d) {
-    const rs = hab.data.remains; if (!rs.length) return false;
+    if (!hab.data.remains.length) return false;
     if (p._seekCD > hab.time) return false;
+    const rs = hab.data.remains.filter(r => PA.remainsReady(hab, r)); if (!rs.length) { p._seekCD = hab.time + 3 + JT.R() * 3; return false; }
     let best = null, bc = 1e9; const dj = Nav.dijkstra(hab, p.sup, p.pos, PA.caps(d));
     for (const r of rs) { const gc = Nav.goalCost(hab, dj, r.sup, r.pos); if (!gc) continue; const crowd = PA.cleanersOn(hab, r.id) * 4; if (gc.cost + crowd < bc) { bc = gc.cost + crowd; best = r; } }
     if (!best || bc > 400) { p._seekCD = hab.time + 4 + JT.R() * 4; return false; }
@@ -5066,7 +5308,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M;
-  const PITCH_MIN = 0.2, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15, PLAN_DT = 0.25, WALL_ARC = 1.3; // tanks with a back wall: the camera keeps to the front half (±75°)
+  // framing: low, eye-level-ish views (about 22° down), front three-quarter; base zoom a little wider, then per jumper size
+  const BASE_PITCH = 0.38, HUNT_PITCH = 0.4, UNDER_PITCH = 0.16, FACE_ANG = 0.95, BASE_ZOOM = 0.8;
+  const TENSE = new Set(['notice', 'assess', 'track', 'stalk', 'creep', 'crouch', 'pounce', 'subdue', 'secure']);
+  const PITCH_MIN = 0.12, PITCH_MAX = 0.98, PAUSE = 3.5, YAW_SPEED = 1.15, PLAN_DT = 0.25, WALL_ARC = 1.3; // tanks with a back wall: the camera keeps to the front half (±75°)
 
   function spring(x, v, target, omega, dt) {
     // critically damped spring step (stable for any dt)
@@ -5122,11 +5367,11 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     /** Start from whatever the camera currently shows, so entering follow never snaps. */
     reset(cur, spId) {
       this.st = { yaw: cur.yaw, pitch: M.clamp(cur.pitch, PITCH_MIN, PITCH_MAX), s: cur.s, c: cur.c.slice(), vy: 0, vp: 0, vs: 0, vc: [0, 0, 0] };
-      this.dir = null; this.tYaw = this.tPitch = this.tS = null; this.tC = null; this.track = false; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.id = spId || null; this.lastYaw = cur.yaw; this.fYaw = this.fPitch = this.fVis = null; this.mode = 'norm'; this.huntSide = null; this.ease = 0; this.huntT = 0; this.planT = 0; this.better = 0;
+      this.dir = null; this.tYaw = this.tPitch = this.tS = null; this.tC = null; this.track = false; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.id = spId || null; this.lastYaw = cur.yaw; this.fYaw = this.fPitch = this.fVis = null; this.mode = 'norm'; this.huntSide = null; this.ease = 0; this.huntT = 0; this.planT = 0; this.better = 0; this.sizeK = null; this.cineK = null; this.cineOff = false; this.punchT = null; this.pullT = 0; this._sh = null; this._ps = null; this._side = 0; this._fit = null; this.hold = 0;
     }
     /** User dragged (radians). Pauses auto-rotation. */
     orbit(dyaw, dpitch) { if (!this.st) return; this.st.yaw = M.wrapAngle(this.st.yaw + dyaw); if (this.wallTank) this.st.yaw = M.clamp(this.st.yaw, -WALL_ARC, WALL_ARC); this.st.pitch = M.clamp(this.st.pitch + dpitch, PITCH_MIN, PITCH_MAX); this.st.vy = 0; this.st.vp = 0; this.pause = PAUSE; }
-    zoom(f) { this.userZoom = M.clamp(this.userZoom * f, 0.45, 2.6); this.tS = null; this.pause = PAUSE; }
+    zoom(f) { this.userZoom = M.clamp(this.userZoom * f, 0.45, 2.6); this.pause = PAUSE; this.cineOff = true; } // a pinch during a tense moment turns the automatic zoom off for that moment
     get paused() { return this.pause > 0; }
 
     /** Wall tanks: a view that would sit behind the wall is folded round to the front three-quarter view on the same side
@@ -5136,20 +5381,37 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       let sg = Math.sign(y) || 1; if (a > 2.5 && this._fold) sg = this._fold; this._fold = sg;
       return sg * Math.min(WALL_ARC, Math.PI - a + 0.5);
     }
-    /** Desired view direction (unit vector from the jumper toward the camera) and framing. */
+    /** Desired view direction (unit vector from the jumper toward the camera) and what counts as a good view.
+        Low (about 22° down) from the front three-quarter side so the eyes and upper body show; always on the side of its
+        back, never under its belly. Upside down under a leaf: low and side-on (face and profile). */
     desired(hab, sp) {
       const fr = JT.Nav.supFrame(hab, sp.sup); const n = (sp.sup && sp.sup.k === 'air') ? [0, 1, 0] : fr.n;
       const f = sp.fwd && M.finite3(sp.fwd) ? M.norm(sp.fwd) : [1, 0, 0];
-      // behind and above the back: normal + a little behind the head + a little world-up
-      // (only the horizontal part of "behind": on a wall the head points up, and we never want to look from below)
-      const back = [-f[0], 0, -f[2]]; const bl = Math.hypot(back[0], back[2]) > 0.2 ? M.norm(back) : [0, 0, 0];
-      let d = M.add(M.add(M.mul(n, 0.75), M.mul(bl, 0.95)), [0, 0.18, 0]);
-      if (n[1] < -0.3) { // under a ledge / branch: come round to the side its back is visible from
-        const side = M.norm([-f[2], 0, f[0]]); d = M.add(M.mul(side, Math.sign(M.dot(side, [-Math.sin(this.st.yaw), 0, -Math.cos(this.st.yaw)])) || 1), [0, 0.45, 0]);
+      const wall = Math.abs(n[1]) < 0.5, under = n[1] < -0.3;
+      const fh = Math.hypot(f[0], f[2]) > 0.2 ? M.norm([f[0], 0, f[2]]) : null;
+      const curH = [-Math.sin(this.st.yaw), 0, -Math.cos(this.st.yaw)]; // horizontal direction the camera sits in now
+      const sideOf = (h) => { const sv = [-h[2], 0, h[0]]; const dd = M.dot(sv, curH); if (Math.abs(dd) > 0.25 || !this._side) this._side = dd >= 0 ? 1 : -1; return this._side; };
+      const rotY = (v, a) => { const c = Math.cos(a), s = Math.sin(a); return [v[0] * c - v[2] * s, 0, v[0] * s + v[2] * c]; };
+      const dorsal = (dd) => M.dot(dd, n);
+      let d, bestDorsal = 1;
+      if (under || wall) { // stems, walls, undersides: search round for the angle that shows most of its back, leaning toward its face
+        const cy = this.st.yaw; let best = null; const pts = under ? [UNDER_PITCH, 0.24, 0.34] : [0.3, 0.45, 0.6];
+        for (let i = 0; i < 16; i++) { const y = M.wrapAngle(cy + i * Math.PI / 8); if (this.wallTank && Math.abs(y) > WALL_ARC + 1e-6) continue;
+          for (const p of pts) { const tc = toCam(y, p); const hl = Math.hypot(tc[0], tc[2]) || 1; const fc = fh ? (tc[0] * fh[0] + tc[2] * fh[2]) / hl : 0;
+            const sc = 2 * dorsal(tc) + 0.5 * fc + 0.35 * Math.cos(y - cy) - (under ? 0.6 * p : 0.3 * Math.abs(p - 0.45)); if (!best || sc > best.sc) best = { sc, tc, dd: dorsal(tc) }; } }
+        d = best ? best.tc : [0, 1, 0]; bestDorsal = best ? best.dd : 0;
+      } else {
+        const h0 = fh || curH; const h = fh ? rotY(fh, sideOf(fh) * FACE_ANG) : curH; void h0;
+        let p = BASE_PITCH; d = [h[0] * Math.cos(p), Math.sin(p), h[2] * Math.cos(p)];
+        while (dorsal(d) < 0.3 && p < 1.2) { p += 0.05; d = [h[0] * Math.cos(p), Math.sin(p), h[2] * Math.cos(p)]; } // sloping leaf: rise until its back shows
       }
       d = M.norm(d);
-      const wall = Math.abs(n[1]) < 0.5;
-      return { d, wall, n };
+      /** Is a camera at (yaw, pitch) still a good view (face / side / upper body showing, not the belly)? */
+      const accept = (yaw, pitch) => { const tc = toCam(yaw, pitch); const hc = [tc[0], 0, tc[2]]; const hl = Math.hypot(hc[0], hc[2]) || 1;
+        if (under || wall) return dorsal(tc) >= bestDorsal - 0.3 && (under ? pitch <= 0.45 : dorsal(tc) >= 0.2);
+        if (dorsal(tc) < 0.2) return false; void hl;
+        return !fh || M.dot(hc, fh) / hl > -0.26; }; // anywhere from in front round to just behind its side
+      return { d, wall, n, under, fh, accept, dorsal };
     }
 
     /** Hunt two-shot: the camera sits in front of the jumper, a little to one side, with the prey in the foreground.
@@ -5171,7 +5433,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
           const sv = M.norm([-des.n[2], 0, des.n[0]]); return M.norm(M.add(M.add(M.mul(des.n, 1), M.mul(sv, 0.75 * side)), [0, 0.3, 0]));
         }
         const a = 0.6 * side, ca = Math.cos(a), sa = Math.sin(a); const ru = [u[0] * ca - u[2] * sa, 0, u[0] * sa + u[2] * ca];
-        const p = 0.55, cp = Math.cos(p); return [ru[0] * cp, Math.sin(p), ru[2] * cp];
+        const p = HUNT_PITCH, cp = Math.cos(p); return [ru[0] * cp, Math.sin(p), ru[2] * cp];
       };
       const tid = sp.target ? sp.target.kind + sp.target.id : null;
       if (this.huntSide == null || this.huntTid !== tid) {
@@ -5183,26 +5445,49 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       return { e, head, prey, d: mk(this.huntSide), dist };
     }
 
-    /** Pick the clearest view near the preferred one (cheap ray casts against coarse decor shapes, a few times a second). */
+    /** Pick the clearest good view near the preferred one (cheap ray casts against coarse decor shapes, a few times a
+        second). Views onto the belly are never taken; views showing the face score higher. Blocked views first swing
+        round at the same height, and only then rise a little. */
     plan(hab, sp, des, L, base, hunt, fresh) {
       const occ = occluders(hab); const f = sp.fwd && M.finite3(sp.fwd) ? M.norm(sp.fwd) : [1, 0, 0];
       const head = M.add(sp.pos, M.mul(des.n, L * 0.3)), body = M.sub(M.add(sp.pos, M.mul(des.n, L * 0.15)), M.mul(f, L * 0.35));
       const pts = hunt && hunt.prey ? [head, body, hunt.prey] : [head, body];
-      if (!occ.length) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 1; this.better = 0; return; }
       const prevY = this.fYaw != null ? this.fYaw : base.yaw;
-      const score = (y, p, vis) => vis * 2 - 0.5 * Math.abs(M.wrapAngle(y - base.yaw)) / Math.PI - 0.6 * Math.abs(p - base.pitch) - 0.25 * Math.abs(M.wrapAngle(y - prevY)) / Math.PI;
-      const pitches = des.wall ? [base.pitch, Math.min(0.7, base.pitch + 0.2)] : [base.pitch, Math.min(PITCH_MAX, base.pitch + 0.25), 0.95];
+      const good = (y, p) => hunt ? (des.under || des.dorsal(toCam(y, p)) >= 0.15) : des.accept(y, p);
+      const face = (y, p) => { if (!des.fh || des.wall) return 0; const tc = toCam(y, p); const hl = Math.hypot(tc[0], tc[2]) || 1; return (tc[0] * des.fh[0] + tc[2] * des.fh[2]) / hl; };
+      const score = (y, p, vis) => vis * 2 - 0.5 * Math.abs(M.wrapAngle(y - base.yaw)) / Math.PI - 1.1 * Math.abs(p - base.pitch) - 0.25 * Math.abs(M.wrapAngle(y - prevY)) / Math.PI + (hunt ? 0 : 0.3 * Math.max(0, face(y, p)));
+      if (!occ.length) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 1; this.better = 0; return; }
+      const pitches = des.wall ? [base.pitch, Math.min(0.7, base.pitch + 0.2)] : des.under ? [base.pitch, 0.3] : [base.pitch, Math.min(0.56, base.pitch + 0.18)];
       const K = hunt ? 3 : 6; let best = null;
       for (let k = -K + (hunt ? 0 : 1); k <= K; k++) for (const p of pitches) {
-        const y = M.wrapAngle(base.yaw + k * Math.PI / 6); if (this.wallTank && Math.abs(y) > WALL_ARC + 1e-6) continue; const vis = visibility(occ, pts, y, p); const sc = score(y, p, vis);
+        const y = M.wrapAngle(base.yaw + k * Math.PI / 6); if (this.wallTank && Math.abs(y) > WALL_ARC + 1e-6) continue; if (!good(y, p)) continue;
+        const vis = visibility(occ, pts, y, p); const sc = score(y, p, vis);
         if (!best || sc > best.sc) best = { y, p, vis, sc };
         if (k === 0 && p === base.pitch && vis > 0.97) { k = K + 1; break; } // preferred view is clear: done
       }
       if (!best) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 0.5; this.better = 0; return; }
       if (fresh || this.fYaw == null) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; return; }
-      const cv = visibility(occ, pts, this.fYaw, this.fPitch), cs = score(this.fYaw, this.fPitch, cv); this.fVis = cv;
-      if (best.sc > cs + 0.3) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.35 ? 0.3 : 0.7)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
+      const cv = visibility(occ, pts, this.fYaw, this.fPitch); let cs = score(this.fYaw, this.fPitch, cv); this.fVis = cv;
+      if (!good(this.fYaw, this.fPitch)) cs -= 3; // the jumper turned: the old angle now shows its belly / rear
+      if (best.sc > cs + 0.3) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.35 || cs < -1 ? 0.3 : 0.8)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
       else this.better = 0;
+    }
+
+    /** Cinematic zoom factor for tense moments (pure function of the jumper's state, smoothed). */
+    cinema(sp, hunt, dt) {
+      const s = sp.state; if (this.cineOff && !TENSE.has(s)) this.cineOff = false;
+      const sh = (sp.stats && sp.stats.shaken) || 0; if (this._sh != null && sh > this._sh) this.pullT = 2.2; this._sh = sh;
+      if (s === 'subdue' && this._ps === 'pounce') this.punchT = 0; this._ps = s;
+      let k = 1, rate = 0.45;
+      if (hunt) { if (s === 'stalk' || s === 'creep') { k = 1 + 0.2 * Math.min(1, this.huntT / 5); rate = 0.5; } else if (s === 'crouch') { k = 1.3; rate = 1.3; } else if (s === 'pounce') { k = this.cineK || 1; rate = 0; } }
+      else if (s === 'subdue') { k = 1.4 - 0.2 * Math.min(1, sp._strug || 0); rate = 0.9; }
+      else if (s === 'secure') { k = 1.22; rate = 0.5; } else if (s === 'feed') { k = 1.12; rate = 0.35; }
+      if (this.pullT > 0) { this.pullT -= dt; k = 0.84; rate = 1.4; }
+      if (this.cineOff) { k = 1; rate = 0.6; }
+      this.cineK = this.cineK == null ? 1 : this.cineK + (k - this.cineK) * Math.min(1, dt * rate);
+      let out = this.cineK;
+      if (this.punchT != null) { const t = this.punchT += dt; const e = M.smooth(M.clamp(t / 0.25, 0, 1)) * Math.exp(-Math.max(0, t - 0.25) * 0.8); out *= 1 + 0.1 * e; if (t > 5) this.punchT = null; }
+      return out;
     }
 
     step(hab, sp, dt, s0) {
@@ -5220,29 +5505,35 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const freeze = hunt && (sp.state === 'crouch' || sp.state === 'pounce'); // hold perfectly still for the crouch and the leap
       if (hunt) this.huntT += dt; if (this.ease > 0) this.ease -= dt;
       const air = sp._air;
-      let c, tS, zoomMul = des.wall ? 0.9 : 1;
+      // zoom: a little wider than before, closer on small jumpers and wider on big ones (eased as it grows)
+      const sk = M.clamp(Math.pow(Math.max(0.5, L) / 8, -0.35), 0.75, 1.6); this.sizeK = this.sizeK == null ? sk : this.sizeK + (sk - this.sizeK) * Math.min(1, dt * 0.35);
+      const z0 = s0 * BASE_ZOOM, zb = z0 * this.sizeK; const cine = this.cinema(sp, hunt, dt);
+      let c = null, tS, zoomMul = des.wall ? 0.9 : 1;
       if (!freeze) {
         // low-pass the desired direction so small turns and wobbles do not move the camera
-        const want = hunt ? hunt.d : des.d;
-        this.dir = this.dir ? M.norm(M.lerp3(this.dir, want, Math.min(1, dt * 0.9))) : want;
+        const want = hunt ? hunt.d : des.d; const badNow = this.tYaw != null && !hunt && !des.accept(this.tYaw, this.tPitch);
+        this.dir = this.dir ? M.norm(M.lerp3(this.dir, want, Math.min(1, dt * (badNow ? 4 : 0.9)))) : want;
         const d = this.dir; const hm = Math.hypot(d[0], d[2]);
         let tYaw = hm > 0.15 ? Math.atan2(-d[0], -d[2]) : (this.lastYaw != null ? this.lastYaw : st.yaw);
         this.lastYaw = tYaw;
         let tPitch = M.clamp(Math.asin(M.clamp(d[1], -1, 1)), PITCH_MIN, PITCH_MAX);
         if (des.wall) tPitch = M.clamp(tPitch, 0.3, 0.7); // never let the wall fill the frame
+        if (hunt && (sp.state === 'stalk' || sp.state === 'creep')) tPitch = Math.max(0.26, tPitch - 0.06); // sink a little with the stalk
+        let wallFace = false;
         if (this.wallTank) {
           if (!hunt && des.wall && des.n[2] < -0.7) {
             // on the back wall's face: stay in front, a little to the side it is facing / heading, at about its height
             const fx = sp.fwd ? sp.fwd[0] : 0; if (Math.abs(fx) > 0.35 || this.wSide == null) this.wSide = fx > 0 ? -1 : 1;
-            tYaw = this.wSide * 0.36; tPitch = M.lerp(0.5, 0.3, M.clamp(sp.pos[1] / Math.max(1, hab.dims.h), 0, 1));
+            tYaw = this.wSide * 0.36; tPitch = M.lerp(0.5, 0.3, M.clamp(sp.pos[1] / Math.max(1, hab.dims.h), 0, 1)); wallFace = true;
           } else tYaw = this.foldYaw(tYaw);
         }
-        // dead-bands: small turns and wobbles do not move the camera at all, so it can come fully to rest
-        // (a resting camera lets the renderer reuse its cached layers — important on phones)
-        // a new viewing direction is adopted only once the jumper has held it for a moment
-        const off = this.tYaw == null || Math.abs(M.wrapAngle(tYaw - this.tYaw)) > 0.5 || Math.abs(tPitch - this.tPitch) > 0.12;
+        // the current view still shows the face / side and not the belly: keep it (no swinging with every turn)
+        if (!hunt && !wallFace && this.tYaw != null && !des.under && des.accept(this.tYaw, this.tPitch) && Math.abs(this.tPitch - tPitch) < 0.12) { tYaw = this.tYaw; tPitch = this.tPitch; }
+        // dead-bands: a new viewing direction is adopted only once the jumper has held it for a moment
+        const off = this.tYaw == null || Math.abs(M.wrapAngle(tYaw - this.tYaw)) > 0.5 || Math.abs(tPitch - this.tPitch) > 0.1;
         this.hold = off ? (this.hold || 0) + dt : 0; let fresh = false;
-        if (this.tYaw == null || this.hold > (air ? 0.25 : hunt ? 0.9 : 1.1)) { this.tYaw = tYaw; this.tPitch = tPitch; this.hold = 0; fresh = true; }
+        const bad = this.tYaw != null && !hunt && !des.accept(this.tYaw, this.tPitch);
+        if (this.tYaw == null || this.hold > (air ? 0.25 : bad ? 0.15 : hunt ? 1.0 : 1.4)) { this.tYaw = tYaw; this.tPitch = tPitch; this.hold = 0; fresh = true; }
         // line of sight: step round decor that would hide the jumper (or its prey)
         this.planT = (this.planT || 0) - dt;
         if (fresh || this.planT <= 0) { this.planT = PLAN_DT; this.plan(hab, sp, des, L, { yaw: this.tYaw, pitch: this.tPitch }, hunt, fresh); }
@@ -5250,42 +5541,53 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
         // target point: the upper body, leading toward the landing while airborne
         c = M.add(sp.pos, M.mul(des.n, L * 0.3));
         if (air && air.to && M.finite3(air.to)) { c = M.lerp3(c, air.to, 0.35); zoomMul *= 0.82; }
-        tS = s0 * zoomMul * this.userZoom;
+        tS = zb * zoomMul * cine; this._fit = null;
         if (hunt && hunt.prey) {
           // two-shot: weighted to the jumper, zoomed to fit both, slow push-in while it stalks
           c = M.lerp3(hunt.head, hunt.prey, 0.35);
-          const push = (sp.state === 'stalk' || sp.state === 'creep' || sp.state === 'track') ? 1 + 0.12 * Math.min(1, this.huntT / 6) : 1;
           const sep = M.sub(hunt.prey, hunt.head), tc = toCam(this.fYaw, this.fPitch), R = [Math.cos(this.fYaw), 0, -Math.sin(this.fYaw)];
           const sx = Math.abs(M.dot(sep, R)), along = M.dot(sep, tc); const sy = M.len(M.sub(M.sub(sep, M.mul(tc, along)), M.mul(R, M.dot(sep, R))));
-          const fit = s0 * 23.5 / Math.max(1, 0.65 * Math.max(sx, sy * 1.3));
-          tS = Math.max(s0 * 0.5, Math.min(s0 * push * (this.fVis < 0.45 ? 1.2 : 1), fit)) * this.userZoom;
+          this._fit = z0 * 1.25 * 23.5 / Math.max(1, 0.65 * Math.max(sx, sy * 1.3));
+          tS = Math.max(zb * 0.5, Math.min(zb * cine * (this.fVis < 0.45 ? 1.2 : 1), this._fit));
         }
-        const dm = hab.dims; c = [M.clamp(c[0], 4, dm.w - 4), M.clamp(c[1], 0, dm.h), M.clamp(c[2], 4, dm.d - 4)];
-        if (this.tS == null || Math.abs(tS / this.tS - 1) > 0.04) this.tS = tS;
-      }
-      const tYaw = this.fYaw != null ? this.fYaw : this.tYaw, tPitch = this.fPitch != null ? this.fPitch : this.tPitch; tS = this.tS;
-      // rotation (paused while the user is in control); calmer during hunts and while easing back afterwards
-      const ys = hunt ? 0.9 : this.ease > 0 ? 0.75 : YAW_SPEED, om = hunt || this.ease > 0 ? 1.5 : 1.9;
+        this._lastS = tS;
+      } else tS = Math.min(zb * cine, this._fit || 1e9); // crouch: the final slow push-in; the leap: held
+      tS *= this.userZoom;
+      if (c) { const dm = hab.dims; c = [M.clamp(c[0], 4, dm.w - 4), M.clamp(c[1], 0, dm.h), M.clamp(c[2], 4, dm.d - 4)]; }
+      this.tS = tS;
+      const tYaw = this.fYaw != null ? this.fYaw : this.tYaw, tPitch = this.fPitch != null ? this.fPitch : this.tPitch;
+      // rotation: soft springs with limited acceleration and speed, so every move eases in and out
+      const urgent = !hunt && !des.accept(st.yaw, st.pitch); const ys = (hunt ? 0.8 : this.ease > 0 ? 0.65 : YAW_SPEED) * (urgent ? 1.6 : 1), om = urgent ? 2.2 : hunt || this.ease > 0 ? 1.25 : 1.5; // seeing its belly: turn round promptly (still eased)
       if (this.pause > 0) { this.pause -= dt; st.vy *= 0.8; st.vp *= 0.8; }
       else {
         const diff = this.wallTank ? M.wrapAngle(tYaw) - M.wrapAngle(st.yaw) : M.wrapAngle(tYaw - st.yaw); // shortest way round (wall tanks: always round the front)
-        let r = spring(0, st.vy, diff, om, dt); let step = M.clamp(r[0], -ys * dt, ys * dt);
-        st.yaw = M.wrapAngle(st.yaw + step); st.vy = M.clamp(r[1], -ys, ys);
-        r = spring(st.pitch, st.vp, tPitch, hunt ? 1.6 : 2.0, dt); st.pitch = M.clamp(r[0], PITCH_MIN, PITCH_MAX); st.vp = r[1];
+        let v = spring(0, st.vy, diff, om, dt)[1]; v = ys * Math.tanh(v / ys); const A = ys * 1.8; st.vy += M.clamp(v - st.vy, -A * dt, A * dt);
+        st.yaw = M.wrapAngle(st.yaw + st.vy * dt);
+        let vp = spring(st.pitch, st.vp, tPitch, urgent ? 2.2 : hunt ? 1.4 : 1.6, dt)[1]; vp = 0.7 * Math.tanh(vp / 0.7); st.vp += M.clamp(vp - st.vp, -1.2 * dt, 1.2 * dt);
+        st.pitch = M.clamp(st.pitch + st.vp * dt, PITCH_MIN, PITCH_MAX);
       }
-      let r = spring(st.s, st.vs, tS, hunt ? 1.8 : 2.6, dt); st.s = r[0]; st.vs = r[1];
+      // zoom in log space (equal feel zooming in or out); the bite punch-in is quicker
+      { const punch = this.punchT != null && this.punchT < 0.6; const ls = Math.log(st.s), lt = Math.log(tS); const lv = st.vs / Math.max(1e-6, st.s);
+        let v = spring(ls, lv, lt, punch ? 7 : freeze ? 2.2 : hunt ? 1.5 : 1.7, dt)[1]; const vmax = punch ? 1.5 : 0.6; v = vmax * Math.tanh(v / vmax); const A = punch ? 12 : 1.6;
+        const nv = lv + M.clamp(v - lv, -A * dt, A * dt); st.s = Math.exp(ls + nv * dt); st.vs = nv * st.s; }
       // settle exactly once close enough
-      if (Math.abs(M.wrapAngle(tYaw - st.yaw)) < 0.007 && Math.abs(st.vy) < 0.05) { st.yaw = tYaw; st.vy = 0; }
-      if (Math.abs(tPitch - st.pitch) < 0.005 && Math.abs(st.vp) < 0.05 && this.pause <= 0) { st.pitch = tPitch; st.vp = 0; }
-      if (Math.abs(tS - st.s) < tS * 0.004 && Math.abs(st.vs) < tS * 0.02) { st.s = tS; st.vs = 0; }
-      // lazy framing: the camera holds still while the jumper potters about near the middle of the frame and
-      // re-centres smoothly once it wanders off (or jumps). A still camera lets the renderer reuse one finished picture.
+      if (Math.abs(M.wrapAngle(tYaw - st.yaw)) < 0.006 && Math.abs(st.vy) < 0.03) { st.yaw = tYaw; st.vy = 0; }
+      if (Math.abs(tPitch - st.pitch) < 0.004 && Math.abs(st.vp) < 0.03 && this.pause <= 0) { st.pitch = tPitch; st.vp = 0; }
+      if (Math.abs(tS - st.s) < tS * 0.003 && Math.abs(st.vs) < tS * 0.015) { st.s = tS; st.vs = 0; }
+      // lazy framing on a soft leash: the camera stays put while the jumper potters about near the middle of the frame,
+      // and glides along (no lurch) once it wanders toward the edge; a resting camera lets the renderer reuse its picture
       const thr = 10 * s0 / Math.max(1e-3, st.s);
-      if (c && (!this.tC || air || this.track || M.dist(c, this.tC) > thr)) { this.tC = c.slice(); this.track = M.dist(st.c, c) > thr * 0.15 || !!air; }
-      if (freeze && air && air.to && M.finite3(air.to)) { this.tC = M.lerp3(M.add(sp.pos, M.mul(des.n, L * 0.3)), air.to, 0.35); this.track = true; } // the leap: lead toward the landing, no rotation
-      const tc = this.tC || st.c;
-      for (let i = 0; i < 3; i++) { r = spring(st.c[i], st.vc[i], tc[i], 3.2, dt); st.c[i] = r[0]; st.vc[i] = r[1]; }
-      if (!this.track && M.dist(st.c, tc) < 0.02 && Math.hypot(st.vc[0], st.vc[1], st.vc[2]) < 0.05) { st.c = tc.slice(); st.vc = [0, 0, 0]; }
+      if (c) {
+        if (!this.tC || air) this.tC = c.slice();
+        else { const off = M.sub(c, this.tC), dl = M.len(off), inner = thr * 0.45;
+          if (dl > inner) this.tC = M.add(this.tC, M.mul(off, (dl - inner) / dl * Math.min(1, dt * 3)));
+          else if (dl > thr * 0.12 && !sp._moving) this.tC = M.add(this.tC, M.mul(off, Math.min(1, dt * 0.35))); // drifts back to centre once it settles
+        }
+      }
+      if (freeze && air && air.to && M.finite3(air.to)) this.tC = M.lerp3(M.add(sp.pos, M.mul(des.n, L * 0.3)), air.to, 0.35); // the leap: lead toward the landing, no rotation
+      const tc = this.tC || st.c; let r;
+      for (let i = 0; i < 3; i++) { r = spring(st.c[i], st.vc[i], tc[i], air ? 3.6 : 2.4, dt); st.c[i] = r[0]; st.vc[i] = r[1]; }
+      if (M.dist(st.c, tc) < 0.02 && Math.hypot(st.vc[0], st.vc[1], st.vc[2]) < 0.05) { st.c = tc.slice(); st.vc = [0, 0, 0]; }
       if (!M.finite3(st.c) || !isFinite(st.yaw) || !isFinite(st.pitch) || !isFinite(st.s)) { st.c = (c || sp.pos).slice(); st.yaw = tYaw || 0; st.pitch = tPitch || 0.6; st.s = tS || s0; st.vy = st.vp = st.vs = 0; st.vc = [0, 0, 0]; }
       return st;
     }
@@ -5327,6 +5629,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     fungus: { side: '#b8742e', top: '#e2c08a', mark: '#8a4e1e', hi: '#f0d8a8' },
     coir: { side: '#6a4a2c', top: '#3a2a1a', mark: '#4a321c', hi: '#8a6a44' },
     drift: { side: '#a49a8a', top: '#bcb4a4', mark: '#746c60', hi: '#d0c8ba' },
+    birch: { side: '#e4e0d4', top: '#efebe0', mark: '#28241f', hi: '#faf8f1' },
+    lichen: { side: '#7a7870', top: '#929087', mark: '#c2c8a4', hi: '#cfd2bd' },
+    limestone: { side: '#b2b2ac', top: '#cdcdc7', mark: '#94948e', hi: '#e2e2dc' },
+    mottled: { side: '#5c4a36', top: '#6e5a44', mark: '#382a1c', hi: '#8c7658' },
   };
   D.STY = STY;
   const L = JT.LIGHT;
@@ -6684,7 +6990,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     } else if (S === 'worm') {
       const nseg = d.segs || 10; const fatK = d.fat || 1; const wig = moving ? 1 : 0.35; const silk = d.id === 'silkworm';
       const segs = [];
-      for (let i = 0; i < nseg; i++) { const k = i / (nseg - 1); const u = (0.5 - k) * L; const v = Math.sin(i * 0.75 - (e._walk || 0) * 2 - T * 0.6) * L * 0.05 * wig; const hump = Math.max(0, Math.sin(k * 6.28 * 1.5 - T * 3)) * L * 0.02 * wig; const r = L * 0.078 * fatK * (i === 0 ? 0.85 : i === nseg - 1 ? 0.7 : 1); segs.push({ c: W(u, v, r * 0.85 + hump), r }); }
+      for (let i = 0; i < nseg; i++) { const k = i / (nseg - 1); const u = (0.5 - k) * L; const v = Math.sin(i * 0.75 - (e._walk || 0) * 2 - T * 0.6) * L * 0.05 * wig + (fl > 0.05 ? Math.sin(i * 1.1 - T * 14) * L * 0.14 * fl * k : 0); const hump = Math.max(0, Math.sin(k * 6.28 * 1.5 - T * 3)) * L * 0.02 * wig + (fl > 0.05 && (silk || d.id === 'hornworm') ? Math.max(0, k - 0.45) * L * 0.5 * fl * (0.6 + 0.4 * Math.sin(T * 5)) : 0); const r = L * 0.078 * fatK * (i === 0 ? 0.85 : i === nseg - 1 ? 0.7 : 1); segs.push({ c: W(u, v, r * 0.85 + hump), r }); }
       if (lod === 0) { add(segs[0].c, () => { const S2 = segs.map(q => V.P(q.c)); ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, segs[1].r * 1.8 * V.s); ctx.lineCap = 'round'; ctx.beginPath(); S2.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); }); }
       else segs.forEach((q, i) => {
         const c2 = i === 0 ? (d.id === 'mealworm' ? '#6a3a14' : sh(col, -0.35)) : sh(col, i % 2 ? -0.06 : 0.04);
@@ -6804,7 +7110,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
 
   // ---------- primitives ----------
-  const STYP = (s) => ({ cork: PAT.speck, coconut: PAT.speck, rock: PAT.speck, river: PAT.speck, drift: PAT.grain, driftwall: PAT.grain, slate: PAT.bands, sand: PAT.bands, ruin: PAT.bands, sandwall: PAT.bands, wood: PAT.grain, terracotta: PAT.grain, trunkwall: PAT.grain, barkwall: PAT.speck, mosswall: PAT.moss, moss: PAT.moss, leafwall: PAT.dots, rootwall: PAT.dots, stonewall: PAT.speck, fungus: PAT.bands, coir: PAT.dots, dish: 0 }[s] || 0);
+  const STYP = (s) => ({ cork: PAT.speck, coconut: PAT.speck, rock: PAT.speck, river: PAT.speck, drift: PAT.grain, driftwall: PAT.grain, slate: PAT.bands, sand: PAT.bands, ruin: PAT.bands, sandwall: PAT.bands, wood: PAT.grain, terracotta: PAT.grain, trunkwall: PAT.grain, barkwall: PAT.speck, mosswall: PAT.moss, moss: PAT.moss, leafwall: PAT.dots, rootwall: PAT.dots, stonewall: PAT.speck, fungus: PAT.bands, coir: PAT.dots, birch: PAT.bands, lichen: PAT.moss, limestone: PAT.bands, mottled: PAT.dots, dish: 0 }[s] || 0);
   const B = {};
   B.prism = function (mb, pr, g) {
     const STY = JT.Draw.STY; const st = pr.cols || STY[pr.style] || STY.rock; const base = pr.poly, top = pr.topPoly || pr.poly; const n = base.length; if (n < 3) return;
@@ -6887,6 +7193,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if ((pr.style === 'bark' || pr.style === 'palm') && thick > 1.5) { // a few bark marks
       const rng = JT.makeRng(JT.hashStr(String(g.id) + n + r0));
       for (let i = 0; i + 1 < n; i++) for (let q = 0; q < (pr.style === 'palm' ? 2 : 1); q++) { const t = rng(); const p = M.lerp3(pr.pts[i], pr.pts[i + 1], t); const d = M.norm(M.sub(pr.pts[i + 1], pr.pts[i])); const s = perp(d); const r = M.lerp(r0, r1, (i + t) / (n - 1)) * 1.02; const a = rng() * 6.28; const off = M.add(M.mul(s, Math.cos(a) * r), M.mul(M.cross(d, s), Math.sin(a) * r)); mb.line(M.add(p, off), M.add(M.add(p, off), M.mul(d, Math.min(3, r * 1.5))), 0.55, 0.45); }
+    }
+    if (pr.spots && thick > 0.9) { // lichen or ash blotches sitting on the bark
+      const rng = JT.makeRng(JT.hashStr(String(g.id) + 'sp' + n + r0));
+      for (let i = 0; i + 1 < n; i++) for (let q = 0; q < 3; q++) { if (rng() < 0.3) continue; const t = rng(); const p = M.lerp3(pr.pts[i], pr.pts[i + 1], t); const d = M.norm(M.sub(pr.pts[i + 1], pr.pts[i])); const s = perp(d); const r = M.lerp(r0, r1, (i + t) / (n - 1)); const a = rng() * 6.28;
+        const nv = M.norm(M.add(M.mul(s, Math.cos(a)), M.mul(M.cross(d, s), Math.sin(a)))); const c = M.add(p, M.mul(nv, r * 0.9)); const rr = r * (0.4 + rng() * 0.45); const sd = M.norm(M.cross(nv, d));
+        ell(mb, c, M.mul(d, rr * 1.4), M.mul(nv, Math.min(0.45, rr * 0.3)), M.mul(sd, rr * 0.9), shade(pr.spots, -0.1 + (rng() - 0.5) * 0.2), shade(pr.spots, 0.15), PAT.moss, null, 6, 2, true, 0.45); }
     }
   };
   // leaf outlines as half-width w(u) along the midrib (u 0..1)
@@ -7634,11 +7946,19 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         decDepth[inst.id] = dep;
       }
       const animalDepth = (e) => { let d = V.depth(e.pos); if (e.sup && e.sup.d && decDepth[e.sup.d] != null && decDepth[e.sup.d] < 1e8) d = Math.min(d, decDepth[e.sup.d] - 0.05); return d; };
-      for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; const fr = D.frame(hab, r, 0.1); items.push({ key: r.id != null ? 'r' + r.id : null, d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}), p: r.pos, r: ((JT.PREY_BY_ID[r.type] || { len: 3 }).len || 3) * 1.3 + 2 }); }
+      for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; let fr = D.frame(hab, r, 0.1);
+        if (r._fall && M.finite3(r._fall.from)) { const u = M.clamp(r._fall.t / r._fall.dur, 0, 1); const e2 = u * u; const a = r.ang || 0; fr = { p: M.lerp3(M.add(r._fall.from, [0, 0.1, 0]), fr.p, e2), f: M.norm([Math.cos(a), 0.4 * Math.sin(u * 9), Math.sin(a)]), s: M.norm([-Math.sin(a), 0, Math.cos(a)]), n: [0, 1, 0] }; fr.n = M.norm(M.cross(fr.f, fr.s)); if (fr.n[1] < 0) fr.n = M.mul(fr.n, -1); } items.push({ key: r.id != null ? 'r' + r.id : null, d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}), p: r.pos, r: ((JT.PREY_BY_ID[r.type] || { len: 3 }).len || 3) * 1.3 + 2 }); }
       for (const w of hab.data.drops) { if (!M.finite3(w.pos)) continue; const fr = JT.Nav.supFrame(hab, w.sup); const pos = M.add(w.pos, M.mul(fr.n, (fr.r || 0) + 0.3)); items.push({ d: animalDepth(w) + 0.01, f: () => D.drop(ctx, V, w, pos), p: pos, r: (w.r || 0.6) * 2 + 1 }); }
       for (const p of hab.prey) {
         if (p.owner || p.buried || !M.finite3(p.pos) || !onScreen(p.pos)) continue; const def = JT.PREY_BY_ID[p.type]; if (!def) continue;
-        const pd = animalDepth(p); const drawP = () => { const fr = D.frame(hab, p, 0.05); D.prey(ctx, V, p, fr, { time: t }); };
+        const pd = animalDepth(p); const drawP = () => { let fr = D.frame(hab, p, 0.05); const wk = JT.PreyAI.weakK ? JT.PreyAI.weakK(p) : 0; const L0 = def.len || 3;
+          if (p._flip && p.state === 'twitch') { // knocked onto its back, legs pedalling
+            const w = Math.sin(t * 9 + (p.seed || 0)) * 0.25; const c = Math.cos(Math.PI + w), si = Math.sin(Math.PI + w);
+            const s2 = M.add(M.mul(fr.s, c), M.mul(fr.n, si)), n2 = M.sub(M.mul(fr.n, c), M.mul(fr.s, si));
+            fr = { p: M.add(fr.p, M.mul(fr.n, L0 * 0.3)), f: fr.f, s: s2, n: n2 };
+            D.prey(ctx, V, p, fr, { time: t, held: true, flail: 0.45 + 0.35 * Math.abs(Math.sin(t * 5 + (p.seed || 0))), noShadow: false }); return; }
+          if (wk > 0.04 && p.sup && p.sup.k !== 'air') { const w = Math.sin(t * 3.1 + (p.seed || 0)) * 0.22 * wk; const c = Math.cos(w), si = Math.sin(w); fr = { p: fr.p, f: fr.f, s: M.add(M.mul(fr.s, c), M.mul(fr.n, si)), n: M.sub(M.mul(fr.n, c), M.mul(fr.s, si)) }; }
+          D.prey(ctx, V, p, fr, { time: t }); };
         items.push({ key: 'p' + p.id, d: pd, f: drawP, p: p.pos, r: (def.len || 3) * 1.5 + 1.5, xr: !!(tgtId && p.id === tgtId), bias: p.sup && p.sup.k !== 'floor' && p.sup.k !== 'air' ? (def.len || 3) * 0.85 : (def.len || 3) * 0.3 });
         if (p.sup && p.sup.k === 'air') { const b = JT.Nav.supportBelow(hab, p.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, def.len * 0.4, 0.13 * M.clamp(1 - (p.pos[1] - b.pos[1]) / 80, 0.2, 1)), p: b.pos, r: def.len * 0.5 + 1, ground: true }); }
       }
@@ -7671,6 +7991,15 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           const f2 = M.norm(M.add(M.mul(fr.f, c), M.mul(fr.s, si))); const s2 = M.norm(M.cross(fr.n, f2));
           fr = { p: M.add(fr.p, M.add(M.mul(fr.s, Math.sin(T * 37) * j), M.mul(fr.f, Math.sin(T * 23 + 1) * j * 0.7))), f: f2, s: s2, n: fr.n };
         }
+        if (sp._pz && !sp._air && (sp.state === 'subdue' || sp.state === 'secure' || sp.state === 'shaken' || Math.abs(sp._pz.r) + Math.abs(sp._pz.p) + sp._pz.l > 0.02)) { // wrestling pose: roll about the body axis, pitch, lift
+          const P = sp._pz; const up = fr.n; const cr = Math.cos(P.r), sr = Math.sin(P.r), cp = Math.cos(P.p), spp = Math.sin(P.p);
+          const s1 = M.add(M.mul(fr.s, cr), M.mul(fr.n, sr)), n1 = M.sub(M.mul(fr.n, cr), M.mul(fr.s, sr));
+          const f2 = M.add(M.mul(fr.f, cp), M.mul(n1, spp)), n2 = M.sub(M.mul(n1, cp), M.mul(fr.f, spp));
+          const lift = P.l * L * 0.35 + (1 - cr) * 0.5 * L * 0.45 + Math.max(0, spp) * L * 0.12;
+          fr = { p: M.add(fr.p, M.mul(up, lift)), f: M.norm(f2), s: M.norm(s1), n: M.norm(n2) };
+        }
+        if (sp.hold && (sp.state === 'subdue' || sp.state === 'secure') && (sp._catchRatio || 0) > 1.1) { const hp0 = hab.preyById(sp.hold); const fam = hp0 ? JT.preyFamily(JT.PREY_BY_ID[hp0.type] || {}) : '';
+          if (hp0 && fam !== 'beetle' && fam !== 'jumper') fr = { p: M.add(fr.p, M.mul(fr.n, L * 0.16 * Math.min(1.6, sp._catchRatio))), f: fr.f, s: fr.s, n: fr.n }; } // astride a big catch
         if (sp.state === 'pounce' && sp._air && sp._air.straight) { // body points along the straight strike line
           const A = sp._air; const dir = M.sub(A.to, A.from); const dl = M.len(dir);
           if (dl > 1e-3) { const u = M.mul(dir, 1 / dl); const hz = Math.hypot(u[0], u[2]); const pitch = M.clamp(Math.atan2(u[1], hz), -1.0, 1.0);
@@ -7686,8 +8015,16 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && !(hab.data.nests || []).some(n => n.id === sp.nest && (n.build || (n.hole && n.hole.exit > 0.05))), spin: (hab.data.nests || []).some(n => n.id === sp.nest && n.build && n.owner === sp.id && JT.SpiderAI.NEST_STATES.has(sp.state)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
         if (hangA) { const fp = fr.p, fff = fr.f; items.push({ ln: { a: hangA, b: M.sub(fp, M.mul(fff, L * 0.32)), w: 0.08, al: 0.45 - night * 0.15 }, d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
-        // live safety dragline paid out behind a jump
-        if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; items.push({ ln: { a: an, b: sp2, w: 0.07, al: 0.32 - night * 0.1 }, d: V.depth(M.lerp3(an, sp2, 0.5)) - 0.05, f: () => { const a = V.P(an), b = V.P(sp2); ctx.strokeStyle = 'rgba(240,240,250,' + (0.32 - night * 0.1).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
+        // live safety dragline paid out behind a jump (it whips out behind a pounce, settling straight)
+        if (air && sp._anchor && M.finite3(sp._anchor)) { const an = sp._anchor, sp2 = fr.p; const pz = sp.state === 'pounce' && sp._air ? 1 - M.clamp(sp._air.t, 0, 1) : 0; const al = 0.32 - night * 0.1 + pz * 0.15;
+          const segs = []; if (pz > 0.02) { const dv = M.sub(sp2, an); const dl = M.len(dv) || 1; let side = M.cross(dv, [0, 1, 0]); if (M.len(side) < 1e-3) side = [1, 0, 0]; side = M.norm(side); const w = Math.sin(this.time * 55) * dl * 0.09 * pz;
+            const mid = M.add(M.lerp3(an, sp2, 0.5), M.add(M.mul(side, w), [0, -dl * 0.04 * pz, 0])); segs.push([an, mid], [mid, sp2]); } else segs.push([an, sp2]);
+          for (const [a0, b0] of segs) items.push({ ln: { a: a0, b: b0, w: 0.07, al }, d: V.depth(M.lerp3(a0, b0, 0.5)) - 0.05, f: () => { const a = V.P(a0), b = V.P(b0); ctx.strokeStyle = 'rgba(240,240,250,' + al.toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.07); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); }
+        // motion smear: a fading after-image along the strike line
+        if (sp.state === 'pounce' && sp._air && sp._air.straight && M.finite3(sp._air.from)) { const A = sp._air; const back = M.sub(A.from, fr.p); const bl = M.len(back);
+          if (bl > L * 0.6) { for (const [k, al] of [[0.35, 0.28], [0.7, 0.14]]) { const g0 = M.add(fr.p, M.mul(back, Math.min(k, L * 2.2 * k / bl))); const gf = { p: g0, f: fr.f, s: fr.s, n: fr.n };
+            items.push({ d: V.depth(g0) + 0.02, f: () => D.spider(ctx, V, sp, gf, { len: L, airborne: true, time: t, alpha: al, noShadow: true }), p: g0, r: L * 1.5 }); }
+            const fp0 = fr.p; const smP = M.add(fp0, M.mul(back, Math.min(0.5, L * 1.5 / bl))); items.push({ d: V.depth(fp0) + 0.03, f: () => { const a = V.P(fp0), b = V.P(M.add(fp0, M.mul(back, Math.min(1, L * 3 / bl)))); const gr = ctx.createLinearGradient(a[0], a[1], b[0], b[1]); gr.addColorStop(0, 'rgba(255,255,255,0.22)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.strokeStyle = gr; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, L * V.s * 0.5); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }, p: smP, r: L * 2.2 }); } }
         // inside its retreat the jumper fades from view as the silk thickens (only a glint at the doorway remains)
         const nst = sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) ? (hab.data.nests || []).find(n => n.id === sp.nest) : null;
         let hideK = 0; if (nst) { hideK = M.smooth(M.clamp((nst.prog - 0.3) / 0.6, 0, 1)); if (sp.state === 'emerge' && nst.hole) hideK *= 1 - M.smooth(M.clamp((nst.hole.exit || 0) * 1.4, 0, 1)); }
@@ -7714,14 +8051,19 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     drawHeld(ctx, V, sp, p, mp, fg, sg, n, L) {
       // the meal hangs in the fangs, slightly lower than the head; it shrinks as it is drained
       const def = JT.PREY_BY_ID[p.type] || { len: 3 };
-      const st = sp.state === 'subdue' ? Math.max(p._struggle || 0, 0.15) : 0; const T = this.time;
+      const st = sp.state === 'subdue' ? Math.max(p._struggle || 0, 0.15) : sp.state === 'secure' ? (p._struggle || 0) : 0; const T = this.time;
+      const fam = JT.preyFamily(def); const rr = sp._catchRatio || 0; const wrestle = (sp.state === 'subdue' || sp.state === 'secure') && rr > 1.1;
+      if (fam === 'moth' && st > 0.2 && JT.R() < st * 0.25 && this.particles.length < 400) this.particles.push({ pos: mp.slice(), v: [(JT.R() - 0.5) * 6, 1 + JT.R() * 3, (JT.R() - 0.5) * 6], t: 0, life: 1 + JT.R(), col: 'rgba(225,205,165,0.75)', r: 0.12 + JT.R() * 0.12 }); // wing scales shed in the struggle
       const jit = st ? (Math.sin(T * 41) + Math.sin(T * 67 + 1.3) * 0.6) * L * (0.008 + 0.03 * st) : 0;
       const tw = st ? Math.sin(T * 29 + 0.7) * 0.32 * st : 0; // twist in the fangs
       const full = p.full != null ? p.full : 1;
       const pl = Math.min(p.len || def.len, L * 1.1) * (0.6 + 0.4 * full);
       // prey body lies along the spider's facing, its rear end pushed outward from the fangs
       const c = Math.cos(tw), si = Math.sin(tw); const f2 = M.add(M.mul(fg, -c), M.mul(sg, -si)), s2 = M.add(M.mul(sg, -c), M.mul(fg, si));
-      const pf = { p: M.add(M.add(mp, M.mul(fg, pl * 0.25)), M.add(M.mul(sg, jit), M.mul(n, jit * 0.5))), f: f2, s: s2, n };
+      let base = M.add(mp, M.mul(fg, pl * 0.25));
+      if (wrestle) { if (fam === 'beetle' || fam === 'jumper') base = M.add(M.add(mp, M.mul(sg, pl * 0.32)), M.mul(fg, -pl * 0.1)); // clamped alongside a hard / fighting body
+        else base = M.add(M.add(mp, M.mul(n, -L * 0.22 * Math.min(1.6, rr))), M.mul(fg, -pl * 0.18)); } // the jumper rides on top of its huge catch
+      const pf = { p: M.add(base, M.add(M.mul(sg, jit), M.mul(n, jit * 0.5))), f: f2, s: s2, n };
       D.prey(ctx, V, p, pf, { held: true, curled: st < 0.15, flail: st, len: pl, time: T, alpha: 0.55 + 0.45 * full });
     }
     outlineDecor(ctx, V, g, col) { const hull = this.decorScreenHull(g, V); if (!hull) return; ctx.strokeStyle = col; ctx.lineWidth = 2 * this.k; ctx.setLineDash([5 * this.k, 4 * this.k]); ctx.beginPath(); hull.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]); }
@@ -8263,8 +8605,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /** A small line of text that fades in and out (no boxes). */
     toast(text, cls, ms) {
       const t = el('div', 'toast ' + (cls || ''), text); $('toasts').appendChild(t);
-      while ($('toasts').children.length > 3) $('toasts').firstChild.remove();
+      while ($('toasts').children.length > 3) { const T = $('toasts'); ([...T.children].find(c => !c.classList.contains('replay')) || T.firstChild).remove(); } // the slow-motion offer is never pushed out by a journal note
       setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 900); }, ms || 2800);
+      return t;
     },
     /** Overlap manager: toasts take the first free slot (top or bottom strip, or just past a panel) that no visible HUD covers,
         centred in the widest clear span. Visible HUD rects are also handed to the renderer so floating text keeps clear. */
@@ -8302,6 +8645,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     // ------------------------------------------------ simulation events
     onGame(t, d) {
       const R = this.R;
+      if (t === 'pounce' && d.sp && d.sp._air && M.finite3(d.sp._air.from) && R && R.particles && R.particles.length < 380) { const o = d.sp._air.from; const L = JT.SpiderAI.len(d.sp); const fl = d.sp._air.launchSup === 'floor'; // bits of substrate kicked back
+        const dir = M.norm(M.sub(d.sp._air.from, d.sp._air.to)); for (let i = 0; i < (fl ? 9 : 4); i++) R.particles.push({ pos: o.slice(), v: [dir[0] * 9 + (JT.R() - 0.5) * 10, 4 + JT.R() * 9, dir[2] * 9 + (JT.R() - 0.5) * 10], t: 0, life: 0.35 + JT.R() * 0.35, col: fl ? 'rgba(120,92,64,0.85)' : 'rgba(170,150,120,0.6)', r: Math.max(0.12, L * 0.03) + JT.R() * 0.15 }); }
+      if (t === 'catch' && JT.Replay && d.sp && !JT.Replay.active) { const tc = this.game.state.time; setTimeout(() => { if (!JT.Replay.active && this.game.hab.spider(d.sp.id)) JT.Replay.onCatch(this, d.sp, tc); }, 450); }
       if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
       else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); }
@@ -8381,7 +8727,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const c = el('div', 'card'); c.title = d.name + (d.desc ? ' — ' + d.desc : '') + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
       c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112, look)));
       const tgs = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean); const tg = tgs.join(', '); if (tg) c.title += ' — ' + tg;
-      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr', tgs[0] || (d.cat === 'plants' ? 'plant' : d.cat === 'walls' ? 'wall' : 'decor')));
+      const bl = JT.blendNames(d); if (bl.length) c.title += ' — Blends with: ' + bl.join(', ');
+      c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr' + (bl.length ? ' blend' : ''), bl.length ? 'Blends with: ' + esc(bl.join(', ')) : tgs[0] || (d.cat === 'plants' ? 'plant' : d.cat === 'walls' ? 'wall' : 'decor')));
       c.onclick = () => this.startPlace(d.id);
       return c;
     },
@@ -8497,7 +8844,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); A().sfx('click'); return; }
       if (this.panelId) this.hidePanel(); // a tap anywhere outside the jumper card closes it
       if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
-      if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew.' : '.'), 'quiet'); return; }
+      if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; const wk = JT.PreyAI.weakK ? JT.PreyAI.weakK(hit.ent) : 0; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew' : '') + (hit.ent.state === 'twitch' ? ' — knocked on its back, still groggy from venom.' : wk > 0.05 ? ' — weakened by venom, moving sluggishly.' : '.'), 'quiet'); return; }
       if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed skin. The springtails will find it.' : 'Leftovers. The springtails will tidy them.', 'quiet'); return; }
     },
 
@@ -8514,7 +8861,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const hl = AI.hungerLabel(sp.sat);
       const moltTxt = sp.stage >= 5 ? 'Fully grown' : molting ? 'Molting now…' : 'Next molt: ' + Math.min(sp.meals, need) + '/' + need + ' meals';
       const follow = !!this.obs;
-      const line = AI.stateLine ? AI.stateLine(h, sp) : hl;
+      const blendDef = AI.blendPiece ? AI.blendPiece(h, sp) : null;
+      const line = (AI.stateLine ? AI.stateLine(h, sp) : hl) + (blendDef ? ' · Blending in' : '');
       const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
       const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
       const html = '<button class="txt x" id="pClose" title="Close" aria-label="Close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
@@ -8525,7 +8873,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         '<div class="full">' +
         '<div class="rule"></div>' +
         meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
-        '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd></dl>' +
+        '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd>' + (blendDef ? '<dt>Camouflage</dt><dd>Blending in with the ' + esc(blendDef.name) + '</dd>' : '') + '</dl>' +
         '<div class="thought">' + esc(sp.thought || '…') + '</div>' +
         '<div class="pers">' + (desc ? desc.map(esc).join(', ') : 'Still learning about ' + esc(sp.name) + '. Keep watching.') + '</div>' +
         '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">Observe</button><button class="txt" id="pRemove">Rehome</button></div>' +
@@ -8827,6 +9175,88 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 (function (root) {
   'use strict';
   const JT = root.JT;
+  /* ---------------- slow-motion catch replay ----------------
+     The watched habitat's critters are recorded every simulation step (last ~7 s: positions, facing, states and the
+     small pose objects the renderer reads). After a pounce lands, a toast offers a quarter-speed replay of the
+     crouch, strike and bite, followed close up. The simulation is paused meanwhile and every recorded field is put
+     back exactly as it was afterwards, so nothing in the tank changes. */
+  const Replay = (() => {
+    const N = 240, SPEED = 0.25, PRE = 20, POST = 36; // frames at 30 Hz
+    const SKIP = new Set(['mem', '_route', 'stats', 'traits', 'name', 'id', 'species', 'type', 'seed', '_ip', '_if', 'home', 'log', 'journal', 'path', '_sc']);
+    const OBJ = new Set(['sup', '_air', '_pz', '_glance', '_dangleOff', '_hang', 'target', 'weak', '_yank']);
+    const numArr = (v) => Array.isArray(v) && v.length <= 16 && v.every(x => typeof x === 'number');
+    const rec = (k, v) => { if (SKIP.has(k)) return undefined; const t = typeof v; if (v == null || t === 'number' || t === 'string' || t === 'boolean') return { v }; if (numArr(v)) return { v: v.slice() }; if (OBJ.has(k) && t === 'object') return { v: JT.deepClone(v) }; return undefined; };
+    const recordable = (k, v) => rec(k, v) !== undefined;
+    function snap(e) { const o = {}; for (const k of Object.keys(e)) { const r = rec(k, e[k]); if (r) o[k] = r.v; } return o; }
+    function put(e, o) { for (const k of Object.keys(e)) if (!(k in o) && recordable(k, e[k])) delete e[k];
+      for (const k of Object.keys(o)) { const v = o[k]; e[k] = v == null || typeof v !== 'object' ? v : Array.isArray(v) ? v.slice() : JT.deepClone(v); } }
+    const R = { buf: [], habId: null, active: null, offer: null };
+    R.record = function (game) {
+      if (R.active) return; const h = game.hab; if (!h) return; if (h !== R.habId) { R.buf = []; R.habId = h; }
+      const ents = []; for (const s of h.data.spiders) ents.push([s, snap(s), 's']); for (const p of h.data.prey) ents.push([p, snap(p), 'p']);
+      R.buf.push({ t: game.state.time, ents }); if (R.buf.length > N) R.buf.shift();
+    };
+    /** Range for the latest pounce of jumper `id` that ended in a bite: [start, catch, end] frame indices. */
+    /** Frames for one pounce of jumper `id` that ended in a bite: the one closest to clock time `tc` (the catch the
+        toast was offered for), else the latest. Returns [start, crouchStart, pounceStart, catch, end]. Always at least
+        LEAD frames (1 s) of build-up before the leap. */
+    const LEAD = 30;
+    function range(id, tc) {
+      const B = R.buf; const st = (i) => { const r = B[i].ents.find(x => x[0].id === id && x[2] === 's'); return r ? r[1].state : null; };
+      let c = -1, best = 1e9; for (let i = B.length - 1; i > 0; i--) if (st(i) !== 'pounce' && st(i - 1) === 'pounce') { const d = tc == null ? 0 : Math.abs(B[i].t - tc); if (d < best) { best = d; c = i; } if (tc == null) break; }
+      if (c < 0 || (tc != null && best > 3)) return null; let p = c - 1; while (p > 0 && st(p - 1) === 'pounce') p--; let a = p; while (a > 0 && st(a - 1) === 'crouch' && p - a < 34) a--;
+      return [Math.max(0, Math.min(a - PRE, p - LEAD)), a, p, c, Math.min(B.length - 1, c + POST)];
+    }
+    R.available = (id, tc) => !!range(id, tc);
+    R.onCatch = function (UI, sp, tc) {
+      if (R.active || !sp) return; const id = sp.id; if (tc == null) tc = UI.game.state.time;
+      if (R.offer && R.offer.el) R.offer.el.remove(); // a newer catch replaces the older offer
+      const t = UI.toast('<b>Nice catch!</b> <span class="rp">Watch it in slow motion \u25B6</span>', 'replay', 3200); R.offer = { id, tc, el: t };
+      if (t) t.onclick = (ev) => { ev.stopPropagation(); t.remove(); R.start(UI, id, tc); };
+    };
+    R.start = function (UI, id, tc) {
+      if (R.active) return; const g = UI.game, h = g.hab; if (!h || h !== R.habId) return; const rg = range(id, tc);
+      if (!rg) { UI.toast('That catch is too long ago to replay.', 'quiet'); return; }
+      if (R.offer && R.offer.el) R.offer.el.remove();
+      const live = new Map(); for (const s of h.data.spiders) live.set(s, snap(s)); for (const p of h.data.prey) live.set(p, snap(p));
+      const frames = R.buf.slice(rg[0], rg[4] + 1); const added = [];
+      for (const f of frames) for (const [e, , k] of f.ents) { if (live.has(e)) continue; live.set(e, snap(e)); const list = k === 's' ? h.data.spiders : h.data.prey; if (!list.includes(e)) { list.push(e); added.push([list, e]); } }
+      const cam = UI.obs ? { obs: true, lock: UI.obs.lock } : { obs: false }; const sel = g.selectedId;
+      R.active = { id, frames, i: 0, hold: 0, settle: 0.45, live, added, time: g.state.time, game: g, hab: h, cam, sel, slowA: rg[1] - rg[0], pounceI: rg[2] - rg[0], catchI: rg[3] - rg[0] };
+      if (!UI.obs) UI.toggleObserve(true, id); else { UI.obs.lock = id; UI.pickSubject(true); }
+      let hud = document.getElementById('replayHud'); if (!hud) { hud = document.createElement('div'); hud.id = 'replayHud'; document.getElementById('app').appendChild(hud); }
+      hud.innerHTML = '<div class="rpBadge">\u25B6 Slow motion \u00BC\u00D7 <span>tap anywhere to return</span></div>'; hud.classList.remove('hidden');
+      hud.onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); R.stop(); };
+      apply(0);
+    };
+    function apply(x) {
+      const A = R.active; const F = A.frames; const i = Math.min(F.length - 1, Math.floor(x)), j = Math.min(F.length - 1, i + 1), a = x - i;
+      A.game.state.time = F[i].t + (F[j].t - F[i].t) * a; const nxt = new Map(F[j].ents.map(r => [r[0], r[1]]));
+      const inF = new Set(); for (const [e, o] of F[i].ents) { inF.add(e); put(e, o); const q = nxt.get(e);
+        if (q && q.pos && e.pos && Math.hypot(q.pos[0] - e.pos[0], q.pos[1] - e.pos[1], q.pos[2] - e.pos[2]) < 30) { e.pos = e.pos.map((v, k) => v + (q.pos[k] - v) * a);
+          if (q.fwd && e.fwd) { const f = e.fwd.map((v, k) => v + (q.fwd[k] - v) * a); const l = Math.hypot(f[0], f[1], f[2]); if (l > 1e-3) e.fwd = f.map(v => v / l); } } }
+      // critters that were not in the tank yet at this moment stay out of sight
+      for (const s of A.hab.data.prey) if (!inF.has(s)) { s._rpHide = s._rpHide || { buried: s.buried }; s.buried = true; }
+    }
+    R.step = function (dt) {
+      const A = R.active; if (!A) return; if (A.hab !== (JT.app && JT.app.game.hab)) { R.stop(); return; }
+      if (A.settle > 0) { A.settle -= dt; apply(0); return; } // let the camera glide onto the jumper before playing
+      if (A.i < A.frames.length - 1) { const slow = A.i >= A.slowA - 4 && A.i <= A.catchI + 10; A.i = Math.min(A.frames.length - 1, A.i + dt * 30 * SPEED * (slow ? 1 : 2)); apply(A.i); }
+      else { A.hold += dt; if (A.hold > 0.8) R.stop(); }
+    };
+    R.speed = () => SPEED;
+    R.stop = function () {
+      const A = R.active; if (!A) return; R.active = null; const h = A.hab;
+      for (const s of h.data.prey) if (s._rpHide) { s.buried = s._rpHide.buried; delete s._rpHide; }
+      for (const [list, e] of A.added) { const k = list.indexOf(e); if (k >= 0) list.splice(k, 1); }
+      for (const [e, o] of A.live) { put(e, o); if (e.pos) { e._ip = e.pos.slice(); e._if = e.fwd ? e.fwd.slice() : null; } }
+      A.game.state.time = A.time; const UI = JT.UI; const hud = document.getElementById('replayHud'); if (hud) hud.classList.add('hidden');
+      if (UI && UI.obs) { if (!A.cam.obs) UI.toggleObserve(false); else { UI.obs.lock = A.cam.lock && h.spider(A.cam.lock) ? A.cam.lock : null; } }
+      if (UI && UI.game && UI.game.hab.spider(A.sel)) UI.game.selectedId = A.sel;
+    };
+    return R;
+  })();
+  JT.Replay = Replay;
   function boot() {
     const settings = JT.Settings.load();
     const game = new JT.Game();
@@ -8839,6 +9269,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     JT.app = { game, R, settings, UI: JT.UI };
     if (!restored) setTimeout(() => JT.UI.toast((game._wiped ? 'A fresh start: everything is free now. ' : 'Welcome! ') + 'Meet <b>Pip</b>, your Peacock Spider sling. Raise it to Adult to unlock the next jumper. Tap a jumper to see what it is doing, or press Observe to watch it up close.', '', 7000), 600);
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
+    { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
     const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, cost = 8, lastDt = 0, rAcc = 0, lock30 = 0, lockEnd = -1e9, lowT = 0, perfT = 0; void lastDt; void skip;
@@ -8857,7 +9288,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     function frame(now) {
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
       acc += dt; let n = 0;
-      try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
+      if (Replay.active) { acc = 0; try { Replay.step(dt); } catch (e) { console.error('replay', e); Replay.stop(); } } // paused while a slow-motion replay plays
+      else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // adaptive pacing: if a frame costs too much, render at half rate (simulation keeps full rate)
       // Frame pacing. The simulation runs at 30 Hz, so redrawing faster only matters while something else moves:
@@ -8865,7 +9297,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // (about 30 fps), which roughly halves GPU work and heat. 'smooth' always draws (capped at 60 fps, also on
       // 120 Hz screens); 'saver' always uses 30.
       rAcc += dt; const fm = settings.fps || 'auto'; const U = JT.UI;
-      let lively = fm === 'smooth' || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
+      let lively = fm === 'smooth' || !!Replay.active || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
       // A phone that can't hold 60 (hot, Low Power Mode) gets a steady 30 instead of an uneven 35-50, which feels far worse.
       // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
       if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
@@ -8876,7 +9308,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30;
       const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
       if (due) { skip = !skip;
-        { const t0 = performance.now(); const undo = blendIn(M.clamp(acc / STEP, 0, 1)); try { R.render(rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
+        { const t0 = performance.now(); const undo = blendIn(Replay.active ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
       lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
