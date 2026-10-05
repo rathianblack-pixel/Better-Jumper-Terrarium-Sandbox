@@ -7073,8 +7073,8 @@ void main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*
   float m=(0.9+0.1*g)*(0.95+0.05*g2)*vig; gl_FragColor=vec4(vec3(m)*uCol.rgb,1.0); }`;
   const SPR_VS = `attribute vec2 aXY; attribute float aZ; attribute vec2 aUV; attribute vec4 aT; uniform vec2 uRes; varying vec2 vUV; varying vec4 vT;
 void main(){ vUV=aUV; vT=aT; gl_Position=vec4(aXY.x/uRes.x*2.0-1.0, 1.0-aXY.y/uRes.y*2.0, clamp(aZ*0.0011,-0.999,0.999), 1.0); }`;
-  const SPR_FS = `precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha;
-void main(){ vec4 c=texture2D(uTex,vUV); vec2 d=uTexel*1.3;
+  const SPR_FS = `precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm;
+void main(){ vec4 c=texture2D(uTex,vUV); if(uPm>0.5) c.rgb*=c.a; vec2 d=uTexel*1.3;
   float an=max(max(texture2D(uTex,vUV+vec2(d.x,0.0)).a, texture2D(uTex,vUV-vec2(d.x,0.0)).a), max(texture2D(uTex,vUV+vec2(0.0,d.y)).a, texture2D(uTex,vUV-vec2(0.0,d.y)).a));
   float ink=smoothstep(0.3,0.75,an)*(1.0-smoothstep(0.05,0.6,c.a))*uInkAmt;
   vec3 rgb=c.rgb*vT.rgb + uInk*ink*(1.0-c.a); float a=c.a+ink*(1.0-c.a);
@@ -7355,6 +7355,12 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const rp = Math.ceil(r); list.push({ it, q, rp, sc, dep: V.depth(it.p), z: V.depth(it.p) - (it.bias != null ? it.bias : it.ground ? 0.2 : it.r * 0.35) });
       }
       if (!list.length) return;
+      // pixel budget: every critter is repainted and copied to the GPU each frame, so cap the total painted area (~0.4 Mpx).
+      // Many close-up crickets otherwise grew the sheet to 2048x1024 (8 MB a frame). Over budget, all sprites paint a bit
+      // smaller and the GPU scales them back up (slightly softer, same size on screen).
+      // The watched jumper and its prey (xr) keep full detail; everything else shares what is left.
+      { const A = (s) => (s.rp * 2 + 2) * (s.rp * 2 + 2); let keep = 0, rest = 0; for (const s of list) { if (s.it.xr) keep += A(s); else rest += A(s); } const B = 400000;
+        const room = Math.max(B * 0.3, B - keep); if (rest > room) { const f = Math.sqrt(room / rest); for (const s of list) if (!s.it.xr) { s.sc *= f; s.rp = Math.max(3, Math.ceil(s.rp * f)); } } }
       // shelf-pack into the sheet (biggest first)
       // shelf-pack into the narrowest sheet that fits (the whole sheet is re-uploaded every frame, so smaller is cheaper)
       const order = list.slice().sort((a, b) => b.rp - a.rp); let AW = 512, x = 0, y = 0, rowH = 0;
@@ -7383,8 +7389,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
       // same size as last frame: update the texture in place (no GPU reallocation)
       { const sz = this.atlas.width + 'x' + this.atlas.height;
-        if (cpu) { if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.atlas.width, this.atlas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; }
-          const uh = Math.min(this.atlas.height, y + rowH + 2); const px = g.getImageData(0, 0, AW, uh).data; gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, AW, uh, gl.RGBA, gl.UNSIGNED_BYTE, px); }
+        if (cpu) { gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); // raw pixels as read; the shader premultiplies (saves a CPU pass)
+          if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.atlas.width, this.atlas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; }
+          // copy each sprite's own square only (no empty packing space)
+          const AHc = this.atlas.height; for (const s of order) { if (s.skip) continue; const x0 = Math.max(0, s.ax - 1), y0 = Math.max(0, s.ay - 1), w = Math.min(AW - x0, s.rp * 2 + 2), h = Math.min(AHc - y0, s.rp * 2 + 2); if (w <= 0 || h <= 0) continue;
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, x0, y0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, g.getImageData(x0, y0, w, h).data); } }
         else if (sz === this._atexSz) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); this._atexSz = sz; } }
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false); R._upT = performance.now() - tU;
       // quads, far to near
@@ -7392,7 +7401,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp / s.sc; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
         const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
-      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1);
+      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu ? 1 : 0);
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('spr', new Float32Array(v))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, v.length / 9);
       if (xr.length) { // follow / observe: the jumper (and its prey) show softly through anything in front of them
