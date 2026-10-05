@@ -7266,7 +7266,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]);
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
-      const drawList = hg.meshes.filter(o => visible(o.g));
+      const drawList = hg.meshes.filter(o => visible(o.g)); for (const o of drawList) o._dz = V.depth(o.g._sb.c); drawList.sort((a, b) => a._dz - b._dz); // near first: early depth rejection
       for (const pass of [0, 1]) {
         gl.uniform1f(P.u.uPass, pass ? 0 : 1);
         for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
@@ -7349,7 +7349,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (const it of scene.items) {
         if (it.inst || it.noGL || it.ln || it.silk || it.ghost || !it.p || !M.finite3(it.p)) continue;
         const q = V.P(it.p); let r = it.r * V.s + 6 * k; if (q[0] < -r || q[0] > W + r || q[1] < -r || q[1] > H + r) continue;
-        let sc = 1; if (r > 480) { sc = 480 / r; r = 480; }
+        // close-up critters: paint at ~1.5x CSS pixels (not full device pixels) and let the GPU scale them up; keeps the per-frame sheet small
+        let sc = 1; const capS = Math.min(1, 1.5 / k); if (r > 120 && capS < 1) sc = Math.max(capS, 120 / r); if (r * sc > 400) sc = 400 / r; r *= sc;
         const rp = Math.ceil(r); list.push({ it, q, rp, sc, dep: V.depth(it.p), z: V.depth(it.p) - (it.bias != null ? it.bias : it.ground ? 0.2 : it.r * 0.35) });
       }
       if (!list.length) return;
@@ -7374,7 +7375,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
       }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false);
+      // same size as last frame: update the texture in place (no GPU reallocation)
+      { const sz = this.atlas.width + 'x' + this.atlas.height; if (sz === this._atexSz) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); this._atexSz = sz; } }
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false);
       // quads, far to near
       list.sort((a, b) => b.dep - a.dep); const AH = this.atlas.height; const v = []; const xr = [];
       const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp / s.sc; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
@@ -7435,6 +7438,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     get qualityScale() {
       const q = this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality;
       const dpr = root.devicePixelRatio || 1;
+      if (this.set.quality === 'auto' && this.closeCam) return Math.min(this._closeK || 2, dpr); // Observe / Follow: adaptive, see render()
       if (this.set.quality === 'auto') return Math.min([2, 1.6, 1.25][this._autoLvl || 0], dpr); // steps down only if the device struggles
       return q === 'low' ? Math.min(1.25, dpr) : q === 'high' ? Math.min(2.5, dpr) : Math.min(2, dpr);
     }
@@ -7540,6 +7544,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05;
         // GPU-bound phones: settle once on a lighter resolution if the frame rate stays low
         // GPU-bound phones: step the resolution down (2x -> 1.6x -> 1.25x) if frames keep missing the current target rate
+        const close = this.cam.mode === 'follow'; if (close !== !!this.closeCam) { this.closeCam = close; this._cSlow = 0; this._cFast = 0; this.fps = 60; this.resize(); }
+        if (this.set.quality === 'auto' && close) { // close-up: nudge resolution between 1.25x and 2x to hold ~60 fps
+          const dpr = root.devicePixelRatio || 1, top = Math.min(2, dpr), ck = this._closeK || top; this._cHold = Math.max(0, (this._cHold || 0) - dt);
+          this._cSlow = this.fps < 50 ? (this._cSlow || 0) + dt : Math.max(0, (this._cSlow || 0) - dt); this._cFast = this.fps > 57 ? (this._cFast || 0) + dt : 0;
+          if (this._cSlow > 0.8 && ck > 1.25 && !this._cHold) { this._closeK = Math.max(1.25, ck - 0.2); this._cSlow = 0; this._cHold = 1.2; this.fps = 60; this.resize(); }
+          else if (this._cFast > 5 && ck < top && !this._cHold) { this._closeK = Math.min(top, ck + 0.15); this._cFast = 0; this._cHold = 4; this.resize(); }
+        } else
         if (this.set.quality === 'auto') { this._slowT = this.fps < this.targetFps * 0.75 && this.time > 5 ? (this._slowT || 0) + dt : 0;
           if (this._slowT > 3 && (this._autoLvl || 0) < 2) { this._autoLvl = (this._autoLvl || 0) + 1; this._autoLow = this._autoLvl >= 2; this._slowT = -4; this.fps = this.targetFps; this.resize(); } } }
       this._dt = dt;
@@ -8812,10 +8823,22 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
     const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, half = false, cost = 8, lastDt = 0, rAcc = 0; void lastDt;
+    /* Smooth motion: the simulation steps at 30 Hz, the screen may draw at 60. Each step remembers where every critter
+       was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
+       Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
+    const M = JT.M; const crit = () => { const h = game.hab; return h ? h.data.spiders.concat(h.data.prey) : []; };
+    function snapPrev() { for (const e of crit()) { if (!e.pos) continue; e._ip = e.pos.slice(); e._if = e.fwd ? e.fwd.slice() : null; } }
+    function blendIn(a) {
+      const saved = []; if (a >= 0.999) return () => {};
+      for (const e of crit()) { const p0 = e._ip, p1 = e.pos; if (!p0 || !p1 || !M.finite3(p0) || !M.finite3(p1) || M.dist(p0, p1) > 8) continue;
+        saved.push([e, p1, e.fwd]); e.pos = [p0[0] + (p1[0] - p0[0]) * a, p0[1] + (p1[1] - p0[1]) * a, p0[2] + (p1[2] - p0[2]) * a];
+        if (e._if && e.fwd) { const f = [e._if[0] + (e.fwd[0] - e._if[0]) * a, e._if[1] + (e.fwd[1] - e._if[1]) * a, e._if[2] + (e.fwd[2] - e._if[2]) * a]; if (M.len(f) > 1e-3) e.fwd = M.norm(f); } }
+      return () => { for (const [e, p, f] of saved) { e.pos = p; e.fwd = f; } };
+    }
     function frame(now) {
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
       acc += dt; let n = 0;
-      try { while (acc >= STEP && n < 4) { game.tick(STEP); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
+      try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // adaptive pacing: if a frame costs too much, render at half rate (simulation keeps full rate)
       // Frame pacing. The simulation runs at 30 Hz, so redrawing faster only matters while something else moves:
@@ -8827,7 +8850,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       R.targetFps = lively ? 60 : 30;
       const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
       if (due) { skip = !skip;
-        if (!(half && skip && lively)) { const t0 = performance.now(); try { R.render(rAcc); } catch (e) { console.error('render', e); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; if (settings.quality === 'auto') { if (!half && cost > 13) half = true; else if (half && cost < 6) half = false; } } }
+        if (!(half && skip && lively && !R.closeCam)) { const t0 = performance.now(); const undo = blendIn(M.clamp(acc / STEP, 0, 1)); try { R.render(rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; if (settings.quality === 'auto') { if (!half && cost > 13) half = true; else if (half && cost < 6) half = false; } } }
       lastDt = dt;
       requestAnimationFrame(frame);
     }
