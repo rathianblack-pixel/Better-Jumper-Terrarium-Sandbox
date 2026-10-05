@@ -92,6 +92,8 @@ button.wanting{animation:wanting 3.6s ease-in-out infinite}
 .cards{display:flex;gap:2px;overflow-x:auto;padding:2px 0 4px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
 .card{touch-action:manipulation;flex:0 0 auto;width:112px;padding:4px 6px 6px;text-align:center;cursor:pointer;scroll-snap-align:start;transition:opacity .25s ease,transform .25s ease;position:relative}
 .card canvas,.card .sw{width:84px;height:84px;display:block;margin:0 auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45));transition:transform .3s ease}
+.card canvas.pending{border-radius:50%;background:radial-gradient(circle,rgba(120,90,60,.16),rgba(120,90,60,0) 62%);animation:thPulse 1.1s ease-in-out infinite alternate}
+@keyframes thPulse{from{opacity:.45}to{opacity:1}}
 @media (hover:hover){.card:hover canvas{transform:translateY(-3px)}}
 .card .nm{font-size:13.5px;line-height:1.2;color:var(--ink);margin-top:2px;min-height:33px;display:flex;align-items:flex-start;justify-content:center;text-shadow:var(--shadow)}
 .card .pr{font-size:13px;color:var(--accent);font-variant:small-caps;letter-spacing:.06em;text-shadow:var(--shadow)}
@@ -447,12 +449,142 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 #app #spiderPanel.expanded .full{display:block}
 #app #spiderPanel .x{font-size:15px;width:28px;height:28px;min-height:28px;padding:0;letter-spacing:0;font-variant:normal;display:flex;align-items:center;justify-content:center}
 @media (max-width:820px) and (orientation:portrait),(max-width:560px){#app #spiderPanel:not(.expanded){right:auto}}
+/* ---------- organised UI (v7): five-place dock, one camera button, grouped shop with chips, Jumpers + Menu sheets ---------- */
+#app #dock button.obsBtn{color:var(--accent);font-weight:600}
+#app #dock{gap:2px}
+/* camera: one glass pill showing the view; tap for the list */
+#app #camCtl{flex-direction:column;align-items:flex-start;gap:6px}
+#app #camCtl #camToggle{width:auto;min-width:0;height:38px;min-height:38px;padding:0 12px 0 10px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;letter-spacing:.02em}
+#app #camCtl #camToggle svg{flex:0 0 auto;opacity:.85}
+#camList{display:none;flex-direction:column;gap:4px;padding:6px;border-radius:18px;background:linear-gradient(150deg,var(--gF),var(--gF2) 65%,var(--gF));-webkit-backdrop-filter:var(--gFBlur);backdrop-filter:var(--gFBlur);border:1px solid var(--gEdge);box-shadow:inset 1.5px 1.5px 0 var(--gRim),var(--gShade)}
+#camCtl.open #camList{display:flex}
+#app #camCtl #camList button{width:auto;min-width:92px;height:38px;min-height:38px;border-radius:12px;padding:0 12px;text-align:left;font-size:14px;background:none;border:0;box-shadow:none;color:var(--ink)}
+#app #camCtl #camList button.on{color:var(--accent);background:var(--gLens)}
+#app #camCtl #camList button.hidden{display:none}
+#app #camCtl #camList #camRecentre{border-top:1px solid var(--rule);border-radius:0 0 12px 12px;color:var(--dim);font-size:13px}
+/* shop chips: jump to a group or filter */
+#drawer .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 6px}
+#drawer .chips::-webkit-scrollbar{display:none}
+#drawer .chips.hidden{display:none}
+#drawer .chips button{flex:0 0 auto;min-height:30px;min-width:0;padding:0 12px;border-radius:999px;font-size:12.5px;letter-spacing:.02em;color:var(--ink);background:var(--gLens);border:1px solid var(--gEdge);text-shadow:none}
+#drawer .chips button::after{display:none}
+#drawer .chips button.suit{color:var(--accent)}
+#drawer .chips button.on{background:var(--accent);color:#fff8ec;border-color:transparent}
+#drawerTabs button.rm{margin-left:6px;color:var(--bad)}
+#drawerTabs button.rm.on{color:#fff8ec;background:#c4574a;border-radius:999px}
+.card.fits .pr .ok,.card .pr .ok{color:var(--ok);font-variant:normal;letter-spacing:0}
+body.story .card .pr .ok{color:#4f7a35}
+.card.care-mist canvas,.card.care-clean canvas{filter:none}
+/* modal head: back arrow */
+#app #modal .modal-head{align-items:center;gap:4px}
+#app #modal .modal-head .back{min-width:36px;min-height:36px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:-8px}
+#app #modal .modal-head .back.hidden{display:none}
+#app #modal .modal-head .back::after{display:none}
+/* sheet tabs (Jumpers: In this tank / Collection / Journal) */
+.sheet-tabs{display:flex;gap:4px;margin:0 0 12px;padding:3px;border-radius:999px;background:var(--gLens);width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.sheet-tabs button{min-height:34px;padding:0 14px;border-radius:999px;font-variant:normal;font-size:13.5px;letter-spacing:.01em;color:var(--dim)}
+.sheet-tabs button::after{display:none}
+.sheet-tabs button.on{color:var(--ink);background:var(--gF);box-shadow:inset 1px 1px 0 var(--gRim),0 1px 4px rgba(40,30,15,.12)}
+/* jumpers in this tank */
+.jlist{display:flex;flex-direction:column;gap:10px}
+.jrow{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:16px;background:var(--gLens);cursor:pointer}
+.jrow.sel{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.jrow canvas{width:72px;height:72px}
+.jtx{min-width:0}.jtx .jn{font-size:18px;color:var(--ink)}.jtx .js{font-size:13px;color:var(--dim);font-style:italic}
+.jtx .jl{font-size:13.5px;color:var(--accent);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jtx .jp{font-size:12.5px;color:var(--dim);margin-top:2px}
+.jtx .jm{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:4px 8px;align-items:center;margin-top:6px;font-size:11.5px;color:var(--faint);font-variant:small-caps;letter-spacing:.06em}
+.jtx .jm i{display:block;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--warm) var(--v),var(--rule) var(--v))}
+.jtx .jm i.hyd{background:linear-gradient(90deg,#7fb6d6 var(--v),var(--rule) var(--v))}
+.jrow .jb{display:flex;flex-direction:column;gap:2px}
+.jrow .jb .modal-btn{min-height:36px;font-size:13.5px}
+.jlist h4{margin-top:14px!important}
+@media (max-width:560px){.jrow{grid-template-columns:56px 1fr;}.jrow canvas{width:56px;height:56px}.jrow .jb{grid-column:1/-1;flex-direction:row;justify-content:flex-end}}
+/* menu sheet: grouped rows, compact segmented controls */
+.menu{display:flex;flex-direction:column;gap:14px}
+.menu .msect{display:flex;flex-direction:column;border-radius:16px;background:var(--gLens);padding:4px 6px}
+.menu .msect h4{margin:6px 8px 2px!important;font-size:12.5px!important;color:var(--faint)!important}
+.menu .mrow{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;min-height:46px;padding:4px 10px;border-radius:12px;font-size:16px;color:var(--ink);letter-spacing:.01em}
+.menu .mrow::after{display:none}
+.menu .mrow small{font-size:12.5px;color:var(--dim);font-style:italic}
+.menu .mrow.on{color:var(--accent)}
+.menu .mrow.on::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:2px;background:var(--accent)}
+@media (hover:hover){.menu .mrow:hover{background:var(--gLens)}}
+.menu .mseg{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:46px;padding:2px 10px;flex-wrap:wrap}
+.menu .mseg>span{font-size:16px;color:var(--ink)}
+.menu .mseg .seg{flex-wrap:wrap;justify-content:flex-end}
+.menu .mseg .seg button{min-height:34px;border-radius:999px;font-variant:normal;letter-spacing:.01em;font-size:13.5px;padding:0 11px}
+.menu .mseg .seg button::after{display:none}
+.menu .mseg .seg button.on{background:var(--accent);color:#fff8ec;text-shadow:none}
+@media (min-width:821px){.menu{display:grid;grid-template-columns:1fr 1fr;align-items:start}}
+/* personality on the jumper card */
+#spiderPanel .persona{margin:10px 0 4px}
+#spiderPanel .ptitle{font-size:16px;color:var(--ink);font-style:italic}
+#spiderPanel .pchips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
+#spiderPanel .pchip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--gLens);border:1px solid var(--gEdge);color:var(--ink);letter-spacing:.02em}
+#spiderPanel .pchip.q{color:var(--faint)}
+#spiderPanel .phab{margin:4px 0 0;padding-left:16px;font-size:13px;line-height:1.45;color:var(--dim)}
+#spiderPanel .ctitle{display:none}
+#popover .seg.scape{flex-wrap:wrap;gap:4px}
+#popover .seg.scape button{flex:1 1 auto}
+#spiderPanel .pstory{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--dim)}
+#spiderPanel .pstory b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+#spiderPanel .pstory span{color:var(--faint)}
+#spiderPanel .ptame{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin:6px 0 0}
+#spiderPanel .ptame .tbar{flex:0 0 70px;height:4px;border-radius:3px;background:var(--gEdge);overflow:hidden}
+#spiderPanel .ptame .tbar i{display:block;height:100%;background:var(--accent,#c9a96e)}
+#app #spiderPanel:not(.expanded) .ctitle{display:block;font-size:12px;color:var(--faint);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app #drawer .drawer-head{gap:6px;min-width:0}
+#app #drawerTabs{flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+#app #drawerTabs::-webkit-scrollbar{display:none}
+#app #drawerTabs button{flex:0 0 auto}
+#app #drawerClose{flex:0 0 auto;min-width:36px;min-height:36px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:auto}
+#app #drawerClose::after{display:none}
+@media (max-width:820px) and (orientation:portrait),(max-width:560px){#app #drawerTitle{display:none}#app #drawerTabs button{padding:0 .45em}}
+
+
+/* field journal v7: chapters, first sightings, life stories */
+#modal .jsub{margin:2px 0 12px}
+#modal .jprog{margin:0 0 6px}
+#modal .jprog .jpt{font-size:14px;margin-bottom:6px}
+#modal .tbar{display:block;height:5px;border-radius:3px;background:var(--rule);overflow:hidden}
+#modal .tbar i{display:block;height:100%;background:var(--accent,#c9a96e)}
+#modal .jcat{margin:18px 0 6px;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+#modal .jfirst{font-size:12px;color:var(--faint);margin-top:4px}
+#modal .story{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--rule)}
+#modal .story>canvas{width:56px;height:56px;flex:0 0 56px;border-radius:10px}
+#modal .stx{flex:1;min-width:0}
+#modal .diary{list-style:none;margin:6px 0 0;padding:0;font-size:13px;line-height:1.45}
+#modal .diary li{padding:3px 0;color:var(--dim)}
+#modal .diary .dd{display:inline-block;min-width:54px;color:var(--faint);font-size:12px}
+#modal .linkbtn{background:none;border:0;padding:4px 0;color:var(--accent,#c9a96e);font:inherit;font-size:13px;cursor:pointer}
+
+/* one-time beginner tips (v7) */
+#tip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + var(--sab));z-index:30;width:min(400px,calc(100vw - 24px));padding:14px 16px 10px;border-radius:16px;background:rgba(24,18,12,.94);border:1px solid rgba(255,236,200,.16);box-shadow:0 10px 30px rgba(0,0,0,.45);color:#f3ead8;animation:tipIn .28s ease-out}
+#tip.hidden{display:none}
+#tip .tt{font-weight:600;font-size:15px;margin-bottom:4px}
+#tip .tx{font-size:13.5px;line-height:1.45;color:#d9ccb4}
+#tip .tb{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+#tip button{background:none;border:0;font:inherit;font-size:13px;color:#bfae90;padding:8px 6px;cursor:pointer;min-height:36px}
+#tip button.ok{background:#c9a96e;color:#20170e;border-radius:999px;padding:8px 18px;font-weight:600}
+body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
+@media (min-width:821px){#tip{bottom:calc(28px + var(--sab))}}
+@keyframes tipIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+#modal .tiprow{margin:0 0 12px}
+/* fingertip on the glass (v7) */
+#fingerDot{position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;pointer-events:none;z-index:4;background:radial-gradient(circle,rgba(255,236,214,.38) 0,rgba(255,226,196,.18) 55%,rgba(255,255,255,0) 72%);box-shadow:0 0 0 2px rgba(255,255,255,.55) inset;transition:opacity .25s;will-change:transform}
+#fingerDot.hidden{display:block;opacity:0}
+#fingerDot.held{box-shadow:0 0 0 2px rgba(255,255,255,.8) inset,0 0 18px rgba(255,240,220,.35)}
+#fingerDot.fast{box-shadow:0 0 0 2px rgba(255,140,110,.85) inset}
+#fingerDot.tapAnim{animation:fingerTap .6s ease-out}
+@keyframes fingerTap{0%{opacity:.95;scale:.6}100%{opacity:0;scale:1.35}}
 </style>
 </head>
 <body>
 <div id="app">
   <canvas id="glview" aria-hidden="true"></canvas>
   <canvas id="view" aria-label="Terrarium view"></canvas>
+  <div id="fingerDot" class="hidden" aria-hidden="true"></div>
 
   <header id="top">
     <div class="brand"><span class="brand-name">Jumper Terrarium</span></div>
@@ -479,26 +611,23 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   </header>
 
   <div id="toolbar" class="desktop-only"><div class="gl-bar"><span class="lens"></span>
-    <button data-tool="decor">Decor</button>
-    <button data-tool="plants">Plants</button>
-    <button data-tool="substrate">Substrate</button>
-    <button data-tool="food">Food</button>
-    <button data-tool="jumpers">Jumpers</button>
-    <button data-tool="journal">Journal</button>
-    <button data-tool="mist">Mist</button>
-    <button data-tool="clean">Clean</button>
-    <button data-tool="remove">Remove</button>
+    <button data-tool="build" title="Decor, plants, walls and ground (B)">Build</button>
+    <button data-tool="care" title="Live food, misting and cleaning (C)">Care</button>
+    <button data-tool="jumpers" title="Your jumpers and the collection (J)">Jumpers</button>
+    <button data-tool="journal" title="Field journal">Journal</button>
   </div></div>
 
   <section id="drawer" class="hidden" aria-label="Shop">
-    <div class="drawer-head"><div id="drawerTabs" class="seg small"></div><div id="drawerTitle"></div><button class="txt close" id="drawerClose" title="Close">Close</button></div>
+    <div class="drawer-head"><div id="drawerTabs" class="seg small"></div><div id="drawerTitle"></div><button class="txt close" id="drawerClose" title="Close" aria-label="Close"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="drawerChips" class="chips hidden"></div>
     <div id="drawerBody" class="cards"></div>
   </section>
 
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="camCtl" aria-label="Camera">
-    <button data-cam="iso" title="Isometric (tap again to re-centre)">1</button><button data-cam="observer" title="Front (tap again to re-centre)">2</button><button data-cam="reverse" title="Back (tap again to re-centre)">3</button><button data-cam="left" title="Left side (tap again to re-centre)">3</button><button data-cam="right" title="Right side (tap again to re-centre)">4</button>
+    <div id="camList"><button data-cam="iso">Iso</button><button data-cam="observer">Front</button><button data-cam="reverse">Back</button><button data-cam="left">Left</button><button data-cam="right">Right</button><button id="camRecentre">Re-centre</button></div>
+    <button id="camToggle" aria-expanded="false" aria-label="Camera view" title="Camera view"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2L8 6h8l1.8 2.5H21V19H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span id="camLbl">Iso</span></button>
   </div>
 
   <div id="modeBar" class="hidden">
@@ -516,16 +645,17 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   </div>
 
   <div id="toasts" aria-live="polite"></div>
+  <div id="tip" class="hidden" role="status" aria-live="polite"></div>
 
   <nav id="dock" class="mobile-only" aria-label="Main"><span class="lens"></span>
     <button data-dock="build">Build</button>
-    <button data-dock="food">Food</button>
+    <button data-dock="care">Care</button>
+    <button data-dock="observe" class="obsBtn">Observe</button>
     <button data-dock="jumpers">Jumpers</button>
-    <button data-dock="observe">Observe</button>
-    <button data-dock="more">More</button>
+    <button data-dock="more">Menu</button>
   </nav>
 
-  <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2 id="modalTitle"></h2><button class="txt close" id="modalClose" title="Close">Close</button></div><div id="modalBody"></div></div></div>
+  <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><button class="txt back hidden" id="modalBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="modalTitle"></h2><button class="txt close" id="modalClose" title="Close">Close</button></div><div id="modalBody"></div></div></div>
   <div id="popover" class="hidden"></div>
 </div>
 
@@ -776,16 +906,22 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       'Translucent green and long-legged. Lives almost entirely on elevated leaves.', { translucent: true }),
     S('ant', 'Ant Mimic', 'Myrmarachne sp.', 6.5, { ceph: '#1a1410', abd: '#2a1e16', mark: '#4a3a2a', leg: '#2a2018', chel: '#3a2a20', hair: '#3a2e24', belly: '#3a2e24' }, 'ant',
       { stealth: .85, patience: .65, jump: .55, bold: .4, tactics: .7 }, { height: .35, foliage: .35, rear: .8, display: .1, activity: .7 },
-      'Disguised as an ant. Moves in a twitchy low-profile way and approaches from behind.', { antShape: true }),
+      'Disguised as an ant. Moves in a twitchy low-profile way and approaches from behind. Signature: marches like an ant, and other jumpers steer clear of it.', { antShape: true, sig: 'ant' }),
     S('paradise', 'Paradise Jumper', 'Habronattus pyrrithrix', 6.5, { ceph: '#3a3028', abd: '#5a4a3a', mark: '#e0d0b0', leg: '#6a5a4a', chel: '#d03a2a', hair: '#9a8a7a', belly: '#6a5a4a' }, 'paradise',
       { stealth: .55, patience: .5, jump: .65, bold: .5, tactics: .5 }, { height: .3, foliage: .3, rear: .3, display: .8, activity: .65 },
       'Known for vivid red faces and energetic courtship displays.'),
     S('giant', 'Giant Jumper', 'Hyllus diardi', 16, { ceph: '#4a3a2a', abd: '#5a4632', mark: '#d8c09a', leg: '#5a4836', chel: '#3a2a1e', hair: '#b09a7a', belly: '#6a5644' }, 'giant',
       { stealth: .55, patience: .7, jump: .8, bold: .95, tactics: .6 }, { height: .55, foliage: .45, rear: .3, display: .15, activity: .4 },
-      'A powerful, deliberate hunter that can tackle very large prey.'),
+      'A powerful, deliberate hunter that can tackle very large prey. Signature: huge power leaps between perches.', { sig: 'leap' }),
     S('portia', 'Portia', 'Portia fimbriata', 9, { ceph: '#4a3a28', abd: '#5a4834', mark: '#c8b08a', leg: '#5a4632', chel: '#3a2a1e', hair: '#a8906a', belly: '#6a5844' }, 'portia',
       { stealth: .95, patience: .95, jump: .75, bold: .7, tactics: 1.0 }, { height: .6, foliage: .55, rear: .95, display: .1, activity: .45 },
-      'The most calculating jumper. Plans indirect routes, exploits cover and attacks from behind.', { unlockCatches: 30 }),
+      'The most calculating jumper. Plans indirect routes, exploits cover and attacks from behind. Signature: deliberate detours that lose sight of the prey on purpose.', { unlockCatches: 30, sig: 'detour' }),
+    S('bagheera', 'Vegetarian Jumper', 'Bagheera kiplingi', 5.5, { ceph: '#2a2a1c', abd: '#8a6a2a', mark: '#d8b45a', leg: '#c89a4a', chel: '#4a3a1a', hair: '#e0c27a', belly: '#9a7a3a' }, 'emerald',
+      { stealth: .55, patience: .6, jump: .7, bold: .4, tactics: .55 }, { height: .75, foliage: .95, rear: .3, display: .2, activity: .6 },
+      'The only mostly vegetarian spider known. Sips nectar and nibbles plant food bodies; hunts only when really hungry. Signature: flower feeding.', { sig: 'nectar', unlock: { journal: 10 } }),
+    S('hasarius', 'House Jumper', 'Hasarius adansoni', 7, { ceph: '#141210', abd: '#1e1a16', mark: '#f2ece0', leg: '#3a2e24', chel: '#1e1a16', hair: '#b85a3a', belly: '#2a241e' }, 'arc',
+      { stealth: .55, patience: .5, jump: .7, bold: .6, tactics: .55 }, { height: .7, foliage: .2, rear: .35, display: .7, activity: .65 },
+      'A worldwide house and greenhouse jumper. Loves walls and climbs them more than anything else. Signature: waves its bright white palps like semaphore flags.', { sig: 'semaphore', unlock: { tame: 0.7 } }),
     S('orange', 'Regal Orange Morph', 'Phidippus regius (orange morph)', 19, { ceph: '#2a1e14', abd: '#e0701e', mark: '#fff0d8', leg: '#3a2a1c', chel: '#2ad08a', hair: '#ff9a40', belly: '#4a3424' }, 'orange',
       { stealth: .6, patience: .85, jump: .75, bold: .9, tactics: .65 }, { height: .55, foliage: .45, rear: .35, display: .15, activity: .35 },
       'The orange morph of the regal. Grows into the largest, most imposing jumper in the collection: powerful, but patient.'),
@@ -822,6 +958,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     magnolia:    { cW: 0.9, cH: 0.85, aL: 1.15, aW: 0.7, aH: 0.7, legLen: 1.3, front: 1.55, legW: 0.6, frontW: 0.95, fuzz: 0.1, bristle: 0.25, bristleCol: '#f2fff0', palp: 'plain', chel: 1.2, gait: 'twitchy', note: 'Delicate translucent green, very long thin front legs, slim abdomen. Twitchy sway.' },
     ant:         { legLen: 1.1, front: 1.1, legW: 0.7, frontW: 0.8, fuzz: 0, palp: 'plain', chel: 1.1, antennae: true, gait: 'ant', note: 'Ant body with waist, glossy, front legs up as antennae. Quick zig-zags.' },
     paradise:    { aL: 0.9, legW: 1, frontW: 1.3, fuzz: 0.6, bristle: 0.3, palp: 'fluffy', palpCol: '#efe4cc', gait: 'hop', note: 'Small and compact, pale palps, red fangs/face. Lively display hops.' },
+    bagheera:    { cW: 0.95, aL: 0.95, aW: 0.85, legLen: 1.15, front: 1.05, legW: 0.85, frontW: 1.15, fuzz: 0.35, palp: 'plain', irid: 1, eye: 1.05, gait: 'hop', note: 'Slim, long amber legs, dark bronze-green head. Light hops among leaves.' },
+    hasarius:    { cH: 0.92, aL: 1.05, flat: 0.15, legW: 0.95, frontW: 1.3, fuzz: 0.5, legHair: 0.3, palp: 'flag', palpCol: '#f6f2e8', chel: 0.95, gait: 'stopgo', note: 'Black with a white crescent and spots, rusty hairs, bright white palps. Busy stop-and-go on walls.' },
     giant:       { cL: 1.05, cW: 1.05, cH: 1.05, aL: 1.05, aW: 1.05, legLen: 1.1, front: 1.22, legW: 1.1, frontW: 1.5, fuzz: 1.1, legHair: 0.6, bristle: 0.7, tufts: 'lash', tuftCol: '#e8dcc4', palp: 'fluffy', chel: 1.1, gait: 'heavy', note: 'Big and leggy, long front legs, long stiff eyelash bristles. Slow, powerful.' },
     portia:      { cL: 0.9, cW: 0.85, cH: 0.9, aL: 0.8, aW: 0.75, aH: 0.75, legLen: 1.3, front: 1.25, legW: 0.6, frontW: 0.75, fuzz: 0.3, fringe: 1, tufts: 'ragged', tuftCol: '#2a1e14', palp: 'pompom', palpCol: '#e6dac2', chel: 0.8, eye: 1.08, eyeCol: '#6a4418', gait: 'choppy', note: 'Skinny, long thin legs with dark fringes, ragged debris outline, fluffy palps. Slow choppy robot walk.' },
   };
@@ -1127,8 +1265,38 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     { id: 'bigPrey', title: 'Bigger Than Itself', icon: '', text: 'A hungry jumper took on prey bigger than itself.' },
     { id: 'shakenOff', title: 'Shaken Off!', icon: '', text: 'A big catch thrashed free of a jumper\'s grip and got away, groggy from the bite.' },
     { id: 'giantMeal', title: 'A Giant Meal', icon: '', text: 'A jumper wrestled down and subdued prey far bigger than itself.' },
+    { id: 'fingerCurious', title: 'Hello Through the Glass', icon: '', text: 'A jumper turned its big front eyes on your fingertip and tilted its head to study you.' },
+    { id: 'fingerShy', title: 'Too Close for Comfort', icon: '', text: 'A shy or startled jumper darted for cover when your finger came to the glass.' },
+    { id: 'portiaDetour', title: 'The Long Way Round', icon: '', text: 'A Portia planned a detour that took the prey out of its sight, then struck from where it had worked out the prey would be.' },
+    { id: 'antMarch', title: 'Marching Like an Ant', icon: '', text: 'An ant mimic zig-zagged along like an ant, front legs waving as fake antennae.' },
+    { id: 'antFooled', title: 'Fooled by the Disguise', icon: '', text: 'Another jumper took the ant mimic for a real ant and backed off. Few predators want a mouthful of ant.' },
+    { id: 'giantLeap', title: 'Power Leap', icon: '', text: 'A giant jumper launched itself across the tank in a single enormous leap.' },
+    { id: 'nectarSip', title: 'A Vegetarian Jumper', icon: '', text: 'A Bagheera sipped nectar from a flower instead of hunting. Almost no other spider does this.' },
+    { id: 'semaphore', title: 'Palp Semaphore', icon: '', text: 'A house jumper waved its bright white palps up and down like a signaller\'s flags.' },
     { id: 'finishWeak', title: 'Second Chance', icon: '', text: 'A jumper finished off a weakened escapee before it could recover.' },
   ];
+  /** Journal chapters, plus a hint for entries you have not seen yet (what to set up to see them). */
+  JT.JOURNAL_CATS = [['hunt', 'Hunting'], ['grow', 'Growing up'], ['life', 'Daily life'], ['social', 'Jumpers together'], ['you', 'You & your jumpers'], ['species', 'Species specialities']];
+  JT.JOURNAL_META = {
+    firstHunt: ['hunt', 'Release some food your jumper can handle and watch.'], ambushHigh: ['hunt', 'Give it a high perch above where prey wanders.'],
+    ambushCover: ['hunt', 'Plants and hides let a jumper sneak up unseen.'], stepping: ['hunt', 'Closely spaced perches and branches make a route.'],
+    safeMeal: ['hunt', 'Jumpers like a sheltered perch to eat on.'], intercept: ['hunt', 'Flying or fast prey makes a jumper think ahead.'],
+    restless: ['hunt', 'A hungry jumper with nothing left to hunt gets restless.'], bigPrey: ['hunt', 'A really hungry jumper takes on bigger food.'],
+    shakenOff: ['hunt', 'Big, strong prey sometimes wriggles free.'], giantMeal: ['hunt', 'Hungry adults sometimes tackle huge prey.'],
+    finishWeak: ['hunt', 'Escaped prey is weak for a while after the bite.'], cannibal: ['social', 'Hungry jumpers sharing a tank may hunt each other.'],
+    tinyCatch: ['hunt', 'Tiny feeder jumpers are on the food list too.'], tinyEscape: ['hunt', 'Tiny feeder jumpers are quick to flee.'],
+    molt: ['grow', 'Well-fed jumpers molt after a few meals.'], retreat: ['grow', 'Jumpers spin silk retreats to sleep or molt in.'],
+    softMolt: ['grow', 'Watch a jumper right after it molts.'], adult: ['grow', 'Keep a jumper fed until its final molt.'],
+    veteran: ['grow', 'Adults that live long in your care earn this.'], drink: ['life', 'Mist the tank and watch a thirsty jumper.'],
+    safety: ['life', 'Jumpers anchor a silk line before big leaps.'], investigate: ['life', 'Place something new near a curious jumper.'],
+    bask: ['life', 'A basking lamp makes a warm spot.'], dangle: ['life', 'High ledges invite a drop on a silk line.'],
+    cleanup: ['life', 'Springtails and isopods tidy up leftovers.'], display: ['social', 'Display-loving species dance now and then.'],
+    territorial: ['social', 'Two territorial jumpers in one tank may face off.'],
+    portiaDetour: ['species', 'Portia: give it cover and obstacles between it and its food.'], antMarch: ['species', 'Ant mimics march about when they are calm.'],
+    antFooled: ['species', 'Keep an ant mimic with another jumper.'], giantLeap: ['species', 'Giant jumpers leap between distant perches.'],
+    nectarSip: ['species', 'Keep a Vegetarian Jumper with flowers in the tank.'], semaphore: ['species', 'House jumpers signal to other jumpers, and to you.'],
+    fingerCurious: ['you', 'Tap or press and hold on the glass near a curious jumper.'], fingerShy: ['you', 'Shy jumpers do not like a finger close by.'],
+  };
 
   // ---------------- Presets ----------------
   // Themes: weighted pools. Generated adaptively for any enclosure shape.
@@ -2178,22 +2346,40 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   };
 
   /** Dijkstra from a supported position. caps: {jump: maxJumpLen (0 = none), climb: bool, carry: bool} */
+  /* Pathfinding hot path. The graph never changes once built, so its edges are flattened into typed arrays the first
+     time it is searched, and the priority queue lives in reusable typed arrays (no per-step allocations). It is the
+     same binary heap with the same comparisons as Heap above, so ties pop in the same order and every route is
+     identical to the object version; it is just several times faster (big wall tanks used to hitch on phones). */
+  const ET = { jump: 1, drop: 2, path: 3, link: 4 };
+  function flatNav(nav) {
+    if (nav._fl) return nav._fl; const N = nav.nodes.length; let E = 0; for (const a of nav.adj) E += a.length;
+    const off = new Int32Array(N + 1), to = new Int32Array(E), ty = new Uint8Array(E), len = new Float64Array(E), cost = new Float64Array(E), fF = new Uint8Array(E), ref = new Array(E);
+    let k = 0; for (let u = 0; u < N; u++) { off[u] = k; for (const e of nav.adj[u]) { to[k] = e.to; ty[k] = ET[e.type] || 0; len[k] = e.len; cost[k] = e.cost; fF[k] = e.region === 'F' ? 1 : 0; ref[k] = e; k++; } } off[N] = k;
+    return (nav._fl = { N, off, to, ty, len, cost, fF, ref });
+  }
+  let HP = new Float64Array(1024), HN = new Int32Array(1024);
   Nav.dijkstra = function (hab, sup, pos, caps) {
-    const nav = hab.nav, N = nav.nodes.length;
+    const nav = hab.nav, N = nav.nodes.length, F = flatNav(nav);
     const dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-2), pe = new Array(N);
-    const h = new Heap();
-    for (const [nid, c, e] of Nav.attach(hab, sup, pos)) { if (c < dist[nid]) { dist[nid] = c; prev[nid] = -1; pe[nid] = e; h.push(nid, c); } }
-    const maxJ = caps.jump || 0;
-    while (h.a.length) {
-      const [d, u] = h.pop(); if (d > dist[u]) continue;
-      for (const e of nav.adj[u]) {
-        if (e.type === 'jump' && e.len > maxJ) continue;
-        if (e.type === 'drop' && !caps.drop) continue;
-        if ((e.type === 'path' || e.type === 'link') && !caps.climb) continue;
+    const att = Nav.attach(hab, sup, pos);
+    let hn = 0; const cap = F.to.length + att.length + 8; if (HP.length < cap) { HP = new Float64Array(cap); HN = new Int32Array(cap); } const P = HP, Q = HN; // pushes <= edges + attach points
+    const push = (n, p) => { let i = hn++; P[i] = p; Q[i] = n; while (i > 0) { const j = (i - 1) >> 1; if (P[j] <= P[i]) break; const tp = P[i]; P[i] = P[j]; P[j] = tp; const tq = Q[i]; Q[i] = Q[j]; Q[j] = tq; i = j; } };
+    for (const [nid, c, e] of att) { if (c < dist[nid]) { dist[nid] = c; prev[nid] = -1; pe[nid] = e; push(nid, c); } }
+    const maxJ = caps.jump || 0, cDrop = !!caps.drop, cClimb = !!caps.climb, carry = !!caps.carry, hunt = !!caps.hunt;
+    const off = F.off, to = F.to, ty = F.ty, len = F.len, cost = F.cost, fF = F.fF, ref = F.ref;
+    while (hn) {
+      // pop (same sift-down as Heap.pop)
+      const d = P[0], u = Q[0]; hn--; if (hn) { P[0] = P[hn]; Q[0] = Q[hn]; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < hn && P[l] < P[m]) m = l; if (r < hn && P[r] < P[m]) m = r; if (m === i) break; const tp = P[i]; P[i] = P[m]; P[m] = tp; const tq = Q[i]; Q[i] = Q[m]; Q[m] = tq; i = m; } }
+      if (d > dist[u]) continue;
+      for (let k = off[u], k1 = off[u + 1]; k < k1; k++) {
+        const t = ty[k];
+        if (t === 1 && len[k] > maxJ) continue;
+        if (t === 2 && !cDrop) continue;
+        if ((t === 3 || t === 4) && !cClimb) continue;
         // carrying a meal: leaping between decor beats a long exposed walk across the floor
         // hunting: hopping across decor toward the prey beats a long walk over the open floor
-        const nd = d + (caps.carry ? (e.type === 'jump' ? e.cost * 0.55 : e.region === 'F' ? e.cost * 1.9 : e.cost) : caps.hunt ? (e.type === 'jump' ? e.cost * 0.72 : e.region === 'F' ? e.cost * 1.2 : e.cost) : e.cost);
-        if (nd < dist[e.to]) { dist[e.to] = nd; prev[e.to] = u; pe[e.to] = e; h.push(e.to, nd); }
+        const c = cost[k]; const nd = d + (carry ? (t === 1 ? c * 0.55 : fF[k] ? c * 1.9 : c) : hunt ? (t === 1 ? c * 0.72 : fF[k] ? c * 1.2 : c) : c);
+        const v = to[k]; if (nd < dist[v]) { dist[v] = nd; prev[v] = u; pe[v] = ref[k]; push(v, nd); }
       }
     }
     return { dist, prev, pe, sup, pos };
@@ -2540,7 +2726,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     capacity() { return this.dims.cap; }
     addSpider(speciesId, opts) {
       const sp = JT.SpiderAI.create(this, speciesId, opts || {});
-      this.data.spiders.push(sp); return sp;
+      this.data.spiders.push(sp); if (this.game && this.game.diary) { const sn = JT.STAGES[sp.stage].toLowerCase(); this.game.diary(sp, 'Arrived in ' + this.data.name + ' as ' + (/^[aeiou]/.test(sn) ? 'an ' : 'a ') + sn + '.'); } return sp;
     }
     livePreyCount() { return this.data.prey.filter(p => !p.owner).length; }
     addPrey(typeId, n) {
@@ -2821,7 +3007,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   const JT = root.JT, M = JT.M, G = JT.G, Nav = JT.Nav, Loco = JT.Loco;
   const AI = JT.SpiderAI = {};
   const DAY = 480;
-  const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 34, watch: 4, display: 20, social: 20, avoid: 22,
+  const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 34, watch: 4, fingerWatch: 6, curious: 14, antMarch: 2, semaphore: 18, nectarSeek: 12, sip: 12, display: 20, social: 20, avoid: 22,
     investigate: 15, inspect: 15, postFeed: 10, search: 35, sleepSeek: 30, sleep: 30,
     cleanEyes: 3, look: 3, scuttle: 3, stretch: 5, homeSeek: 3, baskSeek: 12, bask: 12, dangle: 45, scan: 34, lunge: 36,
     notice: 40, assess: 40, stalk: 40, creep: 41, crouch: 42, track: 40, peek: 40,
@@ -2835,7 +3021,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   const sp_ = (sp) => JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0];
   AI.len = (sp) => sp_(sp).len * JT.STAGE_SCALE[M.clamp(sp.stage, 0, 5)];
-  AI.jump = (sp) => (14 + AI.len(sp) * 3.0) * (0.75 + sp.traits.jump * 0.4) * (sp.soft > 0 ? 0.7 : 1) * elder(sp);
+  AI.jump = (sp) => (14 + AI.len(sp) * 3.0) * (0.75 + sp.traits.jump * 0.4) * (sp.soft > 0 ? 0.7 : 1) * elder(sp) * (sp.species === 'giant' && sp.stage >= 3 ? 1.25 : 1); // Hyllus: power leaps
   // ---------------- species gaits ----------------
   // speed: travel-speed factor while going · go/stop: duration ranges (s) of walking bursts and pauses · snap: how fast it stops/starts
   const GAIT = AI.GAIT = {
@@ -2874,7 +3060,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   AI.moltNeed = (sp) => 3 + sp.stage;
   AI.STARVING = 0.15;
   /** Live food this jumper will actually go after. Cleanup crew is ignored unless the jumper is starving. */
-  AI.huntableFor = (sp, d) => !!d && (d.huntable || (d.id === 'springtail' && sp.sat < AI.STARVING));
+  AI.huntableFor = (sp, d) => !!d && (d.huntable || (d.id === 'springtail' && sp.sat < AI.STARVING)) && !(sp.species === 'bagheera' && sp.sat > 0.38); // Bagheera: mostly vegetarian
   AI.nutOf = (d) => d ? (d.nut || (d.id === 'springtail' ? 0.05 : 0)) : 0;
   /** Is there anything left in the habitat this jumper could eat? */
   AI.preyAvailable = (hab, sp) => hab.data.prey.some(p => !p.owner && !p.buried && !p.dead && AI.huntableFor(sp, JT.PREY_BY_ID[p.type]));
@@ -2953,7 +3139,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (sp.target.kind === 'spider') { const L = AI.len(t); return { name: t.name + ' the ' + sp_(t).name.toLowerCase(), len: L, nut: 0.25 + L * 0.05, struggle: 6, reflex: 0.5, danger: 0.3, sense: 40 }; }
     return JT.PREY_BY_ID[t.type];
   }
-  function preyName(d) { const n = d.name.toLowerCase(); return n.replace(/ies$/, 'y').replace(/s$/, '').replace('fruit fly', 'fruit fly').replace('dubia nymph', 'dubia nymph'); }
+  function preyName(d) { const n = d.name.toLowerCase(); return n.replace(/ies$/, 'y').replace(/oes$/, 'o').replace(/s$/, '').replace('fruit fly', 'fruit fly').replace('dubia nymph', 'dubia nymph'); }
   AI.preyName = preyName;
   function decorName(hab, id) { const inst = id && hab.decorById(id); return inst ? JT.DECOR_BY_ID[inst.type].name.toLowerCase() : null; }
 
@@ -3066,7 +3252,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (JT.R() < p) { if (!canSee(hab, sp, e)) return; if (!seen[e.id]) sp._noticedAt = now; seen[e.id] = now; noteSeen(hab, sp, e); }
     };
     for (const p of hab.data.prey) { if (p.owner || p.buried || p.dead) continue; const d = JT.PREY_BY_ID[p.type]; if (!AI.huntableFor(sp, d)) continue; consider(p); }
-    if (sp.sat < 0.32 && sp.pers.cannibal > 0.5) for (const o of hab.data.spiders) if (o !== sp && !MOLT.has(o.state) || (o !== sp && o.soft > 0)) consider(o, true);
+    if (sp.sat < 0.32 && sp.pers.cannibal > 0.5) for (const o of hab.data.spiders) if ((o !== sp && !MOLT.has(o.state) || (o !== sp && o.soft > 0)) && !(sp_(o).sig === 'ant' && sp_(sp).sig !== 'ant' && sp.sat > 0.12)) consider(o, true); // the ant disguise works
   }
   function scoreTarget(hab, sp, e, isSpider) {
     const def = isSpider ? null : JT.PREY_BY_ID[e.type];
@@ -3224,6 +3410,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const h = H[sp.state] || H.idle;
     const before = sp.pos.slice();
     aware(hab, sp, dt);
+    if (hab.finger) AI.fingerReact(hab, sp);
     (H[sp.state] || h)(hab, sp, dt);
     const moved = M.dist(before, sp.pos); sp._walk = (sp._walk || 0) + moved / Math.max(0.5, AI.len(sp) * 0.32);
     sp._moving = moved > 0.02;
@@ -3241,7 +3428,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     // sneaking body height follows the stalking pace: lowest while inching or frozen, higher on the brisk approach
     const brace = sp.state === 'subdue' && !sp._hang ? 0.35 + 0.4 * Math.min(1, sp._strug0 || 0) : 0;
     sp._crouch = M.lerp(sp._crouch || 0, sp.state === 'crouch' ? 1 : sneak ? 0.3 + 0.55 * (sp._low || 0) : brace, Math.min(1, dt * 4));
-    const raise = (HUNT.has(sp.state) && sp.state !== 'assess') || sp.state === 'display' || sp.state === 'inspect' || sp.state === 'watch' ? 1 : 0;
+    const raise = (HUNT.has(sp.state) && sp.state !== 'assess') || sp.state === 'display' || sp.state === 'inspect' || sp.state === 'watch' || sp.state === 'curious' || sp.state === 'fingerWatch' || sp.state === 'semaphore' ? 1 : 0;
     sp._legRaise = M.lerp(sp._legRaise || 0, raise, Math.min(1, dt * 5));
     if (sp.state === 'lunge' && sp.st < 0.3) sp._crouch = M.lerp(sp._crouch, 1, Math.min(1, dt * 10));
     if (sp._prepT > 0) sp._crouch = M.lerp(sp._crouch, 0.55, Math.min(1, dt * 8));
@@ -3301,7 +3488,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     } else sp._prepT = 0;
     const gk = !urgent && !sp._air && sp._gaitK != null && (!HUNT.has(sp.state) || gaitOf(sp) === GAIT.choppy) ? sp._gaitK : 1; // species gait: bursts and pauses (never mid-air; hunts stay smooth except Portia's choppy stalk)
     return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1) * gk, {
-      onLaunch: (st) => { if (st.mode === 'jump') { sp._anchor = sp.pos.slice(); hab.event('jump', { sp }); } },
+      onLaunch: (st) => { if (st.mode === 'jump') { sp._anchor = sp.pos.slice(); hab.event('jump', { sp }); if (sp_(sp).sig === 'leap' && st.pos && M.dist(st.pos, sp.pos) > AI.len(sp) * 1.2 + 12) { sp.thought = 'A huge power leap across the tank!'; hab.event('bigLeap', { sp, to: st.pos.slice() }); hab.event('journal', { id: 'giantLeap', sp }); } } },
       onLand: (st) => { if (sp._anchor) { hab.addSilk(sp._anchor, sp.pos, 'drag'); sp._anchor = null; hab.event('journal', { id: 'safety', sp, soft: true }); } },
       onStep: (d, dir) => { if (JT.R() < 0.12) hab.nudge(d, dir[0] * AI.len(sp) * 0.08, dir[2] * AI.len(sp) * 0.08); },
     });
@@ -3318,9 +3505,12 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const restless = AI.hungerLevel(sp) >= 2;
     if (restless) r = 0.3 + r * 0.7; // very hungry: little grooming or resting, more wandering
     if (sp.hyd < 0.72 && hab.data.drops.length && JT.R() < 0.4 && !(sp._drinkFail > hab.time) && startDrink(hab, sp, 140)) return;
+    if (S.sig === 'nectar' && sp.sat < 0.8 && !(sp._nectarCD > hab.time) && JT.R() < 0.7 && startNectar(hab, sp)) return;
+    if (S.sig === 'ant' && r > 0.9 && startAntMarch(hab, sp)) return;
+    if (S.sig === 'semaphore' && r < 0.05) { setState(sp, 'semaphore', 'Flashing its white palps up and down, signalling to no one in particular.'); return; }
     if (S.prefs.display > 0.7 && r < 0.08) { setState(sp, 'display', 'Performing a little leg-waving dance.'); sp.stats.displays++; hab.event('journal', { id: 'display', sp }); return; }
-    if (r < 0.18 + (1 - act) * 0.1) {
-      if (JT.R() < 0.5) setState(sp, 'cleanEyes', 'Wiping its big front eyes with its front legs.');
+    if (r < 0.18 + (1 - act) * 0.1 + (AI.has(sp, 'tidy') ? 0.1 : 0)) {
+      if (JT.R() < 0.5) setState(sp, 'cleanEyes', AI.has(sp, 'tidy') ? 'Polishing its big front eyes. Again.' : 'Wiping its big front eyes with its front legs.');
       else setState(sp, 'groom', JT.R() < 0.5 ? 'Cleaning its palps.' : 'Grooming its legs, one at a time.');
       return;
     }
@@ -3337,16 +3527,20 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       }
       if (!sp.home && Nav.coverAt(hab, sp.pos) > 0.35 && sp.sup.k !== 'air') AI.setHome(hab, sp);
       const atHome = sp.home && M.dist(sp.home.pos, sp.pos) < 6;
-      setState(sp, 'rest', atHome ? 'Resting at its favourite spot.' : pat > 0.6 ? 'Sitting perfectly still, watching.' : 'Pausing for a moment.'); sp.stats.rests++; return;
+      const shyHid = AI.has(sp, 'shy') && Nav.coverAt(hab, sp.pos) > 0.35, lazy = AI.has(sp, 'lazy');
+      setState(sp, 'rest', shyHid ? 'Tucked under cover, peeking out.' : atHome ? (lazy ? 'Lounging at its favourite spot.' : 'Resting at its favourite spot.') : lazy ? 'Having a lazy little sit.' : pat > 0.6 ? 'Sitting perfectly still, watching.' : 'Pausing for a moment.'); sp.stats.rests++; return;
     }
     // explore / lookout: choose a reachable destination weighted by species/individual preferences
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
     const nodes = hab.nav.nodes; let best = null, bs = -1e9; const H0 = hab.dims.h;
+    // personality: shy jumpers favour cover, bold ones exposed high perches, climbers height, ground-lovers the floor
+    const shyK = AI.has(sp, 'shy') ? 2.4 : 0, boldK = AI.has(sp, 'bold') ? 1.4 : 0, climbK = (AI.climbPref(sp) - 0.5) * 4;
     for (let k = 0; k < 40; k++) {
       const n = nodes[Math.floor(JT.R() * nodes.length)]; if (!n || n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
       if (M.dist(n.pos, sp.pos) < 8) continue;
-      const g = n.decor && hab.geoms[n.decor]; const plant = g && g.def.cat === 'plants';
-      const s = S.prefs.height * (n.y / H0) * 5 + S.prefs.foliage * (plant ? 2.5 : 0) + (n.perch ? 1 : 0) + JT.R() * 2.5 - dj.dist[n.id] * 0.015 * (1.2 - act) + Nav.coverAt(hab, n.pos) * (1 - sp.traits.bold) + (AI.blendAt(hab, sp.species, n.sup, n.pos) ? 1.6 : 0);
+      const g = n.decor && hab.geoms[n.decor]; const plant = g && g.def.cat === 'plants'; const cov = Nav.coverAt(hab, n.pos);
+      const s = S.prefs.height * (n.y / H0) * 5 + S.prefs.foliage * (plant ? 2.5 : 0) + (n.perch ? 1 : 0) + JT.R() * 2.5 - dj.dist[n.id] * 0.015 * (1.2 - act) + cov * (1 - sp.traits.bold) + (AI.blendAt(hab, sp.species, n.sup, n.pos) ? 1.6 : 0)
+        + cov * shyK + boldK * (n.perch ? 1 : 0.2) * (0.3 + n.y / H0) - boldK * cov * 0.6 + climbK * (n.y / H0) + (S.sig === 'semaphore' && g && (g.def.arche === 'backwall' || g.wallH || n.vert) ? 3 : 0); // house jumper: walls
       if (s > bs) { bs = s; best = n; }
     }
     if (best) {
@@ -3359,13 +3553,16 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   }
   H.explore = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.8);
-    if (r === 'done' || r === 'none') { sp._route = null; const bl = AI.blendAt(hab, sp.species, sp.sup, sp.pos); setState(sp, 'lookout', bl ? 'Keeping still on the ' + bl.name.toLowerCase() + ' — its colours blend right in.' : sp._lookout ? 'Watching from a high lookout.' : 'Scanning the habitat.'); }
+    if (r === 'done' || r === 'none') { sp._route = null; const bl = AI.blendAt(hab, sp.species, sp.sup, sp.pos);
+      const ln = bl ? 'Keeping still on the ' + bl.name.toLowerCase() + ' — its colours blend right in.' : sp._lookout && AI.has(sp, 'bold') ? 'Showing off from the top, out in the open.' : AI.has(sp, 'shy') && Nav.coverAt(hab, sp.pos) > 0.35 ? 'Hidden under the leaves, watching.' : sp._lookout ? 'Watching from a high lookout.' : 'Scanning the habitat.';
+      setState(sp, 'lookout', ln); }
     else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
   };
   H.patrol = H.explore;
-  H.lookout = function (hab, sp, dt) { if (sp.st > (3 + sp.traits.patience * 7) * (AI.hungerLevel(sp) >= 2 ? 0.4 : 1)) setState(sp, 'idle'); };
+  const restK = (sp) => AI.has(sp, 'lazy') ? 1.6 : AI.has(sp, 'busy') ? 0.6 : 1; // laid-back jumpers linger, busy ones move on
+  H.lookout = function (hab, sp, dt) { if (sp.st > (3 + sp.traits.patience * 7) * (AI.hungerLevel(sp) >= 2 ? 0.4 : 1) * restK(sp)) setState(sp, 'idle'); };
   H.groom = function (hab, sp, dt) { if (sp.st > 2 + JT.R() * 0.02 + sp.pers.routine * 2) setState(sp, 'idle'); };
-  H.rest = function (hab, sp, dt) { const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6; if (sp.st > (2 + sp.traits.patience * 6) * (home ? 2.2 : 1)) setState(sp, 'idle'); };
+  H.rest = function (hab, sp, dt) { const home = sp.home && M.dist(sp.home.pos, sp.pos) < 6; if (sp.st > (2 + sp.traits.patience * 6) * (home ? 2.2 : 1) * restK(sp)) setState(sp, 'idle'); };
   H.watch = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 2.5) setState(sp, 'idle'); };
   H.display = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 3.5) { setState(sp, 'idle'); sp._watchPos = null; } };
   H.postFeed = function (hab, sp, dt) { if (sp.st > 6 + sp.traits.patience * 8) setState(sp, 'groom', 'Cleaning up after its meal.'); };
@@ -3444,7 +3641,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       if (e._vel && M.len(e._vel) > 2 && M.dist(c.pos, pred.pos) < M.dist(c.pos, e.pos)) s += T.tactics * 2;
       if (sp.pos[1] > 10 && c.pos[1] < 2 && elev < 2) s -= 2.5 * (sp.pos[1] / 30); // don't descend needlessly
       // no needless detours: a winding route to a launch point that is not much better is worse than a direct one
-      const straight = Math.max(8, M.dist(sp.pos, c.pos)); s -= Math.max(0, c.cost / straight - 1.6) * 1.3;
+      const straight = Math.max(8, M.dist(sp.pos, c.pos)); c.wind = c.cost / straight;
+      if (S.sig === 'detour') s += Math.min(2.4, Math.max(0, c.wind - 1.25) * 1.8) * T.tactics * (behind > 0 || elev > 4 ? 1 : 0.4); // Portia: the long way round, out of sight, is the point
+      else s -= Math.max(0, c.wind - 1.6) * 1.3;
       if (sp.mem.blockPos && hab.time - sp.mem.blockPos.t < 10 && M.dist(c.pos, sp.mem.blockPos.pos) < 5) s -= 4;
       if (bigT) { if (behind > 0.3) s += 1.5; if (elev > 4) s += 2; if (kick && behind > 0.55) s -= 4.5; } // big prey: rear or above, but never right behind powerful hind legs
       if (AI.blendAt(hab, sp.species, c.sup, c.pos)) s += 0.6 + T.stealth * 0.8; // a colour-matched launch point hides the approach
@@ -3466,12 +3665,14 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (best.elev > 6) strat = 'high'; else if (best.behind > 0.3 && S.prefs.rear > 0.4) strat = 'rear'; else if (best.cover > 0.4) strat = 'cover';
     if (e._vel && M.len(e._vel) > 2 && T.tactics > 0.55) strat = strat === 'direct' ? 'intercept' : strat;
     if (nDecor >= 2) strat = strat === 'direct' ? 'stepping' : strat;
+    if (S.sig === 'detour' && best.wind > 1.45 && route.steps && route.steps.length > 2) strat = 'detour';
     return { route, strat, pred: pred.pos, nDecor, target: best, name: preyName(def) };
   }
   function stratThought(p, sp) {
     switch (p.strat) {
       case 'high': return p.nDecor >= 2 ? 'Using ' + p.nDecor + ' habitat surfaces as stepping stones to get above the ' + p.name + '.' : 'Looking for a higher ambush above the ' + p.name + '.';
       case 'rear': return 'Circling behind the ' + p.name + '.';
+      case 'detour': return 'Plotting a detour — it will lose sight of the ' + p.name + ' on the way, and remember where it was.';
       case 'cover': return 'Using nearby decor as cover to sneak up on the ' + p.name + '.';
       case 'intercept': return 'Reading where the ' + p.name + ' is heading.';
       case 'stepping': return 'Using ' + p.nDecor + ' habitat surfaces as stepping stones toward the ' + p.name + '.';
@@ -3799,7 +4000,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (sp._catchRatio > 1.02) hab.event('journal', { id: 'bigPrey', sp });
     if (sp._catchWeak > 0) hab.event('journal', { id: 'finishWeak', sp });
     if (A.launchY - A.tY > 8) hab.event('journal', { id: 'ambushHigh', sp });
-    if (strat === 'rear' || strat === 'cover') hab.event('journal', { id: 'ambushCover', sp });
+    if (strat === 'rear' || strat === 'cover' || strat === 'detour') hab.event('journal', { id: 'ambushCover', sp });
+    if (strat === 'detour') hab.event('journal', { id: 'portiaDetour', sp });
     if (nDecor >= 2) hab.event('journal', { id: 'stepping', sp });
     if (strat === 'intercept') hab.event('journal', { id: 'intercept', sp });
     hab.event('catch', { sp, prey });
@@ -4133,7 +4335,107 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       setState(sp, 'groom', 'Refreshed. Wiping its palps.');
     }
   };
-  AI.onMist = function (hab, sp) { if ((PRI[sp.state] || 0) < 15 && JT.R() < 0.5) { setState(sp, 'groom', 'A droplet landed nearby — pausing to groom.'); } };
+  /** Duck under the nearest good cover (used by shy jumpers when startled). */
+  function toCover(hab, sp, line) {
+    if (Nav.coverAt(hab, sp.pos) >= 0.35 || sp.sup.k === 'air' || !hab.nav || !hab.nav.nodes.length) return false;
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = -1e9;
+    for (let k = 0; k < 24; k++) { const n = hab.nav.nodes[Math.floor(JT.R() * hab.nav.nodes.length)]; if (!n || n.kind === 'face' || !isFinite(dj.dist[n.id]) || dj.dist[n.id] > 70) continue; const sc = Nav.coverAt(hab, n.pos) * 3 - dj.dist[n.id] * 0.03; if (sc > bs) { bs = sc; best = n; } }
+    if (best && bs > 1) { const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (r) { sp._route = r; sp._routeStart = hab.time; sp._lookout = false; setState(sp, 'explore', line); return true; } }
+    return false;
+  }
+  AI.onMist = function (hab, sp) {
+    if ((PRI[sp.state] || 0) >= 15) return;
+    if (AI.has(sp, 'shy') && toCover(hab, sp, 'Startled by the mist — scurrying under cover.')) return;
+    if (AI.has(sp, 'bold')) { if (JT.R() < 0.3) setState(sp, 'groom', 'Mist? Barely noticed. Wiping off a droplet.'); return; }
+    if (JT.R() < 0.5) { setState(sp, 'groom', 'A droplet landed nearby — pausing to groom.'); }
+  };
+
+  // ---- species signature moves ----
+  /** Bagheera kiplingi: walk to a flower (or any leafy plant) and sip nectar / nibble food bodies instead of hunting. */
+  function startNectar(hab, sp) {
+    sp._nectarCD = hab.time + 25; const plants = hab.data.decor.filter(d => { const D = JT.DECOR_BY_ID[d.type]; return D && (D.cat === 'plants' || (D.arche === 'backwall')); });
+    if (!plants.length) return false; let best = null, bs = -1e9;
+    for (const d of plants) { const D = JT.DECOR_BY_ID[d.type]; const fl = D.arche === 'flower' || (D.p && D.p.petal) || D.flowers; const n = Nav.nearestNodeOfDecor(hab.nav, d.id, sp.pos); if (!n) continue; const sc = (fl ? 30 : 0) - M.dist(n.pos, sp.pos) * 0.3 + JT.R() * 4; if (sc > bs) { bs = sc; best = { n, d, fl }; } }
+    if (!best) return false; const r = routeTo(hab, sp, best.n.sup, best.n.pos); if (!r) return false;
+    sp._nectar = { decor: best.d.id, fl: !!best.fl }; setState(sp, 'nectarSeek', best.fl ? 'Off to the ' + JT.DECOR_BY_ID[best.d.type].name.toLowerCase() + ' for a sip of nectar.' : 'Looking for plant food bodies on the ' + JT.DECOR_BY_ID[best.d.type].name.toLowerCase() + '.'); return true;
+  }
+  H.nectarSeek = function (hab, sp, dt) { const r = move(hab, sp, dt, 0.8); if (r === 'done') { sp._route = null; setState(sp, 'sip', sp._nectar && sp._nectar.fl ? 'Sipping nectar, mouthparts pressed to a flower.' : 'Nibbling a tiny plant food body.'); } else if (r === 'none' || stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); } };
+  H.sip = function (hab, sp, dt) {
+    const fl = sp._nectar && sp._nectar.fl; sp.sat = Math.min(1.02, sp.sat + dt * (fl ? 0.03 : 0.018)); sp.hyd = Math.min(1, (sp.hyd != null ? sp.hyd : 1) + dt * 0.02);
+    if (sp.st > 7) { sp.sips = (sp.sips | 0) + 1; if (sp.sips % 2 === 0) sp.meals++; if (fl) hab.event('journal', { id: 'nectarSip', sp }); sp._nectar = null; setState(sp, 'lookout', fl ? 'Sweet. Back to watching the world.' : 'A small green snack. Back to watching.'); }
+  };
+  /** Myrmarachne: an ant-like march along a zig-zag trail, front legs waving as fake antennae. */
+  function startAntMarch(hab, sp) {
+    if (sp.sup.k === 'air' || !hab.nav || !hab.nav.nodes.length) return false; const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = -1e9;
+    for (let k = 0; k < 30; k++) { const n = hab.nav.nodes[Math.floor(JT.R() * hab.nav.nodes.length)]; if (!n || n.kind === 'face' || !isFinite(dj.dist[n.id])) continue; const d = dj.dist[n.id]; if (d < 25 || d > 90) continue; const sc = -Math.abs(d - 55) * 0.1 + JT.R() * 3; if (sc > bs) { bs = sc; best = n; } }
+    if (!best) return false; const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) return false;
+    sp._route = r; sp._routeStart = hab.time; setState(sp, 'antMarch', 'Marching like an ant, front legs waving as fake antennae.'); return true;
+  }
+  H.antMarch = function (hab, sp, dt) {
+    const r = move(hab, sp, dt, 1.05);
+    if (sp.st > 3 && !sp._antJ) { sp._antJ = 1; hab.event('journal', { id: 'antMarch', sp }); }
+    if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; sp._antJ = 0; setState(sp, 'lookout', 'Stopped, antennae-legs still twitching.'); }
+  };
+  /** Hasarius: palps flashed up and down in turn; facing whoever it signals to. */
+  H.semaphore = function (hab, sp, dt) { if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3); if (sp.st > 3.2) { sp._watchPos = null; setState(sp, 'lookout', 'Palps down. Message sent.'); } };
+
+  // ---- curiosity about you: a fingertip on the glass ----
+  // hab.finger = { id, pos, t, held, fast } is set by the UI (transient, never saved). Each gesture gets one
+  // personality-driven reaction; a held, slowly moving finger keeps curious jumpers following it.
+  AI.fingerReact = function (hab, sp) {
+    const f = hab.finger; if (!f || !f.pos) return;
+    const age = hab.time - f.t; if (age > (f.held ? 0.8 : 2)) return;
+    if (sp._air || NEST_STATES.has(sp.state) || sp.hold) return;
+    const d = M.dist(sp.pos, f.pos); if (d > 48) return;
+    const pri = PRI[sp.state] || 0;
+    if (pri < 40) sp._glance = { pos: f.pos.slice(), until: hab.time + 0.9 }; // everyone at least looks
+    if (sp.state === 'curious' || sp.state === 'fingerWatch') { if (!f.fast) { sp._watchPos = f.pos.slice(); sp._fingerT = hab.time; } }
+    if (pri >= 15 && sp.state !== 'curious' && sp.state !== 'fingerWatch') return;
+    const startle = (f.fast && d < 30) || (d < 7 && (sp.tame || 0) < 0.25);
+    if (sp._fingerSeen === f.id && !(startle && sp.state === 'curious')) return;
+    sp._fingerSeen = f.id; if (sp._fingerCD > hab.time && !startle) return; sp._fingerCD = hab.time + 2.5;
+    const tame = sp.tame || 0, has = (id) => AI.has(sp, id);
+    const shyK = has('shy') ? 1 : 0, cur = sp.pers.curiosity + (has('curious') ? 0.35 : 0) + (has('bold') ? 0.2 : 0) + tame * 0.6;
+    sp._watchPos = f.pos.slice(); sp._fingerT = hab.time; sp._route = null;
+    if (startle || (shyK && tame < 0.55 && JT.R() < 0.75)) {
+      sp.tame = Math.max(0, tame - (startle ? 0.06 : 0.01));
+      if ((shyK || startle && !has('bold')) && toCover(hab, sp, startle ? 'Your quick finger startled it — darting for cover!' : 'A big shape at the glass — hiding under the leaves.')) { hab.event('finger', { sp, kind: 'shy' }); hab.event('journal', { id: 'fingerShy', sp }); return; }
+      if (has('bold')) { setState(sp, 'display', 'Rears up and raises its legs at your finger!'); return; }
+      setState(sp, 'fingerWatch', startle ? 'Flinched — keeping a nervous eye on you.' : 'Watching your finger warily.'); return;
+    }
+    if (has('aloof') && tame < 0.6 && JT.R() < 0.7) return; // a glance is all you get
+    if (cur > 0.75 || (cur > 0.45 && JT.R() < cur)) {
+      sp.tame = Math.min(1, tame + 0.035);
+      if (sp_(sp).sig === 'semaphore' && JT.R() < 0.6) { setState(sp, 'semaphore', 'Waving its bright white palps at your finger like semaphore flags!'); hab.event('finger', { sp, kind: 'curious' }); hab.event('journal', { id: 'semaphore', sp }); hab.event('journal', { id: 'fingerCurious', sp }); return; }
+      setState(sp, 'curious', tame > 0.6 ? 'Recognises your finger — tilting its head to greet you.' : 'Turns all its eyes on your finger, head tilting.');
+      hab.event('finger', { sp, kind: 'curious' }); hab.event('journal', { id: 'fingerCurious', sp }); return;
+    }
+    sp.tame = Math.min(1, tame + 0.015);
+    setState(sp, 'fingerWatch', 'Watching your finger through the glass.');
+  };
+  function fingerLive(hab, sp) { const f = hab.finger; return f && f.pos && hab.time - f.t < (f.held ? 0.8 : 2) ? f : null; }
+  H.fingerWatch = function (hab, sp, dt) {
+    if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 3);
+    if (sp.st > 4 || (sp.st > 1.5 && !fingerLive(hab, sp))) { setState(sp, 'lookout', 'Lost interest in the glass.'); sp._watchPos = null; }
+  };
+  H.curious = function (hab, sp, dt) {
+    const f = fingerLive(hab, sp);
+    if (sp._route) {
+      const r = move(hab, sp, dt, 0.7);
+      if (r !== 'moving' || stuck(hab, sp) || (sp._watchPos && M.dist(sp.pos, sp._watchPos) < 6)) sp._route = null;
+    } else if (sp._watchPos) faceToward(sp, sp._watchPos, dt, 4);
+    // a finger held still nearby: creep closer (re-planned at most every 1.5 s)
+    if (f && f.held && !f.fast && !sp._route && M.dist(sp.pos, f.pos) > 8 && hab.time > (sp._fingerRT || 0) && hab.nav && hab.nav.nodes.length) {
+      sp._fingerRT = hab.time + 1.5;
+      const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = 1e9;
+      for (const n of hab.nav.nodes) { if (n.kind === 'face' || !isFinite(dj.dist[n.id]) || dj.dist[n.id] > 60) continue; const sc = M.dist(n.pos, f.pos) + dj.dist[n.id] * 0.15; if (sc < bs) { bs = sc; best = n; } }
+      if (best && M.dist(best.pos, f.pos) < M.dist(sp.pos, f.pos) - 3) { const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (r) { sp._route = r; sp._routeStart = hab.time; sp.thought = 'Creeping closer to your finger…'; } }
+    }
+    if (!sp._route) {
+      const idle = hab.time - (sp._fingerT || 0);
+      if (idle > 2.5 || sp.st > 14) { sp.tame = Math.min(1, (sp.tame || 0) + 0.02); setState(sp, 'lookout', (sp.tame || 0) > 0.6 ? 'Settles back, unbothered — it knows you.' : 'Goes back to its own business.'); sp._watchPos = null; }
+    }
+  };
 
   // ---- molting (absolute priority once ready) ----
   function startMoltSeek(hab, sp) {
@@ -4275,6 +4577,13 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   H.avoid = function (hab, sp, dt) { const r = move(hab, sp, dt, 1.0); if (r !== 'moving' || stuck(hab, sp)) { sp._route = null; setState(sp, 'watch', 'Keeping its distance.'); } };
 
   // ---- social ----
+  /** Move off to somewhere farther from a point (used to give the ant mimic a wide berth). */
+  function toCoverFrom(hab, sp, from, line) {
+    if (!hab.nav || !hab.nav.nodes.length) return false; const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = -1e9;
+    for (let k = 0; k < 30; k++) { const n = hab.nav.nodes[Math.floor(JT.R() * hab.nav.nodes.length)]; if (!n || n.kind === 'face' || !isFinite(dj.dist[n.id])) continue; const sc = M.dist(n.pos, from) - dj.dist[n.id] * 0.4; if (sc > bs) { bs = sc; best = n; } }
+    if (!best || M.dist(best.pos, from) < M.dist(sp.pos, from) + 6) return false; const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) return false;
+    sp._route = r; sp._routeStart = hab.time; setState(sp, 'avoid', line); return true;
+  }
   function social(hab, sp) {
     if (sp._socialCD > hab.time) return false;
     let o = null, od = 34;
@@ -4283,6 +4592,10 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     const f = horiz(sp.fwd), to = horiz(M.sub(o.pos, sp.pos)); if (M.dot(f, to) < -0.3 && !o._moving) return false;
     sp._socialCD = hab.time + 20 + JT.R() * 20; sp._watchPos = o.pos.slice();
     const ratio = AI.len(o) / AI.len(sp);
+    if (sp_(o).sig === 'ant' && sp_(sp).sig !== 'ant' && od < 28 && sp.sup.k !== 'air') { // takes the ant mimic for a real ant
+      if (toCoverFrom(hab, sp, o.pos, 'Looks like an ant — backing well away from ' + o.name + '.')) { hab.event('journal', { id: 'antFooled', sp: o }); return true; }
+    }
+    if (sp_(sp).sig === 'semaphore' && od < 30) { setState(sp, 'semaphore', 'Waving its white palps at ' + o.name + ' like semaphore flags.'); hab.event('journal', { id: 'semaphore', sp }); return true; }
     if (ratio > 1.5 && sp.traits.bold < 0.8) {
       const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); let best = null, bs = -1e9;
       for (let k = 0; k < 30; k++) { const n = hab.nav.nodes[Math.floor(JT.R() * hab.nav.nodes.length)]; if (!n || n.kind === 'face' || !isFinite(dj.dist[n.id])) continue; const s = M.dist(n.pos, o.pos) - dj.dist[n.id] * 0.4; if (s > bs) { bs = s; best = n; } }
@@ -4343,7 +4656,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       subdue: 'Holding its catch', secure: 'Holding its catch still', carry: 'Carrying its catch', feed: 'Feeding', postFeed: 'Resting after a meal', fall: 'Leaping to safety',
       drinkSeek: 'Going for a drink', drink: 'Drinking a droplet', sleepSeek: 'Heading to bed', sleep: 'Asleep in its retreat',
       moltSeek: 'Looking for a molting spot', moltSilk: 'Spinning a molting hammock', premolt: 'Waiting to molt', molting: 'Molting', postMolt: 'Hardening after a molt', emerge: 'Leaving its retreat',
-      flee: 'Fleeing', avoid: 'Keeping its distance', display: 'Displaying', watch: 'Watching warily', investigate: 'Investigating', inspect: 'Inspecting something new',
+      flee: 'Fleeing', avoid: 'Keeping its distance', display: 'Displaying', watch: 'Watching warily', curious: 'Curious about you', fingerWatch: 'Watching you', antMarch: 'Marching like an ant', semaphore: 'Signalling with its palps', nectarSeek: 'Going for nectar', sip: 'Sipping nectar', investigate: 'Investigating', inspect: 'Inspecting something new',
       groom: 'Grooming', cleanEyes: 'Cleaning its eyes', look: 'Looking around', scuttle: 'Scuttling sideways', stretch: 'Stretching', dangle: 'Dangling on a silk line',
       baskSeek: 'Heading for the warm spot', bask: 'Basking under the lamp', homeSeek: 'Heading home', lunge: 'Lunged at a movement',
       explore: 'Exploring', lookout: 'Keeping a lookout', search: 'Searching for prey', rest: home ? 'Resting at home' : 'Resting', idle: 'Settling',
@@ -4455,7 +4768,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   };
   H.bask = function (hab, sp, dt) {
     if (hab.warmthAt(sp.pos) < 0.2) { sp._afterMeal = null; setState(sp, 'idle', 'The warmth faded.'); return; }
-    if (sp.st > (sp._baskDur || 30)) { sp._baskCD = hab.time + 120 + JT.R() * 160; sp._afterMeal = null; setState(sp, 'groom', 'Warmed through. Tidying its legs.'); }
+    if (sp.st > (sp._baskDur || 30)) { sp._baskCD = hab.time + (120 + JT.R() * 160) * (AI.has(sp, 'lazy') ? 0.5 : 1); sp._afterMeal = null; setState(sp, 'groom', 'Warmed through. Tidying its legs.'); }
   };
 
   // ---------------- hunger with no prey: patrol perches, scan from high, lunge at movement ----------------
@@ -4553,9 +4866,51 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   /** Observation-mode interest of what a spider is doing right now. */
   AI.interest = function (sp) {
-    const m = { pounce: 100, fall: 90, subdue: 90, secure: 70, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, peek: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35, lunge: 55, dangle: 58, bask: 30, scan: 26, patrol: 28, scuttle: 20, cleanEyes: 22, stretch: 24 };
+    const m = { curious: 58, fingerWatch: 30, semaphore: 62, sip: 40, antMarch: 28, nectarSeek: 20, pounce: 100, fall: 90, subdue: 90, secure: 70, molting: 95, moltSilk: 60, premolt: 45, crouch: 75, creep: 60, stalk: 55, track: 50, peek: 50, display: 65, flee: 70, carry: 60, feed: 42, drinkSeek: 30, drink: 38, notice: 45, assess: 45, moltSeek: 55, investigate: 35, inspect: 40, search: 30, postMolt: 40, avoid: 35, lunge: 55, dangle: 58, bask: 30, scan: 26, patrol: 28, scuttle: 20, cleanEyes: 22, stretch: 24 };
     return m[sp.state] || 8;
   };
+  /* ---------------- visible personality ----------------
+     Built from the jumper's own (already saved) traits, so every jumper, old saves included, has one. No random numbers
+     are drawn here; the climbing preference comes from a hash of the jumper's id. Each trait also changes behaviour
+     (where it rests, how it reacts to mist, how it explores, how it treats you), see pickIdle / onMist / curiosity. */
+  const hashU = (id, salt) => (JT.hashStr(String(id) + salt) % 10007) / 10007;
+  AI.climbPref = (sp) => sp.pers.climb != null ? sp.pers.climb : M.clamp(sp_(sp).prefs.height + (hashU(sp.id, 'climb') - 0.5) * 0.8, 0, 1);
+  AI.TRAITS = {
+    bold:     { label: 'Bold',      title: 'The Daredevil',    habit: 'Rests out in the open on high perches and barely flinches at mist.' },
+    shy:      { label: 'Shy',       title: 'The Wallflower',   habit: 'Rests under cover, and tucks itself away when the tank is misted.' },
+    curious:  { label: 'Curious',   title: 'The Snoop',        habit: 'Checks out anything new, and comes over to look at you.' },
+    aloof:    { label: 'Aloof',     title: 'The Loner',        habit: 'Ignores newcomers and keeps its distance from you.' },
+    busy:     { label: 'Busy',      title: 'The Busybody',     habit: 'Short rests, long patrols: always on the move.' },
+    lazy:     { label: 'Laid-back', title: 'The Sunbather',    habit: 'Long naps, and loves a warm lamp or a quiet ledge.' },
+    patient:  { label: 'Patient',   title: 'The Sentinel',     habit: 'Sits still for ages, watching, before it moves.' },
+    restless: { label: 'Restless',  title: 'The Fidget',       habit: 'Can\'t sit still for long; hops from spot to spot.' },
+    climber:  { label: 'Climber',   title: 'The High-flyer',   habit: 'Heads for the highest leaves and branches.' },
+    ground:   { label: 'Ground-lover', title: 'The Ground-hugger', habit: 'Prefers the substrate, stones and low hides.' },
+    tidy:     { label: 'Fastidious', title: 'The Neat Freak',  habit: 'Grooms its legs and wipes its eyes very often.' },
+  };
+  /** Trait strengths (positive = clearly shows it). */
+  AI.traitScores = function (sp) {
+    const S = sp_(sp), T = sp.traits, P = sp.pers; const c = AI.climbPref(sp);
+    return {
+      bold: (T.bold - S.traits.bold - 0.04) * 5 + Math.max(0, T.bold - 0.9) * 3, shy: (S.traits.bold - T.bold - 0.04) * 5 + Math.max(0, 0.4 - T.bold) * 3,
+      curious: (P.curiosity - 0.62) * 2.6, aloof: (0.3 - P.curiosity) * 2.6,
+      busy: (P.activity - S.prefs.activity - 0.06) * 6, lazy: (S.prefs.activity - P.activity - 0.06) * 6,
+      patient: (T.patience - S.traits.patience - 0.05) * 6, restless: (S.traits.patience - T.patience - 0.05) * 6,
+      climber: (c - 0.68) * 3, ground: (0.32 - c) * 3,
+      tidy: (P.routine - 0.72) * 3,
+    };
+  };
+  /** The jumper's visible personality: a title and its 2-3 clearest traits (the third shows once you have watched it a while). */
+  AI.personality = function (sp) {
+    if (!sp || !sp.traits || !sp.pers) return null;
+    const sc = AI.traitScores(sp); const opp = { bold: 'shy', shy: 'bold', curious: 'aloof', aloof: 'curious', busy: 'lazy', lazy: 'busy', patient: 'restless', restless: 'patient', climber: 'ground', ground: 'climber' };
+    let ids = Object.keys(sc).sort((a, b) => sc[b] - sc[a]); const out = [];
+    for (const id of ids) { if (out.length >= 3) break; if (out.some(o => opp[o] === id)) continue; if (sc[id] > 0 || out.length < 2) out.push(id); }
+    const shown = (sp.obsT || 0) >= 90 ? out.length : Math.min(2, out.length);
+    return { ids: out, shown, title: AI.TRAITS[out[0]].title, traits: out.slice(0, shown).map(id => Object.assign({ id }, AI.TRAITS[id])), hidden: out.length - shown };
+  };
+  /** Does this jumper clearly show trait `id`? (cached for a few seconds: traits only drift with growth) */
+  AI.has = function (sp, id) { if (!sp._pc || sp._pc.t !== (sp.stage | 0)) { const p = AI.personality(sp); sp._pc = { t: sp.stage | 0, ids: p ? p.ids : [] }; } return sp._pc.ids.includes(id); };
   /** Discoverable personality descriptors (revealed as the player watches). */
   AI.descriptors = function (sp) {
     const o = sp.obsT || 0; if (o < 25) return null;
@@ -4572,7 +4927,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     // transient plans don't persist; resume safely from saved biological state
     sp._route = null; sp._air = null; sp._plan = null; sp._hang = null; sp._dangleOff = null; sp._glance = null; sp._dodge = null; sp._tVis = null;
     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }
-    if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
+    if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate', 'curious', 'fingerWatch', 'antMarch', 'semaphore', 'nectarSeek', 'sip'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
     if (sp.state === 'carry' || sp.state === 'secure') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
     if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type]; sp._feedDur = 6 + (def.nut || 0.5) * 28; sp._feedNut = def.nut || 0.5; } else sp.state = 'idle'; }
     if (sp.state === 'subdue') sp._subdueDur = sp._subdueDur || 1;
@@ -5065,7 +5420,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   };
   // Unlock chain: every species except catch-unlocks, smallest adult first (ties keep list order).
   JT.CATCH_UNLOCKS = JT.SPECIES.filter(S => S.unlockCatches).map(S => S.id);
-  JT.UNLOCK_ORDER = JT.SPECIES.map((S, i) => [S, i]).filter(x => !x[0].unlockCatches).sort((a, b) => a[0].len - b[0].len || a[1] - b[1]).map(x => x[0].id);
+  JT.SPECIAL_UNLOCKS = JT.SPECIES.filter(S => S.unlock).map(S => S.id);
+  JT.UNLOCK_ORDER = JT.SPECIES.map((S, i) => [S, i]).filter(x => !x[0].unlockCatches && !x[0].unlock).sort((a, b) => a[0].len - b[0].len || a[1] - b[1]).map(x => x[0].id);
   JT.unlockPrev = (id) => { const i = JT.UNLOCK_ORDER.indexOf(id); return i > 0 ? JT.UNLOCK_ORDER[i - 1] : null; };
   JT.PER_SPECIES = 2; // most jumpers of one species per tank
   const replacer = (k, v) => (k && k[0] === '_') ? undefined : v;
@@ -5079,7 +5435,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     newGame() {
       JT.game = this;
       const first = JT.UNLOCK_ORDER[0];
-      this.state = { v: VERSION, time: DAY * 0.3, catches: 0, species: [first], best: {}, journal: {}, active: 0, timeMode: 'auto', customPresets: [], nextId: 1, habitats: [] };
+      this.state = { v: VERSION, time: DAY * 0.3, catches: 0, species: [first], best: {}, journal: {}, jmeta: {}, active: 0, timeMode: 'auto', customPresets: [], nextId: 1, habitats: [] };
       const tall = Game.isPortrait();
       const a = tall ? new JT.Habitat({ name: 'Moss Tower', type: 'tower', substrate: 'moss', bg: 'mossy' }, this) : new JT.Habitat({ name: 'Starter Terrarium', type: 'standard', substrate: 'coco', bg: 'mossy' }, this);
       if (tall) JT.Presets.tower(a); else JT.Presets.starter(a);
@@ -5112,7 +5468,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     static migrate(d) {
       // v4 (coin-free): no balance, no shelf slots, species unlock in a chain; strip any leftover economy fields
       delete d.coins; delete d.jpaid; delete d.paidDay; delete d.slots; delete d.towerGift;
-      d.journal = d.journal || {}; d.best = d.best || {};
+      d.journal = d.journal || {}; d.jmeta = d.jmeta || {}; d.best = d.best || {};
       d.species = (Array.isArray(d.species) ? d.species : []).filter(id => JT.SPECIES_BY_ID[id]); if (!d.species.length) d.species = [JT.UNLOCK_ORDER[0]];
       d.customPresets = d.customPresets || []; d.timeMode = d.timeMode || 'auto'; d.nextId = d.nextId || 1000; d.catches = d.catches | 0;
       for (const h of d.habitats || []) { if (!JT.HABITATS[h.type]) h.type = 'standard'; if (!JT.SUBSTRATES[h.substrate]) h.substrate = 'coco'; if (!JT.BACKGROUNDS[h.bg]) h.bg = 'mossy'; h.decor = (h.decor || []).filter(x => JT.DECOR_BY_ID[x.type]); h.spiders = (h.spiders || []).filter(s => JT.SPECIES_BY_ID[s.species]); h.prey = (h.prey || []).filter(p => JT.PREY_BY_ID[p.type]); h.remains = (h.remains || []).filter(r => r && r.pos); for (const r of h.remains) if (!isFinite(r.clean)) r.clean = 1; h.drops = h.drops || []; h.silk = h.silk || []; for (const x of h.decor) if (x.type === 'heatlamp' && x.on == null) x.on = true; }
@@ -5149,12 +5505,24 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     }
 
     // ---------------- events from simulation ----------------
+    /** A dated line in a jumper's life story (kept small: the first entry plus the latest 39). */
+    diary(sp, text) {
+      if (!sp) return; const D = sp.diary || (sp.diary = []); const day = this.day();
+      if (D.length && D[D.length - 1].t === text) return; D.push({ d: day, t: text }); if (D.length > 40) D.splice(1, 1);
+    }
     onEvent(hab, type, info) {
-      const watched = hab === this.hab && this.viewing;
-      if (type === 'meal') this.state.catches++;
-      if (type === 'journal') { if (!watched) return; const id = info.id; const first = !this.state.journal[id]; this.state.journal[id] = (this.state.journal[id] || 0) + 1; if (first) { const e = JT.JOURNAL.find(j => j.id === id); if (e) this.emit('journal', { entry: e, sp: info.sp }); } return; }
+      const watched = hab === this.hab && this.viewing; const sp = info && info.sp;
+      if (type === 'meal') { this.state.catches++; if (sp && [10, 25, 50, 100, 200].includes(sp.catches)) this.diary(sp, sp.catches + ' meals caught so far.'); }
+      else if (type === 'catch' && sp) { const pd = info.prey && JT.PREY_BY_ID[info.prey.type]; const nm = pd ? (JT.SpiderAI.preyName ? JT.SpiderAI.preyName(pd) : pd.name.toLowerCase()).replace(/springtail colony/, 'springtail') : 'prey';
+        if (!sp.catches) this.diary(sp, 'First catch: ' + (/^[aeiou]/.test(nm) ? 'an ' : 'a ') + nm + '.'); else if (pd && JT.SpiderAI.ratioOf && JT.SpiderAI.ratioOf(sp, info.prey) > 1.15 && !(sp._dBig > this.state.time - 600)) { sp._dBig = this.state.time; this.diary(sp, 'Took down ' + (/^[aeiou]/.test(nm) ? 'an ' : 'a ') + nm + ' bigger than itself.'); } }
+      else if (type === 'molt' && sp) this.diary(sp, sp.stage >= 5 ? 'Final molt: now a fully grown adult.' : 'Molted into a ' + JT.STAGES[sp.stage].toLowerCase() + '.');
+      else if (type === 'finger' && sp && info.kind === 'curious') { const lv = sp.tame >= 0.7 ? 2 : sp.tame >= 0.35 ? 1 : 0; if (lv > (sp.tameMark | 0)) { sp.tameMark = lv; this.diary(sp, lv === 2 ? 'Knows you now: greets your finger without a flinch.' : 'Getting used to you: came over to see your finger.'); } }
+      if (type === 'journal') { if (!watched) return; const id = info.id; const first = !this.state.journal[id]; this.state.journal[id] = (this.state.journal[id] || 0) + 1;
+        const e = JT.JOURNAL.find(j => j.id === id);
+        if (sp && e) { const js = sp.jseen || (sp.jseen = {}); if (!js[id]) { js[id] = this.day(); if (!['molt', 'adult', 'firstHunt'].includes(id)) this.diary(sp, 'You saw: ' + e.title + '.'); } }
+        if (first) { const jm = this.state.jmeta || (this.state.jmeta = {}); jm[id] = { d: this.day(), n: sp ? sp.name : '', s: sp ? sp.species : '' }; if (e) this.emit('journal', { entry: e, sp }); this.checkUnlocks(); } return; }
       if (watched) this.emit(type, info);
-      if (type === 'molt' || type === 'meal') this.checkUnlocks();
+      if (type === 'molt' || type === 'meal' || type === 'finger') this.checkUnlocks();
     }
 
     // ---------------- collection: unlock chain ----------------
@@ -5164,10 +5532,13 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     checkUnlocks(quiet) {
       const st = this.state; const best = st.best || (st.best = {});
       for (const h of this.habs) for (const s of h.spiders) if (!(best[s.species] >= s.stage)) best[s.species] = s.stage;
-      for (const id of JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS)) {
+      for (const id of JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS, JT.SPECIAL_UNLOCKS || [])) {
         if (st.species.includes(id)) continue; const S = JT.SPECIES_BY_ID[id];
         let why = null;
-        if (S.unlockCatches) { if (st.catches >= S.unlockCatches) why = 'Reached ' + S.unlockCatches + ' successful catches.'; }
+        if (S.unlock) { const u = S.unlock; const nJ = JT.JOURNAL.filter(j => st.journal[j.id]).length;
+          if (u.journal && nJ >= u.journal) why = 'You witnessed ' + u.journal + ' different behaviours.';
+          if (u.tame && this.habs.some(h => h.spiders.some(x => (x.tame || 0) >= u.tame))) why = 'One of your jumpers got to know you.'; }
+        else if (S.unlockCatches) { if (st.catches >= S.unlockCatches) why = 'Reached ' + S.unlockCatches + ' successful catches.'; }
         else { const prev = JT.unlockPrev(id); if (prev && best[prev] >= 5) why = 'Your ' + JT.SPECIES_BY_ID[prev].name + ' reached adulthood.'; }
         if (why) { st.species.push(id); if (!quiet) this.emit('unlock', { S, why }); }
       }
@@ -5204,8 +5575,8 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false },
-    load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k]) out[k] = s[k]; return out; },
+    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, haptics: true, tips: true, tipsSeen: {} },
+    load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k] && s[k] !== null) out[k] = s[k]; out.tipsSeen = Object.assign({}, out.tipsSeen); return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -6658,6 +7029,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       let pw = (sp.state === 'groom' || wipe > 0.2 ? Math.sin(t * 12 + sd) * 0.04 : Math.sin(t * 3 + sd * 2) * 0.01) * L;
       let fl = flick * Math.sin(flick * 9.4 + sd * 0.8) * L * 0.06; // quick alternating palp flicks
       if (LK.palp === 'flag') pw += gp * Math.sin(t * 8 + sd * 1.3) * L * 0.05; // twin-flagged: waves its white palps in each pause
+      if (sp.state === 'semaphore') { fl += L * 0.1 * Math.sin(t * 7 + (sd > 0 ? 0 : Math.PI)); pw += L * 0.03; } // house jumper: palps flashed up and down in turn
       if (gait === 'choppy') { const jk = Math.sin(t * 4.2 + sd * 2.1 + (sp.seed || 0)); fl += L * 0.05 * Math.sign(jk) * Math.min(1, Math.abs(jk) * 4); } // Portia: palps jerk up and down
       const a = W(0.3 * L + dF, sd * L * 0.09, h0 + L * 0.02), b = M.add(W(0.45 * L + dF + pw, sd * L * 0.1, h0 + L * 0.06 + Math.abs(fl)), M.mul(fg, L * 0.02)), c = M.add(W(0.5 * L + dF + pw - Math.abs(fl) * 0.5, sd * L * 0.09, h0 + L * 0.0 + fl), M.mul(fg, L * 0.02));
       const pk = LK.palp || 'plain', pc = LK.palpCol || pal.hair;
@@ -6700,7 +7072,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
       const sw = gait === 'glide' ? 0.7 : 1;
       let fu = FU[i] * L * lg + Math.sin(ph) * L * 0.12 * moving * lg * sw, fv = FV[i] * L * sd * (1 + crouch * 0.12) * (1 + (lg - 1) * 0.6), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * moving * sw;
       if (gait === 'choppy' && i < 3) fw += L * 0.06 * gp * Math.max(0, Math.sin(t * (1.3 + 0.37 * lk) + lk * 2.3));
-      if (LK.antennae && i === 0 && !o.curled && !o.tucked) { const ak = 1 - reach; fu += L * 0.1 * ak; fv *= 1 - 0.5 * ak; fw += L * (0.4 + 0.07 * Math.sin(t * 6.5 + sd * 1.9)) * ak; } // ant mimic: pair I up like antennae
+      if (LK.antennae && i === 0 && !o.curled && !o.tucked) { const ak = 1 - reach; fu += L * 0.1 * ak; fv *= 1 - 0.5 * ak; fw += L * (0.4 + (sp.state === 'antMarch' ? 0.16 : 0.07) * Math.sin(t * (sp.state === 'antMarch' ? 11 : 6.5) + sd * 1.9)) * ak; } // ant mimic: pair I up like antennae
       if (i === 0 && raise > 0) { fu += L * 0.2 * raise; fw += L * 0.18 * raise * (1 - 0.8 * fore); fv *= 1 - 0.1 * raise; }
       if (i < 2 && fore > 0.01) { // creeping in: pairs I+II point onward, each feeling forward on its own rhythm (never in step)
         const k = i * 2 + (sd > 0 ? 1 : 0);
@@ -8156,6 +8528,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g) continue; const hull = this.decorScreenHull(g, V); if (hull && (G.pointInPoly(X, Y, hull) || edgeDist(X, Y, hull) < tol)) { const c = g.foot ? G.centroid(g.foot) : [inst.x, inst.z]; const dep = V.depth([c[0], g.baseY, c[1]]) - g.baseY * 0.5 - (inst.parent ? 5 : 0); const area = Math.abs(G.polyArea(hull)); const score = dep * 0.2 + Math.sqrt(area) * 0.3; if (score < bdep) { bdep = score; best = { kind: 'decor', ent: inst }; } } }
       return best;
     }
+    /** Where a fingertip on the glass "is" in the tank: the highest surface under it (else the floor), clamped inside. */
+    fingerPoint(sx, sy, hab) {
+      const D = hab.dims; let best = null;
+      for (const id in hab.geoms) { const g = hab.geoms[id]; for (const t of g.tops || []) { if (best && t.y <= best[1]) continue; const xz = this.unproject(sx, sy, t.y); if (G.pointInPoly(xz[0], xz[1], t.poly)) best = [xz[0], t.y, xz[1]]; } }
+      if (!best) { const xz = this.unproject(sx, sy, 0); best = [xz[0], 0, xz[1]]; }
+      if (!M.finite3(best)) return null;
+      return [M.clamp(best[0], 1, D.w - 1), best[1] + 2, M.clamp(best[2], 1, D.d - 1)];
+    }
     /** Placement location: highest platform top under the cursor, else the floor. */
     placementPoint(sx, sy, hab, type) {
       const tops = [];
@@ -8196,8 +8576,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
 
     // ---------------- thumbnails & portraits (same drawing code as the habitat) ----------------
+    thumbKey(type, rot, size, look) { return type + '|' + (rot || 0) + '|' + (size || 112) + (look ? '|' + look.style + look.cols.side : ''); }
+    hasThumb(type, rot, size, look) { return !!this.thumbs[this.thumbKey(type, rot, size, look)]; }
     decorThumb(type, rot, size, look) {
-      size = size || 112; const key = type + '|' + (rot || 0) + '|' + size + (look ? '|' + look.style + look.cols.side : ''); if (this.thumbs[key]) return this.thumbs[key];
+      size = size || 112; const key = this.thumbKey(type, rot, size, look); if (this.thumbs[key]) return this.thumbs[key];
       const c = mkCanvas(size, size); const ctx = c.getContext('2d');
       try {
         const g = JT.Geo.build({ id: 'thumb_' + type, type, x: 0, z: 0, rot: rot || 0, seed: 1 }, 0, 160, look);
@@ -8272,6 +8654,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (const k of ['music', 'ambience', 'effects']) { const g = c.createGain(); g.connect(comp); this.buses[k] = g; }
       this.buses.music.connect(this.delay);
       this._lofiChain(c);
+      this._beds(c);
       this.started = true; this.apply();
     },
     /** play one silent sample inside the gesture: required by iOS Safari to really start the context */
@@ -8317,6 +8700,16 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         case 'journal': [523, 659, 784].forEach((f, i) => this.tone('effects', f, 0.5, { type: 'sine', vol: 0.07, delay: i * 0.09 })); break;
         case 'molt': this.tone('effects', 392, 1.2, { type: 'sine', vol: 0.07, att: 0.3, vib: 4, vibAmt: 3 }); break;
         case 'error': this.tone('effects', 200, 0.18, { type: 'square', vol: 0.04, lp: 900 }); break;
+        // fingertip on the glass: a soft knuckle-on-glass tok with a faint ring
+        case 'glass': this.noise('effects', 0.06, { ft: 'lowpass', f: 900, vol: 0.09, att: 0.003 }); this.tone('effects', 1850 + Math.random() * 120, 0.32, { type: 'sine', vol: 0.012, att: 0.004 }); break;
+        case 'touch': this.tone('effects', 520, 0.14, { type: 'sine', vol: 0.03, att: 0.02, to: 600 }); break;
+        case 'startle': this.noise('effects', 0.16, { f: 3400, fTo: 1800, q: 1.4, vol: 0.06, att: 0.004 }); this.noise('effects', 0.1, { f: 2600, q: 1.4, vol: 0.04, delay: 0.09 }); break;
+        case 'curious': this.tone('effects', 1320, 0.09, { type: 'sine', vol: 0.025, att: 0.01 }); this.tone('effects', 1760, 0.12, { type: 'sine', vol: 0.02, att: 0.01, delay: 0.08 }); break;
+        case 'unlock': [523, 659, 784, 1047].forEach((f, i) => this.tone('effects', f, 0.6, { type: 'triangle', vol: 0.06, delay: i * 0.08, lp: 3000 })); this.swell(0.5); break;
+        case 'escape': this.noise('effects', 0.25, { f: 1400, fTo: 3200, q: 1, vol: 0.06 }); this.tone('effects', 330, 0.2, { type: 'triangle', vol: 0.04, to: 220, delay: 0.05 }); break;
+        case 'feed': for (let i = 0; i < 4; i++) this.noise('effects', 0.05, { f: 2200 + Math.random() * 1500, q: 2, vol: 0.035, delay: i * 0.06 + Math.random() * 0.03 }); break;
+        case 'land': this.noise('ambience', 0.07, { ft: 'lowpass', f: 600, vol: 0.06, att: 0.003 }); break;
+        case 'hatch': [784, 988, 1175].forEach((f, i) => this.tone('effects', f, 0.35, { type: 'sine', vol: 0.05, delay: i * 0.07 })); break;
       }
     },
     // ---- lo-fi music: detuned electric piano, soft drums, vinyl crackle and tape wobble ----
@@ -8394,21 +8787,87 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       }
       L.bar = t0 + beat * 4; L.n++;
     },
+    // ---- tank soundscapes ----
+    /* Each tank sounds like where its jumpers come from (rainforest drips and insects, desert wind, garden birds by day
+       and crickets at night, woodland breeze), and like what is in it: a water dish trickles, lots of plants rustle,
+       misting hisses and drips for a while, a basking lamp hums. Key moments (catches, molts, journal) sound the same
+       everywhere. Continuous beds are a few looped noise filters; everything else is tiny scheduled one-shots. */
+    _beds(c) {
+      const len = c.sampleRate * 3, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const bed = (type, f, q) => { const src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = Math.random(); const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const g = c.createGain(); g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(this.buses.ambience); src.start(0, Math.random() * 2); return { fl, g }; };
+      const hum = c.createGain(); hum.gain.value = 0; hum.connect(this.buses.ambience);
+      for (const [f, a] of [[100, 1], [200, 0.45], [300, 0.15]]) { const o = c.createOscillator(); o.frequency.value = f; const g = c.createGain(); g.gain.value = a; o.connect(g); g.connect(hum); o.start(); }
+      this._sc = { wind: bed('lowpass', 420, 0.7), hiss: bed('bandpass', 5200, 0.6), rustle: bed('bandpass', 2600, 0.8), water: bed('bandpass', 1400, 1.4), mist: bed('highpass', 4200, 0.5), hum, t: 0, ev: {}, theme: null, k: 0 };
+    },
+    _bedsQuiet() { const S = this._sc; if (!S || S.quiet) return; const t = this.ctx.currentTime; for (const k of ['wind', 'hiss', 'rustle', 'water', 'mist']) S[k].g.gain.setTargetAtTime(0, t, 0.4); S.hum.gain.setTargetAtTime(0, t, 0.4); S.quiet = true; },
+    /** Which soundscape a tank gets, from its substrate and backdrop. */
+    themeOf(hab) {
+      const d = hab.data, sub = d.substrate, bg = d.bg; if (d.sound && d.sound !== 'auto') return d.sound;
+      if (['desert', 'clay', 'beach'].includes(sub) || (bg === 'twilight' && sub !== 'jungle')) return 'desert';
+      if (['jungle', 'sphagnum'].includes(sub) || bg === 'canopy') return 'rainforest';
+      if (bg === 'meadow' || hab.decor.filter(x => { const D = JT.DECOR_BY_ID[x.type]; return D && (D.arche === 'flower' || D.flowers); }).length >= 2) return 'garden';
+      return 'woodland';
+    },
+    /** What the tank's setup adds (counted at most every 2 s). */
+    setupOf(hab) {
+      let water = 0, plants = 0, lamps = 0;
+      for (const x of hab.decor) { const D = JT.DECOR_BY_ID[x.type]; if (!D) continue; if (D.water) water++; if (D.cat === 'plants') plants++; if (x.type === 'heatlamp' && x.on !== false) lamps++; }
+      return { water, plants, lamps, drops: hab.data.drops.length };
+    },
+    _scape(dt, game, night) {
+      const S = this._sc, hab = game.hab; if (!S || !hab) return; const c = this.ctx, now = c.currentTime, R = Math.random; S.quiet = false;
+      S.k -= dt; if (S.k <= 0 || S.hab !== hab) { S.k = 2; S.hab = hab; S.theme = this.themeOf(hab); S.set = this.setupOf(hab); }
+      const th = S.theme, st = S.set, day = 1 - night, obs = root.JT && JT.UI && JT.UI.obs ? 0.8 : 1;
+      const mistOn = hab._mistAt != null && hab.time - hab._mistAt < 5 ? 1 - (hab.time - hab._mistAt) / 5 : 0;
+      // continuous beds (eased)
+      S.t -= dt; if (S.t <= 0) { S.t = 0.25; const tc = 0.6, g = (n, v) => S[n].g.gain.setTargetAtTime(v * obs, now, tc);
+        const gust = 0.5 + 0.5 * Math.sin(now * 0.21) * Math.sin(now * 0.077 + 1);
+        g('wind', th === 'desert' ? 0.05 + gust * 0.09 : th === 'woodland' ? 0.012 + gust * 0.02 : th === 'garden' ? 0.01 + gust * 0.012 : 0.006);
+        S.wind.fl.frequency.setTargetAtTime(th === 'desert' ? 260 + gust * 700 : 380 + gust * 300, now, 1.2);
+        g('hiss', th === 'rainforest' ? 0.012 + night * 0.006 : 0.002);
+        g('rustle', Math.min(0.035, Math.max(0, st.plants - 3) * 0.004) * (0.4 + gust * 0.9));
+        g('water', st.water ? 0.008 + Math.min(2, st.water) * 0.004 : 0);
+        g('mist', mistOn * 0.05);
+        S.hum.gain.setTargetAtTime(st.lamps ? Math.min(2, st.lamps) * 0.0045 * obs : 0, now, 0.8); }
+      // one-shots
+      const E = S.ev, due = (k, lo, hi) => { E[k] = (E[k] == null ? lo * R() : E[k]) - dt; if (E[k] > 0) return false; E[k] = lo + R() * (hi - lo); return true; };
+      const drip = (v, f) => { f = f || 900 + R() * 900; this.tone('ambience', f, 0.12, { type: 'sine', vol: v, att: 0.003, to: f * 1.6 }); this.tone('ambience', f * 2.1, 0.05, { type: 'sine', vol: v * 0.3, att: 0.002, delay: 0.01 }); };
+      const chirp = (base, n, v) => { for (let i = 0; i < n; i++) this.tone('ambience', base + R() * 400, 0.07 + R() * 0.05, { type: 'sine', vol: v, att: 0.01, to: base * (1.2 + R() * 0.5), delay: i * (0.09 + R() * 0.05) }); };
+      const crickets = (v) => { const f = 4200 + R() * 300; for (let i = 0; i < 3 + (R() * 3 | 0); i++) this.tone('ambience', f, 0.045, { type: 'sine', vol: v, delay: i * 0.085 }); };
+      if (th === 'rainforest') {
+        if (due('drip', 0.6, 2.4 - mistOn * 1.8)) drip(0.03 + R() * 0.02);
+        if (day > 0.5 && due('cicada', 9, 22)) { const d0 = 2.5 + R() * 3; this.tone('ambience', 5200 + R() * 600, d0, { type: 'sawtooth', vol: 0.006, att: 0.8, lp: 7000, vib: 48 + R() * 20, vibAmt: 260 }); }
+        if (night > 0.5 && due('frog', 4, 11)) { const f = 260 + R() * 120; for (let i = 0; i < 2 + (R() * 3 | 0); i++) this.tone('ambience', f, 0.11, { type: 'sawtooth', vol: 0.012, att: 0.01, lp: 700, delay: i * 0.22 }); }
+        if (night > 0.4 && due('crk', 1.5, 4)) crickets(0.02);
+        if (day > 0.5 && due('bird', 10, 26)) chirp(1800, 3, 0.012);
+      } else if (th === 'desert') {
+        if (due('sand', 3, 9)) this.noise('ambience', 0.6 + R(), { f: 5200, q: 0.7, vol: 0.012, att: 0.3 });
+        if (night > 0.5 && due('crk', 3, 8)) crickets(0.014);
+        if (day > 0.5 && due('tick', 6, 16)) for (let i = 0; i < 3; i++) this.noise('ambience', 0.02, { f: 3800, q: 3, vol: 0.02, delay: i * 0.07 });
+      } else if (th === 'garden') {
+        if (day > 0.45 && due('bird', 2.5, 7)) { const pat = R(); if (pat < 0.5) chirp(2600, 2 + (R() * 4 | 0), 0.018); else { const f = 2200 + R() * 1200; this.tone('ambience', f, 0.35, { type: 'sine', vol: 0.014, att: 0.02, to: f * 1.4, vib: 22, vibAmt: 140 }); } }
+        if (day > 0.5 && due('bee', 14, 30)) this.tone('ambience', 220 + R() * 40, 2 + R() * 2, { type: 'sawtooth', vol: 0.006, att: 0.6, lp: 900, vib: 6, vibAmt: 10 });
+        if (night > 0.4 && due('crk', 0.9, 2.2)) crickets(0.022);
+        if (night > 0.6 && due('owl', 30, 70)) { this.tone('ambience', 410, 0.5, { type: 'sine', vol: 0.014, att: 0.08 }); this.tone('ambience', 370, 0.7, { type: 'sine', vol: 0.012, att: 0.08, delay: 0.7 }); }
+      } else {
+        if (day > 0.5 && due('bird', 6, 16)) chirp(2200, 2 + (R() * 3 | 0), 0.012);
+        if (night > 0.4 && due('crk', 1.6, 4.5)) crickets(0.016);
+        if (due('scut', 5, 12)) this.noise('ambience', 0.25, { f: 3000, q: 1.5, vol: 0.015 });
+      }
+      // setup-reactive one-shots: dish trickle, mist drips, prey in the tank
+      if (st.water && due('trk', 0.35, 1.3)) drip(0.012 + R() * 0.01, 1300 + R() * 1400);
+      if (mistOn > 0 && due('mdrip', 0.15, 0.6)) drip(0.03 * mistOn + 0.01);
+      if (st.drops > 4 && due('ddrip', 2, 6)) drip(0.016);
+      const prey = hab.prey;
+      if (prey.some(p => p.sup && p.sup.k === 'air') && due('fly', 6, 14)) this.tone('ambience', 180 + R() * 60, 0.9 + R(), { type: 'sawtooth', vol: 0.01, att: 0.3, lp: 700, vib: 9, vibAmt: 18 });
+      if (prey.some(p => p.type === 'cricket') && due('pcrk', 3, 8)) crickets(0.02);
+    },
     // ---- generative music + ambience ----
     update(dt, game) {
       if (!this.started || !game) return; const s = this.set; if (s.muted) return;
       const night = 1 - game.daylight();
       if (s.music > 0.01) this._lofi(game, night);
-      this._ambT -= dt;
-      if (s.ambience > 0.01 && this._ambT <= 0) {
-        const hab = game.hab; const prey = hab ? hab.prey : []; const has = (id) => prey.some(p => p.type === id);
-        const r = Math.random();
-        if ((night > 0.4 || has('cricket')) && r < 0.45) { for (let i = 0; i < 3; i++) this.tone('ambience', 4200 + Math.random() * 200, 0.05, { type: 'sine', vol: 0.03, delay: i * 0.09 }); }
-        else if (prey.some(p => p.sup && p.sup.k === 'air') && r < 0.75) this.tone('ambience', 180 + Math.random() * 60, 0.9 + Math.random(), { type: 'sawtooth', vol: 0.012, att: 0.3, lp: 700, vib: 9, vibAmt: 18 });
-        else if (r < 0.88) this.noise('ambience', 0.25, { f: 3000, q: 1.5, vol: 0.02 }); // tiny scuttle
-        else this.tone('ambience', night > 0.5 ? 380 : 2200 + Math.random() * 900, 0.25, { type: 'sine', vol: 0.015, vib: 30, vibAmt: 80 }); // distant bird / frog
-        this._ambT = 2 + Math.random() * 5;
-      }
+      if (s.ambience > 0.01) this._scape(dt, game, night); else this._bedsQuiet();
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -8425,7 +8884,26 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const cloneCanvas = (src) => { const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').drawImage(src, 0, 0); return c; };
+  /* Shop thumbnails are painted by the GPU one at a time (each needs a read-back), which made the first open of a big
+     list take most of a second. Cards now appear at once with an empty frame; the pictures fill in over the next few
+     frames (a few ms per frame), cached ones instantly. Idle time after start-up pre-paints the common lists. */
+  const TQ = [];
+  function lazyThumb(ready, make, size) {
+    if (ready()) return cloneCanvas(make());
+    const c = document.createElement('canvas'); c.width = c.height = size || 112; c.className = 'pending'; TQ.push({ c, make }); return c;
+  }
+  function pumpThumbs(budget) {
+    const t0 = performance.now();
+    while (TQ.length && performance.now() - t0 < budget) { const q = TQ.shift(); if (!q.c.isConnected) continue; try { const src = q.make(); q.c.getContext('2d').drawImage(src, 0, 0); } catch (e) { /* keep the empty frame */ } q.c.classList.remove('pending'); }
+  }
   const A = () => JT.Audio;
+  /* Haptics: Android/Chrome vibrate; iPhone Safari has no vibrate API, but toggling a native switch inside a tap gives a
+     light system tick (iOS 18+), so taps you make still get a feel. Game moments (catches, molts) can only buzz where
+     vibrate() exists. Everything respects the Vibration setting. */
+  const HAPTIC = { tick: 6, tap: 10, place: 14, remove: [8, 30, 8], pounce: 12, catch: [16, 40, 26], molt: [24, 70, 24, 70, 48], journal: [10, 55, 14], unlock: [18, 50, 18, 50, 40], error: [40], startle: [6, 24, 6], curious: 8 };
+  const IOS = typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const canVibrate = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+  function iosTick() { try { const l = document.createElement('label'); l.ariaHidden = 'true'; l.style.display = 'none'; const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.appendChild(i); document.head.appendChild(l); l.click(); l.remove(); } catch (e) { /* not supported */ } }
   const TAGS = (d) => [d.fly && 'flying', d.hop && 'hopping', d.burrow && 'burrowing', d.climb && 'climber', d.foliage && 'lives on plants', d.cleaner && 'cleanup crew', d.slow && 'slow', d.night && 'nocturnal'].filter(Boolean).join(' · ');
 
   /** Copy text/attributes from b's subtree into a's when the structure matches (keeps nodes + their handlers). */
@@ -8444,9 +8922,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   }
   const UI = JT.UI = {
     MOBILE_MQ: '(max-width:820px) and (orientation:portrait), (max-width:560px), (max-height:500px) and (orientation:landscape)',
+    /** Shop groups (by decor archetype), in the order they appear in the strip. */
+    GROUPS: {
+      decor: [['Branches & perches', ['branch']], ['Rocks & ledges', ['rock', 'ruin', 'slab']], ['Logs & hides', ['log', 'hide']], ['Towers & trunks', ['tower']], ['Water & warmth', ['dish', 'lamp']]],
+      plants: [['Leafy', ['broadleaf', 'fern', 'palm']], ['Flowers', ['flower']], ['Grasses', ['grass']], ['Rosettes', ['rosette']], ['Trees', ['tree']], ['Vines', ['vine']], ['Mushrooms', ['mushroom']]],
+    },
     tab: null, mode: null, place: null, obs: null, panelId: null, renaming: false, ptrType: 'mouse', _t: 0, _panelT: 0, _mistT: 0,
     init(game, R, settings) {
-      this.game = game; this.R = R; this.set = settings; this.cv = $('view');
+      this.game = game; this.R = R; this.set = settings; this.cv = $('view'); this._bootAt = performance.now();
       this.bind(); this.refreshHeader();
       game.on((t, d) => this.onGame(t, d));
       const sp = game.hab.spider(game.selectedId); if (sp) this.showPanel(sp.id);
@@ -8475,7 +8958,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       $('modalClose').onclick = () => this.closeModal();
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
       // phone camera buttons: 1 iso, 2 front, 3 back; tapping the current camera again re-centres the view
-      document.querySelectorAll('#camCtl button').forEach(b => b.onclick = () => { if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
+      // phone camera: one button shows the current view; tapping it opens the list of views (+ re-centre)
+      { const cc = $('camCtl'), tg = $('camToggle'); const open = (on) => { cc.classList.toggle('open', on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(!cc.classList.contains('open')); };
+        document.querySelectorAll('#camList button[data-cam]').forEach(b => b.onclick = () => { open(false); if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
+        $('camRecentre').onclick = () => { open(false); this.R.resetView(); A().sfx('click'); };
+        document.addEventListener('pointerdown', (e) => { if (cc.classList.contains('open') && !cc.contains(e.target)) open(false); }, true); }
+      $('modalBack').onclick = () => { const f = this._modalBack; if (f) { A().sfx('click'); f(); } };
       // taps on other controls (outside the jumper card) close it too; taps on the tank are handled in tap()
       document.addEventListener('click', (e) => { if (!this.panelId || performance.now() - (this._panelAt || 0) < 350) return; const t = e.target; if (!t || !t.closest) return;
         if (t.closest('#spiderPanel') || t === this.cv || t.id === 'glview' || t.closest('#modal')) return; this.hidePanel(); });
@@ -8519,7 +9008,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         this.ptrType = e.pointerType || 'mouse'; cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
         const p = loc(e); P.set(e.pointerId, p);
         if (P.size === 2) { const [a, b] = [...P.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; drag = null; }
-        else if (P.size === 1) drag = { s: p, l: p, moved: false, ghost: this.mode === 'place' && this.ptrType !== 'mouse' };
+        else if (P.size === 1) {
+          drag = { s: p, l: p, moved: false, ghost: this.mode === 'place' && this.ptrType !== 'mouse', t: performance.now() };
+          // press and hold on empty glass: your fingertip appears and the jumpers notice it
+          if (!this.mode && !(e.pointerType === 'mouse' && e.button !== 0)) { const dg = drag; clearTimeout(this._holdT); this._holdT = setTimeout(() => {
+            if (drag !== dg || dg.moved || P.size !== 1) return; const hit = this.R.pick(dg.l[0], dg.l[1], { touch: this.ptrType !== 'mouse', noPrey: true });
+            if (hit && hit.kind === 'spider') return; dg.finger = true; dg.ft = performance.now(); this.fingerAt(dg.l[0], dg.l[1], true, false); this.buzz('tick'); A().sfx('touch');
+          }, 420); }
+        } else { clearTimeout(this._holdT); if (drag && drag.finger) this.fingerEnd(); }
       });
       cv.addEventListener('pointermove', (e) => {
         const p = loc(e);
@@ -8528,6 +9024,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (pinch && P.size >= 2) {
           const [a, b] = [...P.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
           if (pinch.d > 10) this.R.zoomBy(d / pinch.d, m[0], m[1]); this.R.panBy(m[0] - pinch.m[0], m[1] - pinch.m[1]); pinch.d = d; pinch.m = m; return;
+        }
+        if (drag && drag.finger) { // moving your finger: slow drifts are followed, fast swipes startle
+          const now = performance.now(), dtm = Math.max(16, now - (drag.ft || now)); const sp = Math.hypot(p[0] - drag.l[0], p[1] - drag.l[1]) / dtm * 1000;
+          drag.v = M.lerp(drag.v || 0, sp, 0.5); drag.ft = now; drag.l = p; this.fingerAt(p[0], p[1], true, drag.v > 700); return;
         }
         if (drag) {
           const tol = e.pointerType === 'mouse' ? 5 : 16; // fingers wobble; a short wobble is still a tap
@@ -8539,6 +9039,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       });
       const up = (e) => {
         const p = loc(e); const had = P.has(e.pointerId); P.delete(e.pointerId);
+        clearTimeout(this._holdT);
+        if (drag && drag.finger) { this.fingerEnd(); drag = null; return; }
         if (pinch) { if (P.size < 2) { pinch = null; drag = null; } return; }
         if (had && drag && !drag.moved && e.type === 'pointerup') this.tap(p[0], p[1]);
         drag = null;
@@ -8547,6 +9049,68 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       cv.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !P.size) { this.R.hover = null; } });
       cv.addEventListener('wheel', (e) => { e.preventDefault(); const p = loc(e); this.R.zoomBy(Math.exp(-e.deltaY * 0.0015), p[0], p[1]); }, { passive: false });
       cv.addEventListener('contextmenu', (e) => { e.preventDefault(); if (this.mode) this.cancelMode(); });
+    },
+    // ------------------------------------------------ one-time beginner tips
+    TIPS: {
+      welcome: ['Welcome to your terrarium', 'This is your first jumper. Tap it to see its card: what it is doing, hunger, water and personality.'],
+      finger: ['Say hello', 'Press and hold on the glass to rest a fingertip there. Curious jumpers come to look; shy ones hide. Move slowly: a fast swipe startles them.'],
+      observe: ['Observe mode', 'The camera follows your jumper up close. Tap another jumper to watch it instead. Press Observe or Esc to leave.'],
+      build: ['Building', 'Pick a piece, then tap the tank to place it. It shows whether it fits. Branches and plants give your jumper places to climb and hide.'],
+      care: ['Feeding', 'Food marked "good for" suits your jumper\'s size. Tiny slings need tiny food. Hungry jumpers hunt on their own.'],
+      hungry: ['Your jumper is hungry', 'There is nothing left to hunt. Open Care and release some food that suits its size.'],
+      molt: ['Molting', 'Your jumper is growing. It hides in silk and sheds its old skin. Leave it be; afterwards it stays pale and soft for a while.'],
+      night: ['Night time', 'Jumpers hunt by sight, so at night they spin a silk retreat and sleep. They wake at dawn.'],
+      journal: ['Field Journal', 'You just recorded a behaviour. Find all of them under Jumpers → Journal, with each jumper\'s life story.'],
+      unlock: ['New species', 'Open Jumpers → Collection to add the new species to a tank.'],
+    },
+    resetTips() { this.set.tipsSeen = {}; this.set.tips = true; JT.Settings.save(this.set); this._tipQ = []; },
+    /** Queue a tip that shows once ever (force: show even if seen, e.g. replay). */
+    tipOnce(id, force, front) {
+      const S = this.set; if (!S || !this.TIPS[id]) return; S.tipsSeen = S.tipsSeen || {};
+      if (!force && (S.tips === false || S.tipsSeen[id])) return; const Q = this._tipQ || (this._tipQ = []);
+      if (!Q.includes(id) && this._tipId !== id) { if (front) Q.unshift(id); else Q.push(id); }
+    },
+    pumpTips(dt) {
+      const S = this.set; this._tipWait = (this._tipWait || 0) - dt; if (this._tipId || this._tipWait > 0 || !this._tipQ || !this._tipQ.length) return;
+      const busyToast = $('toasts') && $('toasts').children.length && this.isMobile(); const nowMs = performance.now(); if (!busyToast) this._tipDefer = 0; else if (!this._tipDefer) this._tipDefer = nowMs;
+      if ((busyToast && nowMs - this._tipDefer < 6000) || !$('modalWrap').classList.contains('hidden') || this.mode === 'place' || this.mode === 'remove' || (this.obs && this._tipQ[0] !== 'observe')) return;
+      const id = this._tipQ.shift(); if (S.tips === false && id !== 'welcome') return; const T = this.TIPS[id]; const box = $('tip'); if (!box || !T) return;
+      this._tipId = id; S.tipsSeen = S.tipsSeen || {}; S.tipsSeen[id] = 1; JT.Settings.save(S);
+      box.innerHTML = '<div class="tt">' + esc(T[0]) + '</div><div class="tx">' + esc(T[1]) + '</div><div class="tb"><button class="skip">Skip all tips</button><button class="ok">Got it</button></div>';
+      box.querySelector('.ok').onclick = () => { A().sfx('click'); this.hideTip(); };
+      box.querySelector('.skip').onclick = () => { A().sfx('click'); S.tips = false; JT.Settings.save(S); this._tipQ = []; this.hideTip(); this.toast('Tips off. Replay them any time from Menu → Help & tips.', 'quiet', 3500); };
+      box.classList.remove('hidden'); this._tipAt = performance.now(); clearTimeout(this._tipT); this._tipT = setTimeout(() => { if (this._tipId === id) this.hideTip(); }, 16000);
+    },
+    hideTip(requeue) { const box = $('tip'); if (box) box.classList.add('hidden'); if (requeue && this._tipId && performance.now() - (this._tipAt || 0) < 4000) (this._tipQ || (this._tipQ = [])).unshift(this._tipId); this._tipId = null; this._tipWait = 2.5; },
+    /** Watch the game for tip moments (cheap, twice a second). */
+    tipWatch() {
+      const g = this.game, h = g.hab; if (!h || !this.set || this.set.tips === false) return;
+      const seen = this.set.tipsSeen || {};
+      if (!seen.welcome && h.spiders.length && performance.now() - (this._bootAt || 0) > 1500) this.tipOnce('welcome');
+      if (!seen.finger && seen.welcome && h.spiders.length && performance.now() - (this._bootAt || 0) > 45000) this.tipOnce('finger');
+      if (!seen.hungry && h.spiders.some(s => s.sat < 0.35) && !h.prey.some(p => !p.owner && JT.PREY_BY_ID[p.type].huntable)) this.tipOnce('hungry');
+      if (!seen.molt && h.spiders.some(s => ['moltSeek', 'moltSilk', 'premolt', 'molting'].includes(s.state))) this.tipOnce('molt');
+      if (!seen.night && g.daylight() < 0.3 && h.spiders.length) this.tipOnce('night');
+    },
+    /** Haptic feedback for a moment (see HAPTIC). gesture = called straight from your own tap (lets iPhones tick). */
+    buzz(kind, gesture) {
+      if (!this.set || this.set.haptics === false) return; const pat = HAPTIC[kind]; if (pat == null) return;
+      if (canVibrate()) { try { navigator.vibrate(pat); } catch (e) { /* blocked until first tap */ } return; }
+      if (IOS && gesture) iosTick();
+    },
+    hapticsInfo() { return canVibrate() ? 'Buzzes on taps, pounces, catches and molts.' : IOS ? 'iPhone: a light tick on your own taps only (Safari has no full vibration).' : 'This device has no vibration.'; },
+    /** Your fingertip at the glass (sx, sy in canvas px). held = press-and-hold; fast = a quick swipe (startles). */
+    fingerAt(sx, sy, held, fast) {
+      const h = this.hab; if (!h) return; const pos = this.R.fingerPoint(sx, sy, h); if (!pos) return;
+      const f = h.finger; const same = f && f.held && held && !(fast && !f.fast);
+      this._fingerN = (this._fingerN || 0) + (same ? 0 : 1);
+      if (!held) { A().sfx('glass'); this.buzz('tap', true); } else if (fast && !(f && f.fast)) { A().sfx('glass'); this.buzz('startle'); }
+      h.finger = { id: this._fingerN, pos, t: h.time, held: !!held, fast: !!fast };
+      const dot = $('fingerDot'); if (dot) { dot.style.transform = 'translate(' + sx + 'px,' + sy + 'px)'; dot.classList.toggle('held', !!held); dot.classList.toggle('fast', !!fast); dot.classList.remove('hidden'); if (!held) { dot.classList.remove('tapAnim'); void dot.offsetWidth; dot.classList.add('tapAnim'); clearTimeout(this._dotT); this._dotT = setTimeout(() => dot.classList.add('hidden'), 650); } }
+    },
+    fingerEnd() {
+      const h = this.hab; if (h && h.finger) { h.finger.held = false; h.finger.fast = false; h.finger.t = h.time; }
+      const dot = $('fingerDot'); if (dot) { dot.classList.remove('held', 'fast'); clearTimeout(this._dotT); this._dotT = setTimeout(() => dot.classList.add('hidden'), 300); }
     },
     key(e) {
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { if (e.key === 'Escape') e.target.blur(); return; }
@@ -8559,6 +9123,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (k >= '1' && k <= '4') { const cm = this.camModes()[+k - 1]; if (cm) this.setCam(cm); } else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
+      else if (k === 'b' || k === 'B') this.tool('build'); else if (k === 'c' || k === 'C') this.tool('care'); else if (k === 'j' || k === 'J') this.tool('jumpers');
       else if (k === 'Enter' && this.mode === 'place') this.modeDone();
     },
 
@@ -8571,7 +9136,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.syncCams();
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
-      document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('on', b.dataset.tool === this.tab || (b.dataset.tool === 'remove' && this.mode === 'remove')));
+      const grp = this.tab === 'food' ? 'care' : this.tab ? 'build' : this._sheet || null;
+      document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('on', b.dataset.tool === grp));
     },
     updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
     /** Views on offer: a back wall closes off the back, so wall tanks get the two sides instead. */
@@ -8580,8 +9146,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /** Show only the views that make sense for this tank; slide to Front if the current one stopped making sense. */
     syncCams() {
       const ms = this.camModes(), cur = this.R.cam.mode; this._camKey = ms.join();
-      document.querySelectorAll('#cams button, #camCtl button').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur); });
-      if (!this.obs && cur !== 'follow' && !ms.includes(cur)) { this.R.setMode('observer'); document.querySelectorAll('#cams button, #camCtl button').forEach(b => b.classList.toggle('on', b.dataset.cam === 'observer')); }
+      { const lb = $('camLbl'); if (lb) lb.textContent = (JT.CAMS[cur] && JT.CAMS[cur].label || 'View').replace(/^Isometric$/, 'Iso'); }
+      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur); });
+      if (!this.obs && cur !== 'follow' && !ms.includes(cur)) { this.R.setMode('observer'); document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => b.classList.toggle('on', b.dataset.cam === 'observer')); }
     },
     setCam(m) {
       if (m !== 'follow' && !this.camModes().includes(m)) m = 'observer';
@@ -8648,20 +9215,27 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (t === 'pounce' && d.sp && d.sp._air && M.finite3(d.sp._air.from) && R && R.particles && R.particles.length < 380) { const o = d.sp._air.from; const L = JT.SpiderAI.len(d.sp); const fl = d.sp._air.launchSup === 'floor'; // bits of substrate kicked back
         const dir = M.norm(M.sub(d.sp._air.from, d.sp._air.to)); for (let i = 0; i < (fl ? 9 : 4); i++) R.particles.push({ pos: o.slice(), v: [dir[0] * 9 + (JT.R() - 0.5) * 10, 4 + JT.R() * 9, dir[2] * 9 + (JT.R() - 0.5) * 10], t: 0, life: 0.35 + JT.R() * 0.35, col: fl ? 'rgba(120,92,64,0.85)' : 'rgba(170,150,120,0.6)', r: Math.max(0.12, L * 0.03) + JT.R() * 0.15 }); }
       if (t === 'catch' && JT.Replay && d.sp && !JT.Replay.active) { const tc = this.game.state.time; setTimeout(() => { if (!JT.Replay.active && this.game.hab.spider(d.sp.id)) JT.Replay.onCatch(this, d.sp, tc); }, 450); }
-      if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); }
+      const mine = d && d.sp && (d.sp.id === this.game.selectedId || (this.obs && d.sp.id === this.obs.sub)); // the jumper you are looking at
+      if (t === 'pounce' && mine) { A().sfx('pounce'); this.buzz('pounce'); }
+      if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); if (mine || this.obs) this.buzz('catch'); }
+      else if (t === 'shaken') { if (mine) A().sfx('escape'); }
+      else if (t === 'bigLeap') { A().sfx('rustle'); setTimeout(() => A().sfx('land'), 380); if (mine) this.buzz('pounce'); }
+      else if (t === 'finger') { if (d.kind === 'shy') A().sfx('startle'); else if (d.kind === 'curious') { A().sfx('curious'); this.buzz('curious'); } }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
-      else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); }
-      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); }
-      else if (t === 'unlock') { this.toast('<span class="sc">Unlocked</span> ' + esc(d.S.name) + '!<span class="sub">' + esc(d.why) + ' Add one from the Jumper Collection.</span>', 'journal', 6500); A().sfx('journal'); }
+      else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); this.buzz('journal'); this.tipOnce('journal'); }
+      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); this.buzz('molt'); }
+      else if (t === 'unlock') { this.toast('<span class="sc">Unlocked</span> ' + esc(d.S.name) + '!<span class="sub">' + esc(d.why) + ' Add one from the Jumper Collection.</span>', 'journal', 6500); A().sfx('unlock'); this.buzz('unlock'); this.tipOnce('unlock'); }
       else if (t === 'toast') this.toast(d.text, d.cls, d.ms);
     },
 
     // ------------------------------------------------ toolbar & dock
     tool(t) {
       if (this.obs) return; A().sfx('click');
-      if (t === 'decor' || t === 'plants' || t === 'substrate' || t === 'food') { if (this.tab === t) this.closeDrawer(); else this.openDrawer(t); }
-      else if (t === 'jumpers') this.collectionModal();
-      else if (t === 'journal') this.journalModal();
+      if (t === 'build') { if (this.tab && this.tab !== 'food') this.closeDrawer(); else { this.closeModal(); this.openDrawer(this._buildTab || 'decor'); } }
+      else if (t === 'care') { if (this.tab === 'food') this.closeDrawer(); else { this.closeModal(); this.openDrawer('food'); } }
+      else if (t === 'decor' || t === 'plants' || t === 'substrate' || t === 'food' || t === 'walls') { if (this.tab === t) this.closeDrawer(); else this.openDrawer(t); }
+      else if (t === 'jumpers') { if (this._sheet === 'jumpers') this.closeModal(); else { this.closeDrawer(); this.jumpersSheet(); } }
+      else if (t === 'journal') { if (this._sheet === 'journal') this.closeModal(); else { this.closeDrawer(); this.jumpersSheet('journal'); } }
       else if (t === 'mist') this.doMist();
       else if (t === 'clean') this.doClean();
       else if (t === 'remove') { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); }
@@ -8670,17 +9244,17 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     dock(d) {
       A().sfx('click');
       document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on'));
-      if (d === 'build') { if (this.tab && this.tab !== 'food') this.closeDrawer(); else { this.openDrawer('decor'); this.dockOn('build'); } }
-      else if (d === 'food') { if (this.tab === 'food') this.closeDrawer(); else { this.openDrawer('food'); this.dockOn('food'); } }
-      else if (d === 'jumpers') { this.closeDrawer(); this.collectionModal(); }
+      if (d === 'build') { if (this.tab && this.tab !== 'food') this.closeDrawer(); else { this.closeModal(); this.openDrawer(this._buildTab || 'decor'); this.dockOn('build'); } }
+      else if (d === 'food' || d === 'care') { if (this.tab === 'food') this.closeDrawer(); else { this.closeModal(); this.openDrawer('food'); this.dockOn('care'); } }
+      else if (d === 'jumpers') { this.closeDrawer(); if (this._sheet === 'jumpers' || this._sheet === 'journal') this.closeModal(); else this.jumpersSheet(); }
       else if (d === 'follow') { this.closeDrawer(); this.toggleFollow(); }
       else if (d === 'observe') { this.closeDrawer(); this.toggleObserve(); }
-      else if (d === 'more') { this.closeDrawer(); this.moreSheet(); }
+      else if (d === 'more') { this.closeDrawer(); if (this._sheet === 'menu') this.closeModal(); else this.moreSheet(); }
     },
     dockOn(d) { const b = document.querySelector('#dock button[data-dock="' + d + '"]'); if (b) b.classList.add('on'); },
     doMist() {
       if (performance.now() - this._mistT < 1500) return; this._mistT = performance.now();
-      this.hab.mist(); this.R.mistFx(this.hab); A().sfx('mist');
+      this.hab.mist(); this.hab._mistAt = this.hab.time; this.R.mistFx(this.hab); A().sfx('mist');
       this.toast('Misted. Fresh droplets bead on leaves and stones.');
     },
     doClean() {
@@ -8691,15 +9265,29 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 
     // ------------------------------------------------ drawer
     openDrawer(tab) {
-      this.tab = tab; const d = $('drawer'); d.classList.remove('hidden');
+      this.tab = tab; if (tab !== 'food') this._buildTab = tab; if (this._tipId) { this.hideTip(true); this._tipWait = 0.4; } this.tipOnce(tab === 'food' ? 'care' : 'build', false, true); const d = $('drawer'); d.classList.remove('hidden'); d.classList.toggle('care', tab === 'food');
+      if (!$('modalWrap').classList.contains('hidden')) this.closeModal(); // one sheet at a time
       const tabs = $('drawerTabs'); tabs.innerHTML = '';
-      const list = tab === 'food' ? [['food', 'Live food']] : [['decor', 'Decor'], ['walls', 'Walls'], ['plants', 'Plants'], ['substrate', 'Substrate']];
-      for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => this.openDrawer(id); tabs.appendChild(b); }
-      if (tab !== 'food') { const b = el('button', this.mode === 'remove' ? 'on' : '', 'Remove'); b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
+      const list = tab === 'food' ? [['food', 'Care']] : [['decor', 'Decor'], ['plants', 'Plants'], ['walls', 'Walls'], ['substrate', 'Ground']];
+      for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.openDrawer(id); }; tabs.appendChild(b); }
+      if (tab !== 'food') { const b = el('button', 'rm' + (this.mode === 'remove' ? ' on' : ''), 'Remove'); b.title = 'Tap decor in the tank to remove it'; b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
-      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Pick a wall, then dress it: wall decor is free' : 'Choose a piece, then place it';
+      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live · humidity ' + Math.round(h.data.humidity * 100) + '%' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Pick a wall, then dress it: wall decor is free' : 'Choose a piece, then place it';
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
-      if (tab === 'decor' || tab === 'plants') for (const d of JT.DECOR.filter(x => x.cat === tab)) body.appendChild(this.decorCard(d));
+      const chips = $('drawerChips'); chips.innerHTML = ''; chips.classList.add('hidden');
+      const sect = (label, id) => { const e = el('div', 'sect', esc(label)); if (id) e.dataset.g = id; body.appendChild(e); return e; };
+      const chip = (label, on, fn, cls) => { const b = el('button', (on ? 'on ' : '') + (cls || ''), esc(label)); b.onclick = () => { A().sfx('click'); fn(); }; chips.appendChild(b); chips.classList.remove('hidden'); return b; };
+      const jump = (gid) => { const e = body.querySelector('.sect[data-g="' + gid + '"]'); if (e) body.scrollTo({ left: Math.max(0, e.offsetLeft - 6), behavior: 'smooth' }); };
+      if (tab === 'decor' || tab === 'plants') {
+        // sorted into groups; chips jump to a group, "Suits ..." keeps only pieces your jumpers blend in with
+        const mine = new Set(h.spiders.map(x => x.species)); const suits = (x) => (x.blend || []).some(id => mine.has(id));
+        let items = JT.DECOR.filter(x => x.cat === tab); const anySuit = items.some(suits); if (!anySuit) this._suits = false;
+        if (this._suits) items = items.filter(suits);
+        const groups = UI.GROUPS[tab].map(([lab, arches]) => [lab, items.filter(x => arches.includes(x.arche))]); const known = new Set(UI.GROUPS[tab].flatMap(g => g[1]));
+        const rest = items.filter(x => !known.has(x.arche)); if (rest.length) groups.push(['Other', rest]);
+        if (anySuit) chip(this._suits ? 'Showing what suits your jumpers' : 'Suits your jumpers', this._suits, () => { this._suits = !this._suits; this.openDrawer(tab); }, 'suit');
+        groups.forEach(([lab, xs], gi) => { if (!xs.length) return; sect(lab, 'g' + gi); for (const x of xs) body.appendChild(this.decorCard(x)); if (!this._suits) chip(lab, false, () => jump('g' + gi)); });
+      }
       else if (tab === 'walls') {
         for (const d of JT.DECOR.filter(x => x.arche === 'backwall')) body.appendChild(this.decorCard(d));
         const kit = JT.wallKit(h), w = h.backWall();
@@ -8707,25 +9295,45 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         else {
           body.appendChild(el('div', 'sect', 'Wall decor · free · ' + h.data.decor.filter(d => d.wall === w.id).length + '/' + JT.WALL_CAP));
           const c = el('div', 'card'); c.title = 'Dress wall — place a small, composed set from this wall\'s kit (replaces earlier wall decor)';
-          c.appendChild(cloneCanvas(this.R.decorThumb(w.type, 0, 112))); c.appendChild(el('div', 'nm', 'Dress wall')); c.appendChild(el('div', 'pr', 'auto'));
-          c.onclick = () => { const n = JT.Presets.dressWall(h, null, 4, 'player'); A().sfx('place'); this.toast(n ? 'Dressed the wall with ' + n + ' pieces.' : 'No room on the wall.', 'quiet'); this.game.save(); this.openDrawer('walls'); };
+          c.appendChild(lazyThumb(() => this.R.hasThumb(w.type, 0, 112), () => this.R.decorThumb(w.type, 0, 112))); c.appendChild(el('div', 'nm', 'Dress wall')); c.appendChild(el('div', 'pr', 'auto'));
+          c.onclick = () => { const n = JT.Presets.dressWall(h, null, 4, 'player'); A().sfx('place'); this.buzz('place', true); this.toast(n ? 'Dressed the wall with ' + n + ' pieces.' : 'No room on the wall.', 'quiet'); this.game.save(); this.openDrawer('walls'); };
           body.appendChild(c);
           const look = h.wallLook(w.id); for (const id of kit) body.appendChild(this.decorCard(JT.DECOR_BY_ID[id], look));
         }
       }
       else if (tab === 'substrate') {
-        for (const id in JT.SUBSTRATES) body.appendChild(this.substrateCard(id));
-        body.appendChild(el('div', 'sect', 'Ground cover'));
+        sect('Substrate', 'gs'); for (const id in JT.SUBSTRATES) body.appendChild(this.substrateCard(id));
+        sect('Ground cover', 'gc');
         for (const d of JT.DECOR.filter(x => x.cat === 'ground')) body.appendChild(this.decorCard(d));
-      } else if (tab === 'food') for (const p of JT.PREY) body.appendChild(this.preyCard(p));
+        chip('Substrate', false, () => jump('gs')); chip('Ground cover', false, () => jump('gc'));
+      } else if (tab === 'food') {
+        // care first (mist, clean), then live food from smallest to largest, with the sizes your jumpers can take marked
+        sect('Care', 'gk'); body.appendChild(this.careCard('mist')); body.appendChild(this.careCard('clean'));
+        const AI = JT.SpiderAI; const sps = h.spiders;
+        const fits = (p) => sps.filter(sp => { const L = AI.len(sp); return p.len <= L * Math.min(1.25, AI.sizeLimit(sp)) && p.len >= L * 0.12; });
+        const food = JT.PREY.filter(p => !p.cleaner).sort((a, b) => a.len - b.len); const crew = JT.PREY.filter(p => p.cleaner);
+        const bands = [['Tiny', 0, 3], ['Small', 3, 6], ['Medium', 6, 10], ['Large', 10, 1e9]];
+        bands.forEach(([lab, a, b2], bi) => { const xs = food.filter(p => p.len >= a && p.len < b2); if (!xs.length) return; sect(lab + ' prey', 'f' + bi); for (const p of xs) body.appendChild(this.preyCard(p, fits(p))); chip(lab, false, () => jump('f' + bi)); });
+        if (crew.length) { sect('Cleanup crew', 'fc'); for (const p of crew) body.appendChild(this.preyCard(p, null)); chip('Cleanup crew', false, () => jump('fc')); }
+      }
       this.refreshHeader(); this.syncDrawerSpace();
+    },
+    /** Mist / Clean as the first cards of the Care strip. */
+    careCard(kind) {
+      const h = this.hab; const c = el('div', 'card care-' + kind); const cv = document.createElement('canvas'); cv.width = cv.height = 112; const g = cv.getContext('2d');
+      if (kind === 'mist') { const rng = JT.makeRng(5); for (let i = 0; i < 16; i++) { const x = 20 + rng() * 72, y = 22 + rng() * 66, r = 3 + rng() * 6; const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.3, 0.5, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,.95)'); gr.addColorStop(0.5, 'rgba(150,200,225,.75)'); gr.addColorStop(1, 'rgba(70,120,150,.55)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); } }
+      else { g.strokeStyle = 'rgba(90,64,40,.9)'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.moveTo(30, 82); g.lineTo(78, 30); g.stroke(); g.fillStyle = 'rgba(160,120,70,.9)'; g.beginPath(); g.moveTo(16, 86); g.lineTo(40, 66); g.lineTo(50, 78); g.lineTo(30, 98); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,240,200,.9)'; for (const [x, y] of [[80, 66], [88, 54], [70, 80]]) { g.beginPath(); g.arc(x, y, 2.6, 0, 6.283); g.fill(); } }
+      c.appendChild(cv);
+      if (kind === 'mist') { c.appendChild(el('div', 'nm', 'Mist')); c.appendChild(el('div', 'pr', 'humidity ' + Math.round(h.data.humidity * 100) + '%')); c.title = 'Mist the tank: fresh droplets to drink (M)'; c.onclick = () => { this.doMist(); this.openDrawer('food'); }; }
+      else { const n = (h.data.remains || []).length; c.appendChild(el('div', 'nm', 'Clean')); c.appendChild(el('div', 'pr', n ? n + ' to tidy' : 'tidy')); c.title = 'Tidy away husks, old silk and empty retreats'; c.onclick = () => { this.doClean(); this.openDrawer('food'); }; }
+      return c;
     },
     /** Toast lines sit just above the shop strip while it is open. */
     syncDrawerSpace() { const d = $('drawer'); const open = !d.classList.contains('hidden'); document.body.classList.toggle('drawer-open', open); document.documentElement.style.setProperty('--drawerH', open ? Math.round(d.getBoundingClientRect().height) + 'px' : '0px'); },
     closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); this.syncDrawerSpace(); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
     decorCard(d, look) {
       const c = el('div', 'card'); c.title = d.name + (d.desc ? ' — ' + d.desc : '') + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
-      c.appendChild(cloneCanvas(this.R.decorThumb(d.id, 0, 112, look)));
+      c.appendChild(lazyThumb(() => this.R.hasThumb(d.id, 0, 112, look), () => this.R.decorThumb(d.id, 0, 112, look)));
       const tgs = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean); const tg = tgs.join(', '); if (tg) c.title += ' — ' + tg;
       const bl = JT.blendNames(d); if (bl.length) c.title += ' — Blends with: ' + bl.join(', ');
       c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr' + (bl.length ? ' blend' : ''), bl.length ? 'Blends with: ' + esc(bl.join(', ')) : tgs[0] || (d.cat === 'plants' ? 'plant' : d.cat === 'walls' ? 'wall' : 'decor')));
@@ -8742,21 +9350,21 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       c.title = S.name + ' — ' + (S.burrow > 0.6 ? 'burrowable, ' : '') + (S.moist > 0.6 ? 'humid' : S.moist < 0.25 ? 'dry' : 'balanced');
       c.onclick = () => {
         if (cur) return;
-        h.data.substrate = id; if (h.backWall()) h.rebuild(); /* the wall is built from the substrate */ this.R._speck = null; A().sfx('place'); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
+        h.data.substrate = id; if (h.backWall()) h.rebuild(); /* the wall is built from the substrate */ this.R._speck = null; A().sfx('place'); this.buzz('place', true); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
       };
       return c;
     },
-    preyCard(p) {
-      const c = el('div', 'card');
+    preyCard(p, fits) {
+      const c = el('div', 'card' + (fits && fits.length ? ' fits' : ''));
       c.appendChild(cloneCanvas(this.R.preyPortrait(p.id, 112)));
       c.appendChild(el('div', 'nm', esc(p.name) + (p.count > 1 ? ' ×' + p.count : '')));
-      c.appendChild(el('div', 'pr', '~' + p.len + ' mm'));
+      c.appendChild(el('div', 'pr', '~' + p.len + ' mm' + (fits && fits.length ? ' · <span class="ok">' + (fits.length === 1 ? 'good for ' + esc(fits[0].name) : 'good size') + '</span>' : fits ? '' : ' · cleaner')));
       c.title = p.name + ' — ' + (TAGS(p) || 'ground prey') + (p.cleaner ? '. Cleanup crew: eats husks and shed skins, even up on decor.' : '. About ' + p.len + ' mm long.');
       c.onclick = () => {
         const h = this.hab; const n = p.count || 1;
-        if (h.prey.length + n > JT.PREY_CAP) { this.toast('This habitat already has plenty of live food (' + JT.PREY_CAP + ' max).'); A().sfx('error'); return; }
-        h.addPrey(p.id, n); A().sfx('rustle'); this.toast('Released ' + (n > 1 ? n + ' ' : 'a ') + esc(p.name) + '.');
-        $('drawerTitle').textContent = h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live';
+        if (h.prey.length + n > JT.PREY_CAP) { this.toast('This habitat already has plenty of live food (' + JT.PREY_CAP + ' max).'); A().sfx('error'); this.buzz('error', true); return; }
+        h.addPrey(p.id, n); A().sfx('feed'); this.buzz('tap', true); this.toast('Released ' + (n > 1 ? n + ' ' : 'a ') + esc(p.name) + '.');
+        $('drawerTitle').textContent = h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live · humidity ' + Math.round(h.data.humidity * 100) + '%';
       };
       return c;
     },
@@ -8794,10 +9402,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     rotatePlace() { const p = this.place; if (!p) return; p.rot = (p.rot + 1) % 4; A().sfx('click'); this.updateGhostAtCurrent(); },
     confirmPlace() {
       const p = this.place; if (!p) return; const h = this.hab; const d = JT.DECOR_BY_ID[p.type];
-      if (!p.ok) { this.toast(esc(p.reason || 'Cannot place here.')); A().sfx('error'); return; }
+      if (!p.ok) { this.toast(esc(p.reason || 'Cannot place here.')); A().sfx('error'); this.buzz('error', true); return; }
       const inst = h.addDecor(p.type, p.x, p.z, p.rot, p.seed, true, p.my, { bare: p.bare });
       if (!inst) { this.toast('That spot is no longer free.'); return; }
-      A().sfx('place');
+      A().sfx('place'); this.buzz('place', true);
       this.toast('Placed ' + esc(d.name) + (inst.parent ? ' (stacked)' : '') + '.');
       p.seed = (JT.R() * 1e9) | 0;
       this.updateGhostAtCurrent();
@@ -8817,11 +9425,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const h = this.hab; const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
       if (!hit) { this.toast('Nothing to remove there.'); return; }
       if (hit.kind === 'spider') { this.showPanel(hit.ent.id); this.toast('Use the jumper card to rehome a jumper.'); return; }
-      if (hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.toast('Released the ' + esc(d.name) + ' outside.'); return; }
-      if (hit.kind === 'remains') { h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.toast(hit.ent.cat === 'exuvia' ? 'Collected a shed exoskeleton.' : 'Removed leftovers.'); return; }
+      if (hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.buzz('remove', true); this.toast('Released the ' + esc(d.name) + ' outside.'); return; }
+      if (hit.kind === 'remains') { h.removeEntity(hit.ent, 'player'); A().sfx('remove'); this.buzz('remove', true); this.toast(hit.ent.cat === 'exuvia' ? 'Collected a shed exoskeleton.' : 'Removed leftovers.'); return; }
       if (hit.kind === 'decor') {
         const removed = h.removeDecor(hit.ent.id);
-        A().sfx('remove'); this.R.hover = null;
+        A().sfx('remove'); this.buzz('remove', true); this.R.hover = null;
         const nm = JT.DECOR_BY_ID[hit.ent.type].name;
         this.toast('Removed ' + esc(nm) + (removed.length > 1 ? ' and ' + (removed.length - 1) + ' item(s) resting on it' : '') + '.');
       }
@@ -8843,6 +9451,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const hit = this.R.pick(sx, sy, { touch: this.ptrType !== 'mouse' });
       if (hit && hit.kind === 'spider') { this.game.selectedId = hit.ent.id; this.showPanel(hit.ent.id); A().sfx('click'); return; }
       if (this.panelId) this.hidePanel(); // a tap anywhere outside the jumper card closes it
+      if (!hit || (hit.kind === 'decor' && hit.ent.type !== 'heatlamp')) this.fingerAt(sx, sy, false, false); // a tap on the glass
       if (hit && hit.kind === 'decor' && hit.ent.type === 'heatlamp') { const on = this.hab.toggleLamp(hit.ent.id); A().sfx('click'); this.toast(on ? 'Lamp on.' : 'Lamp off.', 'quiet', 1600); return; }
       if (hit && hit.kind === 'prey') { const d = JT.PREY_BY_ID[hit.ent.type]; const wk = JT.PreyAI.weakK ? JT.PreyAI.weakK(hit.ent) : 0; this.toast(esc(d.name) + (d.cleaner ? ', part of the cleanup crew' : '') + (hit.ent.state === 'twitch' ? ' — knocked on its back, still groggy from venom.' : wk > 0.05 ? ' — weakened by venom, moving sluggishly.' : '.'), 'quiet'); return; }
       if (hit && hit.kind === 'remains') { this.toast(hit.ent.cat === 'exuvia' ? 'A shed skin. The springtails will find it.' : 'Leftovers. The springtails will tidy them.', 'quiet'); return; }
@@ -8856,7 +9465,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (!sp) { this.hidePanel(); return; }
       const S = JT.SPECIES_BY_ID[sp.species]; const AI = JT.SpiderAI;
       const need = AI.moltNeed(sp); const molting = ['premolt', 'molting', 'moltSilk', 'moltSeek'].includes(sp.state);
-      const desc = AI.descriptors(sp);
+      const desc = AI.descriptors(sp); const pz = AI.personality ? AI.personality(sp) : null;
       const size = (S.len * JT.STAGE_SCALE[sp.stage]).toFixed(1);
       const hl = AI.hungerLabel(sp.sat);
       const moltTxt = sp.stage >= 5 ? 'Fully grown' : molting ? 'Molting now…' : 'Next molt: ' + Math.min(sp.meals, need) + '/' + need + ' meals';
@@ -8869,13 +9478,16 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         '<h3 id="pHead">' + (this.renaming ? '<input id="pName" maxlength="18" value="' + esc(sp.name) + '">' : esc(sp.name)) + '</h3>' +
         '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
         '<div class="state">' + esc(line) + '</div>' +
+        (pz ? '<div class="ctitle">' + esc(pz.title) + ' · ' + pz.traits.map(t => esc(t.label)).join(', ') + '</div>' : '') +
         '<div class="cthought">' + esc(sp.thought || line || '…') + '</div>' +
         '<div class="full">' +
         '<div class="rule"></div>' +
         meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
         '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd>' + (blendDef ? '<dt>Camouflage</dt><dd>Blending in with the ' + esc(blendDef.name) + '</dd>' : '') + '</dl>' +
         '<div class="thought">' + esc(sp.thought || '…') + '</div>' +
-        '<div class="pers">' + (desc ? desc.map(esc).join(', ') : 'Still learning about ' + esc(sp.name) + '. Keep watching.') + '</div>' +
+        (pz ? '<div class="persona"><div class="ptitle">' + esc(pz.title) + '</div><div class="pchips">' + pz.traits.map(t => '<span class="pchip">' + esc(t.label) + '</span>').join('') + (pz.hidden ? '<span class="pchip q" title="Keep watching to discover">?</span>' : '') + '</div>' +
+          '<ul class="phab">' + pz.traits.map(t => '<li>' + esc(t.habit) + '</li>').join('') + '</ul>' + ((sp.tame || 0) >= 0.08 ? '<div class="ptame" title="Grows when you visit gently: tap or hold a finger on the glass">' + ((sp.tame >= 0.7) ? 'Knows you well' : sp.tame >= 0.35 ? 'Getting used to you' : 'Starting to notice you') + ' <span class="tbar"><i style="width:' + Math.round(Math.min(1, sp.tame) * 100) + '%"></i></span></div>' : '') + ((sp.diary || []).length ? '<div class="pstory"><b>Story</b>' + sp.diary.slice(-2).reverse().map(e => '<div><span>Day ' + e.d + '</span> ' + esc(e.t) + '</div>').join('') + '</div>' : '') + (pz.hidden ? '<div class="pers">Keep watching ' + esc(sp.name) + ' to discover one more trait.</div>' : '') + '</div>' : '') +
+        (desc && desc.length > 2 ? '<div class="pers">Also: ' + desc.slice(2).map(esc).join(', ') + '</div>' : '') +
         '<div class="pbtns"><button class="txt" id="pRename">' + (this.renaming ? 'Save' : 'Rename') + '</button><button class="txt' + (follow ? ' on' : '') + '" id="pFollow">Observe</button><button class="txt" id="pRemove">Rehome</button></div>' +
         '</div>';
       // Refresh in place: rebuilding the panel every 0.3 s replaced buttons mid-tap on touch screens (taps got lost)
@@ -8904,7 +9516,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (on && this.obs) { if (lockId && this.hab.spider(lockId)) { this.obs.lock = lockId; this.pickSubject(true); } return; }
       if (on) {
         if (!this.hab.spiders.length) { this.toast('No jumpers here to observe yet.'); return; }
-        this.cancelMode(); this.closeDrawer(); this.closeModal();
+        this.cancelMode(); this.closeDrawer(); this.closeModal(); this.tipOnce('observe', false, true);
         if (!lockId && this.panelId && this.hab.spider(this.panelId)) lockId = this.panelId; // a jumper's card is open: watch that one
         this.obs = { sub: null, hold: 0, prevCam: this.R.cam.mode, t: 0, lock: lockId && this.hab.spider(lockId) ? lockId : null }; document.body.classList.add('observe'); $('obsHud').classList.remove('hidden');
         this.R.observing = true; this.R.setMode('follow'); this.pickSubject(true);
@@ -8930,10 +9542,58 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     },
 
     // ------------------------------------------------ modals
-    openModal(title, body) { $('modalTitle').textContent = title; const b = $('modalBody'); b.innerHTML = ''; if (typeof body === 'string') b.innerHTML = body; else b.appendChild(body); $('modalWrap').classList.remove('hidden'); b.scrollTop = 0; },
-    closeModal() { $('modalWrap').classList.add('hidden'); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); },
+    /** One sheet at a time. A page opened from another sheet (Menu > Settings) gets a back arrow to it; re-opening the
+        same page (a setting changed) keeps that arrow. `opts.sheet` names the top-level sheet for the dock highlight. */
+    openModal(title, body, opts) { if (this._tipId) this.hideTip(true);
+      opts = opts || {}; const wasOpen = !$('modalWrap').classList.contains('hidden'); const same = wasOpen && $('modalTitle').textContent === title;
+      if (opts.back !== undefined) this._modalBack = opts.back; else if (this._nextBack) this._modalBack = this._nextBack; else if (!same) this._modalBack = null;
+      this._nextBack = null;
+      if (opts.sheet) this._sheet = opts.sheet; else if (!same && !this._modalBack) this._sheet = null; // pages opened from a sheet keep its highlight
+      $('modalBack').classList.toggle('hidden', !this._modalBack);
+      $('modalTitle').textContent = title; const b = $('modalBody'); const keep = same ? b.scrollTop : 0; b.innerHTML = ''; if (typeof body === 'string') b.innerHTML = body; else b.appendChild(body); $('modalWrap').classList.remove('hidden'); b.scrollTop = opts.keepScroll ? keep : 0;
+      if (this.tab && this.isMobile()) this.closeDrawer();
+      this.refreshHeader();
+    },
+    /** Open a page from inside a sheet so it gets a back arrow to `from`. */
+    sub(from, open) { this._nextBack = from; open(); },
+    closeModal() { const was = !$('modalWrap').classList.contains('hidden'); $('modalWrap').classList.add('hidden'); this._modalBack = null; this._nextBack = null; this._sheet = null; document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); if (was) this.refreshHeader(); },
     traitBars(T) { return '<div class="traits">' + [['Stealth', T.stealth], ['Patience', T.patience], ['Jump', T.jump], ['Boldness', T.bold], ['Tactics', T.tactics]].map(([n, v]) => '<span>' + n + '</span><div class="bar"><i style="width:' + Math.round(v * 100) + '%"></i></div>').join('') + '</div>'; },
-    collectionModal() {
+    collectionModal() { this.jumpersSheet('collection'); },
+    journalModal() { this.jumpersSheet('journal'); },
+    /** Jumpers sheet: the jumpers in this tank, the collection (add / unlock), and the field journal. */
+    jumpersSheet(tab) {
+      const h = this.hab; tab = tab || (h.spiders.length ? 'tank' : 'collection'); this._jTab = tab;
+      const w = el('div'); const seg = el('div', 'seg sheet-tabs');
+      for (const [id, lab] of [['tank', 'In this tank'], ['collection', 'Collection'], ['journal', 'Journal']]) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.jumpersSheet(id); }; seg.appendChild(b); }
+      w.appendChild(seg);
+      w.appendChild(tab === 'tank' ? this.tankJumpersBody() : tab === 'collection' ? this.collectionBody() : this.journalBody());
+      this.openModal(tab === 'journal' ? 'Field Journal' : 'Jumpers', w, { sheet: tab === 'journal' ? 'journal' : 'jumpers', back: null }); this.dockOn('jumpers');
+    },
+    tankJumpersBody() {
+      const g = this.game, h = this.hab, AI = JT.SpiderAI; const w = el('div', 'jlist');
+      if (!h.spiders.length) { w.appendChild(el('p', 'muted', 'No jumpers in ' + esc(h.data.name) + ' yet.')); const b = el('button', 'modal-btn gold', 'Add a jumper'); b.onclick = () => this.jumpersSheet('collection'); w.appendChild(b); }
+      const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
+      for (const sp of h.spiders) {
+        const S = JT.SPECIES_BY_ID[sp.species]; const r = el('div', 'jrow' + (sp.id === g.selectedId ? ' sel' : ''));
+        r.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96)));
+        const line = AI.stateLine ? AI.stateLine(h, sp) : AI.hungerLabel(sp.sat); const desc = AI.personality ? AI.personality(sp) : null;
+        const tx = el('div', 'jtx', '<div class="jn">' + esc(sp.name) + '</div><div class="js">' + esc(S.name) + ' · ' + JT.STAGES[sp.stage] + '</div><div class="jl">' + esc(line) + '</div>' +
+          (desc && desc.title ? '<div class="jp">' + esc(desc.title) + '</div>' : '') +
+          '<div class="jm"><span>Hunger</span><i style="--v:' + pct(sp.sat) + '%"></i><span>Water</span><i class="hyd" style="--v:' + pct(sp.hyd != null ? sp.hyd : 1) + '%"></i></div>');
+        r.appendChild(tx);
+        const bs = el('div', 'jb'); const ob = el('button', 'modal-btn gold', 'Observe'); ob.onclick = (e) => { e.stopPropagation(); this.closeModal(); g.selectedId = sp.id; this.toggleObserve(true, sp.id); };
+        const cb = el('button', 'modal-btn', 'Card'); cb.onclick = (e) => { e.stopPropagation(); this.closeModal(); g.selectedId = sp.id; this.showPanel(sp.id); };
+        bs.appendChild(ob); bs.appendChild(cb); r.appendChild(bs); r.onclick = () => cb.onclick({ stopPropagation() {} });
+        w.appendChild(r);
+      }
+      const others = []; g.habs.forEach((hb, i) => { if (hb !== h) hb.spiders.forEach(x => others.push([x, hb, i])); });
+      if (others.length) { w.appendChild(el('h4', '', 'In your other tanks')); const row = el('div', 'sheet-list');
+        for (const [x, hb, i] of others) { const b = el('button', '', esc(x.name) + '<small class="muted">' + esc(JT.SPECIES_BY_ID[x.species].name) + ' · ' + esc(hb.data.name) + '</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); g.selectedId = x.id; this.showPanel(x.id); }; row.appendChild(b); }
+        w.appendChild(row); }
+      if (h.spiders.length && h.spiders.length < h.dims.cap) { const b = el('button', 'modal-btn', 'Add another jumper…'); b.onclick = () => this.jumpersSheet('collection'); w.appendChild(b); }
+      return w;
+    },
+    collectionBody() {
       const g = this.game, h = this.hab, st = g.state; const wrap = el('div');
       const mine = []; g.habs.forEach((hb, i) => hb.spiders.forEach(s => mine.push([s, hb, i])));
       wrap.appendChild(el('p', 'muted', 'Adding to <b>' + esc(h.data.name) + '</b> · ' + h.spiders.length + '/' + h.dims.cap + ' jumpers (' + JT.HABITATS[h.data.type].name + '), up to ' + JT.PER_SPECIES + ' of each species. Raise a jumper to Adult to unlock the next. Total catches: ' + st.catches + '.'));
@@ -8943,7 +9603,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         wrap.appendChild(row);
       }
       const grid = el('div', 'grid'); const best = st.best || {};
-      for (const id of JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS)) {
+      for (const id of JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS, JT.SPECIAL_UNLOCKS || [])) {
         const S = JT.SPECIES_BY_ID[id]; const unlocked = g.isUnlocked(S.id); const chk = g.canAdd(h, S.id);
         const e = el('div', 'entry' + (unlocked ? '' : ' locked'));
         e.appendChild(cloneCanvas(this.R.speciesPortrait(S.id, 150)));
@@ -8951,7 +9611,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         e.insertAdjacentHTML('beforeend', (owned ? '<span class="badge">Owned ×' + owned + '</span>' : !unlocked ? '<span class="badge">Locked</span>' : '') + '<h4>' + esc(S.name) + '</h4><div class="sci">' + esc(S.sci) + ' · ~' + S.len + ' mm adult</div><p>' + esc(S.desc) + '</p>' + this.traitBars(S.traits));
         const b = el('button', 'modal-btn gold');
         if (!unlocked) {
-          if (S.unlockCatches) b.textContent = 'Unlocks after ' + S.unlockCatches + ' catches (' + Math.min(st.catches, S.unlockCatches) + '/' + S.unlockCatches + ')';
+          if (S.unlock) { const u = S.unlock; b.textContent = u.journal ? 'Witness ' + u.journal + ' journal behaviours (' + Math.min(JT.JOURNAL.filter(j => st.journal[j.id]).length, u.journal) + '/' + u.journal + ')' : 'Befriend a jumper: visit it gently at the glass until it knows you'; }
+          else if (S.unlockCatches) b.textContent = 'Unlocks after ' + S.unlockCatches + ' catches (' + Math.min(st.catches, S.unlockCatches) + '/' + S.unlockCatches + ')';
           else { const prev = JT.SPECIES_BY_ID[JT.unlockPrev(S.id)]; const bs = best[prev.id]; b.textContent = 'Raise a ' + prev.name + ' to Adult (' + (bs != null ? 'best: ' + JT.STAGES[bs] : 'not raised yet') + ')'; }
           b.disabled = true;
         }
@@ -8960,18 +9621,45 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         b.onclick = () => {
           if (!g.canAdd(h, S.id).ok) return;
           const sp = h.addSpider(S.id, { stage: 1 });
-          g.checkUnlocks(true); g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('place');
+          g.checkUnlocks(true); g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('hatch'); this.buzz('place', true);
           this.toast('Welcome, ' + esc(sp.name) + ' the ' + esc(S.name) + '!'); g.save();
         };
         e.appendChild(b); grid.appendChild(e);
       }
-      wrap.appendChild(grid); this.openModal('Jumper Collection', wrap);
+      wrap.appendChild(grid); return wrap;
     },
-    journalModal() {
-      const st = this.game.state; const n = JT.JOURNAL.filter(j => st.journal[j.id]).length;
-      let html = '<p class="muted">Only behaviours you actually witness are recorded. ' + n + ' of ' + JT.JOURNAL.length + ' observed.</p><div class="grid">';
-      for (const j of JT.JOURNAL) { const c = st.journal[j.id]; html += c ? '<div class="entry"><span class="badge">' + c + '×</span><h4>' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p></div>' : '<div class="entry locked"><h4>Not yet witnessed</h4><p class="muted">Keep watching your jumpers.</p></div>'; }
-      this.openModal('Field Journal', html + '</div>');
+    journalBody(sub) {
+      sub = sub || this._jSub || 'seen'; this._jSub = sub;
+      const g = this.game, st = g.state, jm = st.jmeta || {}; const w = el('div', 'jrnl');
+      const n = JT.JOURNAL.filter(j => st.journal[j.id]).length, N = JT.JOURNAL.length;
+      const seg = el('div', 'seg small jsub'); for (const [id, lab] of [['seen', 'Behaviours'], ['stories', 'Life stories']]) { const b = el('button', id === sub ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this._jSub = id; this.jumpersSheet('journal'); }; seg.appendChild(b); } w.appendChild(seg);
+      if (sub === 'stories') { w.appendChild(this.storiesBody()); return w; }
+      w.appendChild(el('div', 'jprog', '<div class="jpt"><b>' + n + '</b> of ' + N + ' behaviours witnessed</div><span class="tbar"><i style="width:' + Math.round(n / N * 100) + '%"></i></span><p class="muted">Only what you actually see happen in the tank you are watching is recorded.</p>'));
+      const META = JT.JOURNAL_META || {};
+      for (const [cid, cname] of JT.JOURNAL_CATS || [['all', 'Behaviours']]) {
+        const list = JT.JOURNAL.filter(j => ((META[j.id] || [])[0] || 'life') === cid || cid === 'all'); if (!list.length) continue;
+        const got = list.filter(j => st.journal[j.id]).length;
+        let html = '<h4 class="jcat">' + esc(cname) + ' <span class="muted">' + got + '/' + list.length + '</span></h4><div class="grid">';
+        for (const j of list) { const c = st.journal[j.id], m = jm[j.id], hint = (META[j.id] || [])[1];
+          html += c ? '<div class="entry"><span class="badge">' + c + '×</span><h4>' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p>' + (m ? '<p class="jfirst">First seen day ' + m.d + (m.n ? ' · ' + esc(m.n) + (JT.SPECIES_BY_ID[m.s] ? ' (' + esc(JT.SPECIES_BY_ID[m.s].name) + ')' : '') : '') + '</p>' : '') + '</div>'
+            : '<div class="entry locked"><h4>Not yet witnessed</h4><p class="muted">' + esc(hint ? 'Hint: ' + hint : 'Keep watching your jumpers.') + '</p></div>'; }
+        const d = el('div', 'jsec'); d.innerHTML = html + '</div>'; w.appendChild(d);
+      }
+      return w;
+    },
+    /** Every jumper's life story (this tank first), newest moments at the top. */
+    storiesBody() {
+      const g = this.game, AI = JT.SpiderAI; const w = el('div', 'stories'); const habs = [g.hab].concat(g.habs.filter(h => h !== g.hab)); let any = false;
+      for (const h of habs) for (const sp of h.spiders) { any = true;
+        const S = JT.SPECIES_BY_ID[sp.species] || { name: sp.species }; const pz = AI.personality ? AI.personality(sp) : null; const D = (sp.diary || []).slice().reverse();
+        const card = el('div', 'story'); card.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96)));
+        const open = this._storyOpen === sp.id; const shown = open ? D : D.slice(0, 4);
+        const tx = el('div', 'stx', '<div class="jn">' + esc(sp.name) + '</div><div class="js">' + esc(S.name) + ' · ' + JT.STAGES[sp.stage] + (h !== g.hab ? ' · ' + esc(h.data.name) : '') + (pz && pz.title ? ' · <i>' + esc(pz.title) + '</i>' : '') + '</div>' +
+          '<ul class="diary">' + (shown.length ? shown.map(e => '<li><span class="dd">Day ' + e.d + '</span>' + esc(e.t) + '</li>').join('') : '<li class="muted">No moments recorded yet. Its story starts now.</li>') + '</ul>');
+        if (D.length > 4) { const b = el('button', 'linkbtn', open ? 'Show less' : 'Show all ' + D.length + ' moments'); b.onclick = () => { this._storyOpen = open ? null : sp.id; this.jumpersSheet('journal'); }; tx.appendChild(b); }
+        card.appendChild(tx); w.appendChild(card); }
+      if (!any) w.appendChild(el('p', 'muted', 'No jumpers yet. Add one from the Collection and its story begins.'));
+      return w;
     },
     habPickerModal() {
       const g = this.game; const w = el('div'); const list = el('div', 'sheet-list');
@@ -8980,27 +9668,28 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       w.appendChild(list); this.openModal('Your Habitats', w);
     },
     moreSheet() {
-      const w = el('div'); const list = el('div', 'sheet-list'); this.dockOn('more');
-      const add = (lab, fn, on) => { const b = el('button', on ? 'on' : '', lab); b.onclick = fn; list.appendChild(b); };
-      const sect = (t) => list.appendChild(el('div', 'sect', t));
-      sect('Care');
-      add('Mist', () => { this.closeModal(); this.doMist(); });
-      add('Clean', () => { this.closeModal(); this.doClean(); });
-      add('Remove', () => { this.closeModal(); this.startRemove(); });
-      add('Journal', () => this.journalModal());
-      add('Reset tank…', () => this.resetTank());
-      sect('Camera');
-      for (const m of this.camModes()) add(JT.CAMS[m].label, () => { this.closeModal(); this.setCam(m); }, this.R.cam.mode === m);
-      add('Observe', () => { this.closeModal(); this.toggleObserve(true); }, !!this.obs);
-      sect('Time');
-      for (const [m, lab] of [['auto', 'Natural'], ['day', 'Always day'], ['night', 'Always night']]) add(lab, () => { this.setTimeMode(m); this.moreSheet(); }, this.game.state.timeMode === m);
-      sect('Settings');
-      add('Habitats', () => this.manageModal());
-      add('Settings', () => this.settingsModal());
-      add(this.set.muted ? 'Sound (muted)' : 'Sound', () => { this.closeModal(); this.soundPopover(); });
-      if (this.canFullscreen) add('Full screen', () => { this.closeModal(); this.toggleFullscreen(); });
-      add('Help', () => this.helpModal());
-      w.appendChild(list); this.openModal('More', w);
+      const g = this.game; const w = el('div', 'menu'); const back = () => this.moreSheet();
+      const sect = (t) => { const e = el('div', 'msect'); e.appendChild(el('h4', '', t)); w.appendChild(e); return e; };
+      const row = (parent, lab, fn, on, hint) => { const b = el('button', 'mrow' + (on ? ' on' : ''), esc(lab) + (hint ? '<small>' + hint + '</small>' : '')); b.onclick = () => { A().sfx('click'); fn(); }; parent.appendChild(b); return b; };
+      const segRow = (parent, lab, opts, cur, fn) => { const r = el('div', 'mseg'); r.appendChild(el('span', '', lab)); const sg = el('div', 'seg small'); for (const [v, l] of opts) { const b = el('button', v === cur ? 'on' : '', l); b.onclick = () => { A().sfx('click'); fn(v); }; sg.appendChild(b); } r.appendChild(sg); parent.appendChild(r); };
+      // habitats: switch with one tap
+      const hs = sect('Habitats');
+      g.habs.forEach((h, i) => row(hs, h.data.name, () => { this.closeModal(); if (i !== g.state.active) this.switchHab(i); }, i === g.state.active, h.spiders.length + ' jumper' + (h.spiders.length === 1 ? '' : 's') + ' · ' + JT.HABITATS[h.data.type].name));
+      row(hs, 'Manage habitats…', () => this.sub(back, () => this.manageModal()));
+      // view
+      const vs = sect('View');
+      segRow(vs, 'Camera', this.camModes().map(m => [m, JT.CAMS[m].label.replace(/^Isometric$/, 'Iso')]), this.R.cam.mode, (m) => { this.setCam(m); this.moreSheet(); });
+      segRow(vs, 'Time', [['auto', 'Natural'], ['day', 'Day'], ['night', 'Night']], g.state.timeMode, (m) => { this.setTimeMode(m); this.moreSheet(); });
+      row(vs, this.obs ? 'Stop observing' : 'Observe a jumper', () => { this.closeModal(); this.toggleObserve(!this.obs); });
+      // app
+      const as = sect('Game');
+      row(as, this.set.muted ? 'Sound (muted)' : 'Sound', () => { this.closeModal(); this.soundPopover(); });
+      row(as, 'Settings', () => this.sub(back, () => this.settingsModal()));
+      row(as, 'Help & tips', () => this.sub(back, () => this.helpModal()));
+      if (this.canFullscreen) row(as, 'Full screen', () => { this.closeModal(); this.toggleFullscreen(); });
+      const ts = sect('This tank');
+      row(ts, 'Reset tank…', () => this.resetTank(), false, 'Empties ' + esc(this.hab.data.name) + '; unlocks stay');
+      this.openModal('Menu', w, { sheet: 'menu', back: null }); this.dockOn('more');
     },
     /** Empty the tank being viewed (only this one). Unlocks stay; the journal starts over. */
     resetTank() {
@@ -9008,7 +9697,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (!root.confirm('Reset ' + h.data.name + '? All decor, plants, prey, jumpers, silk and retreats in this tank are removed and the journal starts over. Unlocked jumpers stay unlocked.')) return;
       if (this.obs) this.toggleObserve(false);
       this.closeModal(); this.hidePanel(); if (this.R.cam.mode === 'follow') this.unfollow();
-      h.resetTank(); g.state.journal = {}; g.selectedId = null;
+      h.resetTank(); g.state.journal = {}; g.state.jmeta = {}; g.selectedId = null;
       this.R.cur = null; this.R._speck = null; this.refreshHeader(); g.save();
       this.toast('Tank reset. A clean slate.'); A().sfx('rustle');
     },
@@ -9111,6 +9800,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: smooth while you touch or watch, 30 fps when idle')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
+      w.appendChild(el('h4', '', 'Feel & help'));
+      { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }
+      { const c = tog('tips', 'Show tips', 'Short hints the first time you do something. Replay them any time from Menu → Help & tips.'); c.checked = s.tips !== false; }
       { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
         const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();
         const info = 'Screen ' + (root.screen ? screen.width + '×' + screen.height : '?') + ' · window ' + root.innerWidth + '×' + root.innerHeight + ' · large ' + (pr ? Math.round(pr.getBoundingClientRect().height) : '?') + ' · game ' + Math.round(app.height) + ' · safe bottom ' + sb + ' · ' + (sa ? 'home-screen app' : 'browser');
@@ -9132,6 +9824,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
       p.innerHTML = '<b>Sound</b>'; const sl = (key, label) => { const r = el('div', 'form-row'); r.appendChild(el('label', '', label)); const i = el('input'); i.type = 'range'; i.min = 0; i.max = 1; i.step = 0.05; i.value = s[key]; i.oninput = () => { s[key] = +i.value; A().apply(); JT.Settings.save(s); }; r.appendChild(i); p.appendChild(r); };
       sl('music', 'Music'); sl('ambience', 'Ambience'); sl('effects', 'Effects');
+      { const h = this.hab, r = el('div', 'form-row'); r.appendChild(el('label', '', 'Tank sounds')); const sg = el('div', 'seg small scape'); const auto = A().themeOf ? (h.data.sound = h.data.sound || 'auto', (() => { const sv = h.data.sound; h.data.sound = 'auto'; const t = A().themeOf(h); h.data.sound = sv; return t; })()) : 'woodland';
+        for (const [v, l] of [['auto', 'Auto (' + auto + ')'], ['rainforest', 'Rainforest'], ['desert', 'Desert'], ['garden', 'Garden'], ['woodland', 'Woodland']]) { const b = el('button', (h.data.sound || 'auto') === v ? 'on' : '', l); b.onclick = () => { h.data.sound = v; if (A()._sc) A()._sc.k = 0; sg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); A().sfx('click'); }; sg.appendChild(b); }
+        r.appendChild(sg); p.appendChild(r); }
+      { const r = el('div', 'form-row'); r.innerHTML = '<label for="pop_hap">Vibration</label>'; const c = el('input'); c.type = 'checkbox'; c.id = 'pop_hap'; c.checked = s.haptics !== false; c.onchange = () => { s.haptics = c.checked; JT.Settings.save(s); if (c.checked) this.buzz('tap', true); }; r.appendChild(c); p.appendChild(r); }
       const r = el('div', 'form-row'); const b = el('button', 'modal-btn', s.muted ? 'Unmute' : 'Mute all'); b.onclick = () => { s.muted = !s.muted; A().apply(); JT.Settings.save(s); this.refreshHeader(); p.classList.add('hidden'); }; r.appendChild(b); p.appendChild(r);
       p.classList.remove('hidden');
     },
@@ -9145,7 +9841,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         e('Warmth', 'A Basking Lamp throws a warm pool of light. Jumpers bask there in the morning, when it is cool and after a meal. Tap the lamp to switch it on or off. At night it draws moths and flies.') +
         e('Care', 'Mist to leave droplets for drinking. Springtails and isopods seek out husks and shed skins and nibble them away; more springtails clean faster. Clean tidies husks at once.') +
         e('Camera', '<kbd>1</kbd> Isometric, <kbd>2</kbd> Front, <kbd>3</kbd> Back. Tanks with a back wall swap Back for <kbd>3</kbd> Left and <kbd>4</kbd> Right, and the camera never goes behind the wall. <kbd>O</kbd> or <kbd>F</kbd> Observe (tap another jumper while observing to watch it instead). On a phone, the numbered buttons switch camera; tap the current one again to re-centre. Scroll or pinch to zoom, drag to pan; while observing, drag to orbit. Auto-framing resumes after a few quiet seconds. <kbd>0</kbd> resets.') +
-        e('Collection', 'You begin with the Peacock Spider, the smallest jumper. Raise a jumper to Adult and the next-largest species unlocks, all the way up to the Regal Orange Morph. Portia unlocks after 30 successful catches. Up to ' + JT.PER_SPECIES + ' of each species can share a tank. Every jumper arrives as a Sling.') + e('Journal', 'Witnessed behaviours fill the Field Journal. Your shelf holds up to ' + JT.MAX_HABS + ' displays; build new ones from Habitats.') + '</div>');
+        e('Collection', 'You begin with the Peacock Spider, the smallest jumper. Raise a jumper to Adult and the next-largest species unlocks, all the way up to the Regal Orange Morph. Portia unlocks after 30 successful catches, the Vegetarian Jumper after you witness 10 journal behaviours, and the House Jumper once one of your jumpers knows you. Up to ' + JT.PER_SPECIES + ' of each species can share a tank. Every jumper arrives as a Sling.') + e('Journal', 'Witnessed behaviours fill the Field Journal. Your shelf holds up to ' + JT.MAX_HABS + ' displays; build new ones from Habitats.') +
+        e('Your finger', 'Tap the glass, or press and hold to rest a fingertip there. Curious jumpers turn to look and creep closer; shy ones hide. Gentle visits build trust, shown on the card. A fast swipe startles them.') +
+        e('Life stories', 'Each jumper keeps a dated story of its big moments: arriving, first catch, molts, things you saw it do. Jumpers → Journal → Life stories.') +
+        e('Sounds & feel', 'Each tank has its own soundscape (rainforest, desert, garden or woodland) and reacts to what is in it: a water dish trickles, plants rustle, misting drips, a lamp hums. Change it under Sound. Vibration works on most Android phones; iPhones only give a light tick on your own taps.') + '</div>');
+      { const b = el('button', 'modal-btn gold', 'Replay the beginner tips'); b.onclick = () => { this.resetTips(); this.closeModal(); this.tipOnce('welcome', true); }; const r = el('div', 'form-row tiprow'); r.appendChild(b); $('modalBody').prepend(r); }
     },
 
     /** The Food control gently breathes while a hungry jumper has nothing left to hunt (no badge, no icon). */
@@ -9153,7 +9853,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const h = this.hab; const AI = JT.SpiderAI;
       const want = h.spiders.some(s => s.sat < 0.4 && !s.hold && !(AI.preyAvailable && AI.preyAvailable(h, s)));
       if (want === this._want) return; this._want = want;
-      document.querySelectorAll('#toolbar button[data-tool="food"], #dock button[data-dock="food"]').forEach(b => b.classList.toggle('wanting', want));
+      document.querySelectorAll('#toolbar button[data-tool="care"], #dock button[data-dock="care"]').forEach(b => b.classList.toggle('wanting', want));
     },
     // ------------------------------------------------ per-frame
     update(dt) {
@@ -9163,8 +9863,20 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this.obs) this.updateObs(dt);
       // the player "watches" the selected jumper -> personality is discovered over time
       if (g.viewing) for (const s of h.spiders) s.obsT = (s.obsT || 0) + dt * (s.id === g.selectedId && (this.panelId === s.id || this.obs || this.R.cam.mode === 'follow') ? 1 : 0.2);
-      if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); this.updateWanting(); }
+      if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); this.updateWanting(); this.tipWatch(); }
+      this.pumpTips(dt);
       if (this.mode === 'place' && this.place && this._t > 0.5) { this._t = 0; this.updateGhostAtCurrent(); }
+      if (TQ.length) pumpThumbs(this.isMobile() ? 6 : 9);
+      else this.warmThumbs(dt);
+    },
+    /** Idle pre-painting of shop thumbnails (one every ~0.3 s, only while nothing else is going on). */
+    warmThumbs(dt) {
+      this._warmT = (this._warmT || 0) + dt; if (this._warmT < 4 || this._warmDone) return;
+      if (this.obs || this.mode || this.R._moving || (this.R.fps && this.R.fps < 24)) return;
+      if (this._warmT - (this._warmLast || 0) < 0.3) return; this._warmLast = this._warmT;
+      if (!this._warmList) this._warmList = JT.DECOR.filter(d => d.cat === 'decor' || d.cat === 'plants' || d.cat === 'ground').map(d => d.id);
+      while (this._warmList.length) { const id = this._warmList.shift(); if (this.R.hasThumb(id, 0, 112)) continue; try { this.R.decorThumb(id, 0, 112); } catch (e) { /* ignore */ } return; }
+      this._warmDone = true;
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
