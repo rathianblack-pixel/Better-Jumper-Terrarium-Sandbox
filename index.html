@@ -4970,7 +4970,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false, perf: false },
+    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false },
     load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k]) out[k] = s[k]; return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
@@ -7359,11 +7359,16 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // Many close-up crickets otherwise grew the sheet to 2048x1024 (8 MB a frame). Over budget, all sprites paint a bit
       // smaller and the GPU scales them back up (slightly softer, same size on screen).
       // The watched jumper and its prey (xr) keep full detail; everything else shares what is left.
-      { const A = (s) => (s.rp * 2 + 2) * (s.rp * 2 + 2); let keep = 0, rest = 0; for (const s of list) { if (s.it.xr) keep += A(s); else rest += A(s); } const B = 400000;
+      { const A = (s) => (s.rp * 2 + 2) * (s.rp * 2 + 2); let keep = 0, rest = 0; for (const s of list) { if (s.it.xr) keep += A(s); else rest += A(s); } const B = 600000;
         const room = Math.max(B * 0.3, B - keep); if (rest > room) { const f = Math.sqrt(room / rest); for (const s of list) if (!s.it.xr) { s.sc *= f; s.rp = Math.max(3, Math.ceil(s.rp * f)); } } }
       // shelf-pack into the sheet (biggest first)
+      // Reuse: critters other than the watched / selected one repaint every other frame (staggered), the rest of the time
+      // their last drawing is moved to where they are now. Sizes snap to 8 px steps with hysteresis so the packing (and
+      // with it every slot) stays put from frame to frame.
+      const SC = this._sc || (this._sc = new Map()); const sf = this._sf = (this._sf || 0) + 1;
+      for (const s of list) { const k = s.it.key; if (!k) continue; let rq = Math.ceil(s.rp / 8) * 8; const pv = SC.get(k); if (pv && rq <= pv.rp && rq >= pv.rp - 16) rq = pv.rp; s.rp = rq; }
       // shelf-pack into the narrowest sheet that fits (the whole sheet is re-uploaded every frame, so smaller is cheaper)
-      const order = list.slice().sort((a, b) => b.rp - a.rp); let AW = 512, x = 0, y = 0, rowH = 0;
+      const order = list.slice().sort((a, b) => (b.rp - a.rp) || ((a.it.key || '') < (b.it.key || '') ? -1 : (a.it.key || '') > (b.it.key || '') ? 1 : 0)); let AW = 512, x = 0, y = 0, rowH = 0;
       const pack = (aw) => { x = 0; y = 0; rowH = 0; for (const s of order) { const w = s.rp * 2 + 2; if (x + w > aw) { x = 0; y += rowH; rowH = 0; } s.ax = x + 1; s.ay = y + 1; x += w; rowH = Math.max(rowH, w); } return y + rowH; };
       while (AW < 2048 && (order[0].rp * 2 + 2 > AW || pack(AW) > AW)) AW *= 2;
       // hysteresis: grow at once, shrink only after the smaller sheet has been enough for ~3 s (no reallocation churn)
@@ -7374,10 +7379,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const cpu = !(R.set.perf && R.set.ptGpuAtlas);
       if (this._atlasCPU !== cpu) { this._atlasCPU = cpu; this.atlas = mkCanvas(this.atlas.width, this.atlas.height); this.actx = this.atlas.getContext('2d', cpu ? { willReadFrequently: true } : undefined); this._atexSz = null; }
       if (this.atlas.width !== AW || this.atlas.height < need || this.atlas.height > need * 2 + 256) { this._atlasGrow = (this._atlasGrow || 0) + 1; this.atlas.width = AW; this.atlas.height = need; this.actx = this.atlas.getContext('2d'); }
-      const g = this.actx; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, AW, Math.min(this.atlas.height, y + rowH + 2));
-      const V2 = this.V2;
+      const g = this.actx; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      const V2 = this.V2; const sig = AW + 'x' + this.atlas.height + (cpu ? 'c' : 'g'); const reuse = !(R.set.perf && R.set.ptNoReuse);
       for (const s of order) {
         if (s.ay + s.rp * 2 > this.atlas.height) { s.skip = true; continue; }
+        const k = s.it.key, pv = k ? SC.get(k) : null; s.ps = V.s * s.sc;
+        if (reuse && pv && !s.it.xr && !s.it.hot && pv.sig === sig && pv.ax === s.ax && pv.ay === s.ay && pv.rp === s.rp && sf - pv.f < 2 && ((sf + pv.h) & 1)) { s.ps = pv.ps; s.keep = true; continue; }
+        if (k) SC.set(k, { ax: s.ax, ay: s.ay, rp: s.rp, ps: s.ps, f: sf, sig, h: k.charCodeAt(k.length - 1) & 1 }); // id parity: half the critters refresh on odd frames, half on even
+        g.clearRect(s.ax - 1, s.ay - 1, s.rp * 2 + 2, s.rp * 2 + 2);
         const cx = s.ax + s.rp, cy = s.ay + s.rp;
         if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q[0]), V.cy + (cy - s.q[1]), V.c);
         else { V2.set(V.yaw, V.pitch, V.s * s.sc, 0, 0, V.c); const q2 = V2.P(s.it.p); V2.set(V.yaw, V.pitch, V.s * s.sc, cx - q2[0], cy - q2[1], V.c); }
@@ -7385,6 +7394,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         try { scene.run(s.it, g, V2); } catch (e) { if (JT.DEV) console.warn(e); }
         g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
       }
+      if (!(sf % 120)) for (const [k, v] of SC) if (sf - v.f > 120) SC.delete(k);
       const tU = performance.now(); R._sprT = tU - tS;
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
       // same size as last frame: update the texture in place (no GPU reallocation)
@@ -7392,13 +7402,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (cpu) { gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); // raw pixels as read; the shader premultiplies (saves a CPU pass)
           if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.atlas.width, this.atlas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; }
           // copy each sprite's own square only (no empty packing space)
-          const AHc = this.atlas.height; for (const s of order) { if (s.skip) continue; const x0 = Math.max(0, s.ax - 1), y0 = Math.max(0, s.ay - 1), w = Math.min(AW - x0, s.rp * 2 + 2), h = Math.min(AHc - y0, s.rp * 2 + 2); if (w <= 0 || h <= 0) continue;
+          const AHc = this.atlas.height; for (const s of order) { if (s.skip || s.keep) continue; const x0 = Math.max(0, s.ax - 1), y0 = Math.max(0, s.ay - 1), w = Math.min(AW - x0, s.rp * 2 + 2), h = Math.min(AHc - y0, s.rp * 2 + 2); if (w <= 0 || h <= 0) continue;
             gl.texSubImage2D(gl.TEXTURE_2D, 0, x0, y0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, g.getImageData(x0, y0, w, h).data); } }
         else if (sz === this._atexSz) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); this._atexSz = sz; } }
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false); R._upT = performance.now() - tU;
       // quads, far to near
       list.sort((a, b) => b.dep - a.dep); const AH = this.atlas.height; const v = []; const xr = [];
-      const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp / s.sc; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
+      const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp * V.s / s.ps; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
         const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
       const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu ? 1 : 0);
@@ -7618,12 +7628,12 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         decDepth[inst.id] = dep;
       }
       const animalDepth = (e) => { let d = V.depth(e.pos); if (e.sup && e.sup.d && decDepth[e.sup.d] != null && decDepth[e.sup.d] < 1e8) d = Math.min(d, decDepth[e.sup.d] - 0.05); return d; };
-      for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; const fr = D.frame(hab, r, 0.1); items.push({ d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}), p: r.pos, r: ((JT.PREY_BY_ID[r.type] || { len: 3 }).len || 3) * 1.3 + 2 }); }
+      for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; const fr = D.frame(hab, r, 0.1); items.push({ key: r.id != null ? 'r' + r.id : null, d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}), p: r.pos, r: ((JT.PREY_BY_ID[r.type] || { len: 3 }).len || 3) * 1.3 + 2 }); }
       for (const w of hab.data.drops) { if (!M.finite3(w.pos)) continue; const fr = JT.Nav.supFrame(hab, w.sup); const pos = M.add(w.pos, M.mul(fr.n, (fr.r || 0) + 0.3)); items.push({ d: animalDepth(w) + 0.01, f: () => D.drop(ctx, V, w, pos), p: pos, r: (w.r || 0.6) * 2 + 1 }); }
       for (const p of hab.prey) {
         if (p.owner || p.buried || !M.finite3(p.pos) || !onScreen(p.pos)) continue; const def = JT.PREY_BY_ID[p.type]; if (!def) continue;
         const pd = animalDepth(p); const drawP = () => { const fr = D.frame(hab, p, 0.05); D.prey(ctx, V, p, fr, { time: t }); };
-        items.push({ d: pd, f: drawP, p: p.pos, r: (def.len || 3) * 1.5 + 1.5, xr: !!(tgtId && p.id === tgtId), bias: p.sup && p.sup.k !== 'floor' && p.sup.k !== 'air' ? (def.len || 3) * 0.85 : (def.len || 3) * 0.3 });
+        items.push({ key: 'p' + p.id, d: pd, f: drawP, p: p.pos, r: (def.len || 3) * 1.5 + 1.5, xr: !!(tgtId && p.id === tgtId), bias: p.sup && p.sup.k !== 'floor' && p.sup.k !== 'air' ? (def.len || 3) * 0.85 : (def.len || 3) * 0.3 });
         if (p.sup && p.sup.k === 'air') { const b = JT.Nav.supportBelow(hab, p.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, def.len * 0.4, 0.13 * M.clamp(1 - (p.pos[1] - b.pos[1]) / 80, 0.2, 1)), p: b.pos, r: def.len * 0.5 + 1, ground: true }); }
       }
       for (const sp of hab.spiders) {
@@ -7676,7 +7686,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const nst = sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) ? (hab.data.nests || []).find(n => n.id === sp.nest) : null;
         let hideK = 0; if (nst) { hideK = M.smooth(M.clamp((nst.prog - 0.3) / 0.6, 0, 1)); if (sp.state === 'emerge' && nst.hole) hideK *= 1 - M.smooth(M.clamp((nst.hole.exit || 0) * 1.4, 0, 1)); }
         const bodyA = 1 - hideK;
-        if (bodyA > 0.01) items.push({ d, f: () => draw(bodyA), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
+        if (bodyA > 0.01) items.push({ key: 's' + sp.id, hot: sp.id === sel, d, f: () => draw(bodyA), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
         if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)), p: b.pos, r: L * 0.55 + 1, ground: true }); }
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf), p: lf.pos, r: 3 }); }
@@ -8764,10 +8774,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: smooth while you touch or watch, 30 fps when idle')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
-      tog('debug', 'Debug overlay', 'navigation graph, routes, states');
-      { const c = tog('perf', 'Performance readout', 'frame rate, resolution, pacing (top-left)'); const o = c.onchange; c.onchange = () => { o(); this.R.resize(); this.settingsModal(); }; }
-      if (s.perf) { const pt = (key, label) => { const c = tog(key, label, 'test only'); const o = c.onchange; c.onchange = () => { o(); this.R._unlock30 = true; this.R.resize(); }; };
-        pt('ptLowRes', '\u2003Test: low resolution (1x)'); pt('ptNoSpr', '\u2003Test: hide critters'); pt('ptNoInk', '\u2003Test: no ink outlines'); pt('ptNoFx', '\u2003Test: no 2D effects'); pt('ptNoBlur', '\u2003Test: no glass blur'); pt('ptGpuAtlas', '\u2003Test: old critter upload'); }
       { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
         const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();
         const info = 'Screen ' + (root.screen ? screen.width + '×' + screen.height : '?') + ' · window ' + root.innerWidth + '×' + root.innerHeight + ' · large ' + (pr ? Math.round(pr.getBoundingClientRect().height) : '?') + ' · game ' + Math.round(app.height) + ' · safe bottom ' + sb + ' · ' + (sa ? 'home-screen app' : 'browser');
@@ -8887,7 +8893,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
-          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }
