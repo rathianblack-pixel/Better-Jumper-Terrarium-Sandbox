@@ -7351,7 +7351,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (it.inst || it.noGL || it.ln || it.silk || it.ghost || !it.p || !M.finite3(it.p)) continue;
         const q = V.P(it.p); let r = it.r * V.s + 6 * k; if (q[0] < -r || q[0] > W + r || q[1] < -r || q[1] > H + r) continue;
         // close-up critters: paint at ~1.5x CSS pixels (not full device pixels) and let the GPU scale them up; keeps the per-frame sheet small
-        let sc = 1; const capS = Math.min(1, 1.25 / k); if (r > 100 && capS < 1) sc = Math.max(capS, 100 / r); if (r * sc > 320) sc = 320 / r; r *= sc;
+        let sc = 1; const capS = Math.min(1, 1.25 / k); if (r > 100 && capS < 1) sc = Math.max(capS, 100 / r); if (r * sc > 254) sc = 254 / r; r *= sc;
         const rp = Math.ceil(r); list.push({ it, q, rp, sc, dep: V.depth(it.p), z: V.depth(it.p) - (it.bias != null ? it.bias : it.ground ? 0.2 : it.r * 0.35) });
       }
       if (!list.length) return;
@@ -7363,6 +7363,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // hysteresis: grow at once, shrink only after the smaller sheet has been enough for ~3 s (no reallocation churn)
       const cur = this._aw || AW; if (AW >= cur) { this._aw = AW; this._awN = 0; } else if (++this._awN > 90) { this._aw = AW; this._awN = 0; } else AW = cur; pack(AW);
       const need = Math.min(2048, Math.ceil((y + rowH) / 128) * 128);
+      // The sheet lives in CPU memory (willReadFrequently): on iPhone a GPU-backed 2D canvas must be read back before WebGL
+      // can use it, which cost 16-28 ms a frame. CPU-side, only the rows in use are copied up (a plain memory copy).
+      const cpu = !(R.set.perf && R.set.ptGpuAtlas);
+      if (this._atlasCPU !== cpu) { this._atlasCPU = cpu; this.atlas = mkCanvas(this.atlas.width, this.atlas.height); this.actx = this.atlas.getContext('2d', cpu ? { willReadFrequently: true } : undefined); this._atexSz = null; }
       if (this.atlas.width !== AW || this.atlas.height < need || this.atlas.height > need * 2 + 256) { this._atlasGrow = (this._atlasGrow || 0) + 1; this.atlas.width = AW; this.atlas.height = need; this.actx = this.atlas.getContext('2d'); }
       const g = this.actx; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, AW, Math.min(this.atlas.height, y + rowH + 2));
       const V2 = this.V2;
@@ -7378,7 +7382,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const tU = performance.now(); R._sprT = tU - tS;
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
       // same size as last frame: update the texture in place (no GPU reallocation)
-      { const sz = this.atlas.width + 'x' + this.atlas.height; if (sz === this._atexSz) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); this._atexSz = sz; } }
+      { const sz = this.atlas.width + 'x' + this.atlas.height;
+        if (cpu) { if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.atlas.width, this.atlas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; }
+          const uh = Math.min(this.atlas.height, y + rowH + 2); const px = g.getImageData(0, 0, AW, uh).data; gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, AW, uh, gl.RGBA, gl.UNSIGNED_BYTE, px); }
+        else if (sz === this._atexSz) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); this._atexSz = sz; } }
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false); R._upT = performance.now() - tU;
       // quads, far to near
       list.sort((a, b) => b.dep - a.dep); const AH = this.atlas.height; const v = []; const xr = [];
@@ -8751,7 +8758,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       tog('debug', 'Debug overlay', 'navigation graph, routes, states');
       { const c = tog('perf', 'Performance readout', 'frame rate, resolution, pacing (top-left)'); const o = c.onchange; c.onchange = () => { o(); this.R.resize(); this.settingsModal(); }; }
       if (s.perf) { const pt = (key, label) => { const c = tog(key, label, 'test only'); const o = c.onchange; c.onchange = () => { o(); this.R._unlock30 = true; this.R.resize(); }; };
-        pt('ptLowRes', '\u2003Test: low resolution (1x)'); pt('ptNoSpr', '\u2003Test: hide critters'); pt('ptNoInk', '\u2003Test: no ink outlines'); pt('ptNoFx', '\u2003Test: no 2D effects'); pt('ptNoBlur', '\u2003Test: no glass blur'); }
+        pt('ptLowRes', '\u2003Test: low resolution (1x)'); pt('ptNoSpr', '\u2003Test: hide critters'); pt('ptNoInk', '\u2003Test: no ink outlines'); pt('ptNoFx', '\u2003Test: no 2D effects'); pt('ptNoBlur', '\u2003Test: no glass blur'); pt('ptGpuAtlas', '\u2003Test: old critter upload'); }
       { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
         const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();
         const info = 'Screen ' + (root.screen ? screen.width + '×' + screen.height : '?') + ' · window ' + root.innerWidth + '×' + root.innerHeight + ' · large ' + (pr ? Math.round(pr.getBoundingClientRect().height) : '?') + ' · game ' + Math.round(app.height) + ' · safe bottom ' + sb + ' · ' + (sa ? 'home-screen app' : 'browser');
@@ -8871,7 +8878,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
-          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }
