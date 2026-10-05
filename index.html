@@ -2737,7 +2737,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
             -> subdue -> carry (to a reachable safe spot) -> feed -> rest. */
 (function (root) {
   'use strict';
-  const JT = root.JT, M = JT.M, Nav = JT.Nav, Loco = JT.Loco;
+  const JT = root.JT, M = JT.M, G = JT.G, Nav = JT.Nav, Loco = JT.Loco;
   const AI = JT.SpiderAI = {};
   const DAY = 480;
   const PRI = AI.PRI = { idle: 0, explore: 2, lookout: 3, groom: 3, rest: 3, patrol: 34, watch: 4, display: 20, social: 20, avoid: 22,
@@ -3775,22 +3775,50 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (sp.st >= sp._subdueDur) { p._struggle = 0; sp._strug = 0; startCarry(hab, sp); }
   };
   /** Score real reachable surfaces for feeding / molting / sleeping. Never returns a boundary. */
+  /* Where a silk retreat (sleep or molt) may go: only flat, even ground with room for the hammock.
+     Allowed: the tank floor, flat tops of free-standing decor (rock, cork, log, hide, ruin...) and the back wall
+     itself (its rim and built-in ledges, if roomy enough). Never: plants, flowers, stems, branches, vines, sides,
+     wall-mounted decorations, the flower pot or the water dish. */
+  const NEST_BAN_ARCHE = new Set(['wallmount', 'dish', 'scatter']);
+  const NEST_BAN_TYPE = new Set(['flowerpot', 'waterdish']);
+  function edgeDist(x, z, poly) { let d = 1e9; for (let i = 0, n = poly.length; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; const ex = b[0] - a[0], ez = b[1] - a[1]; const l2 = ex * ex + ez * ez || 1e-9; const t = M.clamp(((x - a[0]) * ex + (z - a[1]) * ez) / l2, 0, 1); d = Math.min(d, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t)); } return d; }
+  AI.nestRoom = (L) => L * 0.6 + 0.4;
+  AI.nestSiteOK = function (hab, sup, pos, L) {
+    if (!sup || !pos) return false; const r = AI.nestRoom(L); let region;
+    if (sup.k === 'floor') { if (!Nav.inside(hab, pos[0], pos[2], r)) return false; region = hab.nav && hab.nav.regions.F; }
+    else if (sup.k === 'top') {
+      const g = hab.geoms[sup.d]; if (!g || !g.def) return false; const def = g.def;
+      if (def.cat === 'plants' || def.cat === 'ground' || NEST_BAN_ARCHE.has(def.arche) || NEST_BAN_TYPE.has(def.id)) return false;
+      if (!(def.cat === 'decor' || def.arche === 'backwall')) return false;
+      const t = g.tops[sup.i]; if (!t || !G.pointInPoly(pos[0], pos[2], t.poly) || edgeDist(pos[0], pos[2], t.poly) < r) return false;
+      region = hab.nav && hab.nav.regions['T|' + sup.d + '|' + sup.i];
+    } else return false;
+    if (region) for (const o of region.obstacles) if (G.pointInPoly(pos[0], pos[2], o) || edgeDist(pos[0], pos[2], o) < r * 0.8) return false;
+    return true;
+  };
+  /** Nearest reachable allowed spot (used when the jumper is somewhere it can't build). */
+  AI.nearestNestSite = function (hab, sp) {
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const L = AI.len(sp); let best = null, bc = 1e9;
+    for (const n of hab.nav.nodes) { const c = dj.dist[n.id]; if (!isFinite(c) || c >= bc) continue; if (!AI.nestSiteOK(hab, n.sup, n.pos, L)) continue; bc = c; best = n; }
+    if (!best) return null; const route = Nav.buildRoute(hab, dj, best.sup, best.pos); return route ? { node: best, route, high: best.y > 12, plant: false } : null;
+  };
   AI.chooseSpot = function (hab, sp, mode, carry, avoid) {
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp, carry));
     const H0 = hab.dims.h; const S = sp_(sp);
-    let best = null, bs = -1e9;
+    let best = null, bs = -1e9; const nesting = mode === 'sleep' || mode === 'molt'; const Ls = AI.len(sp);
     const others = hab.data.spiders.filter(o => o !== sp);
     const preyLive = hab.data.prey.filter(p => !p.owner && !p.buried);
     for (const n of hab.nav.nodes) {
       if (n.kind === 'face') continue; const c = dj.dist[n.id]; if (!isFinite(c)) continue;
+      if (nesting && !AI.nestSiteOK(hab, n.sup, n.pos, Ls)) continue;
       const g = n.decor && hab.geoms[n.decor]; const plant = g && g.def.cat === 'plants';
       const cover = Nav.coverAt(hab, n.pos); const hgt = n.y / H0;
       let quiet = 60; for (const o of others) quiet = Math.min(quiet, M.dist(o.pos, n.pos)); 
       let traffic = 50; for (const p of preyLive) traffic = Math.min(traffic, M.dist(p.pos, n.pos));
       let s;
       if (mode === 'feed') s = hgt * 6 * (0.6 + S.prefs.height) + (plant ? 3 : 0) + (g && !plant ? 1 : 0) + cover * 3 + quiet * 0.04 + traffic * 0.03 - c * 0.025;
-      else if (mode === 'molt') s = hgt * 12 + (plant ? 3.5 : 0) + (g && !plant ? 1.5 : 0) + cover * 4 + (n.perch ? 0.5 : 0) + quiet * 0.06 + traffic * 0.02 - c * 0.012;
-      else s = hgt * 3 * (0.5 + S.prefs.height) + (plant ? 1.5 : 0) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0);
+      else if (mode === 'molt') s = hgt * 12 + (g ? 1.5 : 0) + cover * 4 + (n.perch ? 0.5 : 0) + quiet * 0.06 + traffic * 0.02 - c * 0.012;
+      else s = hgt * 3 * (0.5 + S.prefs.height) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0);
       for (const o of others) if (o.retreat && o.retreat.pos && M.dist(o.retreat.pos, n.pos) < 10) s -= 4;
       if (avoid) { const ad = M.dist(avoid, n.pos); if (ad < 12) continue; s -= Math.max(0, 34 - ad) * 0.25; }
       if (s > bs) { bs = s; best = n; }
@@ -3872,8 +3900,9 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
   // ---- molting (absolute priority once ready) ----
   function startMoltSeek(hab, sp) {
     AI.dropTarget(hab, sp); sp._seen = {}; sp._route = null; sp._plan = null;
-    const spot = AI.chooseSpot(hab, sp, 'molt');
-    if (!spot || M.dist(spot.node.pos, sp.pos) < 3) { sp.retreat = { d: sp.sup.d || null, pos: sp.pos.slice() }; setState(sp, 'moltSilk', 'Pre-molt — weaving a molting hammock right here.'); return; }
+    const okHere = AI.nestSiteOK(hab, sp.sup, sp.pos, AI.len(sp));
+    const spot = AI.chooseSpot(hab, sp, 'molt') || (okHere ? null : AI.nearestNestSite(hab, sp));
+    if (!spot || (okHere && M.dist(spot.node.pos, sp.pos) < 3)) { sp.retreat = { d: sp.sup.d || null, pos: sp.pos.slice() }; setState(sp, 'moltSilk', 'Pre-molt — weaving a molting hammock right here.'); return; }
     sp._route = spot.route; sp._routeStart = hab.time; sp.retreat = { d: spot.node.decor || null, pos: spot.node.pos.slice() };
     setState(sp, 'moltSeek', spot.high ? 'Pre-molt — climbing to the safest high retreat.' : 'Pre-molt — no high shelter here, heading for a quiet sheltered refuge.');
     sp._moltReplans = 0;
@@ -3884,7 +3913,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
     if (r === 'none' || (stuck(hab, sp) && !sp._air)) {
       sp._moltReplans++;
       if (sp._moltReplans > 3) { setState(sp, 'moltSilk', 'Pre-molt — settling where it is.'); sp._route = null; return; }
-      const spot = AI.chooseSpot(hab, sp, 'molt'); if (spot) { sp._route = spot.route; sp._routeStart = hab.time; sp.retreat = { d: spot.node.decor || null, pos: spot.node.pos.slice() }; } else { setState(sp, 'moltSilk'); }
+      const spot = sp._moltReplans > 1 ? AI.nearestNestSite(hab, sp) : AI.chooseSpot(hab, sp, 'molt'); if (spot) { sp._route = spot.route; sp._routeStart = hab.time; sp.retreat = { d: spot.node.decor || null, pos: spot.node.pos.slice() }; } else { setState(sp, 'moltSilk'); }
     }
   };
   // ---- thick silk sac (sleep / molt): built around the jumper, carved open front or back on the way out ----
@@ -3974,12 +4003,15 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // ---- sleep ----
   function startSleep(hab, sp) {
-    const spot = AI.chooseSpot(hab, sp, 'sleep');
-    if (spot && M.dist(spot.node.pos, sp.pos) > 3) { sp._route = spot.route; sp._routeStart = hab.time; setState(sp, 'sleepSeek', 'Night is falling — heading to a sheltered retreat.'); }
+    const okHere = AI.nestSiteOK(hab, sp.sup, sp.pos, AI.len(sp)); sp._sleepTries = 0;
+    const spot = AI.chooseSpot(hab, sp, 'sleep') || (okHere ? null : AI.nearestNestSite(hab, sp));
+    if (spot && (M.dist(spot.node.pos, sp.pos) > 3 || !okHere)) { sp._route = spot.route; sp._routeStart = hab.time; setState(sp, 'sleepSeek', 'Night is falling — heading to a sheltered retreat.'); }
     else { weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); setState(sp, 'sleep', 'Turning slowly on the spot, spinning a silk retreat for the night.'); }
   }
   H.sleepSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.7);
+    if (r !== 'done' && (r === 'none' || stuck(hab, sp)) && !AI.nestSiteOK(hab, sp.sup, sp.pos, AI.len(sp)) && (sp._sleepTries = (sp._sleepTries || 0) + 1) <= 3) {
+      const spot = AI.nearestNestSite(hab, sp); if (spot && spot.route) { sp._route = spot.route; sp._routeStart = hab.time; sp.st = 0; return; } }
     if (r === 'done' || r === 'none' || stuck(hab, sp)) { sp._route = null; weave(hab, sp, 2, 'retreat'); makeNest(hab, sp, 'sleep'); hab.event('journal', { id: 'retreat', sp }); if (!sp.home || JT.R() < 0.25) AI.setHome(hab, sp); setState(sp, 'sleep', 'Turning slowly on the spot, spinning a silk retreat for the night.'); }
   };
   H.sleep = function (hab, sp, dt) {
