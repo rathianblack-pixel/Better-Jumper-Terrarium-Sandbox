@@ -25,7 +25,8 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:#120c07;color:var(--ink);font-family:var(--serif);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-font-smoothing:antialiased}
-#app{position:fixed;inset:0}
+#app{position:fixed;top:0;left:0;right:0;height:100%;height:100dvh}
+html.sa #app{height:100vh;height:100lvh}
 #glview{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
 #view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:default}
 #view.placing{cursor:crosshair}#view.removing{cursor:not-allowed}
@@ -4968,7 +4969,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { quality: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false },
+    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false },
     load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k]) out[k] = s[k]; return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
@@ -7348,10 +7349,14 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       }
       if (!list.length) return;
       // shelf-pack into the sheet (biggest first)
-      const AW = 2048; const order = list.slice().sort((a, b) => b.rp - a.rp); let x = 0, y = 0, rowH = 0;
-      for (const s of order) { const w = s.rp * 2 + 2; if (x + w > AW) { x = 0; y += rowH; rowH = 0; } s.ax = x + 1; s.ay = y + 1; x += w; rowH = Math.max(rowH, w); }
+      // shelf-pack into the narrowest sheet that fits (the whole sheet is re-uploaded every frame, so smaller is cheaper)
+      const order = list.slice().sort((a, b) => b.rp - a.rp); let AW = 512, x = 0, y = 0, rowH = 0;
+      const pack = (aw) => { x = 0; y = 0; rowH = 0; for (const s of order) { const w = s.rp * 2 + 2; if (x + w > aw) { x = 0; y += rowH; rowH = 0; } s.ax = x + 1; s.ay = y + 1; x += w; rowH = Math.max(rowH, w); } return y + rowH; };
+      while (AW < 2048 && (order[0].rp * 2 + 2 > AW || pack(AW) > AW)) AW *= 2;
+      // hysteresis: grow at once, shrink only after the smaller sheet has been enough for ~3 s (no reallocation churn)
+      const cur = this._aw || AW; if (AW >= cur) { this._aw = AW; this._awN = 0; } else if (++this._awN > 90) { this._aw = AW; this._awN = 0; } else AW = cur; pack(AW);
       const need = Math.min(2048, Math.ceil((y + rowH) / 128) * 128);
-      if (this.atlas.width !== AW || this.atlas.height < need || this.atlas.height > need * 2 + 256) { this.atlas.width = AW; this.atlas.height = need; this.actx = this.atlas.getContext('2d'); }
+      if (this.atlas.width !== AW || this.atlas.height < need || this.atlas.height > need * 2 + 256) { this._atlasGrow = (this._atlasGrow || 0) + 1; this.atlas.width = AW; this.atlas.height = need; this.actx = this.atlas.getContext('2d'); }
       const g = this.actx; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, AW, Math.min(this.atlas.height, y + rowH + 2));
       const V2 = this.V2;
       for (const s of order) {
@@ -7417,7 +7422,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.cur = null; // smoothed {yaw,pitch,scale,c}
       this.fx = []; this.particles = []; this.ghost = null; this.hover = null;
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
-      this.fps = 60; this._autoLow = false; this.time = 0;
+      this.fps = 60; this._autoLow = false; this._autoLvl = 0; this.targetFps = 60; this.time = 0;
       this.V = new JT.View(0.5, 0.6, 1, 0, 0, [0, 0, 0]);
       this.glc = root.document && root.document.getElementById('glview'); this.gp = null; this.initGL();
       this.resize();
@@ -7425,6 +7430,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     get qualityScale() {
       const q = this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality;
       const dpr = root.devicePixelRatio || 1;
+      if (this.set.quality === 'auto') return Math.min([2, 1.6, 1.25][this._autoLvl || 0], dpr); // steps down only if the device struggles
       return q === 'low' ? Math.min(1.25, dpr) : q === 'high' ? Math.min(2.5, dpr) : Math.min(2, dpr);
     }
     get quality() { return this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality; }
@@ -7528,9 +7534,12 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.time += dt; const game = this.game; const hab = game.hab; if (!hab) return;
       if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05;
         // GPU-bound phones: settle once on a lighter resolution if the frame rate stays low
-        if (this.set.quality === 'auto') { this._slowT = this.fps < 45 && this.time > 5 ? (this._slowT || 0) + dt : 0; if (this._slowT > 3 && !this._autoLow) { this._autoLow = true; this.resize(); } } }
+        // GPU-bound phones: step the resolution down (2x -> 1.6x -> 1.25x) if frames keep missing the current target rate
+        if (this.set.quality === 'auto') { this._slowT = this.fps < this.targetFps * 0.75 && this.time > 5 ? (this._slowT || 0) + dt : 0;
+          if (this._slowT > 3 && (this._autoLvl || 0) < 2) { this._autoLvl = (this._autoLvl || 0) + 1; this._autoLow = this._autoLvl >= 2; this._slowT = -4; this.fps = this.targetFps; this.resize(); } } }
       this._dt = dt;
       const V = this.updateView(hab, dt);
+      { const vk = V.yaw.toFixed(4) + ',' + V.pitch.toFixed(4) + ',' + V.s.toFixed(3) + ',' + V.c.map(v => v.toFixed(2)).join(','); this._moving = vk !== this._vk; this._vk = vk; }
       if (this.gp && !this.gp.lost) this.renderStory(V, hab, dt);
     }
     /** Storybook frame: the GPU paints the scene; the 2D canvas on top only carries effects, labels and edit outlines. */
@@ -8082,16 +8091,26 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
       for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => A().start(), { capture: true, passive: true });
       document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
+      { const poke = () => { this._activeUntil = performance.now() + 1800; }; for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'touchmove']) document.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons) return; poke(); }, { passive: true, capture: true }); }
       document.addEventListener('pointerdown', (e) => { this.ptrType = e.pointerType || 'mouse'; A().start(); const pop = $('popover'); if (!pop.classList.contains('hidden') && !pop.contains(e.target) && e.target !== $('btnSound')) pop.classList.add('hidden'); }, true);
       this.bindCanvas();
       // rotation: phones often report the old size in the first resize event, so re-measure after layout settles too
       // (the renderer also re-checks the canvas size every frame and fixes any mismatch)
       // iOS home-screen app: the web view can stop short of the home-indicator strip, leaving a bare band at the bottom.
       // Stretch the stage to the full screen height when that happens.
-      const fitStage = () => { const app = $('app'); if (!app || !root.screen) return;
-        const sa = navigator.standalone || (root.matchMedia && root.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
-        const port = root.innerHeight > root.innerWidth, full = port ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height), gap = full - root.innerHeight;
-        const fix = sa && gap > 0 && gap < 90; app.style.height = fix ? full + 'px' : ''; app.style.bottom = fix ? 'auto' : ''; };
+      // Size the stage to the real screen on every device. In an iOS home-screen app with a see-through status bar the
+      // layout viewport (100% / innerHeight) is short by the status-bar height, which left a bare band at the bottom;
+      // there the stage takes the largest of innerHeight, the large-viewport height and the physical screen height.
+      const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:100vh;height:100lvh;visibility:hidden;pointer-events:none'; document.body.appendChild(probe);
+      const fitStage = () => { const app = $('app'); if (!app) return;
+        const sa = !!(navigator.standalone || (root.matchMedia && root.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches));
+        document.documentElement.classList.toggle('sa', sa);
+        if (!sa) { app.style.height = ''; return; }
+        const port = root.innerHeight >= root.innerWidth; const sc = root.screen || { width: 0, height: 0 };
+        const full = port ? Math.max(sc.width, sc.height) : Math.min(sc.width, sc.height);
+        let h = Math.max(root.innerHeight, document.documentElement.clientHeight, probe.getBoundingClientRect().height || 0);
+        if (full > h && full - h < 120) h = full;
+        app.style.height = Math.round(h) + 'px'; };
       fitStage();
       const remeasure = () => { fitStage(); this.R.resize(); requestAnimationFrame(() => this.R.resize()); setTimeout(() => this.R.resize(), 250); setTimeout(() => this.R.resize(), 700); };
       root.addEventListener('resize', remeasure); root.addEventListener('orientationchange', remeasure);
@@ -8698,8 +8717,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
-      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
+      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
       q.appendChild(seg); w.appendChild(q);
+      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Frame rate')); const sg = el('div', 'seg small');
+        for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: smooth while you touch or watch, 30 fps when idle')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); };
       tog('debug', 'Debug overlay', 'navigation graph, routes, states');
       w.appendChild(el('h4', '', 'Save data'));
@@ -8778,15 +8800,23 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
-    const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, half = false, cost = 8, lastDt = 0;
+    const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, half = false, cost = 8, lastDt = 0, rAcc = 0; void lastDt;
     function frame(now) {
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
       acc += dt; let n = 0;
       try { while (acc >= STEP && n < 4) { game.tick(STEP); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // adaptive pacing: if a frame costs too much, render at half rate (simulation keeps full rate)
-      skip = !skip;
-      if (!(half && skip)) { const t0 = performance.now(); try { R.render(half ? dt + lastDt : dt); } catch (e) { console.error('render', e); } const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; if (settings.quality === 'auto') { if (!half && cost > 13) half = true; else if (half && cost < 6) half = false; } }
+      // Frame pacing. The simulation runs at 30 Hz, so redrawing faster only matters while something else moves:
+      // touching / dragging, the camera gliding, Observe/Follow, placing decor. Otherwise draw once per simulation step
+      // (about 30 fps), which roughly halves GPU work and heat. 'smooth' always draws (capped at 60 fps, also on
+      // 120 Hz screens); 'saver' always uses 30.
+      rAcc += dt; const fm = settings.fps || 'auto'; const U = JT.UI;
+      const lively = fm === 'smooth' || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
+      R.targetFps = lively ? 60 : 30;
+      const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
+      if (due) { skip = !skip;
+        if (!(half && skip && lively)) { const t0 = performance.now(); try { R.render(rAcc); } catch (e) { console.error('render', e); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; if (settings.quality === 'auto') { if (!half && cost > 13) half = true; else if (half && cost < 6) half = false; } } }
       lastDt = dt;
       requestAnimationFrame(frame);
     }
