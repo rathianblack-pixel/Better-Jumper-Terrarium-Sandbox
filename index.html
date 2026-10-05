@@ -8250,7 +8250,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const top = solid('top'), bars = [solid('dock'), solid('toolbar'), rect('drawer')].filter(Boolean);
       const all = hud.concat(bars, top ? [top] : []);
       this.R.hudRects = all.map(r => [r.left, r.top, r.right, r.bottom]);
-      document.body.classList.toggle('lowfx', this.R.quality === 'low');
+      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur));
       for (const bar of [$('dock'), document.querySelector('#toolbar .gl-bar')]) { // slide the glass lens under the current item
         const L = bar && bar.querySelector('.lens'); if (!L) continue; const b = bar.querySelector('button.on');
         if (!b || !b.offsetWidth) { L.classList.remove('on'); continue; }
@@ -8750,8 +8750,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       tog('debug', 'Debug overlay', 'navigation graph, routes, states');
       { const c = tog('perf', 'Performance readout', 'frame rate, resolution, pacing (top-left)'); const o = c.onchange; c.onchange = () => { o(); this.R.resize(); this.settingsModal(); }; }
-      if (s.perf) { const pt = (key, label) => { const c = tog(key, label, 'test only'); const o = c.onchange; c.onchange = () => { o(); this.R.resize(); }; };
-        pt('ptLowRes', '\u2003Test: low resolution (1x)'); pt('ptNoSpr', '\u2003Test: hide critters'); pt('ptNoInk', '\u2003Test: no ink outlines'); pt('ptNoFx', '\u2003Test: no 2D effects'); }
+      if (s.perf) { const pt = (key, label) => { const c = tog(key, label, 'test only'); const o = c.onchange; c.onchange = () => { o(); this.R._unlock30 = true; this.R.resize(); }; };
+        pt('ptLowRes', '\u2003Test: low resolution (1x)'); pt('ptNoSpr', '\u2003Test: hide critters'); pt('ptNoInk', '\u2003Test: no ink outlines'); pt('ptNoFx', '\u2003Test: no 2D effects'); pt('ptNoBlur', '\u2003Test: no glass blur'); }
       { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
         const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();
         const info = 'Screen ' + (root.screen ? screen.width + '×' + screen.height : '?') + ' · window ' + root.innerWidth + '×' + root.innerHeight + ' · large ' + (pr ? Math.round(pr.getBoundingClientRect().height) : '?') + ' · game ' + Math.round(app.height) + ' · safe bottom ' + sb + ' · ' + (sa ? 'home-screen app' : 'browser');
@@ -8860,7 +8860,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // A phone that can't hold 60 (hot, Low Power Mode) gets a steady 30 instead of an uneven 35-50, which feels far worse.
       // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
       if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
-        if (lock30 && now > lock30) { lock30 = 0; R.fps = 60; lowT = 0; }
+        if (lock30 && (now > lock30 || R._unlock30)) { lock30 = 0; R.fps = 60; lowT = 0; } R._unlock30 = false;
         const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 2;
         if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
         if (lock30) { lively = false; lockEnd = now; } }
@@ -8871,7 +8871,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
-          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }
