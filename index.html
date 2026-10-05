@@ -4970,7 +4970,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false },
+    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, debug: false, perf: false },
     load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k]) out[k] = s[k]; return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
@@ -7287,9 +7287,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.paper); gl.uniform1i(P.u.uTex, 0);
       gl.uniform1f(P.u.uMode, 1); gl.uniform2f(P.u.uRes, W, H); gl.uniform2f(P.u.uJit, 0, 0); gl.uniform4f(P.u.uCol, 1, 0.985, 0.95, 0.32 + night * 0.2); gl.drawArrays(gl.TRIANGLES, 0, 6);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      // once a second: read one pixel at the bottom edge and paint the page background with it, so any strip of
+      // every ~10 s (and on habitat change, never mid-camera-move — a pixel read stalls the GPU): read one pixel at the bottom edge and paint the page background with it, so any strip of
       // screen the web view leaves uncovered (iOS home-screen apps) blends into the scene instead of showing a band
-      if (!this._edgeT || performance.now() - this._edgeT > 1000) { this._edgeT = performance.now(); try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      if (!this._edgeT || (performance.now() - this._edgeT > 10000 && !this._moving) || this._edgeH !== hab.id) { this._edgeT = performance.now(); this._edgeH = hab.id; try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
         const c = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; if (c !== this._edgeC) { this._edgeC = c; document.documentElement.style.backgroundColor = c; document.body.style.backgroundColor = c; } } catch (e) { /* ignore */ } }
     }
     boundsOf(g) { const pts = []; for (const e of (g.extent.length ? g.extent : g.foot || [])) pts.push([e[0], g.baseY, e[1]]); let c = [0, 0, 0]; if (!pts.length) return { c: g.center, r: 20 }; for (const p of pts) c = M.add(c, p); c = M.mul(c, 1 / pts.length); c[1] = g.baseY + g.height / 2; let r = g.height / 2 + 4; for (const p of pts) r = Math.max(r, Math.hypot(p[0] - c[0], p[2] - c[2]) + g.height / 2); return { c, r }; }
@@ -7438,7 +7438,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     get qualityScale() {
       const q = this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality;
       const dpr = root.devicePixelRatio || 1;
-      if (this.set.quality === 'auto' && this.closeCam) return Math.min(this._closeK || 2, dpr); // Observe / Follow: adaptive, see render()
+      if (this.set.quality === 'auto' && this.closeCam) return Math.min(this._closeK || 1.6, [2, 1.6, 1.25][this._autoLvl || 0], dpr); // Observe / Follow: 1.6x, steps down only, see render()
       if (this.set.quality === 'auto') return Math.min([2, 1.6, 1.25][this._autoLvl || 0], dpr); // steps down only if the device struggles
       return q === 'low' ? Math.min(1.25, dpr) : q === 'high' ? Math.min(2.5, dpr) : Math.min(2, dpr);
     }
@@ -7545,11 +7545,11 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         // GPU-bound phones: settle once on a lighter resolution if the frame rate stays low
         // GPU-bound phones: step the resolution down (2x -> 1.6x -> 1.25x) if frames keep missing the current target rate
         const close = this.cam.mode === 'follow'; if (close !== !!this.closeCam) { this.closeCam = close; this._cSlow = 0; this._cFast = 0; this.fps = 60; this.resize(); }
-        if (this.set.quality === 'auto' && close) { // close-up: nudge resolution between 1.25x and 2x to hold ~60 fps
-          const dpr = root.devicePixelRatio || 1, top = Math.min(2, dpr), ck = this._closeK || top; this._cHold = Math.max(0, (this._cHold || 0) - dt);
-          this._cSlow = this.fps < 50 ? (this._cSlow || 0) + dt : Math.max(0, (this._cSlow || 0) - dt); this._cFast = this.fps > 57 ? (this._cFast || 0) + dt : 0;
-          if (this._cSlow > 0.8 && ck > 1.25 && !this._cHold) { this._closeK = Math.max(1.25, ck - 0.2); this._cSlow = 0; this._cHold = 1.2; this.fps = 60; this.resize(); }
-          else if (this._cFast > 5 && ck < top && !this._cHold) { this._closeK = Math.min(top, ck + 0.15); this._cFast = 0; this._cHold = 4; this.resize(); }
+        if (this.set.quality === 'auto' && close) { // close-up: 1.6x -> 1.4x -> 1.25x if frames keep missing; never steps back up
+          // (every resolution change rebuilds the canvas = a visible hitch, so it moves rarely and only one way)
+          const ck = this._closeK || 1.6; this._cHold = Math.max(0, (this._cHold || 0) - dt);
+          this._cSlow = this.fps < this.targetFps * 0.8 ? (this._cSlow || 0) + dt : Math.max(0, (this._cSlow || 0) - dt * 0.5);
+          if (this._cSlow > 2 && ck > 1.25 && !this._cHold) { this._closeK = Math.max(1.25, +(ck - 0.18).toFixed(2)); this._cSlow = 0; this._cHold = 3; this.fps = this.targetFps; this.resize(); }
         } else
         if (this.set.quality === 'auto') { this._slowT = this.fps < this.targetFps * 0.75 && this.time > 5 ? (this._slowT || 0) + dt : 0;
           if (this._slowT > 3 && (this._autoLvl || 0) < 2) { this._autoLvl = (this._autoLvl || 0) + 1; this._autoLow = this._autoLvl >= 2; this._slowT = -4; this.fps = this.targetFps; this.resize(); } } }
@@ -8742,6 +8742,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: smooth while you touch or watch, 30 fps when idle')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); };
       tog('debug', 'Debug overlay', 'navigation graph, routes, states');
+      tog('perf', 'Performance readout', 'frame rate, resolution, pacing (top-left)');
       { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
         const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();
         const info = 'Screen ' + (root.screen ? screen.width + '×' + screen.height : '?') + ' · window ' + root.innerWidth + '×' + root.innerHeight + ' · large ' + (pr ? Math.round(pr.getBoundingClientRect().height) : '?') + ' · game ' + Math.round(app.height) + ' · safe bottom ' + sb + ' · ' + (sa ? 'home-screen app' : 'browser');
@@ -8822,7 +8823,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
-    const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, half = false, cost = 8, lastDt = 0, rAcc = 0; void lastDt;
+    const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, cost = 8, lastDt = 0, rAcc = 0, lock30 = 0, lockEnd = -1e9, lowT = 0, perfT = 0; void lastDt; void skip;
     /* Smooth motion: the simulation steps at 30 Hz, the screen may draw at 60. Each step remembers where every critter
        was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
        Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
@@ -8846,12 +8847,23 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // (about 30 fps), which roughly halves GPU work and heat. 'smooth' always draws (capped at 60 fps, also on
       // 120 Hz screens); 'saver' always uses 30.
       rAcc += dt; const fm = settings.fps || 'auto'; const U = JT.UI;
-      const lively = fm === 'smooth' || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
-      R.targetFps = lively ? 60 : 30;
+      let lively = fm === 'smooth' || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
+      // A phone that can't hold 60 (hot, Low Power Mode) gets a steady 30 instead of an uneven 35-50, which feels far worse.
+      // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
+      if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
+        if (lock30 && now > lock30) { lock30 = 0; R.fps = 60; lowT = 0; }
+        const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 2;
+        if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
+        if (lock30) { lively = false; lockEnd = now; } }
+      R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30;
       const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
       if (due) { skip = !skip;
-        if (!(half && skip && lively && !R.closeCam)) { const t0 = performance.now(); const undo = blendIn(M.clamp(acc / STEP, 0, 1)); try { R.render(rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; if (settings.quality === 'auto') { if (!half && cost > 13) half = true; else if (half && cost < 6) half = false; } } }
+        { const t0 = performance.now(); const undo = blendIn(M.clamp(acc / STEP, 0, 1)); try { R.render(rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
       lastDt = dt;
+      if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
+          if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto'); } }
+      else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
