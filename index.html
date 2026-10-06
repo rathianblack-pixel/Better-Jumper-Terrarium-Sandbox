@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#1c120a">
+<meta name="theme-color" content="#16240f">
 <title>Jumper Terrarium</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -572,19 +572,109 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
 @keyframes tipIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 #modal .tiprow{margin:0 0 12px}
 /* fingertip on the glass (v7) */
-#fingerDot{position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;pointer-events:none;z-index:4;background:radial-gradient(circle,rgba(255,236,214,.38) 0,rgba(255,226,196,.18) 55%,rgba(255,255,255,0) 72%);box-shadow:0 0 0 2px rgba(255,255,255,.55) inset;transition:opacity .25s;will-change:transform}
-#fingerDot.hidden{display:block;opacity:0}
-#fingerDot.held{box-shadow:0 0 0 2px rgba(255,255,255,.8) inset,0 0 18px rgba(255,240,220,.35)}
-#fingerDot.fast{box-shadow:0 0 0 2px rgba(255,140,110,.85) inset}
-#fingerDot.tapAnim{animation:fingerTap .6s ease-out}
-@keyframes fingerTap{0%{opacity:.95;scale:.6}100%{opacity:0;scale:1.35}}
+/* pre-game splash (v8) */
+#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(20px + var(--sat)) 24px calc(28px + var(--sab));background:radial-gradient(ellipse 90% 70% at 50% 36%,#5a7a3a 0,#2c4622 38%,#16240f 72%,#0c140a 100%);color:#f3ead6;text-align:center;transition:opacity .7s ease,visibility .7s;cursor:pointer;overflow:hidden}
+#splash::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 34%,rgba(243,214,138,.28),rgba(243,214,138,0) 38%);pointer-events:none}
+#splash::after{content:"";position:absolute;left:0;right:0;bottom:0;height:24vh;background:linear-gradient(rgba(30,20,11,0),rgba(30,20,11,.55) 45%,rgba(22,15,8,.85));pointer-events:none}
+#splash.gone{opacity:0;visibility:hidden;pointer-events:none}
+#splash .sp-art{position:relative;z-index:1;width:min(64vw,46vh,420px);height:auto;animation:spBob 4.5s ease-in-out infinite;filter:drop-shadow(0 18px 24px rgba(0,0,0,.35))}
+#splash h1{position:relative;z-index:1;margin:2px 0 4px;font-family:var(--serif);font-weight:400;font-size:clamp(30px,8.5vw,52px);letter-spacing:.03em;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+#splash .sp-tag{position:relative;z-index:1;margin:0 0 26px;font-style:italic;font-size:clamp(15px,3.9vw,19px);color:rgba(243,234,214,.78)}
+#splash .sp-go{position:relative;z-index:2;min-height:48px;min-width:190px;padding:0 30px;border-radius:24px;border:1px solid rgba(243,214,138,.7);background:linear-gradient(#f3d68a,#c9a24f);color:#2a1c0c;font-size:17px;letter-spacing:.08em;text-shadow:none;box-shadow:0 6px 22px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .2s,opacity .3s}
+#splash .sp-go:disabled{opacity:.55;background:rgba(243,214,138,.15);color:#f3ead6}
+#splash.ready .sp-go{animation:spPulse 2.4s ease-in-out infinite}
+#splash .sp-go:active{transform:scale(.96)}
+#splash .sp-foot{position:absolute;z-index:1;bottom:calc(12px + var(--sab));left:0;right:0;font-size:12.5px;letter-spacing:.12em;font-variant:small-caps;color:rgba(243,234,214,.5)}
+@keyframes spBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spPulse{0%,100%{box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 0 rgba(243,214,138,.45),inset 0 1px 0 rgba(255,255,255,.5)}50%{box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 10px rgba(243,214,138,0),inset 0 1px 0 rgba(255,255,255,.5)}}
+@media (max-height:500px) and (orientation:landscape){#splash{flex-direction:row;gap:4vw}#splash .sp-art{width:min(42vh*1.6,38vw)}#splash .sp-txt{text-align:left}}
+@media (prefers-reduced-motion:reduce){#splash .sp-art,#splash.ready .sp-go{animation:none}}
+/* slow-motion offer while observing: sits just above the Observe caption, big tap target (v8) */
+#replayDock{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(96px + var(--sab));z-index:21;display:flex;justify-content:center;width:min(440px,92vw);pointer-events:none}
+#replayDock:empty{display:none}
+#replayDock .toast.replay{min-height:44px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;column-gap:.45em;padding:6px 20px;border-radius:22px;background:rgba(12,8,4,.62);border:1px solid rgba(243,214,138,.4);color:#f3ead6;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
+<div id="splash" role="dialog" aria-label="Jumper Terrarium">
+  <svg class="sp-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true">
+<defs><radialGradient id="sp_fadeG" cx="50%" cy="55%" r="55%"><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="sp_fade"><rect width="1024" height="1024" fill="url(#sp_fadeG)"/></mask>
+  <radialGradient id="sp_bg" cx="50%" cy="38%" r="75%">
+    <stop offset="0" stop-color="#4f6b34"/><stop offset="0.45" stop-color="#2a4220"/><stop offset="1" stop-color="#0f1a0d"/>
+  </radialGradient>
+  <radialGradient id="sp_glow" cx="50%" cy="40%" r="40%"><stop offset="0" stop-color="#f3d68a" stop-opacity=".45"/><stop offset="1" stop-color="#f3d68a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="sp_body" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#3a332c"/><stop offset=".6" stop-color="#1a1613"/><stop offset="1" stop-color="#0b0908"/></radialGradient>
+  <radialGradient id="sp_eye" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#4a3a2a"/><stop offset=".35" stop-color="#1a120c"/><stop offset="1" stop-color="#030202"/></radialGradient>
+  <linearGradient id="sp_chel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ff0c0"/><stop offset=".5" stop-color="#1fa58a"/><stop offset="1" stop-color="#2a3fa0"/></linearGradient>
+  <linearGradient id="sp_leg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2620"/><stop offset="1" stop-color="#0e0c0a"/></linearGradient>
+  <filter id="sp_fuzz" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>
+  <filter id="sp_soft"><feGaussianBlur stdDeviation="14"/></filter>
+</defs><g mask="url(#sp_fade)">
+
+
+<ellipse cx="512" cy="430" rx="420" ry="360" fill="url(#sp_glow)"/>
+<!-- perch -->
+<path d="M-20 880 C300 820 720 810 1044 860 L1044 1024 L-20 1024Z" fill="#3a2716"/>
+<path d="M-20 880 C300 820 720 810 1044 860" stroke="#7a5832" stroke-width="12" fill="none"/>
+<path d="M120 930 C300 900 520 895 700 905 M380 975 C560 955 760 955 920 965" stroke="#2a1c10" stroke-width="8" fill="none" stroke-linecap="round" opacity=".8"/>
+<ellipse cx="512" cy="845" rx="300" ry="34" fill="#000" opacity=".35" filter="url(#sp_soft)"/>
+<!-- legs (back pairs) -->
+<g stroke="url(#sp_leg)" stroke-linecap="round" fill="none">
+  <path d="M370 640 C250 600 170 660 130 830" stroke-width="40"/>
+  <path d="M654 640 C774 600 854 660 894 830" stroke-width="40"/>
+  <path d="M390 690 C300 700 250 760 240 850" stroke-width="38"/>
+  <path d="M634 690 C724 700 774 760 784 850" stroke-width="38"/>
+</g>
+<!-- body -->
+<g filter="url(#sp_fuzz)">
+  <ellipse cx="512" cy="560" rx="250" ry="215" fill="url(#sp_body)"/>
+</g>
+<!-- white brow bands / spots -->
+<path d="M330 430 C400 380 624 380 694 430" stroke="#efe6d4" stroke-width="16" fill="none" stroke-linecap="round" opacity=".85"/>
+<!-- eyebrow tufts -->
+<g stroke="#1a1512" stroke-width="12" stroke-linecap="round"><path d="M360 400 l-30 -70"/><path d="M380 395 l-12 -78"/><path d="M664 400 l30 -70"/><path d="M644 395 l12 -78"/></g>
+<!-- front legs raised -->
+<g stroke="url(#sp_leg)" stroke-linecap="round" fill="none">
+  <path d="M370 600 L250 520 L200 340" stroke-width="50" stroke-linejoin="round"/>
+  <path d="M654 600 L774 520 L824 340" stroke-width="50" stroke-linejoin="round"/>
+</g>
+<g fill="#efe6d4"><circle cx="250" cy="520" r="14"/><circle cx="224" cy="430" r="11"/><circle cx="774" cy="520" r="14"/><circle cx="800" cy="430" r="11"/></g><g stroke="#0e0c0a" stroke-width="6" stroke-linecap="round"><path d="M200 340 l-22 -26 M200 340 l4 -32 M824 340 l22 -26 M824 340 l-4 -32"/></g>
+<!-- lateral small eyes -->
+<circle cx="335" cy="500" r="30" fill="url(#sp_eye)"/><circle cx="689" cy="500" r="30" fill="url(#sp_eye)"/>
+<circle cx="326" cy="490" r="8" fill="#fff" opacity=".8"/><circle cx="680" cy="490" r="8" fill="#fff" opacity=".8"/>
+<!-- big main eyes -->
+<g>
+  <circle cx="432" cy="520" r="88" fill="#0a0806"/>
+  <circle cx="592" cy="520" r="88" fill="#0a0806"/>
+  <circle cx="432" cy="520" r="78" fill="url(#sp_eye)"/>
+  <circle cx="592" cy="520" r="78" fill="url(#sp_eye)"/>
+  <circle cx="432" cy="520" r="78" fill="none" stroke="#c79a4a" stroke-width="6" opacity=".75"/>
+  <circle cx="592" cy="520" r="78" fill="none" stroke="#c79a4a" stroke-width="6" opacity=".75"/>
+  <ellipse cx="405" cy="488" rx="26" ry="20" fill="#fff" opacity=".92"/>
+  <ellipse cx="565" cy="488" rx="26" ry="20" fill="#fff" opacity=".92"/>
+  <circle cx="458" cy="552" r="9" fill="#fff" opacity=".5"/>
+  <circle cx="618" cy="552" r="9" fill="#fff" opacity=".5"/>
+</g>
+<!-- palps -->
+<g fill="#f1e9d8"><ellipse cx="408" cy="650" rx="36" ry="30"/><ellipse cx="616" cy="650" rx="36" ry="30"/></g>
+<!-- chelicerae -->
+<path d="M452 612 C440 650 452 700 488 712 C506 690 508 640 504 612Z" fill="url(#sp_chel)"/>
+<path d="M572 612 C584 650 572 700 536 712 C518 690 516 640 520 612Z" fill="url(#sp_chel)"/>
+<path d="M466 630 C462 660 470 684 484 694" stroke="#d8fff4" stroke-width="7" fill="none" opacity=".75" stroke-linecap="round"/>
+<path d="M558 630 C562 660 554 684 540 694" stroke="#d8fff4" stroke-width="7" fill="none" opacity=".45" stroke-linecap="round"/>
+<!-- glass arch -->
+<path d="M150 1024 L150 300 A362 250 0 0 1 874 300 L874 1024" fill="none" stroke="#e8cf92" stroke-width="10" opacity=".22"/>
+</g></svg>
+  <div class="sp-txt">
+    <h1>Jumper Terrarium</h1>
+    <p class="sp-tag">A calm jumping-spider terrarium</p>
+    <button class="sp-go" id="splashGo" disabled>Loading…</button>
+  </div>
+  <div class="sp-foot">sound on for the full experience</div>
+</div>
 <div id="app">
   <canvas id="glview" aria-hidden="true"></canvas>
   <canvas id="view" aria-label="Terrarium view"></canvas>
-  <div id="fingerDot" class="hidden" aria-hidden="true"></div>
 
   <header id="top">
     <div class="brand"><span class="brand-name">Jumper Terrarium</span></div>
@@ -645,6 +735,7 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
   </div>
 
   <div id="toasts" aria-live="polite"></div>
+  <div id="replayDock" aria-live="polite"></div>
   <div id="tip" class="hidden" role="status" aria-live="polite"></div>
 
   <nav id="dock" class="mobile-only" aria-label="Main"><span class="lens"></span>
@@ -9106,11 +9197,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this._fingerN = (this._fingerN || 0) + (same ? 0 : 1);
       if (!held) { A().sfx('glass'); this.buzz('tap', true); } else if (fast && !(f && f.fast)) { A().sfx('glass'); this.buzz('startle'); }
       h.finger = { id: this._fingerN, pos, t: h.time, held: !!held, fast: !!fast };
-      const dot = $('fingerDot'); if (dot) { dot.style.transform = 'translate(' + sx + 'px,' + sy + 'px)'; dot.classList.toggle('held', !!held); dot.classList.toggle('fast', !!fast); dot.classList.remove('hidden'); if (!held) { dot.classList.remove('tapAnim'); void dot.offsetWidth; dot.classList.add('tapAnim'); clearTimeout(this._dotT); this._dotT = setTimeout(() => dot.classList.add('hidden'), 650); } }
     },
     fingerEnd() {
       const h = this.hab; if (h && h.finger) { h.finger.held = false; h.finger.fast = false; h.finger.t = h.time; }
-      const dot = $('fingerDot'); if (dot) { dot.classList.remove('held', 'fast'); clearTimeout(this._dotT); this._dotT = setTimeout(() => dot.classList.add('hidden'), 300); }
     },
     key(e) {
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { if (e.key === 'Escape') e.target.blur(); return; }
@@ -9193,6 +9282,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         const L = bar && bar.querySelector('.lens'); if (!L) continue; const b = bar.querySelector('button.on');
         if (!b || !b.offsetWidth) { L.classList.remove('on'); continue; }
         const st = L.style; st.left = b.offsetLeft + 'px'; st.top = b.offsetTop + 'px'; st.width = b.offsetWidth + 'px'; st.height = b.offsetHeight + 'px'; L.classList.add('on'); }
+      { const D = $('replayDock'); if (D) { // the slow-motion offer sits just above the Observe caption while observing
+        if (this.obs) { for (const c of [...T.querySelectorAll('.toast.replay')]) D.appendChild(c); } else for (const c of [...D.children]) T.appendChild(c);
+        if (D.children.length) { const o = rect('obsHud'); const oc = solid('obsHud'); const yb = oc ? oc.top : (o ? o.top + 20 : vh - 80); D.style.bottom = Math.round(Math.max(8, vh - yb + 8)) + 'px'; } } }
       if (!T.children.length) return;
       const pad = 8, th = T.offsetHeight + 2, tw = Math.min(440, vw - pad * 2);
       const yTop = (top ? top.bottom : 0) + pad, yBot = Math.min(vh, ...bars.map(r => r.top)) - pad - th;
@@ -9979,6 +10071,15 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
+    { // pre-game splash: becomes tappable once the game is ready; skipped for automated runs unless ?splash=1
+      const sp = document.getElementById('splash'), go = document.getElementById('splashGo');
+      const force = /[?&]splash=1/.test(location.search);
+      if (sp && navigator.webdriver && !force) sp.remove();
+      else if (sp) {
+        const enter = (ev) => { if (ev) ev.stopPropagation(); if (sp.classList.contains('gone')) return; try { JT.Audio.start(); } catch (e) { void e; } try { JT.UI.buzz && JT.UI.buzz('tap'); } catch (e) { void e; } sp.classList.add('gone'); setTimeout(() => sp.remove(), 800); };
+        requestAnimationFrame(() => requestAnimationFrame(() => { sp.classList.add('ready'); if (go) { go.disabled = false; go.textContent = 'Tap to enter'; } sp.addEventListener('click', enter); document.addEventListener('keydown', function k(e) { if (!document.getElementById('splash')) return document.removeEventListener('keydown', k); if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } }); }));
+      }
+    }
     if (!restored) setTimeout(() => JT.UI.toast((game._wiped ? 'A fresh start: everything is free now. ' : 'Welcome! ') + 'Meet <b>Pip</b>, your Peacock Spider sling. Raise it to Adult to unlock the next jumper. Tap a jumper to see what it is doing, or press Observe to watch it up close.', '', 7000), 600);
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
