@@ -518,12 +518,6 @@ body.story .card .pr .ok{color:#4f7a35}
 .tkb .modal-btn{min-height:40px;font-size:13.5px}
 .tkfav{font-size:20px;min-width:40px;color:var(--faint)}.tkfav.on{color:var(--accent)}
 .tk-all{font-style:italic;opacity:.85}
-.bchip{border:0;background:rgba(255,255,255,.08);color:var(--ink);border-radius:999px;padding:2px 9px;font:inherit;font-size:12.5px;cursor:pointer;line-height:1.5;white-space:nowrap}@media (max-width:560px){.bchip .bev{display:none}}.bchip.ev{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent)}
-.badge.home{right:auto;left:0;top:10px;color:#fff;background:rgba(78,138,64,.88);border-radius:999px;padding:0 8px;font-size:12px;letter-spacing:.04em}.entry.home{box-shadow:inset 0 0 0 1px rgba(130,190,110,.4)}.entry .bh{font-size:13px;color:#a9c99a;margin:2px 0}
-.card .nat{position:absolute;top:3px;left:4px;font-size:10.5px;padding:0 5px;border-radius:999px;background:rgba(110,170,90,.85);color:#fff;letter-spacing:.03em;pointer-events:none}
-.bpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;margin:6px 0 10px}.bpick button{text-align:left;border:0;border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.06);color:var(--ink);font:inherit;cursor:pointer;line-height:1.3}.bpick button b{display:block;font-size:14px}.bpick button small{color:var(--dim);font-size:12px}.bpick button.on{box-shadow:inset 0 0 0 2px var(--accent);background:rgba(255,255,255,.11)}
-.bgauge{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:14px;margin:8px 0}.bgauge span.bar{height:7px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden}.bgauge span.bar i{display:block;height:100%;border-radius:9px;background:var(--accent)}
-.bcomf{list-style:none;padding:0;margin:6px 0}.bcomf li{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px solid var(--rule);font-size:14px}.bcomf .c1{color:#9fd38f}.bcomf .c2{color:var(--ink)}.bcomf .c3{color:#e0a070}
 .entry.hybrid{box-shadow:inset 0 0 0 1px rgba(180,120,200,.35)}.entry canvas.mystery{opacity:.9;filter:blur(.4px)}.jnote{margin:-2px 0 8px;font-size:13px}
 #obsPhoto{min-width:40px;display:flex;align-items:center;justify-content:center}
 body.photo #top,body.photo #toolbar,body.photo #drawer,body.photo #spiderPanel,body.photo #camCtl,body.photo #modeBar,body.photo #obsHud,body.photo #replayDock,body.photo #tip,body.photo #dock,body.photo #popover{display:none!important}
@@ -680,6 +674,16 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
 #replayDock{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(96px + var(--sab));z-index:21;display:flex;justify-content:center;width:min(440px,92vw);pointer-events:none}
 #replayDock:empty{display:none}
 #replayDock .toast.replay{min-height:44px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;column-gap:.45em;padding:6px 20px;border-radius:22px;background:rgba(12,8,4,.62);border:1px solid rgba(243,214,138,.4);color:#f3ead6;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+
+/* ---------- v12: touch-device performance + polish ---------- */
+@media (pointer:coarse){
+  :root,body.story{--blur:blur(8px) saturate(1.2)}
+  body:not(.lowfx){--gFBlur:blur(10px) saturate(1.4)}
+  body.story:not(.lowfx){--gFBlur:blur(10px) saturate(1.5) brightness(1.04)}
+}
+#view,#glview{contain:strict}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus:not(:focus-visible){outline:none}
 </style>
 </head>
 <body>
@@ -778,7 +782,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     <div class="tb-left">
     <nav id="habTabs" class="tabs" aria-label="Habitats"></nav>
     <button id="habPicker" class="mobile-only habpick txt"></button></div>
-    <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span><button id="biomeChip" class="bchip hidden" title="Biome climate" aria-label="Biome climate"></button></div>
+    <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
     <div class="tb-right desktop-only">
     <div id="cams" class="seg desktop-only" aria-label="Camera">
       <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Front (2)">Front</button><button data-cam="reverse" title="Back (3)">Back</button><button data-cam="left" title="Left side (3)">Left</button><button data-cam="right" title="Right side (4)">Right</button>
@@ -1036,9 +1040,10 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     black:   { name: 'Rich Black Soil',  top: '#3a2c22', mid: '#2a1f18', dark: '#1a130e', speck: ['#4e3c2e', '#21180f'], burrow: 1.0, moist: 0.55 },
     sphagnum:{ name: 'Sphagnum Carpet',  top: '#9aa65a', mid: '#6d7a3b', dark: '#46502a', speck: ['#c0c47c', '#7d8c44'], burrow: 0.35, moist: 0.95 },
     lime:    { name: 'Limestone Grit',   top: '#cfc8b6', mid: '#aea694', dark: '#857e6d', speck: ['#e8e2d2', '#9c9584'], burrow: 0.2, moist: 0.1, pebbly: true },
-    mud:     { name: 'Wet Mud',          top: '#4a3b2a', mid: '#3a2e20', dark: '#261d14', speck: ['#5e4c36', '#2e2418', '#5a6040'], burrow: 0.6, moist: 1.0 },
-    dune:    { name: 'Raked Dune Sand',  top: '#e2c08a', mid: '#cba46c', dark: '#a07c4c', speck: ['#f4dcae', '#c09660', '#d8b47c'], burrow: 0.9, moist: 0.05 },
     jungle:  { name: 'Jungle Floor',     top: '#4a3a1e', mid: '#382b16', dark: '#241b0d', speck: ['#6b5a2a', '#5b7a34', '#7a4f2a'], burrow: 0.75, moist: 0.8, litter: true },
+    peat:    { name: 'Dark Peat',        top: '#3a2a1e', mid: '#2a1e14', dark: '#1a120c', speck: ['#5a4430', '#4a3624', '#6a5038'], burrow: 0.85, moist: 0.75 },
+    redsand: { name: 'Red Desert Sand',  top: '#c8784a', mid: '#a85e36', dark: '#7a4226', speck: ['#e09a6a', '#9a5030'], burrow: 0.9, moist: 0.1 },
+    leafmould: { name: 'Leaf Mould',     top: '#4a3a24', mid: '#382a1a', dark: '#241a10', speck: ['#8a6a3a', '#6a4a24', '#a07a40'], burrow: 0.75, moist: 0.65, litter: true },
   };
 
   // ---------------- Natural backgrounds ----------------
@@ -1049,10 +1054,9 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     canopy:   { name: 'Rainforest Canopy',   sky: ['#16301f', '#24502f', '#3b7040'], blobs: ['#1f4a28', '#2f6a36', '#4c8a44', '#88b860'], light: '#d8ffb0', shafts: 0.55 },
     twilight: { name: 'Twilight Woodland',   sky: ['#1b1a33', '#3a3352', '#6a4d5e'], blobs: ['#2c2a48', '#4a3f5e', '#7a5a6a', '#c08a6a'], light: '#ffc8a0', shafts: 0.25 },
     stone:    { name: 'Moss Stone Garden',   sky: ['#2c3330', '#46504a', '#68736a'], blobs: ['#56605a', '#3e4a40', '#6e8a54', '#8a948c'], light: '#eef6e0', shafts: 0.3 },
-    dunes:    { name: 'Desert Dunes',        sky: ['#b8794a', '#d8a470', '#f0d29c'], blobs: ['#d0985e', '#bf8450', '#e6c088', '#a86c44'], light: '#fff0c8', shafts: 0.2 },
-    mangrove: { name: 'Mangrove Shore',      sky: ['#1c3430', '#2e5048', '#4f7a68'], blobs: ['#2a4a3e', '#3e6a52', '#5a8a6a', '#7aa080'], light: '#e0f4e0', shafts: 0.4 },
-    moonwood: { name: 'Moonlit Woods',       sky: ['#0e1430', '#1c2650', '#2e3c6e'], blobs: ['#18224a', '#26346a', '#3a4a80', '#5a7ab0'], light: '#c8d8ff', shafts: 0.2 },
     log:      { name: 'Fallen Log Interior', sky: ['#24170e', '#3c2716', '#5a3b20'], blobs: ['#4a3018', '#6a4524', '#2e2010', '#8a6a3a'], light: '#ffb870', shafts: 0.45 },
+    dusk:     { name: 'Golden Dusk Grove',   sky: ['#3a2a3a', '#8a5a4a', '#e0a060'], blobs: ['#4a3a3a', '#7a5a3a', '#c08a4a', '#e8c070'], light: '#ffd8a0', shafts: 0.6 },
+    misty:    { name: 'Misty Highland',      sky: ['#7a8a8a', '#a8b8b0', '#d0dcd4'], blobs: ['#6a7a70', '#8a9a88', '#b0c0b0', '#d8e0d8'], light: '#f4fff8', shafts: 0.35 },
   };
 
   // ---------------- Spider species ----------------
@@ -1151,6 +1155,18 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       { stealth: .5, patience: .5, jump: .72, bold: .6, tactics: .55 }, { height: .6, foliage: .3, rear: .3, display: .9, activity: .7 },
       'House Jumper × Paradise Jumper. Bold black-and-white bands, a red face and white-gloved palps. Signature: long dance routines with palp semaphore; it warms to you twice as fast and waves back at your finger.',
       { hybrid: true, unlock: { parents: ['hasarius', 'paradise'] }, sig: 'saltator', sigs: ['semaphore'], basePat: 'zebra' }),
+    S('phaeacius', 'Lichen Ambusher', 'Phaeacius malayensis', 9, { ceph: '#6a6656', abd: '#5e5a4c', mark: '#b8b49a', leg: '#6a6452', chel: '#4a4638', hair: '#9a9682', belly: '#7a7562' }, 'graywall',
+      { stealth: 1.0, patience: 1.0, jump: .45, bold: .55, tactics: .85 }, { height: .35, foliage: .15, rear: .7, display: .05, activity: .25 },
+      'A flat, lichen-grey sit-and-wait hunter. Presses itself to bark and stone, barely moves for minutes, then lunges at anything that wanders past. Signature: ambush posts it learns and returns to.', { unlockCatches: 45, sigs: ['detour'] }),
+    S('cosmophasis', 'Mirror Jumper', 'Cosmophasis umbratica', 6, { ceph: '#0e1a1c', abd: '#122428', mark: '#7ff0e0', leg: '#2a3a36', chel: '#1a2a28', hair: '#5ad8c8', belly: '#18302c' }, 'emerald',
+      { stealth: .6, patience: .55, jump: .8, bold: .55, tactics: .7 }, { height: .75, foliage: .7, rear: .4, display: .85, activity: .75 },
+      'Iridescent turquoise bands that flash in the light. Quick, curious and showy on leaves. Signature: semaphore displays and long precise leaps between leaves.', { unlockCatches: 60, sigs: ['semaphore', 'leap'] }),
+    S('carrhotus', 'Ginger Jumper', 'Carrhotus xanthogramma', 8, { ceph: '#2a1a12', abd: '#c0682a', mark: '#f0b060', leg: '#3a2418', chel: '#2a1a12', hair: '#e89a4a', belly: '#4a2e1c' }, 'orange',
+      { stealth: .55, patience: .6, jump: .65, bold: .8, tactics: .65 }, { height: .55, foliage: .5, rear: .5, display: .5, activity: .6 },
+      'A fuzzy ginger-and-black jumper with a fearless streak. Takes on prey close to its own size and rarely backs down. Signature: strikes from behind cover after a careful stalk.', { unlockCatches: 80, sigs: ['detour'] }),
+    S('hyllus', 'Heavy Jumper', 'Hyllus diardi', 17, { ceph: '#2e2620', abd: '#4a3a2c', mark: '#d8c8a8', leg: '#3a2e24', chel: '#1a1612', hair: '#b8a68a', belly: '#5a4a3a' }, 'giant',
+      { stealth: .45, patience: .7, jump: .9, bold: .95, tactics: .8 }, { height: .65, foliage: .45, rear: .55, display: .3, activity: .5 },
+      'One of the largest jumping spiders: heavy, hairy and powerful. Crosses the tank in huge leaps and tackles prey nobody else will. Signature: colossal leaps and patient, planned approaches.', { unlockCatches: 100, sigs: ['leap', 'detour'] }),
   ];
   /** Does a species have signature `k`? (hybrids carry their parents' signatures too) */
   JT.sigHas = (S, k) => !!S && (S.sig === k || (!!S.sigs && S.sigs.includes(k)));
@@ -1194,6 +1210,10 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     ignicard:    Object.assign({}, PHID, { aL: 1.05, aW: 1.1, fuzz: 1.25, legHair: 0.9, bristle: 0.7, chel: 1.25, irid: 0, gait: 'patient', note: 'Bulky velvet Phidippus, ember speckles, gold fangs. Patient, then sudden.' }),
     titanica:    { cL: 1.05, cW: 1.0, cH: 1.0, aL: 1.0, aW: 0.95, legLen: 1.3, front: 1.3, legW: 0.95, frontW: 1.25, fuzz: 1.2, legHair: 0.8, bristle: 0.4, fringe: 1, tufts: 'ragged', tuftCol: '#2a1e14', palp: 'pompom', palpCol: '#e6dac2', chel: 1.1, eye: 1.05, eyeCol: '#6a4418', gait: 'choppy', note: 'Huge and shaggy, long fringed legs, ragged mottled cape, pompom palps. Choppy and deliberate.' },
     saltator:    { cH: 0.95, legW: 1, frontW: 1.35, fuzz: 0.55, legHair: 0.3, bristle: 0.3, palp: 'flag', palpCol: '#ffffff', chel: 1.0, gait: 'hop', note: 'Black-and-white banded, red face, white-gloved palps. Lively hops and dances.' },
+    phaeacius:   { cL: 1.05, cW: 1.12, cH: 0.7, aL: 1.0, aW: 1.08, aH: 0.7, flat: 0.7, legLen: 1.1, front: 1.1, legW: 0.95, frontW: 1.05, fuzz: 0.35, legHair: 0.4, eye: 0.95, gait: 'patient', note: 'Very flat and broad, lichen grey. Freezes for ages, then a sudden lunge.' },
+    cosmophasis: { cL: 0.95, cW: 0.9, aL: 1.1, aW: 0.85, legLen: 1.1, front: 1.15, legW: 0.8, frontW: 0.9, fuzz: 0.2, legHair: 0.2, eye: 1.05, gait: 'brisk', note: 'Slim and glossy with turquoise iridescent bands. Quick and showy.' },
+    carrhotus:   { cH: 1.05, aW: 1.08, legW: 1.05, frontW: 1.15, fuzz: 0.75, legHair: 0.55, bristle: 0.2, chel: 1.05, gait: 'stopgo', note: 'Round, fuzzy ginger abdomen and dark face. Stop-and-go stalker.' },
+    hyllus:      { cL: 1.08, cW: 1.08, cH: 1.08, aL: 1.05, aW: 1.08, legLen: 1.08, front: 1.15, legW: 1.2, frontW: 1.35, fuzz: 0.85, legHair: 0.7, bristle: 0.45, bristleCol: '#e8dcc4', tufts: 'brow', tuftCol: '#d8c8a8', chel: 1.1, gait: 'heavy', note: 'Massive and hairy with pale brow tufts. Heavy deliberate gait, enormous leaps.' },
     portia:      { cL: 0.9, cW: 0.85, cH: 0.9, aL: 0.8, aW: 0.75, aH: 0.75, legLen: 1.3, front: 1.25, legW: 0.6, frontW: 0.75, fuzz: 0.3, fringe: 1, tufts: 'ragged', tuftCol: '#2a1e14', palp: 'pompom', palpCol: '#e6dac2', chel: 0.8, eye: 1.08, eyeCol: '#6a4418', gait: 'choppy', note: 'Skinny, long thin legs with dark fringes, ragged debris outline, fluffy palps. Slow choppy robot walk.' },
   };
   JT.SPECIES.forEach(s => { s.look = Object.assign({}, LOOK_BASE, JT.LOOK[s.id] || {}); });
@@ -1236,6 +1256,13 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     P('redrunner', 'Red Runner Nymphs', 'roach', { len: 8, nut: .3, spd: 30, sense: 30, reflex: .65, struggle: 3.0, climb: true, hide: true, count: 2, col: '#8a4a24', danger: .15 }),
     P('bsfl', 'Black Soldier Fly Larvae', 'worm', { len: 10, nut: .35, spd: 4, sense: 10, reflex: .05, struggle: 4.0, burrow: true, slow: true, count: 3, col: '#8a7a5e', segs: 10, fat: 1.15 }),
     P('hornworm', 'Hornworm', 'worm', { len: 25, nut: .9, spd: 2, sense: 6, reflex: .02, struggle: 6.5, slow: true, count: 1, col: '#5aa040', segs: 13, fat: 1.55, danger: .1 }),
+    P('greenbottle', 'Greenbottle Flies', 'fly', { len: 8, nut: .34, spd: 36, sense: 42, reflex: .6, struggle: 3.2, fly: true, land: true, count: 2, col: '#2a7a4a', eye: '#a01a10', metallic: true, flowers: .6, danger: .05 }),
+    P('cranefly', 'Crane Flies', 'lacewing', { len: 14, nut: .3, spd: 12, sense: 18, reflex: .25, struggle: 2.0, fly: true, land: true, col: '#9a8460', night: .5, moist: .4 }),
+    P('firefly', 'Fireflies', 'beetle', { len: 9, nut: .3, spd: 14, sense: 22, reflex: .35, struggle: 2.5, fly: true, land: true, count: 2, col: '#3a2a1e', night: 1, flowers: .3, danger: .25 }),
+    P('weevil', 'Weevils', 'beetle', { len: 5, nut: .15, spd: 6, sense: 12, reflex: .2, struggle: 1.6, climb: true, hide: true, foliage: .6, count: 3, col: '#5a4434', spots: true }),
+    P('katydid', 'Katydids', 'cricket', { len: 16, nut: .6, spd: 18, sense: 32, reflex: .55, struggle: 5.0, hop: true, climb: true, foliage: 1, col: '#5aa040', danger: .4 }),
+    P('silverfish', 'Silverfish', 'roach', { len: 8, nut: .25, spd: 26, sense: 26, reflex: .6, struggle: 2.0, climb: true, hide: true, night: .7, count: 2, col: '#a8acb0', moist: .4 }),
+    P('butterworm', 'Butterworms', 'worm', { len: 16, nut: .65, spd: 2.5, sense: 6, reflex: .03, struggle: 3.5, slow: true, count: 2, col: '#e8b04a', segs: 12, fat: 1.35 }),
   ];
   JT.PREY_BY_ID = {}; JT.PREY.forEach(p => JT.PREY_BY_ID[p.id] = p);
   JT.PREY_CAP = 40;
@@ -1351,6 +1378,8 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     W('wk_ledgerun', 'Long Ledge', { kind: 'shelf', w: 32, d: 8, th: 3, style: 'cork' }, .15, 'A long perch for wide walls'),
     W('wk_tinyledge', 'Tiny Ledge', { kind: 'shelf', w: 10, d: 6, th: 2.2, style: 'cork' }, .1, 'A sling-sized perch'),
     W('wk_brownbracket', 'Brown Brackets', { kind: 'fungi', w: 16, n: 2, s: 0.85, fcols: { side: '#7a4e2a', top: '#a06a3a', mark: '#4a2e18', hi: '#c08a50' } }, .2, 'Shelf fungi to perch on'),
+    W('wk_orangebracket', 'Orange Brackets', { kind: 'fungi', w: 15, n: 3, s: 0.75, fcols: { side: '#b85a1a', top: '#e08a30', mark: '#7a3a10', hi: '#f8b060' } }, .2, 'Bright shelf fungi steps'),
+    W('wk_whitebracket', 'Oyster Shelves', { kind: 'fungi', w: 17, n: 2, s: 0.9, fcols: { side: '#c8beac', top: '#ece4d4', mark: '#9a907e', hi: '#fffaf0' } }, .2, 'Pale oyster mushrooms to perch on'),
     W('wk_shellfungi', 'Shell Fungi', { kind: 'fungi', w: 16, n: 3, s: 0.75, fcols: { side: '#cfc6b0', top: '#e8e0cc', mark: '#9a8e74', hi: '#f4eee0' } }, .2, 'Pale shelf fungi to perch on'),
     D('beadvine', 'Cork Bead Vine', 'decor', 'branch', { kind: 'beads', L: 84, h: 82, r: 1.4, col: '#6a4e34', leaves: '#5a8a3a' }, {}),
     D('mossmound', 'Moss Mound', 'decor', 'rock', { w: 30, d: 24, h: 9, style: 'moss', round: true }, { platform: true, small: true, cover: .1 }),
@@ -1439,20 +1468,36 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     D('marigolds', 'Orange Marigolds', 'plants', 'flower', { n: 7, h: 28, petal: '#f08a1e', center: '#b8501a', cluster: true }, { stack: true, cover: .3, flowers: true, small: true, blend: ['apache', 'canopy', 'orange'], desc: 'Bright orange blooms that draw in flies' }),
     D('deadleafclump', 'Dead-Leaf Hanging Clump', 'plants', 'broadleaf', { n: 11, h: 34, leafL: 11, leafW: 6, leaf: '#7a5634', leaf2: '#4a3220', droop: true }, { stack: true, cover: .6, small: true, blend: ['portia', 'ant'], desc: 'Curled brown leaves hanging from a dry stem' }),
     D('autumnlitter', 'Autumn Leaf Litter', 'ground', 'scatter', { kind: 'oak', r: 26, col: '#b8501e', col2: '#a8281a', n: 20 }, { cover: .6, small: true, moist: .4, blend: ['cardinal', 'johnson', 'apache', 'canopy', 'orange', 'imperial'], desc: 'Red and orange fallen leaves' }),
-    // --- v12 biome signature pieces (each tagged with the biome it is native to) ---
-    D('heliconia', 'Heliconia', 'plants', 'flower', { n: 3, h: 44, petal: '#e0402a', center: '#f0c020', spike: true, leaves: true }, { stack: true, cover: .5, flowers: true, biome: 'rainforest', desc: 'Tropical red-and-gold bracts on tall stems' }),
-    D('dripvine', 'Dripping Vine', 'plants', 'vine', { h: 80, leaf: '#3f8a3a', ivy: true, drip: true }, { stack: true, cover: .4, water: true, biome: 'rainforest', desc: 'Leaves that hold rain drops for thirsty jumpers' }),
-    D('wetlitter', 'Wet Leaf Litter', 'ground', 'scatter', { kind: 'leaves', r: 26, col: '#4a3a1e', col2: '#5a6a2a', n: 26 }, { cover: .6, small: true, moist: .9, biome: 'rainforest', desc: 'Dark, glossy, rain-soaked leaves' }),
-    D('saguaro', 'Saguaro Cactus', 'plants', 'cactus', { kind: 'saguaro', h: 62, r: 4.2, arms: 2, col: '#5f8f4a', bloom: '#f4f0e0' }, { cover: .2, biome: 'desert', desc: 'Tall ribbed cactus with arms to climb' }),
-    D('barrelcactus', 'Barrel Cacti', 'plants', 'cactus', { kind: 'barrel', h: 13, r: 5.5, n: 3, col: '#6a9a50', bloom: '#f08aa8' }, { stack: true, cover: .2, small: true, biome: 'desert', desc: 'Squat cacti crowned with pink blooms' }),
-    D('sandarch', 'Sandstone Arch', 'decor', 'rockarch', { w: 64, d: 24, h: 34, style: 'sand' }, { platform: true, cover: .35, biome: 'desert', desc: 'A wind-carved arch to climb over or shelter under' }),
-    D('pond', 'Small Pond', 'decor', 'pond', { w: 46, d: 34, h: 1.4 }, { water: true, biome: 'paludarium', desc: 'Open water: jumpers drink at the edge but never swim' }),
-    D('lilypond', 'Lily Pond', 'decor', 'pond', { w: 64, d: 46, h: 1.4, lilies: 6 }, { water: true, biome: 'paludarium', desc: 'A larger pool with floating lily pads and a lotus' }),
-    D('cattails', 'Cattails', 'plants', 'grass', { n: 10, L: 5, h: 60, leaf: '#6a8a3a', heads: '#5a3a22' }, { stack: true, cover: .5, small: true, biome: 'paludarium', desc: 'Tall reeds with velvet seed heads' }),
-    D('mudflat', 'Mud Flat', 'ground', 'scatter', { kind: 'moss', r: 26, col: '#4a3a28' }, { cover: .1, small: true, moist: 1, biome: 'paludarium', desc: 'A slick patch of wet mud' }),
-    D('glowmoss', 'Glow Moss', 'ground', 'scatter', { kind: 'moss', r: 22, col: '#2f6a58', glow: '#a0ffe0', n: 9 }, { cover: .3, small: true, moist: .8, biome: 'nightmoss', desc: 'Moss dotted with softly glowing beads' }),
-    D('bluefungus', 'Blue Glow Fungi', 'plants', 'mushroom', { n: 8, h: 18, cap: 4.2, col: '#b8d8ff', glow: '#9ad0ff', stem: '#d8e4f0' }, { stack: true, small: true, biome: 'nightmoss', desc: 'A cluster of moon-blue glowing caps' }),
-    D('ghostfern', 'Ghost Fern', 'plants', 'fern', { n: 7, L: 30, h: 24, leaf: '#a8c8c0' }, { stack: true, cover: .6, small: true, biome: 'nightmoss', desc: 'Pale silver fronds that catch the moonlight' }),
+    D('peperomia', 'Peperomia', 'plants', 'broadleaf', { n: 8, h: 14, leafL: 8, leafW: 7, leaf: '#3a6a2a', heart: true }, { stack: true, cover: .4, small: true, desc: 'Round fleshy leaves, a cosy sling hideout' }),
+    D('fittonia', 'Nerve Plant', 'plants', 'broadleaf', { n: 9, h: 12, leafL: 8, leafW: 6, leaf: '#2a6a3a', heart: true, variegate: '#f0c8d0' }, { stack: true, cover: .45, small: true, desc: 'Low pink-veined leaves that love humidity' }),
+    D('earthstar', 'Earth Star', 'plants', 'rosette', { n: 10, L: 14, h: 6, leaf: '#7a4a5a', tip: '#e0a0b0' }, { stack: true, cover: .25, small: true, desc: 'Flat striped rosette for the floor' }),
+    D('firebromeliad', 'Fire Bromeliad', 'plants', 'rosette', { n: 11, L: 22, h: 16, leaf: '#8a3a2a', tip: '#f0702a', cup: true }, { stack: true, cover: .5, water: true, blend: ['cardinal', 'apache', 'ignicard'], desc: 'Flame-red cup that holds water droplets' }),
+    D('silverfern', 'Silver Fern', 'plants', 'fern', { n: 8, L: 30, h: 24, leaf: '#7a9a88' }, { stack: true, cover: .55, small: true, blend: ['graywall', 'phaeacius'], desc: 'Dusty silver-green fronds' }),
+    D('lacefern', 'Lace Fern', 'plants', 'fern', { n: 10, L: 24, h: 20, leaf: '#5aa04a', fine: true }, { stack: true, cover: .5, small: true }),
+    D('marigold', 'Marigolds', 'plants', 'flower', { n: 6, h: 24, petal: '#f09a20', center: '#7a3a10', daisy: true }, { stack: true, cover: .25, flowers: true, small: true, desc: 'Orange blooms that pull in flies' }),
+    D('foxglove', 'Foxglove', 'plants', 'flower', { n: 7, h: 44, petal: '#d870b0', center: '#8a3a7a', spike: true }, { stack: true, cover: .3, flowers: true }),
+    D('buttercups', 'Buttercups', 'plants', 'flower', { n: 7, h: 26, petal: '#f6d020', center: '#8a6a10', poppy: true }, { stack: true, cover: .2, flowers: true, small: true }),
+    D('flyagaric', 'Fly Agaric', 'plants', 'mushroom', { n: 3, h: 22, cap: 7, col: '#d02a1a', spots: true, stem: '#f4efe4' }, { stack: true, small: true, cover: .15, desc: 'Red-capped toadstools with white spots' }),
+    D('bluecaps', 'Blue Glow Caps', 'plants', 'mushroom', { n: 6, h: 12, cap: 4, col: '#c8d8f0', glow: '#80c8ff' }, { stack: true, small: true, cover: .1, desc: 'Soft blue glow after dark' }),
+    D('mosscurtain', 'Moss Curtain', 'plants', 'vine', { h: 64, leaf: '#6a9a3a', ivy: true }, { stack: true, cover: .4, desc: 'Draping moss route up the back' }),
+    D('jadetree', 'Jade Bonsai', 'plants', 'tree', { kind: 'bonsai', h: 30, r: 3, spread: 26, leaf: '#3a7a3a', pot: true }, { stack: true, cover: .4, small: true }),
+    D('olivetree', 'Little Olive', 'plants', 'tree', { kind: 'tiny', h: 52, r: 2.4, spread: 34, leaf: '#7a9a5a' }, { stack: true, cover: .45 }),
+    D('fanpalm', 'Fan Palm', 'plants', 'palm', { n: 9, L: 26, h: 38, leaf: '#4a7a34', trunk: 16 }, { stack: true, cover: .45 }),
+    D('sedge', 'Sedge Tuft', 'plants', 'grass', { n: 12, L: 14, h: 30, leaf: '#8aa84a' }, { stack: true, cover: .45, small: true }),
+    D('lichenboulder', 'Lichen Boulder', 'decor', 'rock', { w: 46, d: 34, h: 22, style: 'lichen', round: true }, { platform: true, cover: .2, blend: ['graywall', 'phaeacius'], desc: 'Big pale-crusted boulder, a perfect ambush post' }),
+    D('sandmesa', 'Sandstone Mesa', 'decor', 'rock', { w: 44, d: 32, h: 28, style: 'sand', layers: 4 }, { platform: true, cover: .2 }),
+    D('rivercairn', 'River Cairn', 'decor', 'rock', { w: 30, d: 24, h: 16, style: 'river', round: true }, { platform: true, small: true }),
+    D('birchperch', 'Birch Perch', 'decor', 'branch', { kind: 'perch', L: 40, h: 36, r: 1.7, col: '#d8d0c0' }, { small: true, blend: ['zebra', 'twinflag'], desc: 'Pale slender perch' }),
+    D('vinebranch', 'Twisted Vine Branch', 'decor', 'branch', { kind: 'grape', L: 64, h: 44, r: 1.8, col: '#5a4434' }, {}),
+    D('birchtube', 'Birch Tube', 'decor', 'log', { L: 46, r: 9, style: 'birch', hollow: true }, { cover: .8, small: true, desc: 'Hollow birch hide' }),
+    D('claypipe', 'Clay Pipe', 'decor', 'log', { L: 40, r: 8, style: 'terracotta', hollow: true }, { cover: .8, small: true, desc: 'Terracotta hide for shy jumpers' }),
+    D('stonecave', 'Stone Cave', 'decor', 'hide', { w: 30, d: 24, h: 18, style: 'rock', dome: true }, { platform: false, cover: .9, small: true }),
+    D('riverhide', 'River Rock Hide', 'decor', 'hide', { w: 32, d: 24, h: 16, style: 'river' }, { platform: true, cover: .8, small: true }),
+    D('sphagnum', 'Sphagnum Moss', 'ground', 'scatter', { kind: 'moss', r: 24, col: '#9ab858' }, { cover: .3, small: true, moist: .8, desc: 'Springy pale moss that holds moisture' }),
+    D('birchleaves', 'Birch Leaf Litter', 'ground', 'scatter', { kind: 'oak', r: 26, col: '#d8b040', col2: '#b88a2a', n: 18 }, { cover: .6, small: true, moist: .4, blend: ['carrhotus', 'orange'], desc: 'Golden autumn birch leaves' }),
+    D('acorns', 'Acorns', 'ground', 'scatter', { kind: 'pods', r: 18, col: '#8a6230', n: 6 }, { cover: .2, small: true }),
+    D('gravelpatch', 'Gravel Patch', 'ground', 'scatter', { kind: 'pebbles', r: 20, col: '#7a766e', n: 20 }, { cover: .1, small: true }),
+    D('cocochips', 'Coconut Chips', 'ground', 'scatter', { kind: 'chips', r: 22, col: '#8a5a34', n: 14 }, { cover: .35, small: true, moist: .3 }),
   ];
   /** Short species name for compact labels ("Zebra", "Twin-flagged"). */
   JT.shortName = (S) => S ? S.name.replace(/ (Jumper|Spider|Morph)$/, '') : '';
@@ -1526,18 +1571,10 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     { id: 'emberNight', hyb: 'ignicard', title: 'Ember in the Dark', icon: '', text: 'An Ignicard hunted by night, its ember speckles glowing softly as it struck.' },
     { id: 'titanLeap', hyb: 'titanica', title: 'Titan\'s Gambit', icon: '', text: 'A Titanica planned a Portia-style detour, then crossed the tank in one colossal leap.' },
     { id: 'grandFinale', hyb: 'saltator', title: 'Grand Finale', icon: '', text: 'A Saltator finished a long dance routine and then waved its white-gloved palps right back at you.' },
-    // v12 biome moments
-    { id: 'rainDrink', title: 'Drinking the Rain', icon: '', text: 'During a rainforest shower a jumper sipped fresh rain from a leaf.' },
-    { id: 'heatBask', title: 'Sun on Stone', icon: '', text: 'On a hot desert afternoon a jumper basked on a sun-warmed rock.' },
-    { id: 'edgeHunt', title: 'Hunting the Shore', icon: '', text: 'A jumper caught prey right at the water\u2019s edge of a paludarium pond.' },
-    { id: 'glowHunt', title: 'Hunter in the Glow', icon: '', text: 'A jumper made a catch in the moonlit gloom of the night moss forest.' },
-    { id: 'fireflyWatch', title: 'Watching the Fireflies', icon: '', text: 'A jumper sat still and followed the drifting fireflies with its big front eyes.' },
-    { id: 'settledIn', title: 'Settled In', icon: '', text: 'A jumper lived a full day in the biome it is native to, and feels at home.' },
-    { id: 'biomeTour', title: 'Biome Explorer', icon: '', text: 'You built a tank in each of the four biomes: rainforest, desert, paludarium and night moss.' },
     { id: 'finishWeak', title: 'Second Chance', icon: '', text: 'A jumper finished off a weakened escapee before it could recover.' },
   ];
   /** Journal chapters, plus a hint for entries you have not seen yet (what to set up to see them). */
-  JT.JOURNAL_CATS = [['hunt', 'Hunting'], ['grow', 'Growing up'], ['life', 'Daily life'], ['social', 'Jumpers together'], ['you', 'You & your jumpers'], ['species', 'Species specialities'], ['hybrid', 'Hybrid wonders'], ['biome', 'Biomes']];
+  JT.JOURNAL_CATS = [['hunt', 'Hunting'], ['grow', 'Growing up'], ['life', 'Daily life'], ['social', 'Jumpers together'], ['you', 'You & your jumpers'], ['species', 'Species specialities'], ['hybrid', 'Hybrid wonders']];
   JT.JOURNAL_META = {
     firstHunt: ['hunt', 'Release some food your jumper can handle and watch.'], ambushHigh: ['hunt', 'Give it a high perch above where prey wanders.'],
     ambushCover: ['hunt', 'Plants and hides let a jumper sneak up unseen.'], stepping: ['hunt', 'Closely spaced perches and branches make a route.'],
@@ -1559,93 +1596,8 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     prismDisplay: ['hybrid', 'Auralis (Peacock \u00d7 Emerald): keep walking prey near it and wait for its fan.'], glassGhost: ['hybrid', 'Hyalina (Ant Mimic \u00d7 Magnolia): watch it hunt; prey hardly see it coming.'],
     emberNight: ['hybrid', 'Ignicard (Regal Orange \u00d7 Cardinal): leave food in at night and watch.'], titanLeap: ['hybrid', 'Titanica (Giant \u00d7 Portia): cover and distant perches invite a detour and a leap.'],
     grandFinale: ['hybrid', 'Saltator (House \u00d7 Paradise): visit at the glass soon after it dances.'],
-    rainDrink: ['biome', 'Rainforest: wait for a rain shower and watch a thirsty jumper.'], heatBask: ['biome', 'Desert: rocks to rest on during a hot afternoon.'],
-    edgeHunt: ['biome', 'Paludarium: a pond, and prey wandering near the water.'], glowHunt: ['biome', 'Night moss forest: feed a hungry jumper and watch.'],
-    fireflyWatch: ['biome', 'Night moss forest: wait for a firefly swarm.'], settledIn: ['biome', 'Keep a jumper in its native biome for a day (check its card).'],
-    biomeTour: ['biome', 'Build one tank of each biome.'],
     fingerCurious: ['you', 'Tap or press and hold on the glass near a curious jumper.'], fingerShy: ['you', 'Shy jumpers do not like a finger close by.'],
   };
-
-  // ---------------- v12 Biomes ----------------
-  // A biome is a lasting property of a tank (like its shape): climate, mood lighting, native pieces and prey,
-  // weather events, and which jumpers feel at home there. Classic = the original neutral tank.
-  JT.BIOMES = {
-    classic: { name: 'Classic', icon: '\u{1FAB4}', short: 'Balanced \u00b7 any jumper', temp: 24, swing: 3, hum: null, light: 'Natural', homes: [], prey: [], native: [], events: [],
-      blurb: 'The original terrarium: no special climate, every jumper is comfortable.' },
-    rainforest: { name: 'Tropical Rainforest', icon: '\u{1F327}\uFE0F', short: 'Humid \u00b7 warm', temp: 27, swing: 2, hum: 0.85, light: 'Dappled', sub: 'jungle', bg: 'canopy', theme: 'rainforest', themeTall: 'rootwall', fx: 'mist',
-      native: ['heliconia', 'dripvine', 'wetlitter', 'bromeliad', 'monstera', 'fern', 'calathea', 'pothos', 'orchid', 'mosspatch'], prey: ['fruitfly', 'springtail', 'aphid', 'leafhopper'], events: ['rain'],
-      homes: ['regal', 'canopy', 'emerald', 'pantropical', 'bagheera', 'giant', 'titanica', 'paradise', 'saltator', 'hasarius'], tint: [0.96, 1.02, 0.95],
-      blurb: 'Steamy and green. Rain showers bead every leaf with water.' },
-    desert: { name: 'Arid Desert', icon: '\u2600\uFE0F', short: 'Dry \u00b7 hot', temp: 33, swing: 10, hum: 0.22, light: 'Blazing', sub: 'dune', bg: 'dunes', theme: 'dunes', themeTall: 'sandwall', fx: 'dust',
-      native: ['saguaro', 'barrelcactus', 'sandarch', 'succulent', 'echeveria', 'chollawood', 'baskrock', 'sandsteps', 'pebbles'], prey: ['cricket', 'darkling', 'locust', 'mealworm'], events: ['heat'],
-      homes: ['apache', 'johnson', 'cardinal', 'peacock', 'auralis', 'arc', 'ant', 'zebra', 'twinflag', 'orange'], tint: [1.07, 1.0, 0.88],
-      blurb: 'Hot days, cool nights. Heat makes desert jumpers quick and bold.' },
-    paludarium: { name: 'Mangrove Paludarium', icon: '\u{1F4A7}', short: 'Water \u00b7 roots', temp: 25, swing: 3, hum: 0.92, light: 'Soft', sub: 'mud', bg: 'mangrove', theme: 'mangrove', themeTall: 'rootwall', fx: 'ripples',
-      native: ['pond', 'lilypond', 'cattails', 'mudflat', 'mangrove', 'rootarch', 'driftwood', 'babytears', 'maidenhair', 'fern'], prey: ['mosquito', 'gnat', 'springtail', 'hydei'], events: ['hatch'],
-      homes: ['magnolia', 'hyalina', 'portia', 'putnam', 'pantropical'], tint: [0.94, 1.0, 1.03],
-      blurb: 'Half land, half water. Jumpers hunt the water\u2019s edge and drink at the shore.' },
-    nightmoss: { name: 'Night Moss Forest', icon: '\u{1F319}', short: 'Dark \u00b7 glowing', temp: 19, swing: 2, hum: 0.8, light: 'Moonlit', sub: 'black', bg: 'moonwood', theme: 'glowwood', themeTall: 'mosswall', fx: 'fireflies', dusk: 0.62,
-      native: ['glowmoss', 'bluefungus', 'ghostfern', 'glowshroom', 'cushionmoss', 'lichen', 'mossmound', 'inkcaps', 'hollowlog'], prey: ['moth', 'mealmoth', 'lacewing', 'springtail'], events: ['fireflies'],
-      homes: ['ignicard', 'graywall', 'imperial', 'portia'], tint: [0.8, 0.86, 1.06],
-      blurb: 'A cool, moonlit forest of glowing fungi. Fireflies lure moths to the light.' },
-  };
-  JT.BIOME_ORDER = ['classic', 'rainforest', 'desert', 'paludarium', 'nightmoss'];
-  JT.BIOME_EVENTS = {
-    rain: { name: 'Rain shower', line: 'Rain shower \u00b7 droplets bead on every leaf', dur: [50, 75] },
-    heat: { name: 'Hot afternoon', line: 'Hot afternoon \u00b7 desert jumpers warm up and speed along', dur: [60, 90], day: true },
-    hatch: { name: 'Evening hatch', line: 'Evening hatch \u00b7 tiny flies rise from the water', dur: [45, 70] },
-    fireflies: { name: 'Firefly swarm', line: 'Firefly swarm \u00b7 moths drift toward the glow', dur: [60, 90] },
-  };
-  const Biome = JT.Biome = {};
-  Biome.of = (hab) => JT.BIOMES[(hab && hab.data && hab.data.biome) || 'classic'] || JT.BIOMES.classic;
-  Biome.id = (hab) => (hab && hab.data && JT.BIOMES[hab.data.biome]) ? hab.data.biome : 'classic';
-  /** Home biomes of a species ([] = none in particular). Bold jumpers settle anywhere. */
-  Biome.homesOf = (spId) => JT.BIOME_ORDER.filter(b => (JT.BIOMES[b].homes || []).includes(spId));
-  Biome.isHome = (bid, spId) => ((JT.BIOMES[bid] || {}).homes || []).includes(spId);
-  /** Comfort 0..1: 1 at home, ~0.7 in a classic tank (or for adaptable species), ~0.45 out of place. */
-  Biome.comfortFor = (bid, spId) => { if (!bid || bid === 'classic') return 0.7; if (Biome.isHome(bid, spId)) return 1; const S = JT.SPECIES_BY_ID[spId]; return S && S.id === 'bold' ? 0.75 : 0.45; };
-  Biome.comfort = (hab, sp) => Biome.comfortFor(Biome.id(hab), sp.species);
-  Biome.label = (c) => c >= 0.95 ? 'At home' : c >= 0.6 ? 'Comfortable' : 'Out of place';
-  Biome.event = (hab) => { const e = hab && hab.data && hab.data.bev; return e && e.id && hab.time < e.until ? e : null; };
-  /** Movement speed: at home a touch livelier (and desert natives quicker in the heat); out of place a touch slower. */
-  Biome.speedK = (hab, sp) => { const c = Biome.comfort(hab, sp); let k = c >= 0.95 ? 1.06 : c < 0.6 ? 0.94 : 1; const e = Biome.event(hab); if (e && e.id === 'heat' && c >= 0.95) k *= 1.1; return k; };
-  /** Trust grows faster where a jumper feels at home. */
-  Biome.tameK = (hab, sp) => { const c = Biome.comfort(hab, sp); return c >= 0.95 ? 1.25 : c < 0.6 ? 0.85 : 1; };
-  /** Temperature in \u00b0C right now: biome base, day/night swing, and weather. */
-  Biome.temp = (hab) => { const B = Biome.of(hab); const dl = hab.daylight ? hab.daylight() : 1; let t = B.temp + B.swing * (dl - 0.5); const e = Biome.event(hab); if (e) t += e.id === 'heat' ? 4 : e.id === 'rain' ? -2 : 0; return Math.round(t); };
-  /** Slow pull of humidity toward the biome's natural level (misting still adds on top). */
-  Biome.climate = (hab, dt) => { const B = Biome.of(hab); if (B.hum == null) return; const d = hab.data; d.humidity = JT.M.clamp(d.humidity + (B.hum - d.humidity) * Math.min(1, dt * 0.004), 0.15, 1); };
-  /** Weather events and journal moments for the tank being viewed. */
-  Biome.tick = function (hab, dt) {
-    const bid = Biome.id(hab); if (bid === 'classic') return; const B = JT.BIOMES[bid], d = hab.data, now = hab.time;
-    const ev = d.bev || (d.bev = { id: null, until: 0, next: now + 70 + JT.R() * 80 });
-    if (ev.id && now >= ev.until) { hab.event('biome', { ev: ev.id, end: true }); ev.id = null; ev.next = now + 150 + JT.R() * 160; }
-    if (!ev.id && now >= ev.next) {
-      const ids = (B.events || []).filter(k => !JT.BIOME_EVENTS[k].day || hab.daylight() > 0.55);
-      if (!ids.length) { ev.next = now + 40; }
-      else { const k = ids[Math.floor(JT.R() * ids.length)], E = JT.BIOME_EVENTS[k]; ev.id = k; ev.t0 = now; ev.until = now + E.dur[0] + JT.R() * (E.dur[1] - E.dur[0]); Biome.start(hab, k); hab.event('biome', { ev: k }); }
-    }
-    const e = Biome.event(hab);
-    if (e && e.id === 'rain' && (!e.lastMist || now - e.lastMist > 18)) { e.lastMist = now; hab.mist(); }
-    // jumpers settling into their native biome (one in-game day there) and quiet unease out of place
-    hab._bmT = (hab._bmT || 0) + dt; if (hab._bmT < 2) return; const st = hab._bmT; hab._bmT = 0;
-    for (const sp of d.spiders) { const c = Biome.comfort(hab, sp);
-      if (c >= 0.95) { sp.homeT = (sp.homeT || 0) + st; if (sp.homeT >= (JT.DAY || 480) && !sp._homeJ) { sp._homeJ = true; hab.event('journal', { id: 'settledIn', sp }); } }
-      else if (c < 0.6 && JT.R() < 0.02 && !sp.target && ['idle', 'lookout', 'rest'].includes(sp.state)) sp.thought = 'Seems a little unsettled in this climate.';
-      if (e && e.id === 'heat' && sp.sup && sp.sup.k === 'top' && ['rest', 'lookout', 'idle', 'bask'].includes(sp.state)) { const dd = hab.decorById(sp.sup.d); const D = dd && JT.DECOR_BY_ID[dd.type]; if (D && D.arche === 'rock') hab.event('journal', { id: 'heatBask', sp }); }
-      if (e && e.id === 'fireflies' && ['lookout', 'watch', 'idle'].includes(sp.state) && JT.R() < 0.05) hab.event('journal', { id: 'fireflyWatch', sp }); }
-  };
-  /** What happens when a weather event begins. Native visitors respect the prey limit. */
-  Biome.start = function (hab, k) {
-    const B = Biome.of(hab); const visit = (ids, n) => { for (let i = 0; i < n; i++) { const id = ids[Math.floor(JT.R() * ids.length)]; if (JT.PREY_BY_ID[id] && hab.data.prey.length < JT.PREY_CAP - 2) hab.addPrey(id, 1); } };
-    if (k === 'rain') { hab.data.bev.lastMist = hab.time; hab.mist(); }
-    else if (k === 'hatch') visit(['mosquito', 'gnat'].filter(x => JT.PREY_BY_ID[x]), 2 + Math.floor(JT.R() * 2));
-    else if (k === 'fireflies') visit(['moth', 'mealmoth'].filter(x => JT.PREY_BY_ID[x]), 1 + Math.floor(JT.R() * 2));
-    void B;
-  };
-  /** Pond footprints (for edge-hunting journal moments and ripple effects). */
-  Biome.ponds = (hab) => hab.data.decor.filter(x => (JT.DECOR_BY_ID[x.type] || {}).arche === 'pond');
-  Biome.nearWater = (hab, pos, r) => Biome.ponds(hab).some(x => { const g = hab.geoms[x.id]; if (!g || !g.foot) return false; const c = JT.G.centroid(g.foot); const R = Math.max(...g.foot.map(q => Math.hypot(q[0] - c[0], q[1] - c[1]))); return Math.hypot(pos[0] - c[0], pos[2] - c[1]) < R + (r || 12); });
 
   // ---------------- Presets ----------------
   // Themes: weighted pools. Generated adaptively for any enclosure shape.
@@ -1673,12 +1625,12 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     rootwall: { sub: 'jungle',  bg: 'canopy', tall: ['rootwall', 'mangrove'], mid: ['wm_pothos', 'wm_cork', 'vinebridge', 'rootarch'], plants: ['monstera', 'calathea', 'fern', 'pothos', 'bromeliad'], ground: ['leaflitter', 'magnolia'], back: true },
     sandwall: { sub: 'desert',  bg: 'twilight', tall: ['sandwall', 'forked'], mid: ['wm_drift', 'wm_slate', 'sandshelf', 'rockcave', 'chollawood', 'baskrock'], plants: ['succulent', 'echeveria', 'driedflowers', 'airplant'], ground: ['pebbles', 'twigs'], back: true },
     driftwall: { sub: 'clay',   bg: 'twilight', tall: ['driftwall', 'driftwood'], mid: ['wm_drift', 'wm_staghorn', 'wm_drift', 'flatstone'], plants: ['airplant', 'succulent', 'tallgrass', 'redbromeliad'], ground: ['pebbles', 'lichen'], back: true },
-    // v12 biome themes (used by biome starter layouts)
-    rainforest: { sub: 'jungle', bg: 'canopy', tall: ['ficus', 'tallficus', 'mangrove'], mid: ['corkbark', 'rootarch', 'vinebridge', 'hollowlog'], plants: ['heliconia', 'monstera', 'dripvine', 'calathea', 'fern', 'bromeliad', 'orchid'], ground: ['wetlitter', 'mosspatch'] },
-    dunes:    { sub: 'dune',   bg: 'dunes',   tall: ['saguaro', 'chollawood'], mid: ['sandarch', 'baskrock', 'sandsteps', 'rockmesa'], plants: ['barrelcactus', 'succulent', 'echeveria', 'driedflowers', 'barrelcactus'], ground: ['pebbles', 'twigs'] },
-    mangrove: { sub: 'mud',    bg: 'mangrove', tall: ['mangrove', 'tallficus'], mid: ['rootarch', 'driftwood', 'hollowlog'], plants: ['cattails', 'fern', 'maidenhair', 'cattails', 'babytears'], ground: ['mudflat', 'mosspatch'] },
-    glowwood: { sub: 'black',  bg: 'moonwood', tall: ['tinytree', 'forked'], mid: ['hollowlog', 'mossmound', 'corkbark', 'riverstone'], plants: ['bluefungus', 'ghostfern', 'glowshroom', 'bluefungus', 'inkcaps'], ground: ['glowmoss', 'cushionmoss', 'lichen'] },
     feeding:  { sub: 'coco',   bg: 'mossy',   tall: ['branchperch'], mid: ['feedledge', 'corkbark', 'nanoledge'], plants: ['pothos', 'fern'], ground: ['mosspatch'] },
+    // v12 themes: built from the new pieces, each with a clear hunting idea (high lookout perch, mid ledges for stalking, cover low for prey)
+    birch:    { sub: 'leafmould', bg: 'misty', tall: ['olivetree', 'birchperch'], mid: ['birchtube', 'birchperch', 'lichenboulder', 'vinebranch'], plants: ['silverfern', 'lacefern', 'foxglove', 'bluecaps', 'sedge'], ground: ['birchleaves', 'acorns', 'sphagnum'] },
+    duskglade: { sub: 'peat',  bg: 'dusk',    tall: ['olivetree', 'vinebranch'], mid: ['claypipe', 'stonecave', 'rivercairn', 'birchperch'], plants: ['marigold', 'buttercups', 'firebromeliad', 'fanpalm', 'sedge'], ground: ['cocochips', 'acorns'] },
+    outback:  { sub: 'redsand', bg: 'twilight', tall: ['forked'], mid: ['sandmesa', 'claypipe', 'stonecave', 'baskrock', 'chollawood'], plants: ['earthstar', 'succulent', 'airplant', 'driedflowers'], ground: ['gravelpatch', 'pebbles'] },
+    bog:      { sub: 'peat',   bg: 'misty',   tall: ['jadetree', 'tinytree'], mid: ['riverhide', 'rivercairn', 'lichenboulder', 'corkround', 'twigperch'], plants: ['fittonia', 'peperomia', 'mosscurtain', 'flyagaric', 'silverfern'], ground: ['sphagnum', 'mosspatch'] },
   };
   // preset name -> [theme, habitat types]
   JT.PRESETS = [
@@ -1692,6 +1644,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     ['Woodland Panorama', 'forest', ['panoramic']], ['Garden Walk', 'flower', ['panoramic']], ['Canyon Run', 'canyon', ['panoramic']], ['Showcase Jungle', 'jungle', ['panoramic']], ['Panoramic Ruin', 'ruin', ['panoramic']],
     ['Moss Tower', 'mosswall', ['tower', 'arboreal', 'cube']], ['Mushroom Wall', 'mosswall', ['tower', 'standard']], ['Cork Bark Tower', 'barkwall', ['tower', 'arboreal']], ['Stone Garden Wall', 'stonewall', ['tower', 'cube']], ['Autumn Leaf Wall', 'leafwall', ['tower', 'standard']], ['Old Oak Trunk', 'trunkwall', ['tower', 'arboreal']], ['Root Cellar', 'rootwall', ['tower', 'cube']], ['Sandstone Cliff', 'sandwall', ['tower', 'wide']], ['Driftwood Shore', 'driftwall', ['tower', 'standard']], ['Tower Canopy', 'vertical', ['tower']], ['Tower Jungle', 'jungle', ['tower']],
         ['Jar Jungle', 'jungle', ['jar']], ['Moss Lantern', 'mushroom', ['jar']], ['Vine Spiral', 'vertical', ['jar']], ['Flower Jar', 'flower', ['jar']], ['Vertical Cork Jar', 'cork', ['jar']],
+    ['Misty Birch Wood', 'birch', ['standard', 'wide', 'cube']], ['Golden Dusk Glade', 'duskglade', ['standard', 'wide', 'panoramic']], ['Red Sand Outback', 'outback', ['wide', 'panoramic', 'standard']], ['Peat Bog Garden', 'bog', ['standard', 'cube', 'nano', 'breeder']],
   ];
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1801,30 +1754,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     addFaces(B, base, G.scalePoly(base, 0.8), 0, p.h, ti, 3);
     for (let i = 0; i < 3; i++) { const a = i * 2.1; B.water.push({ local: [Math.cos(a) * p.r * 0.55, p.h, Math.sin(a) * p.r * 0.55], top: ti, permanent: true }); }
     B.height = p.h; B.coverR = p.r;
-  };
-  /** v12 pond: open water set into the floor. Walkers go round it (solid, no top); drinking spots sit on the floor at its edge. */
-  ARCH.pond = function (B, p) {
-    const rng = B.rng; const base = rockPoly(rng, p.w, p.d, 16, 0.07);
-    B.prim({ t: 'prism', poly: base, y0: 0, y1: p.h, style: 'pond' });
-    B.solids.push(base);
-    for (let i = 0; i < 4; i++) { const q = base[Math.floor((i + 0.5) * base.length / 4)]; B.water.push({ local: [q[0] * 1.12, 0, q[1] * 1.12], floor: true, permanent: true }); }
-    if (p.lilies) { for (let i = 0; i < p.lilies; i++) { const a = rng() * 6.28, rr = Math.sqrt(rng()) * 0.62; const o = [Math.cos(a) * p.w * 0.5 * rr, p.h + 0.18, Math.sin(a) * p.d * 0.5 * rr];
-        leaf(B, o, rng() * 6.28, 4.5 + rng() * 2.5, 3.6 + rng() * 1.2, shade('#5f9a3e', (rng() - .5) * .25), '#3d6b27', 'round', 0, p.h + 0.2);
-        if (i === 1 || i === 4) B.prim({ t: 'bloom', o: [o[0] + 1, o[1] + 0.8, o[2]], r: 2.6, col: '#f4c6dc', col2: '#f8e070', kind: 'poppy', h: p.h + 1, ang: a }); } }
-    B.height = p.h + 1; B.coverR = Math.max(p.w, p.d) * 0.5;
-  };
-  /** v12 sandstone arch: two pillars and a slab bridge; climb the corners, perch on top, shelter beneath. */
-  ARCH.rockarch = function (B, p, sc) {
-    const rng = B.rng, h = Math.max(16, p.h * sc), w = p.w, d = p.d, pw = w * 0.27, th = Math.min(8, h * 0.24);
-    const pil = (sx) => rockPoly(rng, pw, d * 0.92, 8, 0.1).map(q => [q[0] + sx * (w / 2 - pw / 2), q[1]]);
-    const L = pil(-1), R = pil(1);
-    B.prim({ t: 'prism', poly: L, y0: 0, y1: h - th, style: p.style, layer: 0 }); B.prim({ t: 'prism', poly: R, y0: 0, y1: h - th, style: p.style, layer: 1 });
-    const slab = rectPoly(w, d, d * 0.3).map(q => [q[0] + (rng() - 0.5) * 1.5, q[1] + (rng() - 0.5) * 1.5]);
-    B.prim({ t: 'prism', poly: slab, y0: h - th, y1: h, style: p.style, layer: 2, curved: true });
-    B.solids.push(L); B.solids.push(R);
-    const ti = B.top(G.scalePoly(slab, 0.94), h);
-    addFaces(B, slab, G.scalePoly(slab, 0.94), 0, h, ti, 4);
-    B.height = h; B.coverR = w * 0.5;
   };
   /** Basking lamp: weighted foot, brass pole and arm, a small dome shade that throws a warm pool of light below. */
   ARCH.lamp = function (B, p, sc) {
@@ -2193,7 +2122,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       const pts = []; for (let s = 0; s <= 6; s++) { const t = s / 6; const out = p.arch ? Math.sin(t * Math.PI * 0.5) * L : t * t * L * 0.5; const y = p.arch ? Math.sin(t * Math.PI * 0.75) * H : t * H; pts.push([base[0] + Math.cos(a) * out, y, base[2] + Math.sin(a) * out * 0.8]); }
       B.prim({ t: 'tube', pts, r0: p.arch ? 1.2 : 0.8, r1: 0.1, col: shade(p.leaf, (rng() - 0.5) * 0.3), style: 'blade', stripe: p.stripe || null });
       if (i % 3 === 0 && navCount < 5) { B.path(pts.slice(0, 6), 0.4, 'blade', { flex: 1 }); navCount++; }
-      if (p.heads && i % 2 === 0) B.prim({ t: 'tube', pts: [pts[4], M.lerp3(pts[4], pts[5], 0.5), pts[5]], r0: 1.15, r1: 1.05, col: p.heads, style: 'stem' }); // v12 cattail heads
     }
     B.height = p.h * sc; B.coverR = Math.max(10, p.L * 0.8);
   };
@@ -2252,7 +2180,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     const wrap = []; for (let i = 0; i <= 30; i++) { const t = i / 30; const q = stake[Math.min(9, Math.floor(t * 9))]; wrap.push([q[0] + Math.cos(t * 22) * 1.8, t * H, q[2] + Math.sin(t * 22) * 1.8]); }
     B.prim({ t: 'tube', pts: wrap, r0: 0.6, r1: 0.4, col: shade(p.leaf, -0.3), style: 'vine' });
     for (let i = 2; i < 30; i += 1) { if (rng() < 0.3) continue; const q = wrap[i]; leaf(B, q, i * 1.7, p.ivy ? 5 : 4, p.ivy ? 3 : 2.6, shade(p.leaf, (rng() - .5) * .2), null, p.ivy ? 'ivy' : 'heart', (rng() - .4) * 0.8, q[1]); }
-    if (p.drip) for (let i = 5; i < 30; i += 6) { const q = wrap[i]; B.water.push({ local: q.slice(), path: 0, permanent: true }); B.prim({ t: 'bloom', o: [q[0] + 1.2, q[1] - 1.2, q[2] + 1.2], r: 0.9, col: '#cfe8f8', kind: 'bud', h: q[1] }); } // v12 dripping vine: beads of water to drink
     if (p.ivy) for (let i = 0; i < 12; i++) { const a = rng() * 6.28, rr = 4 + rng() * 10; leaf(B, [Math.cos(a) * rr, 0.5, Math.sin(a) * rr * 0.8], rng() * 6.28, 4.5, 3, shade(p.leaf, (rng() - .5) * .2), null, 'ivy', 0.1, 0.5); }
     B.height = H + 3; B.coverR = 9;
   };
@@ -2276,32 +2203,12 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     }
     B.height = p.h * sc + 4; B.coverR = 9;
   };
-  /** v12 cacti: a tall saguaro with climbable arms, or a cluster of squat flowering barrels. */
-  ARCH.cactus = function (B, p, sc) {
-    const rng = B.rng, H = Math.max(8, p.h * sc), col = p.col || '#5f8f4a';
-    if (p.kind === 'barrel') {
-      for (let i = 0; i < (p.n || 3); i++) { const a = i / (p.n || 3) * 6.28 + rng(), rr = i ? 5.5 + rng() * 2.5 : 0; const h = H * (i ? 0.55 + rng() * 0.3 : 1), r = p.r * (i ? 0.72 : 1);
-        const o = [Math.cos(a) * rr, 0, Math.sin(a) * rr * 0.8]; const pts = [[o[0], 0, o[2]], [o[0], h * 0.4, o[2]], [o[0], h * 0.8, o[2]], [o[0], h, o[2]]];
-        B.prim({ t: 'tube', pts, r0: r, r1: r * 0.78, col: shade(col, (rng() - .5) * .16), style: 'stem' });
-        B.prim({ t: 'bloom', o: [o[0], h + 0.5, o[2]], r: r * 0.55, col: p.bloom || '#f08aa8', col2: '#f8e070', kind: 'poppy', h, ang: a });
-        B.path(pts.concat([[o[0], h + r * 0.3, o[2]]]), r * 0.8, 'stem', { flex: 0 }); }
-      B.height = H + 3; B.coverR = 9; return;
-    }
-    const r = p.r; const trunk = bez([0, 0, 0], [0.6, H * 0.5, 0.3], [0, H, 0], 8);
-    B.prim({ t: 'tube', pts: trunk, r0: r, r1: r * 0.86, col, style: 'stem' }); B.path(trunk, r * 0.85, 'stem', { flex: 0, perch: true });
-    B.prim({ t: 'bloom', o: [0, H + r * 0.5, 0], r: r * 0.6, col: p.bloom || '#f4f0e0', col2: '#f8e070', kind: 'poppy', h: H, ang: 0 });
-    for (let k = 0; k < (p.arms || 2); k++) { const sx = k % 2 ? -1 : 1, y0 = H * (0.32 + 0.14 * k), zz = (rng() - 0.5) * 3, reach = r + 6 + rng() * 2;
-      const arm = [[sx * r * 0.5, y0, zz], [sx * (r + 3), y0 + 0.5, zz], [sx * reach, y0 + 3, zz], [sx * reach, y0 + H * 0.18, zz], [sx * reach, y0 + H * 0.3, zz]];
-      B.prim({ t: 'tube', pts: arm, r0: r * 0.62, r1: r * 0.55, col: shade(col, 0.04), style: 'stem' }); B.path(arm, r * 0.55, 'stem', { flex: 0, perch: true }); }
-    B.height = H + 3; B.coverR = 10;
-  };
   ARCH.scatter = function (B, p) {
     const rng = B.rng, r = p.r, k = p.kind;
     const rp = () => { const a = rng() * 6.28, rr = Math.sqrt(rng()) * r; return [Math.cos(a) * rr, 0.25, Math.sin(a) * rr * 0.7]; };
     if (k === 'moss' || k === 'lichen' || k === 'clover') {
       const blobs = []; for (let i = 0; i < (k === 'clover' ? 26 : 50); i++) { const q = rp(); blobs.push([q[0], q[2], 1.5 + rng() * 3, (rng() - .5) * .3]); }
       B.prim({ t: 'moss', blobs, col: p.col, kind: k });
-      if (p.glow) for (let i = 0; i < (p.n || 8); i++) { const q = rp(); B.prim({ t: 'cap', o: [q[0], 0.4, q[2]], r: 0.9 + rng() * 0.7, col: '#d8fff0', glow: p.glow, h: 0.6 }); } // v12 glow moss
     } else if (k === 'pebbles' || k === 'pods' || k === 'cones') {
       for (let i = 0; i < p.n; i++) { const q = rp(); B.prim({ t: 'pebble', o: q, r: k === 'cones' ? 4 : k === 'pods' ? 2.5 : 1.4 + rng() * 2.2, col: shade(p.col, (rng() - .5) * .3), kind: k, ang: rng() * 6.28 }); }
     } else if (k === 'twigs' || k === 'chips') {
@@ -2426,7 +2333,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     for (const pa of g.paths) for (const pt of pa.pts) if (pt[1] - baseY < 1.25) g.contacts.push([pt[0], pt[2]]);
     g.center = [inst.x, baseY, inst.z];
     if (B.front) { g.front = B.front.map(X.P2); g.out = X.V([0, 0, -1]); g.wallH = B.height - 4; }
-    if (def.arche === 'wallmount') { g.center = [inst.x, inst.my || 40, inst.z]; g.foot = G.circlePoly(inst.x, inst.z, (def.p.w || 14) / 2, 3, 8); }
+    if (def.arche === 'wallmount') { g.center = [inst.x, inst.my || 40, inst.z]; g.wallOut = X.V([0, 0, -1]); g.foot = G.circlePoly(inst.x, inst.z, (def.p.w || 14) / 2, 3, 8); }
     if (B.lampLocal) { const hd = X.P(B.lampLocal); g.lamp = { head: hd, pool: [hd[0], baseY, hd[2]], r: def.p.pool || 24 }; g.lampOn = inst.on !== false; }
     g.flexible = g.paths.some(p => p.flex > 0.2) || def.cat === 'plants';
     if (look && def.arche === 'wallmount') { Geo.wallTint(g.prims, look); g.look = look.style + '|' + look.cols.side; }
@@ -2522,6 +2429,11 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       const r = nav.regions[supRegion(inst)]; if (r) for (const s of g.solids) r.obstacles.push(s);
     }
     for (const inst of hab.decor) { const g = geoms[inst.id]; if (!g || !g.soft || !g.soft.length) continue; const r = nav.regions[supRegion(inst)]; if (r) for (const s of g.soft) r.obstacles.push(s); }
+    // a piece's own higher layers standing on one of its tops (slate stacks, wall tiers, steps) block that part of the top
+    for (const inst of hab.decor) { const g = geoms[inst.id]; if (!g) continue;
+      g.tops.forEach((t, i) => { const r = nav.regions['T|' + inst.id + '|' + i]; if (!r) return;
+        for (const pr of g.prims) { if (pr.t !== 'prism' || !pr.poly || !(pr.y0 <= t.y + 0.3 && pr.y1 > t.y + 0.8)) continue;
+          const h = G.hull(pr.poly.concat(pr.topPoly || [])); if (h.length < 3) continue; h.soft = true; r.obstacles.push(h); } }); }
     const addNode = (n) => { n.id = nav.nodes.length; nav.nodes.push(n); nav.adj.push([]); if (n.region) nav.regions[n.region].nodes.push(n.id); return n.id; };
     const addEdge = (a, b, e) => { nav.adj[a].push(Object.assign({ to: b }, e)); };
     const both = (a, b, e) => { addEdge(a, b, e); addEdge(b, a, Object.assign({}, e, e.s != null ? { rev: true } : {})); };
@@ -2644,8 +2556,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     for (const inst of hab.decor) {
       const g = geoms[inst.id]; if (!g) continue;
       for (const w of g.water) {
-        if (w.floor) { const q = Nav.clampInside ? Nav.clampInside(hab, w.pos[0], w.pos[2], 4) : [w.pos[0], w.pos[2]]; nav.water.push({ pos: [q[0], 0, q[1]], sup: { k: 'floor' }, decor: inst.id, permanent: true }); } // v12 pond edge
-        else if (w.top != null) nav.water.push({ pos: w.pos, sup: { k: 'top', d: inst.id, i: w.top }, decor: inst.id, permanent: true });
+        if (w.top != null) nav.water.push({ pos: w.pos, sup: { k: 'top', d: inst.id, i: w.top }, decor: inst.id, permanent: true });
         else { const n = Nav.nearestNodeOfDecor(nav, inst.id, w.pos); if (n) nav.water.push({ pos: n.pos, sup: n.sup, decor: inst.id, permanent: true }); }
       }
     }
@@ -2720,12 +2631,38 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     if (!n) {
       const ty = Math.abs(tan[1]);
       let side = pa.side;
+      if (!side && g.wallOut) side = g.wallOut; // wall-mounted pieces: climbers keep their belly flat to the wall ("||", never "-|")
       if (!side) { const c = g.center; const dx = a[0] - c[0], dz = a[2] - c[2]; const l = Math.hypot(dx, dz); side = l > 1.5 ? [dx / l, 0, dz / l] : [0, 0, -1]; }
+      if (ty > 0.5 && !pa.side) side = Nav.freeSide(g, pa, sup.s, a, b, side); // never put the belly against the piece's own cap / fork / neighbour stem
       n = M.norm(M.add(M.mul([0, 1, 0], 1 - ty), M.mul(side, ty + 0.05)));
     }
     // orthogonalize against tangent
     n = M.norm(M.sub(n, M.mul(tan, M.dot(n, tan))));
-    return { n, tan, r: pa.r, flex: pa.flex };
+    // clearance from the piece's real mesh (trunk flare, branch forks, mushroom caps, stacked layers), not the path's nominal radius
+    const ex = Nav.exitR(g, pa, sup.s, a, b, n); const tt = M.clamp(sup.t || 0, 0, 1);
+    const r = tt < 0.5 ? M.lerp(ex[0], ex[1], tt * 2) : M.lerp(ex[1], ex[2], tt * 2 - 1);
+    return { n, tan, r, flex: pa.flex, r0: pa.r };
+  };
+  /** How far a body must sit from a path's centre line (along its surface normal) to clear the piece's own mesh.
+      Per segment: start, middle, end; cached on the path (geometry is rebuilt whenever the piece changes). */
+  /** For an upright segment: if the default belly side runs into the piece's own mesh, pick the most open horizontal side instead (cached). */
+  Nav.freeSide = function (g, pa, s, a, b, side) {
+    const fc = pa._fs || (pa._fs = []); if (fc[s] !== undefined) return fc[s] || side;
+    const S = JT.Solid; let out = 0;
+    if (S && g.prims) { const q = M.lerp3(a, b, 0.5); const dep = (d) => { const h = S.at(g, M.add(q, M.mul(d, pa.r + 1.2)), 0); return h ? h.d : 0; };
+      const d0 = dep(side); if (d0 > 0.05) { let best = null, bs = 1e9;
+        for (let j = 0; j < 16; j++) { const an = j / 16 * 6.2832; const d = [Math.cos(an), 0, Math.sin(an)]; const sc = dep(d) + 0.03 * (1 - M.dot(d, side)); if (sc < bs) { bs = sc; best = d; } }
+        if (best && bs < d0) out = best; } }
+    fc[s] = out; return out || side;
+  };
+  Nav.exitR = function (g, pa, s, a, b, n) {
+    const rc = pa._rr || (pa._rr = []); if (rc[s]) return rc[s];
+    const S = JT.Solid; if (!S || !g.prims) return (rc[s] = [pa.r, pa.r, pa.r]);
+    const list = g._exitList || (g._exitList = S.of(g).list.concat(g.prims.filter(pr => pr.t === 'tube' && pr.pts && pr.style !== 'blade' && pr.style !== 'plank' && Math.max(pr.r0, pr.r1) < 0.8 && Math.max(pr.r0, pr.r1) >= 0.2)));
+    const deep = (q) => { let d = 0; for (const pr of list) { const v = S.depth(q, pr); if (v > d) d = v; } return d; };
+    const one = (q) => { let t = pa.r; let d = deep(M.add(q, M.mul(n, t))); if (d < 0.04) return t;
+      for (let k = 0; k < 24 && t < 16; k++) { t += Math.max(0.12, d * 0.9); d = deep(M.add(q, M.mul(n, t))); if (d < 0.04) return t + 0.1; } return pa.r; };
+    return (rc[s] = [one(a), one(M.lerp3(a, b, 0.5)), one(b)]);
   };
 
   /** Graph attachment points for an arbitrary supported position. */
@@ -3230,7 +3167,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       if (!this.game) this._t = (this._t || 0) + dt;
       const d = this.data;
       d.humidity = Math.max(0.15, d.humidity - dt * 0.0012 * (1.2 - (JT.SUBSTRATES[d.substrate] || {}).moist || 0.5));
-      if (JT.Biome) JT.Biome.climate(this, dt); // v12: humidity drifts toward the biome's natural level
       if (!full) { JT.SpiderAI.liteUpdate(this, dt); return; }
       for (const s of d.spiders.slice()) if (d.spiders.includes(s)) JT.SpiderAI.update(this, s, dt);
       for (const p of d.prey.slice()) if (d.prey.includes(p)) JT.PreyAI.update(this, p, dt);
@@ -3500,7 +3436,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
   AI.ratioOf = (sp, e) => (e.species ? AI.len(e) : (e.len || (JT.PREY_BY_ID[e.type] || { len: 3 }).len || 3)) / Math.max(0.5, AI.len(sp));
   /** Soft after a molt, or getting ready to molt: no big fights. */
   AI.fragile = (sp) => sp.soft > 0 || MOLT.has(sp.state) || AI.moltReady(sp);
-  const KICKERS = new Set(['cricket', 'pinhead', 'leafhopper', 'locust', 'redrunner']);
+  const KICKERS = new Set(['cricket', 'pinhead', 'leafhopper', 'locust', 'redrunner', 'katydid', 'silverfish']);
   const TINY = AI.TINY = new Set(['aphid', 'fruitfly', 'gnat']);
   const famOf = (p) => JT.STRUGGLE[JT.preyFamily(p && JT.PREY_BY_ID[p.type])] || JT.STRUGGLE.feeble;
   AI.famOf = famOf;
@@ -3682,6 +3618,12 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     if (sp._wary && sp._wary[e.id] > hab.time && !wk) s -= 6; // the one that just threw it off
     if (wk > 0) s += 3 + wk * 4;
     if (e.sup && e.sup.k === 'air') s -= 1.5;
+    if (!isSpider) {
+      // v12 smart AI: learn per prey type from its own catches and misses
+      const pt = sp.mem.ptype && sp.mem.ptype[e.type]; if (pt) s += ((pt.c + 1) / (pt.c + pt.m + 2) - 0.5) * 3;
+      // v12 smart AI: don't fight a tankmate for the same prey unless hungry
+      if (!starving && !wk) { const sps = hab.data.spiders; for (let i = 0; i < sps.length; i++) { const o = sps[i]; if (o !== sp && o.target && o.target.id === e.id) { s -= M.dist(o.pos, e.pos) < M.dist(sp.pos, e.pos) ? 4 : 1.5; break; } } }
+    }
     if (isSpider) s -= 2;
     return s;
   }
@@ -3895,8 +3837,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     } else sp._prepT = 0;
     const gk = !urgent && !sp._air && sp._gaitK != null && (!HUNT.has(sp.state) || gaitOf(sp) === GAIT.choppy) ? sp._gaitK : 1; // species gait: bursts and pauses (never mid-air; hunts stay smooth except Portia's choppy stalk)
     const ek = sp_(sp).sig === 'ember' ? emberK(hab, sp) : 1;
-    const bk = JT.Biome ? JT.Biome.speedK(hab, sp) : 1; // v12: livelier at home, slower out of place
-    return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1) * gk * ek * bk, {
+    return Loco.follow(hab, sp, dt, AI.speed(sp) * (mult || 1) * gk * ek, {
       onLaunch: (st) => { if (st.mode === 'jump') { sp._anchor = sp.pos.slice(); hab.event('jump', { sp }); if (JT.sigHas(sp_(sp), 'leap') && st.pos && M.dist(st.pos, sp.pos) > AI.len(sp) * 1.2 + 12) { sp.thought = 'A huge power leap across the tank!'; hab.event('bigLeap', { sp, to: st.pos.slice() }); hab.event('journal', { id: 'giantLeap', sp }); if (sp_(sp).sig === 'titan' && sp._detourT > hab.time - 60) hab.event('journal', { id: 'titanLeap', sp }); } } },
       onLand: (st) => { if (sp._anchor) { hab.addSilk(sp._anchor, sp.pos, 'drag'); sp._anchor = null; hab.event('journal', { id: 'safety', sp, soft: true }); } },
       onStep: (d, dir) => { if (JT.R() < 0.12) hab.nudge(d, dir[0] * AI.len(sp) * 0.08, dir[2] * AI.len(sp) * 0.08); },
@@ -4385,6 +4326,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     sp.mem.misses = (sp.mem.misses || 0) + 1; sp.mem.failPos = sp.pos.slice(); sp.stats.misses++;
     hab.event('miss', { sp });
     JT.PreyAI.alarm(hab, sp.pos, 24, 0.85, null, sp);
+    if (e && e.type && sp.target && sp.target.kind === 'prey') { const pt = sp.mem.ptype || (sp.mem.ptype = {}); const r = pt[e.type] || (pt[e.type] = { c: 0, m: 0 }); r.m++; }
     if (e) {
       if (sp.target && sp.target.kind === 'prey') JT.PreyAI.escape(hab, e, sp, false);
       sp._tMiss = (sp._tMiss || 0) + 1;
@@ -4407,6 +4349,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     prey.owner = sp.id; prey.state = 'held'; prey._route = null; prey._air = null; prey.full = 1; prey.buried = false;
     sp.hold = prey.id; sp.target = null; sp.mem.misses = 0; sp._tMiss = 0;
     sp.mem.success[strat] = (sp.mem.success[strat] || 0) + 1;
+    if (!isSpider && e && e.type) { const pt = sp.mem.ptype || (sp.mem.ptype = {}); const r = pt[e.type] || (pt[e.type] = { c: 0, m: 0 }); r.c++; }
     const def = JT.PREY_BY_ID[prey.type];
     if (prey.type === 'tinyjumper') hab.event('journal', { id: 'tinyCatch', sp });
     sp._catchRatio = AI.ratioOf(sp, prey); sp._catchWeak = JT.PreyAI.weakK ? JT.PreyAI.weakK(prey) : 0; prey.weak = null; prey._flip = 0;
@@ -4631,7 +4574,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
      Allowed: the tank floor, flat tops of free-standing decor (rock, cork, log, hide, ruin...) and the back wall
      itself (its rim and built-in ledges, if roomy enough). Never: plants, flowers, stems, branches, vines, sides,
      wall-mounted decorations, the flower pot or the water dish. */
-  const NEST_BAN_ARCHE = new Set(['wallmount', 'dish', 'scatter', 'pond']);
+  const NEST_BAN_ARCHE = new Set(['wallmount', 'dish', 'scatter']);
   const NEST_BAN_TYPE = new Set(['flowerpot', 'waterdish']);
   function edgeDist(x, z, poly) { let d = 1e9; for (let i = 0, n = poly.length; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; const ex = b[0] - a[0], ez = b[1] - a[1]; const l2 = ex * ex + ez * ez || 1e-9; const t = M.clamp(((x - a[0]) * ex + (z - a[1]) * ez) / l2, 0, 1); d = Math.min(d, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t)); } return d; }
   AI.nestRoom = (L) => L * 0.6 + 0.4;
@@ -4744,7 +4687,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     if (sp.st > 3) {
       sp.hyd = Math.min(1, sp.hyd + 0.55);
       if (sp._drink && sp._drink.id) hab.data.drops = hab.data.drops.filter(d => d.id !== sp._drink.id);
-      sp._drink = null; hab.event('journal', { id: 'drink', sp }); { const be = JT.Biome && JT.Biome.event(hab); if (be && be.id === 'rain') hab.event('journal', { id: 'rainDrink', sp }); }
+      sp._drink = null; hab.event('journal', { id: 'drink', sp });
       setState(sp, 'groom', 'Refreshed. Wiping its palps.');
     }
   };
@@ -4818,12 +4761,12 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     }
     if (has('aloof') && tame < 0.6 && JT.R() < 0.7) return; // a glance is all you get
     if (cur > 0.75 || (cur > 0.45 && JT.R() < cur)) {
-      sp.tame = Math.min(1, tame + 0.035 * (sp_(sp).sig === 'saltator' ? 2 : 1) * (JT.Biome ? JT.Biome.tameK(hab, sp) : 1)); // Saltator: warms to you twice as fast
+      sp.tame = Math.min(1, tame + 0.035 * (sp_(sp).sig === 'saltator' ? 2 : 1)); // Saltator: warms to you twice as fast
       if (JT.sigHas(sp_(sp), 'semaphore') && JT.R() < (sp_(sp).sig === 'saltator' ? 0.85 : 0.6)) { setState(sp, 'semaphore', sp_(sp).sig === 'saltator' ? 'Waving back at your finger, white-gloved palps flashing!' : 'Waving its bright white palps at your finger like semaphore flags!'); if (sp_(sp).sig === 'saltator' && sp._finaleT > hab.time - 240) hab.event('journal', { id: 'grandFinale', sp }); hab.event('finger', { sp, kind: 'curious' }); hab.event('journal', { id: 'semaphore', sp }); hab.event('journal', { id: 'fingerCurious', sp }); return; }
       setState(sp, 'curious', tame > 0.6 ? 'Recognises your finger — tilting its head to greet you.' : 'Turns all its eyes on your finger, head tilting.');
       hab.event('finger', { sp, kind: 'curious' }); hab.event('journal', { id: 'fingerCurious', sp }); return;
     }
-    sp.tame = Math.min(1, tame + 0.015 * (JT.Biome ? JT.Biome.tameK(hab, sp) : 1));
+    sp.tame = Math.min(1, tame + 0.015);
     setState(sp, 'fingerWatch', 'Watching your finger through the glass.');
   };
   function fingerLive(hab, sp) { const f = hab.finger; return f && f.pos && hab.time - f.t < (f.held ? 0.8 : 2) ? f : null; }
@@ -4846,7 +4789,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     }
     if (!sp._route) {
       const idle = hab.time - (sp._fingerT || 0);
-      if (idle > 2.5 || sp.st > 14) { sp.tame = Math.min(1, (sp.tame || 0) + 0.02 * (JT.Biome ? JT.Biome.tameK(hab, sp) : 1)); setState(sp, 'lookout', (sp.tame || 0) > 0.6 ? 'Settles back, unbothered — it knows you.' : 'Goes back to its own business.'); sp._watchPos = null; }
+      if (idle > 2.5 || sp.st > 14) { sp.tame = Math.min(1, (sp.tame || 0) + 0.02); setState(sp, 'lookout', (sp.tame || 0) > 0.6 ? 'Settles back, unbothered — it knows you.' : 'Goes back to its own business.'); sp._watchPos = null; }
     }
   };
 
@@ -5708,10 +5651,10 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
   /** Generate a calm, minimal themed layout for the target enclosure: one hero piece off-centre at the back, a
       quieter partner on the other third, small plant groups tucked round their bases, a little ground cover and
       open floor left in front (room to watch a hunt). Mirrored at random so presets don't all look alike. */
-  P.generate = function (hab, themeId, seed, vary, keep) {
+  P.generate = function (hab, themeId, seed, vary) {
     const th = JT.PRESET_THEMES[themeId]; if (!th) return;
     const rng = JT.makeRng(seed || ((JT.R() * 1e9) | 0));
-    hab.data.decor = keep ? keep.slice() : []; hab.rebuild(); // v12: biome layouts keep their pond and build around it
+    hab.data.decor = []; hab.rebuild();
     hab.data.substrate = th.sub; hab.data.bg = th.bg;
     const t = hab.data.type, W = hab.dims.w, D = hab.dims.d;
     const compact = t === 'nano' || t === 'breeder', wide = W >= 240, tall = hab.dims.h >= 140;
@@ -5803,21 +5746,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     return ok;
   };
   /** Moss Tower (Vertical Tower 100 x 84): the minimal moss-wall layout, fixed so every new tower looks the same. */
-  /** v12: a biome starter layout. Theme layout, the biome's floor and backdrop, a pond for paludariums, then native pieces. */
-  P.biome = function (hab, bid, seed) {
-    const B = JT.BIOMES[bid]; if (!B || bid === 'classic') return false; const rng = JT.makeRng(seed || ((JT.R() * 1e9) | 0));
-    const W = hab.dims.w, Dp = hab.dims.d; const compact = hab.dims.cap <= 2 && W < 140; let keep = null;
-    if (bid === 'paludarium') { hab.data.decor = []; hab.rebuild(); const pid = compact ? 'pond' : 'lilypond';
-      for (let k = 0; k < 8 && !keep; k++) { const x = W * ((k % 2 ? 0.7 : 0.3) + (rng() - 0.5) * 0.08), z = Dp * (0.52 + rng() * 0.16); const inst = hab.addDecor(pid, x, z, rng() * 6.28, (rng() * 1e9) | 0, 'preset'); if (inst) keep = [inst]; } }
-    const th = hab.dims.tall && B.themeTall ? B.themeTall : B.theme; // the Vertical Tower builds up a back wall instead
-    if (th) P.generate(hab, th, (rng() * 1e9) | 0, true, keep);
-    hab.data.biome = bid; if (B.sub) hab.data.substrate = B.sub; if (B.bg) hab.data.bg = B.bg;
-    const pool = (B.native || []).filter(id => JT.DECOR_BY_ID[id] && JT.DECOR_BY_ID[id].arche !== 'pond' && (!compact || JT.DECOR_BY_ID[id].small));
-    const want = compact ? 3 : W >= 240 ? 7 : 5; let added = 0;
-    for (let k = 0; k < 50 && added < want && pool.length; k++) { const id = pool[(k + Math.floor(rng() * 3)) % pool.length]; const q = hab.randomFloorPoint(rng);
-      if (q && hab.addDecor(id, q[0], q[2], rng() * 6.28, (rng() * 1e9) | 0, 'preset')) added++; }
-    hab.rebuild && hab.rebuild(); return true;
-  };
   P.tower = function (hab) { P.generate(hab, 'mosswall', 5, false); };
   /** Hand-arranged Starter Terrarium (Standard 200 x 90): a cork tower on the left third with a pothos on top, a flat
       stone on the right third, small plant groups at their feet, open floor in the middle for hunting. */
@@ -5929,7 +5857,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       this.state.time += dt;
       const active = this.hab;
       active.update(dt, true);
-      if (JT.Biome) JT.Biome.tick(active, dt); // v12 weather events + biome journal moments (viewed tank only)
       // v11: tanks you are not viewing are paused (no cost); they catch up when you come back (see catchUp)
       this._lite += dt;
       if (this._lite >= 1) { this._lite = 0; this.checkUnlocks(); }
@@ -5952,7 +5879,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       const watched = hab === this.hab && this.viewing; const sp = info && info.sp;
       if (type === 'meal') { this.state.catches++; if (sp && [10, 25, 50, 100, 200].includes(sp.catches)) this.diary(sp, sp.catches + ' meals caught so far.'); }
       else if (type === 'catch' && sp) { const pd = info.prey && JT.PREY_BY_ID[info.prey.type]; if (pd) this.tallyPrey(sp, info.prey);
-        if (JT.Biome && pd) { const bid = JT.Biome.id(hab); if (bid === 'paludarium' && JT.Biome.nearWater(hab, sp.pos, 14)) hab.event('journal', { id: 'edgeHunt', sp }); if (bid === 'nightmoss') hab.event('journal', { id: 'glowHunt', sp }); }
         const Sx = JT.SPECIES_BY_ID[sp.species]; if (Sx && Sx.hybrid && pd) { if (Sx.sig === 'glass' && (info.prey.alert || 0) < 0.6) hab.event('journal', { id: 'glassGhost', sp }); if (Sx.sig === 'ember' && hab.daylight() < 0.3) hab.event('journal', { id: 'emberNight', sp }); } const nm = pd ? (JT.SpiderAI.preyName ? JT.SpiderAI.preyName(pd) : pd.name.toLowerCase()).replace(/springtail colony/, 'springtail') : 'prey';
         if (!sp.catches) this.diary(sp, 'First catch: ' + (/^[aeiou]/.test(nm) ? 'an ' : 'a ') + nm + '.'); else if (pd && JT.SpiderAI.ratioOf && JT.SpiderAI.ratioOf(sp, info.prey) > 1.15 && !(sp._dBig > this.state.time - 600)) { sp._dBig = this.state.time; this.diary(sp, 'Took down ' + (/^[aeiou]/.test(nm) ? 'an ' : 'a ') + nm + ' bigger than itself.'); } }
       else if (type === 'molt' && sp) (sp.stageAt || (sp.stageAt = {}))[sp.stage] = this.day(), this.diary(sp, sp.stage >= 5 ? 'Final molt: now a fully grown adult.' : 'Molted into a ' + JT.STAGES[sp.stage].toLowerCase() + '.');
@@ -5983,7 +5909,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
         else { const prev = JT.unlockPrev(id); if (prev && best[prev] >= 5) why = 'Your ' + JT.SPECIES_BY_ID[prev].name + ' reached adulthood.'; }
         if (why) { st.species.push(id); if (!quiet) this.emit('unlock', { S, why }); }
       }
-      if (JT.Biome && this.hab && !(st.journal || {}).biomeTour && JT.BIOME_ORDER.every(b => b === 'classic' || this.habs.some(h => JT.Biome.id(h) === b))) this.hab.event('journal', { id: 'biomeTour' });
     }
     /** Can one more of this species join this habitat? (unlocked, room in the tank, at most JT.PER_SPECIES per tank) */
     canAdd(h, id) {
@@ -6029,7 +5954,7 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       if (this.habs.length >= JT.MAX_HABS) return null;
       const n = this.createHabitat(h.data.type); if (!n) return null;
       const items = h.sortedDecor().map(d => ({ type: d.type, fx: d.x / h.dims.w, fz: d.z / h.dims.d, rot: d.rot, seed: d.seed, my: d.my, bare: d.bare || undefined }));
-      JT.Presets.applyCustom(n, { items, sub: h.data.substrate, bg: h.data.bg }); if (h.data.biome) n.data.biome = h.data.biome; n.decor.forEach(d => { d.preset = true; }); return n;
+      JT.Presets.applyCustom(n, { items, sub: h.data.substrate, bg: h.data.bg }); n.decor.forEach(d => { d.preset = true; }); return n;
     }
     /** Delete a tank: its jumpers wait in the holding cup. The last tank cannot be deleted. */
     deleteHabitat(h) {
@@ -6486,7 +6411,6 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     moss: { side: '#47652a', top: '#5b8032', mark: '#35501c', hi: '#79a044' },
     coconut: { side: '#5a3c24', top: '#6e4b2e', mark: '#3e2816', hi: '#8a6440' },
     dish: { side: '#d6d1c6', top: '#e6e2d8', mark: '#b8b2a6', hi: '#f4f0e8' },
-    pond: { side: '#4a3a26', top: '#5a4a30', mark: '#3a2c1c', hi: '#6a5a3a', w0: '#5f948a', w1: '#21474a' },
     ruin: { side: '#88887e', top: '#9c9c90', mark: '#66665e', hi: '#b0b0a4' },
     terracotta: { side: '#a8573a', top: '#c06a48', mark: '#7e3e28', hi: '#d88a62' },
     mosswall: { side: '#3d5a24', top: '#4f7a2c', mark: '#2a3e18', hi: '#6e9a3a', soft: true },
@@ -6614,11 +6538,11 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     }
     // top
     const tq = top.map(t => P([t[0], pr.y1, t[1]]));
-    if (pr.style === 'dish' || pr.style === 'pond') {
+    if (pr.style === 'dish') {
       ctx.fillStyle = st.top; poly(ctx, tq); ctx.fill();
-      const inner = JT.G.scalePoly(top, pr.style === 'pond' ? 0.9 : 0.82).map(t => P([t[0], pr.y1 - 0.2, t[1]]));
+      const inner = JT.G.scalePoly(top, 0.82).map(t => P([t[0], pr.y1 - 0.2, t[1]]));
       const gr = ctx.createLinearGradient(inner[0][0], inner[0][1], inner[Math.floor(inner.length / 2)][0], inner[Math.floor(inner.length / 2)][1]);
-      gr.addColorStop(0, st.w0 || '#6aa6c8'); gr.addColorStop(1, st.w1 || '#2f6688'); ctx.fillStyle = gr; poly(ctx, inner); ctx.fill();
+      gr.addColorStop(0, '#6aa6c8'); gr.addColorStop(1, '#2f6688'); ctx.fillStyle = gr; poly(ctx, inner); ctx.fill();
       ctx.globalAlpha = (o.alpha != null ? o.alpha : 1) * 0.5; ctx.strokeStyle = '#d8f0ff'; ctx.lineWidth = Math.max(0.6, V.s * 0.2); ctx.beginPath(); const cc = JT.G.centroid(inner); ctx.ellipse(cc[0] - V.s * 2, cc[1] - V.s * 0.6, V.s * 2.5, V.s * 0.6, -0.2, 3.5, 5.6); ctx.stroke(); ctx.globalAlpha = o.alpha != null ? o.alpha : 1;
       return;
     }
@@ -6945,16 +6869,31 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
   D.unclip = function (hab, e, p, n) {
     const L = e.species ? JT.SpiderAI.len(e) : e.type && JT.PREY_BY_ID[e.type] ? (JT.PREY_BY_ID[e.type].len || 3) : 0; if (!L) return p;
     const lift = Math.min(L * 0.3, 2.2); let moved = 0;
-    for (let it = 0; it < 3; it++) {
-      const c = M.add(p, M.mul(n, lift)); let hit = null, hg = null;
-      for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g) continue; const h = JT.Solid.at(g, c, 0.1); if (h && h.d > 0.08 && (!hit || h.d > hit.d)) { hit = h; hg = inst.id; } }
+    // sample head, middle and abdomen so no part of the body sinks into a trunk, cap, rock or a neighbouring piece
+    let f = e.fwd || null; if (f) { f = M.sub(f, M.mul(n, M.dot(f, n))); f = M.len(f) > 1e-3 ? M.norm(f) : null; }
+    const offs = f ? [0, L * 0.38, -L * 0.42] : [0];
+    for (let it = 0; it < 6; it++) {
+      let hit = null, hg = null, hc = null;
+      for (const o of offs) {
+        const c = o && f ? M.add(M.add(p, M.mul(n, lift)), M.mul(f, o)) : M.add(p, M.mul(n, lift));
+        for (const inst of hab.decor) { if (o && inst.id === e.sup.d) continue; const g = hab.geoms[inst.id]; if (!g) continue; const h = JT.Solid.at(g, c, 0.1); if (h && h.d > 0.08 && (!hit || h.d > hit.d)) { hit = h; hg = inst.id; hc = c; } }
+      }
       if (!hit) break;
       let dir;
       if (e.sup.d === hg) dir = n; // own support: step out along the surface normal
-      else { const gr = JT.Solid.grad(c, hit.pr); dir = M.sub(gr, M.mul(n, M.dot(gr, n))); dir = M.len(dir) > 0.2 ? M.norm(dir) : gr; }
-      const step = Math.min(hit.d + 0.15, L * 1.2); p = M.add(p, M.mul(dir, step)); moved += step; if (moved > L * 2 + 3) break;
+      else { const gr = JT.Solid.grad(hc, hit.pr); dir = M.sub(gr, M.mul(n, M.dot(gr, n))); dir = M.len(dir) > 0.2 ? M.norm(dir) : gr; }
+      const step = Math.min(hit.d + 0.15, L * 1.2); p = M.add(p, M.mul(dir, step)); moved += step; if (moved > L * 2.5 + 3) break;
     }
     return p;
+  };
+  /** Thin round support under a critter (twig, branch, stem, grass blade): how strongly its legs should wrap it. */
+  D.gripFor = function (hab, e, L) {
+    const sup = e.sup; if (!sup || sup.k !== 'path' || !hab || !hab.geoms) return null;
+    const g = hab.geoms[sup.d]; const pa = g && g.paths[sup.p]; if (!pa || !/branch|stem|trunk|blade/.test(pa.kind || '')) return null;
+    if (pa.nrm && pa.nrm[sup.s]) return null; // flat landing pads / leaf tops
+    const A = pa.pts[sup.s], B = pa.pts[sup.s + 1]; if (!A || !B) return null;
+    const R = pa.r || 0.2; const k = M.clamp((L * 0.75 - R) / (L * 0.45), 0, 1); if (k < 0.02) return null;
+    return { k, R, ax: M.norm(M.sub(B, A)) };
   };
   function ctxEll(ctx, V, c, ax, ay, fill) {
     const C = V.P(c), A = V.J(ax), B = V.J(ay);
@@ -7459,7 +7398,8 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
     const breath = Math.sin(sp._breath || 0) * 0.015; const ant = !!S.antShape;
     const flat = sp._flat || 0, strK = sp._stretchK || 0, wipe = sp._wipe || 0, flick = sp._flick || 0, hang = o.hang || 0;
     const wph = (sp._walk || 0) * Math.PI; const bob = moving && !o.airborne ? Math.abs(Math.sin(wph)) * (gait === 'bouncy' ? 0.03 : gait === 'hop' ? 0.022 : gait === 'heavy' ? 0.01 : gait === 'stopgo' ? 0.012 : 0) : 0;
-    const h0 = L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) * (1 - 0.45 * (LK.flat || 0)) + L * 0.035 * strK + L * bob;
+    const gripK = o.grip && !o.airborne && !o.curled && !o.tucked && !o.thumb ? o.grip.k : 0; // belly hugs a thin stem
+    const h0 = (1 - 0.3 * gripK) * L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) * (1 - 0.45 * (LK.flat || 0)) + L * 0.035 * strK + L * bob;
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
     if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha);
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb; // seen from below: belly colours
@@ -7571,6 +7511,9 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       if ((LK.bristle || 0) > 0 && px > 44) { ctx.globalAlpha = alpha * 0.85; hairs(ctx, A, B, w, Math.round((2 + 4 * LK.bristle) * (i === 0 ? 1.3 : 1)), w * 1.3 + 1.5, LK.bristleCol || '#f2eee4', 0.55, 0.9, lk + 3); ctx.globalAlpha = alpha; }
     };
     const sq = sp.state === 'subdue' ? 1 : 0.35; const seedP = ((sp.seed || 1) % 97) * 0.37;
+    // gripping a twig/stem: feet close round it (tarsi hooked under) instead of splaying out over thin air
+    let gc = null, ga = null, gb = null, gR = 0;
+    if (gripK > 0.001) { ga = M.sub(o.grip.ax, M.mul(n, M.dot(o.grip.ax, n))); if (M.len(ga) > 0.2) { ga = M.norm(ga); gb = M.norm(M.cross(n, ga)); gR = o.grip.R + L * 0.025; gc = M.sub(p, M.mul(n, o.grip.R)); } }
     for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) {
       const lk = i * 2 + (sd > 0 ? 1 : 0); // leg index 0..7
       const lg = (LK.legLen || 1) * (i === 0 ? LK.front || 1 : i === 1 ? 1 + ((LK.front || 1) - 1) * 0.35 : 1);
@@ -7611,11 +7554,20 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
           : M.add(M.add(M.add(mc, M.mul(fg, -hg.pl * 0.18)), M.mul(sg, sd * hr * 0.9 * pulse)), M.mul(n, hr * 0.15));
         foot = M.lerp3(foot, hf, hk);
       }
+      const gk = gc && hk < 0.01 ? gripK : 0; let gAnk = null;
+      if (gk > 0.001) {
+        const d = M.sub(foot, p); const ua = M.dot(d, ga), vb = M.dot(d, gb), up = Math.max(0, M.dot(d, n)) * 0.6;
+        const th = Math.sign(vb || sd) * M.clamp(Math.abs(vb) / (gR + L * 0.18), 0.5, 2.4);
+        const rad = (an, r) => M.add(M.mul(n, Math.cos(an) * r), M.mul(gb, Math.sin(an) * r));
+        gAnk = M.add(M.add(gc, M.mul(ga, ua * 0.78)), rad(th * 0.55, gR + L * 0.08));
+        foot = M.lerp3(foot, M.add(M.add(gc, M.mul(ga, ua * 0.82)), rad(th, gR + up)), gk);
+      }
       const mid = M.lerp3(hip, foot, 0.4);
       const far = sd * M.dot(s, V.toCam) < -0.15 && !o.thumb; // far-side legs: keep the knee low so it never pokes up over the head
-      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * Math.sqrt(lg) * sw * (1 - 0.35 * (LK.flat || 0)) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1) * (i < 2 ? 1 - 0.65 * reach : 1) * (1 + 0.35 * hk))), M.mul(s, sd * L * (0.06 + 0.06 * hk)));
-      const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33) * (1 + (lg - 1) * 0.5); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
+      let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * Math.sqrt(lg) * sw * (1 - 0.35 * (LK.flat || 0)) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1) * (i < 2 ? 1 - 0.65 * reach : 1) * (1 + 0.35 * hk) * (1 - 0.3 * gk))), M.mul(s, sd * L * (0.06 + 0.06 * hk)));
+      const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33) * (1 + (lg - 1) * 0.5) * (1 - gk) + gk * (gR + L * 0.16); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
       let ankle = M.add(M.lerp3(knee, foot, 0.62), M.mul(n, L * 0.05));
+      if (gAnk) ankle = M.lerp3(ankle, gAnk, gk);
       if (hk > 0.001) { // embrace: knee lifted high and just outside the prey, tarsus hooking down and in around it
         const latTo = (q, v) => M.add(q, M.mul(sg, sd * v - M.dot(M.sub(q, mc), sg)));
         const kH = latTo(M.add(M.lerp3(hip, foot, 0.5), M.mul(n, L * (0.1 + 0.03 * i) + hr * 0.4)), hr * 1.0 + L * 0.1);
@@ -8013,10 +7965,10 @@ body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
       mb.quad(A0, B0, B1, A1);
     }
     // top cap
-    if (pr.style === 'dish' || pr.style === 'pond') {
+    if (pr.style === 'dish') {
       const rimIds = top.map((q, i) => mb.vert([q[0], pr.y1, q[1]], [0, 1, 0], M.norm([vn[i][0], 0.3, vn[i][2]]), topC, mark, 0)); const ci = mb.vert([ct[0], pr.y1, ct[1]], [0, 1, 0], [0, 0, 0], topC, mark, 0);
       for (let i = 0; i < n; i++) mb.tri(ci, rimIds[i], rimIds[(i + 1) % n]);
-      const inner = G.scalePoly(top, pr.style === 'pond' ? 0.9 : 0.82); const w0 = rgb(st.w0 || '#7ab4d4'), w1 = rgb(st.w1 || '#3f7a9e'); const wc = mb.vert([ct[0], pr.y1 + 0.08, ct[1]], [0, 1, 0], [0, 0, 0], w1, w1, 0);
+      const inner = G.scalePoly(top, 0.82); const w0 = rgb('#7ab4d4'), w1 = rgb('#3f7a9e'); const wc = mb.vert([ct[0], pr.y1 + 0.08, ct[1]], [0, 1, 0], [0, 0, 0], w1, w1, 0);
       const wi = inner.map(q => mb.vert([q[0], pr.y1 + 0.08, q[1]], [0, 1, 0], [0, 0, 0], w0, w0, 0)); for (let i = 0; i < n; i++) mb.tri(wc, wi[i], wi[(i + 1) % n]);
       mb.polyline(inner.concat([inner[0]]).map(q => [q[0], pr.y1 + 0.1, q[1]]), 0.7, 0.5);
       return;
@@ -8664,8 +8616,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const q = this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality;
       const dpr = root.devicePixelRatio || 1;
       if (this.set.perf && this.set.ptLowRes) return 1;
-      if (this.set.quality === 'auto' && this.closeCam) return Math.min(this._closeK || 1.6, [2, 1.6, 1.25][this._autoLvl || 0], dpr); // Observe / Follow: 1.6x, steps down only, see render()
-      if (this.set.quality === 'auto') return Math.min([2, 1.6, 1.25][this._autoLvl || 0], dpr); // steps down only if the device struggles
+      if (this.set.quality === 'auto' && this.closeCam) return Math.min(this._closeK || 1.6, [2, 1.75, 1.5, 1.25][this._autoLvl || 0], dpr); // Observe / Follow: 1.6x, steps down only, see render()
+      if (this.set.quality === 'auto') return Math.min([2, 1.75, 1.5, 1.25][this._autoLvl || 0], dpr); // steps down only if the device struggles
       const m = q === 'low' ? 1.25 : q === 'high' ? 2.5 : 2; return Math.min(this.closeCam ? Math.min(m, 2) : m, dpr); // close-ups never above 2x
     }
     get quality() { return this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality; }
@@ -8778,7 +8730,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           if (this._cSlow > 2 && ck > 1.25 && !this._cHold) { this._closeK = Math.max(1.25, +(ck - 0.18).toFixed(2)); this._cSlow = 0; this._cHold = 3; this.fps = this.targetFps; this.resize(); }
         } else
         if (this.set.quality === 'auto') { this._slowT = this.fps < this.targetFps * 0.75 && this.time > 5 ? (this._slowT || 0) + dt : 0;
-          if (this._slowT > 3 && (this._autoLvl || 0) < 2) { this._autoLvl = (this._autoLvl || 0) + 1; this._autoLow = this._autoLvl >= 2; this._slowT = -4; this.fps = this.targetFps; this.resize(); } } }
+          if (this._slowT > 3 && (this._autoLvl || 0) < 3) { this._autoLvl = (this._autoLvl || 0) + 1; this._autoLow = this._autoLvl >= 3; this._slowT = -4; this._fastT = 0; this.fps = this.targetFps; this.resize(); }
+          // v12: step back up (max twice per session) when a slowdown was only temporary
+          this._fastT = this.fps >= this.targetFps * 0.97 && this._slowT >= 0 ? (this._fastT || 0) + dt : 0;
+          if (this._fastT > 25 && (this._autoLvl || 0) > 0 && (this._ups || 0) < 2) { this._ups = (this._ups || 0) + 1; this._autoLvl--; this._autoLow = this._autoLvl >= 3; this._fastT = 0; this._slowT = -4; this.resize(); } } }
       this._dt = dt;
       const V = this.updateView(hab, dt);
       { const vk = V.yaw.toFixed(4) + ',' + V.pitch.toFixed(4) + ',' + V.s.toFixed(3) + ',' + V.c.map(v => v.toFixed(2)).join(','); this._moving = vk !== this._vk; this._vk = vk; }
@@ -8787,10 +8742,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
     /** Storybook frame: the GPU paints the scene; the 2D canvas on top only carries effects, labels and edit outlines. */
     renderStory(V, hab, dt) {
-      JT.SKY.update(this.game); let night = 1 - this.game.daylight(); const lamps = hab.lampsOn ? hab.lampsOn() : [];
-      const BM = JT.Biome ? JT.Biome.of(hab) : null; // v12 biome mood: night moss stays in a moonlit dusk; every biome has its own colour grade
-      if (BM && BM.dusk) { const kd = BM.dusk, N = JT.SKY.at(0.02, this._skyN || (this._skyN = {})); for (const key of ['grade', 'key', 'amb']) for (let i = 0; i < 3; i++) JT.SKY[key][i] = JT.SKY[key][i] * (1 - kd) + N[key][i] * kd; night = Math.max(night, kd * 0.9); }
-      if (BM && BM.tint) for (let i = 0; i < 3; i++) JT.SKY.grade[i] *= BM.tint[i];
+      JT.SKY.update(this.game); const night = 1 - this.game.daylight(); const lamps = hab.lampsOn ? hab.lampsOn() : [];
       const pt = this.pt || (this.pt = { col: 0, spr: 0, up: 0, gl: 0, ov: 0 }), em = (k, v) => { pt[k] = pt[k] * 0.9 + v * 0.1; }; let t0 = performance.now();
       const scene = this.collectScene(V, hab, night); em('col', performance.now() - t0); t0 = performance.now(); this._sprT = 0; this._upT = 0;
       try { this.gp.frame(V, hab, night, lamps, scene); } catch (e) { if ((this._glErr = (this._glErr || 0) + 1) < 5) console.error('storybook frame', e); }
@@ -8800,7 +8752,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this.hover && this.hover.kind === 'decor') { const g = hab.geoms[this.hover.ent.id]; if (g) this.outlineDecor(ctx, V, g, 'rgba(200,70,50,0.9)'); }
       if (this.set.perf && this.set.ptNoFx) return;
       this.drawEffects(ctx, V, hab, dt);
-      if (BM && (BM.fx || hab.data.decor.some(x => x.type === 'pond' || x.type === 'lilypond'))) { try { this.drawBiome(ctx, V, hab, dt, night, BM); } catch (e) { if ((this._bmErr = (this._bmErr || 0) + 1) < 4) console.error('biome fx', e); } }
       if (lamps.length) this.drawLampGlow(ctx, V, hab, lamps, night);
       if (night > 0.3) for (const sp of hab.spiders) { const S = JT.SPECIES_BY_ID[sp.species]; if (!S || !S.glow) continue; // Ignicard: ember speckles glow at night
         const L = JT.SpiderAI.len(sp); const P = V.P([sp.pos[0], sp.pos[1] + L * 0.25, sp.pos[2]]); const r = Math.max(5 * this.k, L * V.s * 0.75); if (!isFinite(P[0]) || r > 900) continue;
@@ -8809,63 +8760,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(P[0] - r, P[1] - r, r * 2, r * 2); ctx.restore(); }
       if (this.set.debug) this.drawDebug(ctx, V, hab);
       em('ov', performance.now() - t0);
-    }
-    /** v12 biome effects on the 2D layer: rain, ground mist, desert dust and heat shimmer, pond ripples, fireflies.
-        Counts scale with Render quality (Low 40%, Medium 100%, High 150%); everything freezes in photo mode. */
-    drawBiome(ctx, V, hab, dt, night, BM) {
-      const q = this.set.quality === 'auto' ? (this._autoLow ? 'low' : 'medium') : this.set.quality; const qn = q === 'low' ? 0.4 : q === 'high' ? 1.5 : 1;
-      if (JT.UI && JT.UI.photo) dt = 0; dt = Math.min(dt, 0.1); const t = (this._bt = (this._bt || 0) + dt);
-      const D = hab.dims, k = this.k, ev = JT.Biome.event(hab), rnd = Math.random, want = (n) => Math.max(0, Math.round(n * qn));
-      if (!this._bfx || this._bfx.hab !== hab.data.id) this._bfx = { hab: hab.data.id }; const F = this._bfx;
-      const P = (x, y, z) => V.P([x, y, z]); const inside = (x, z) => JT.Nav.inside(hab, x, z, 3);
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-      if (ev && ev.id === 'rain') { // falling streaks
-        const n = want(90), ps = F.rain || (F.rain = []); while (ps.length < n) ps.push([rnd() * D.w, rnd() * D.h * 1.1, rnd() * D.d, 0.6 + rnd() * 0.6]); ps.length = Math.min(ps.length, n);
-        ctx.strokeStyle = 'rgba(225,238,255,0.42)'; ctx.lineWidth = Math.max(1, 0.9 * k); ctx.beginPath();
-        for (const r of ps) { r[1] -= dt * 95 * r[3]; if (r[1] < 0) { r[0] = rnd() * D.w; r[1] = D.h * (0.9 + rnd() * 0.2); r[2] = rnd() * D.d; }
-          if (!inside(r[0], r[2])) continue; const a = P(r[0], r[1], r[2]), b = P(r[0] - 0.5, r[1] + 6 * r[3], r[2]); if (!isFinite(a[0]) || !isFinite(b[0])) continue; ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
-        ctx.stroke();
-      }
-      if (BM.fx === 'mist' || BM.fx === 'fireflies') { // slow drifting ground mist
-        const ms = F.mist || (F.mist = Array.from({ length: Math.max(2, want(5)) }, () => [rnd() * D.w, rnd() * D.d, 22 + rnd() * 26, rnd() * 6.28]));
-        const a0 = (BM.fx === 'mist' ? 0.11 : 0.08) + (ev && ev.id === 'rain' ? 0.08 : 0), col = BM.fx === 'mist' ? '236,246,236' : '170,190,255';
-        for (const m of ms) { m[0] += Math.cos(m[3]) * dt * 2.2; m[1] += Math.sin(m[3]) * dt; if (m[0] < -10 || m[0] > D.w + 10) m[3] = Math.PI - m[3]; if (m[1] < 0 || m[1] > D.d) m[3] = -m[3];
-          const c = P(m[0], 3, m[1]), e = P(m[0] + m[2], 3, m[1]); const r = Math.hypot(e[0] - c[0], e[1] - c[1]); if (!isFinite(r) || r < 2 || r > 4000) continue;
-          const g = ctx.createRadialGradient(c[0], c[1], 0, c[0], c[1], r); g.addColorStop(0, 'rgba(' + col + ',' + a0.toFixed(3) + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
-          ctx.fillStyle = g; ctx.setTransform(1, 0, 0, 0.45, 0, c[1] * 0.55); ctx.fillRect(c[0] - r, c[1] - r, r * 2, r * 2); ctx.setTransform(1, 0, 0, 1, 0, 0); }
-      }
-      if (BM.fx === 'dust') { // warm motes on the breeze; shimmer over the sand in the heat
-        const heat = ev && ev.id === 'heat'; const n = want(heat ? 40 : 18), ps = F.dust || (F.dust = []); while (ps.length < n) ps.push([rnd() * D.w, 2 + rnd() * D.h * 0.6, rnd() * D.d, rnd() * 6.28]); ps.length = Math.min(ps.length, n);
-        ctx.fillStyle = 'rgba(255,238,205,0.6)'; const r0 = Math.max(0.8, 0.9 * k);
-        for (const m of ps) { m[3] += dt * 0.5; m[0] += (Math.cos(m[3]) * 3 + (heat ? 7 : 4)) * dt; m[1] += Math.sin(m[3] * 1.3) * dt * 2; if (m[0] > D.w) m[0] = 0;
-          if (!inside(m[0], m[2])) continue; const c = P(m[0], m[1], m[2]); if (!isFinite(c[0])) continue; ctx.fillRect(c[0] - r0, c[1] - r0, r0 * 2, r0 * 2); }
-        if (heat) { const nn = Math.max(2, want(6)); ctx.strokeStyle = 'rgba(255,246,222,0.2)'; ctx.lineWidth = Math.max(1, k);
-          for (let i = 0; i < nn; i++) { const x = (i + 0.5) / nn * D.w, z = D.d * (0.3 + 0.4 * ((i * 37) % 10) / 10); if (!inside(x, z)) continue; ctx.beginPath();
-            for (let s2 = 0; s2 <= 8; s2++) { const c = P(x + Math.sin(t * 3 + s2 + i) * 1.5, 3 + s2 * 3, z); if (s2) ctx.lineTo(c[0], c[1]); else ctx.moveTo(c[0], c[1]); } ctx.stroke(); } }
-      }
-      { // pond ripples (any tank with a pond)
-        const ponds = JT.Biome.ponds(hab); const rp = F.rip || (F.rip = []);
-        for (const x of ponds) { const g = hab.geoms[x.id]; if (!g || !g.foot) continue; const c = JT.G.centroid(g.foot); const R = Math.max(...g.foot.map(q2 => Math.hypot(q2[0] - c[0], q2[1] - c[1]))) * 0.7;
-          if (rnd() < dt * 0.7 * qn * (ev && ev.id === 'hatch' ? 2.5 : 1) && rp.length < 24) { const a = rnd() * 6.28, rr = Math.sqrt(rnd()) * R; rp.push({ x: c[0] + Math.cos(a) * rr, z: c[1] + Math.sin(a) * rr * 0.8, y: g.baseY + 1.5, t: 0, m: 4 + rnd() * 4 }); } }
-        ctx.strokeStyle = 'rgba(235,248,255,0.9)';
-        for (let i = rp.length - 1; i >= 0; i--) { const r = rp[i]; r.t += dt; if (r.t > 2.4) { rp.splice(i, 1); continue; } const rr = 0.6 + r.m * (r.t / 2.4);
-          const o = P(r.x, r.y, r.z), ax = P(r.x + rr, r.y, r.z), az = P(r.x, r.y, r.z + rr); if (!isFinite(o[0]) || !isFinite(ax[0]) || !isFinite(az[0])) continue;
-          ctx.globalAlpha = 0.55 * (1 - r.t / 2.4); ctx.setTransform(ax[0] - o[0], ax[1] - o[1], az[0] - o[0], az[1] - o[1], o[0], o[1]); ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.2832); ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.lineWidth = Math.max(1, 0.8 * k); ctx.stroke(); }
-        ctx.globalAlpha = 1;
-      }
-      if (BM.fx === 'fireflies') { // blinking, wandering lights
-        const swarm = ev && ev.id === 'fireflies'; const n = want(swarm ? 36 : 8 + night * 8), ps = F.ff || (F.ff = []);
-        while (ps.length < n) ps.push([rnd() * D.w, 6 + rnd() * D.h * 0.7, rnd() * D.d, rnd() * 6.28, 0.4 + rnd() * 0.6]); ps.length = Math.min(ps.length, n);
-        const spr = this._ffSpr || (this._ffSpr = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d'); const g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,255,210,1)'); g.addColorStop(0.25, 'rgba(230,255,140,0.75)'); g.addColorStop(1, 'rgba(160,255,120,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); return c; })());
-        ctx.globalCompositeOperation = 'lighter'; const sz = 14 * k;
-        for (const f of ps) { f[3] += dt * f[4]; f[0] += Math.cos(f[3] * 1.3) * dt * 5; f[1] += Math.sin(f[3] * 0.9) * dt * 3; f[2] += Math.sin(f[3] * 1.1 + 1) * dt * 4;
-          f[0] = JT.M.clamp(f[0], 4, D.w - 4); f[1] = JT.M.clamp(f[1], 4, D.h * 0.85); f[2] = JT.M.clamp(f[2], 4, D.d - 4); if (!inside(f[0], f[2])) continue;
-          const a = Math.max(0, Math.sin(t * 2.2 * f[4] + f[3] * 3)); if (a < 0.05) continue; const c = P(f[0], f[1], f[2]); if (!isFinite(c[0])) continue;
-          ctx.globalAlpha = a * (0.55 + night * 0.45); ctx.drawImage(spr, c[0] - sz / 2, c[1] - sz / 2, sz, sz); }
-        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-      }
-      ctx.restore();
     }
     drawGhostFoot(ctx, V, gh) {
       const g = gh.geom; if (!g.foot) return; const col = gh.ok ? 'rgba(70,150,80,' : 'rgba(200,60,50,'; ctx.save(); ctx.beginPath();
@@ -8958,7 +8852,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
           let hug = null;
           if (hp && (sp._hug || 0) > 0.01) { const hd = JT.PREY_BY_ID[hp.type] || { len: 3 }; const base = Math.min(hp.len || hd.len, L * 1.1); const full = hp.full != null ? hp.full : 1; hug = { k: sp._hug, pl: base * (0.6 + 0.4 * full), big: base >= L * 0.6 ? 1 : 0 }; }
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && !(hab.data.nests || []).some(n => n.id === sp.nest && (n.build || (n.hole && n.hole.exit > 0.05))), spin: (hab.data.nests || []).some(n => n.id === sp.nest && n.build && n.owner === sp.id && JT.SpiderAI.NEST_STATES.has(sp.state)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && !(hab.data.nests || []).some(n => n.id === sp.nest && (n.build || (n.hole && n.hole.exit > 0.05))), spin: (hab.data.nests || []).some(n => n.id === sp.nest && n.build && n.owner === sp.id && JT.SpiderAI.NEST_STATES.has(sp.state)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, grip: air ? null : D.gripFor(hab, sp, L), noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
         if (hangA) { const fp = fr.p, fff = fr.f; items.push({ ln: { a: hangA, b: M.sub(fp, M.mul(fff, L * 0.32)), w: 0.08, al: 0.45 - night * 0.15 }, d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
         // live safety dragline paid out behind a jump (it whips out behind a pounce, settling straight)
@@ -9378,8 +9272,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /** Which soundscape a tank gets, from its substrate and backdrop. */
     themeOf(hab) {
       const d = hab.data, sub = d.substrate, bg = d.bg; if (d.sound && d.sound !== 'auto') return d.sound;
-      if (d.biome === 'desert') return 'desert'; if (d.biome === 'rainforest' || d.biome === 'paludarium') return 'rainforest'; if (d.biome === 'nightmoss') return 'woodland'; // v12 biomes pick their own ambience
-      if (sub === 'dune') return 'desert'; if (sub === 'mud') return 'rainforest';
       if (['desert', 'clay', 'beach'].includes(sub) || (bg === 'twilight' && sub !== 'jungle')) return 'desert';
       if (['jungle', 'sphagnum'].includes(sub) || bg === 'canopy') return 'rainforest';
       if (bg === 'meadow' || hab.decor.filter(x => { const D = JT.DECOR_BY_ID[x.type]; return D && (D.arche === 'flower' || D.flowers); }).length >= 2) return 'garden';
@@ -9538,8 +9430,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     MOBILE_MQ: '(max-width:820px) and (orientation:portrait), (max-width:560px), (max-height:500px) and (orientation:landscape)',
     /** Shop groups (by decor archetype), in the order they appear in the strip. */
     GROUPS: {
-      decor: [['Branches & perches', ['branch']], ['Rocks & ledges', ['rock', 'rockarch', 'ruin', 'slab']], ['Logs & hides', ['log', 'hide']], ['Towers & trunks', ['tower']], ['Water & warmth', ['dish', 'pond', 'lamp']]],
-      plants: [['Leafy', ['broadleaf', 'fern', 'palm']], ['Flowers', ['flower']], ['Grasses', ['grass']], ['Rosettes', ['rosette']], ['Trees', ['tree']], ['Vines', ['vine']], ['Mushrooms', ['mushroom']], ['Cacti', ['cactus']]],
+      decor: [['Branches & perches', ['branch']], ['Rocks & ledges', ['rock', 'ruin', 'slab']], ['Logs & hides', ['log', 'hide']], ['Towers & trunks', ['tower']], ['Water & warmth', ['dish', 'lamp']]],
+      plants: [['Leafy', ['broadleaf', 'fern', 'palm']], ['Flowers', ['flower']], ['Grasses', ['grass']], ['Rosettes', ['rosette']], ['Trees', ['tree']], ['Vines', ['vine']], ['Mushrooms', ['mushroom']]],
     },
     tab: null, mode: null, place: null, obs: null, panelId: null, renaming: false, ptrType: 'mouse', _t: 0, _panelT: 0, _mistT: 0,
     init(game, R, settings) {
@@ -9568,7 +9460,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       $('btnHelp').onclick = () => this.helpModal();
       $('btnManage').onclick = () => this.manageModal();
       $('habPicker').onclick = () => this.habPickerModal();
-      $('biomeChip').onclick = (e) => { e.stopPropagation(); A().sfx('click'); this.biomeModal(); };
       $('drawerClose').onclick = () => this.closeDrawer();
       $('modalClose').onclick = () => this.closeModal();
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
@@ -9755,45 +9646,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         for (const i of show) { const h = g.habs[i]; const b = el('button', i === st.active ? 'on' : '', esc(h.title)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); }
         const all = el('button', 'tk-all', g.habs.length > 1 ? 'All tanks · ' + g.habs.length : 'Tanks'); all.title = 'All your tanks'; all.onclick = () => this.tanksModal(); tabs.appendChild(all); }
       $('habPicker').textContent = g.hab.title + ' \u25BE';
-      this.syncBiome();
       this.syncCams();
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
       const grp = this.tab === 'food' ? 'care' : this.tab ? 'build' : this._sheet || null;
       document.querySelectorAll('#toolbar button').forEach(b => b.classList.toggle('on', b.dataset.tool === grp));
     },
-    updateClock() { this.syncBiome(); $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
-    /** Top-bar biome chip: icon, temperature and any weather event (hidden for Classic tanks). */
-    syncBiome() {
-      const b = $('biomeChip'); if (!b || !JT.Biome) return; const h = this.hab; const bid = JT.Biome.id(h);
-      if (bid === 'classic') { b.classList.add('hidden'); return; }
-      const B = JT.BIOMES[bid], e = JT.Biome.event(h); const t = B.icon + ' ' + JT.Biome.temp(h) + '\u00b0' + (e ? '<span class="bev"> \u00b7 ' + JT.BIOME_EVENTS[e.id].name + '</span>' : '');
-      if (b._t !== t) { b._t = t; b.innerHTML = t; } b.classList.remove('hidden'); b.classList.toggle('ev', !!e); b.title = B.name + ' climate' + (e ? ' \u00b7 ' + JT.BIOME_EVENTS[e.id].name : '');
-    },
-    /** Biome sheet: climate gauges, weather, and how each jumper here feels about it. */
-    biomeModal(hab) {
-      const g = this.game, h = hab || this.hab, Bm = JT.Biome; const bid = Bm.id(h), B = JT.BIOMES[bid]; const w = el('div');
-      w.appendChild(el('p', 'muted', esc(B.blurb)));
-      const hum = Math.round(h.data.humidity * 100), tmp = Bm.temp(h); const e = Bm.event(h);
-      w.appendChild(el('div', 'bgauge', '<span>Temperature</span><span class="bar"><i style="width:' + Math.round(Math.max(0, Math.min(1, (tmp - 12) / 30)) * 100) + '%"></i></span><b>' + tmp + '\u00b0C</b>' +
-        '<span>Humidity</span><span class="bar"><i style="width:' + hum + '%"></i></span><b>' + hum + '%</b>' + '<span>Light</span><span></span><b>' + esc(B.light) + '</b>'));
-      if (bid !== 'classic') w.appendChild(el('p', '', e ? '<b>' + esc(JT.BIOME_EVENTS[e.id].line) + '</b>' : 'Weather: calm. ' + esc((B.events || []).map(k => JT.BIOME_EVENTS[k].name).join(', ')) + ' happens from time to time while you watch.'));
-      if (h.spiders.length) { w.appendChild(el('h4', '', 'Your jumpers here'));
-        w.appendChild(el('ul', 'bcomf', h.spiders.map(sp => { const c = Bm.comfort(h, sp), L = Bm.label(c); const hm = Bm.homesOf(sp.species).filter(x => x !== bid).map(x => JT.BIOMES[x].name);
-          return '<li><span>' + esc(sp.name) + ' <span class="muted">' + esc(JT.SPECIES_BY_ID[sp.species].name) + '</span></span><span class="' + (c >= 0.95 ? 'c1' : c >= 0.6 ? 'c2' : 'c3') + '">' + L + (c < 0.95 && hm.length ? ' \u00b7 home: ' + esc(hm[0]) : '') + '</span></li>'; }).join(''))); }
-      if (bid !== 'classic') { const nm = (B.native || []).map(id => JT.DECOR_BY_ID[id]).filter(Boolean).map(d => d.name);
-        w.appendChild(el('p', 'muted', 'At home here: ' + esc(B.homes.map(id => (JT.SPECIES_BY_ID[id] || {}).name).filter(Boolean).join(', ')) + '. Jumpers at home are a little livelier and learn to trust you sooner.'));
-        w.appendChild(el('p', 'muted', 'Native decor: ' + esc(nm.join(', ')) + '. Native prey: ' + esc(B.prey.map(id => (JT.PREY_BY_ID[id] || {}).name).filter(Boolean).join(', ')) + '.')); }
-      else w.appendChild(el('p', 'muted', 'Change the biome under Tanks \u2192 Edit.'));
-      const r = el('div', 'form-row'); const eb = el('button', 'modal-btn', 'Change biome\u2026'); eb.onclick = () => { A().sfx('click'); this.tankEditModal(g.habs.indexOf(h)); }; r.appendChild(eb); w.appendChild(r);
-      this.openModal(B.icon + ' ' + B.name, w);
-    },
-    /** Biome chips used by the new-tank and edit forms. */
-    biomePicker(cur, onPick) {
-      const box = el('div', 'bpick'); for (const id of JT.BIOME_ORDER) { const B = JT.BIOMES[id]; const b = el('button', id === cur ? 'on' : '', '<b>' + B.icon + ' ' + esc(id === 'classic' ? 'Classic' : B.name) + '</b><small>' + esc(B.short) + '</small>'); b.type = 'button'; b.title = B.blurb;
-        b.onclick = () => { A().sfx('click'); box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); onPick(id); }; box.appendChild(b); }
-      return box;
-    },
+    updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
     /** Views on offer: a back wall closes off the back, so wall tanks get the two sides instead. */
     hasWall(h) { h = h || this.hab; return !!h && h.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall'); },
     camModes() { return this.hasWall() ? ['iso', 'observer', 'left', 'right'] : ['iso', 'observer', 'reverse']; },
@@ -9884,7 +9743,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); this.buzz('molt'); }
       else if (t === 'unlock') { this.toast('<span class="sc">Unlocked</span> ' + esc(d.S.name) + '!<span class="sub">' + esc(d.why) + ' Add one from the Jumper Collection.</span>', 'journal', 6500); A().sfx('unlock'); this.buzz('unlock'); this.tipOnce('unlock'); }
       else if (t === 'toast') this.toast(d.text, d.cls, d.ms);
-      else if (t === 'biome') { const E = JT.BIOME_EVENTS[d.ev]; if (E && !d.end) { this.toast('<span class="sc">' + esc(JT.Biome.of(this.hab).name) + '</span> ' + esc(E.line), '', 4200); A().sfx('rustle'); } this.syncBiome(); }
     },
 
     // ------------------------------------------------ toolbar & dock
@@ -9996,7 +9854,6 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const tgs = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean); const tg = tgs.join(', '); if (tg) c.title += ' — ' + tg;
       const bl = JT.blendNames(d); if (bl.length) c.title += ' — Blends with: ' + bl.join(', ');
       c.appendChild(el('div', 'nm', esc(d.name))); c.appendChild(el('div', 'pr' + (bl.length ? ' blend' : ''), bl.length ? 'Blends with: ' + esc(bl.join(', ')) : tgs[0] || (d.cat === 'plants' ? 'plant' : d.cat === 'walls' ? 'wall' : 'decor')));
-      if (JT.Biome && (JT.Biome.of(this.hab).native || []).includes(d.id)) { c.appendChild(el('span', 'nat', 'Native')); c.title += ' \u2014 native to this biome'; }
       c.onclick = () => this.startPlace(d.id);
       return c;
     },
@@ -10184,7 +10041,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         '<div class="full">' +
         '<div class="rule"></div>' +
         meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
-        '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd>' + (JT.Biome && JT.Biome.id(this.hab) !== 'classic' ? '<dt>Climate</dt><dd>' + JT.Biome.label(JT.Biome.comfort(this.hab, sp)) + (JT.Biome.comfort(this.hab, sp) >= 0.95 ? ' here' : '') + ' (' + esc(JT.Biome.of(this.hab).name) + ')</dd>' : '') + (blendDef ? '<dt>Camouflage</dt><dd>Blending in with the ' + esc(blendDef.name) + '</dd>' : '') + '</dl>' +
+        '<dl class="facts"><dt>Stage</dt><dd>' + JT.STAGES[sp.stage] + (sp.soft > 0 ? ', soft' : '') + '</dd><dt>Age</dt><dd>' + (sp.ageDays || 0).toFixed(1) + ' days</dd><dt>Molts</dt><dd>' + (sp.molts || 0) + '</dd><dt>Catches</dt><dd>' + (sp.catches || 0) + '</dd><dt>Size</dt><dd>' + size + ' mm</dd>' + (blendDef ? '<dt>Camouflage</dt><dd>Blending in with the ' + esc(blendDef.name) + '</dd>' : '') + '</dl>' +
         '<div class="thought">' + esc(sp.thought || '…') + '</div>' +
         (pz ? '<div class="persona"><div class="ptitle">' + esc(pz.title) + '</div><div class="pchips">' + pz.traits.map(t => '<span class="pchip">' + esc(t.label) + '</span>').join('') + (pz.hidden ? '<span class="pchip q" title="Keep watching to discover">?</span>' : '') + '</div>' +
           '<ul class="phab">' + pz.traits.map(t => '<li>' + esc(t.habit) + '</li>').join('') + '</ul>' + ((sp.tame || 0) >= 0.08 ? '<div class="ptame" title="Grows when you visit gently: tap or hold a finger on the glass">' + ((sp.tame >= 0.7) ? 'Knows you well' : sp.tame >= 0.35 ? 'Getting used to you' : 'Starting to notice you') + ' <span class="tbar"><i style="width:' + Math.round(Math.min(1, sp.tame) * 100) + '%"></i></span></div>' : '') + ((sp.diary || []).length ? '<div class="pstory"><b>Story</b>' + sp.diary.slice(-2).reverse().map(e => '<div><span>Day ' + e.d + '</span> ' + esc(e.t) + '</div>').join('') + '</div>' : '') + (pz.hidden ? '<div class="pers">Keep watching ' + esc(sp.name) + ' to discover one more trait.</div>' : '') + '</div>' : '') +
@@ -10307,21 +10164,16 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         for (const [s, hb, i] of mine) { const b = el('button', 'modal-btn', esc(s.name) + ' <span class="muted" style="color:#c8b48a">(' + (hb ? esc(hb.title) : 'holding cup') + ')</span>'); b.onclick = () => { if (!hb) { this.tanksModal(); return; } this.closeModal(); if (i !== st.active) this.switchHab(i); g.selectedId = s.id; this.showPanel(s.id); }; row.appendChild(b); }
         wrap.appendChild(row);
       }
-      const grid = el('div', 'grid'); const best = st.best || {}; const bid = JT.Biome ? JT.Biome.id(h) : 'classic';
-      let order = JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS, JT.SPECIAL_UNLOCKS || []);
-      if (bid !== 'classic') { const rk = (id) => JT.Biome.isHome(bid, id) ? (g.isUnlocked(id) ? 0 : JT.SPECIES_BY_ID[id].hybrid ? 3 : 1) : 2; order = order.map((id, k) => [id, k]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map(x => x[0]);
-        wrap.appendChild(el('p', 'muted', JT.BIOMES[bid].icon + ' This is a <b>' + esc(JT.BIOMES[bid].name) + '</b> tank: jumpers at home here are listed first.')); }
-      for (const id of order) {
+      const grid = el('div', 'grid'); const best = st.best || {};
+      for (const id of JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS, JT.SPECIAL_UNLOCKS || [])) {
         const S = JT.SPECIES_BY_ID[id]; const unlocked = g.isUnlocked(S.id); const chk = g.canAdd(h, S.id);
         const e = el('div', 'entry' + (unlocked ? '' : ' locked'));
         const mystery = S.hybrid && !unlocked; const pc = cloneCanvas(this.R.speciesPortrait(S.id, 150));
         if (mystery) { const x = pc.getContext('2d'); x.globalCompositeOperation = 'source-in'; x.fillStyle = 'rgba(38,28,20,0.82)'; x.fillRect(0, 0, pc.width, pc.height); pc.classList.add('mystery'); }
-        e.appendChild(pc); if (S.hybrid) e.classList.add('hybrid'); const atHome = bid !== 'classic' && JT.Biome.isHome(bid, S.id) && !mystery;
-        if (atHome) { e.classList.add('home'); e.appendChild(el('span', 'badge home', 'At home here')); }
+        e.appendChild(pc); if (S.hybrid) e.classList.add('hybrid');
         const owned = mine.filter(m => m[0].species === S.id).length; const par = S.hybrid ? S.unlock.parents.map(pid => JT.SPECIES_BY_ID[pid]) : null;
         if (mystery) e.insertAdjacentHTML('beforeend', '<span class="badge">Hybrid ?</span><h4>Mystery hybrid</h4><div class="sci">' + par.map(P => esc(P.name)).join(' \u00d7 ') + '</div><p>Something new may appear when both of these species grow up in your care.</p><p class="muted">' + par.map(P => esc(P.name) + ': ' + (best[P.id] >= 5 ? 'Adult \u2713' : best[P.id] != null ? JT.STAGES[best[P.id]] : 'not raised yet')).join(' \u00b7 ') + '</p>');
         else e.insertAdjacentHTML('beforeend', (owned ? '<span class="badge">Owned ×' + owned + '</span>' : !unlocked ? '<span class="badge">Locked</span>' : S.hybrid ? '<span class="badge">Hybrid</span>' : '') + '<h4>' + esc(S.name) + '</h4><div class="sci"><i>' + esc(S.sci) + '</i> · ~' + S.len + ' mm adult' + (par ? '<br>' + par.map(P => esc(P.name)).join(' \u00d7 ') : '') + '</div><p>' + esc(S.desc) + '</p>' + this.traitBars(S.traits));
-        if (!mystery && JT.Biome) { const hm = JT.Biome.homesOf(S.id); if (hm.length) e.appendChild(el('div', 'bh', 'Home biome: ' + hm.map(x => JT.BIOMES[x].icon + ' ' + esc(JT.BIOMES[x].name)).join(', '))); }
         const b = el('button', 'modal-btn gold');
         if (!unlocked) {
           if (S.unlock && S.unlock.parents) b.textContent = 'Raise both parents to Adult (' + S.unlock.parents.filter(pid => best[pid] >= 5).length + '/2)';
@@ -10388,7 +10240,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const size = (S.len * JT.STAGE_SCALE[sp.stage]).toFixed(1);
       hd.appendChild(el('div', 'pf-id', '<div class="pf-sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
         '<div class="pf-st">' + JT.STAGES[sp.stage] + ' \u00b7 ' + (sp.ageDays || 0).toFixed(1) + ' days old \u00b7 ' + size + ' mm</div>' +
-        '<div class="pf-home">' + (home ? 'Lives in <b>' + esc(home.title) + '</b> (' + esc(home.dims.name) + ')' + (JT.Biome && JT.Biome.id(home) !== 'classic' ? ' \u00b7 ' + JT.Biome.of(home).icon + ' ' + JT.Biome.label(JT.Biome.comfort(home, sp)) : '') : inCup ? 'Waiting in the holding cup' : '') + (JT.Biome && JT.Biome.homesOf(sp.species).length ? '<br>Home biome: ' + JT.Biome.homesOf(sp.species).map(x => esc(JT.BIOMES[x].name)).join(', ') : '') + '</div>' +
+        '<div class="pf-home">' + (home ? 'Lives in <b>' + esc(home.title) + '</b> (' + esc(home.dims.name) + ')' : inCup ? 'Waiting in the holding cup' : '') + '</div>' +
         (pz ? '<div class="pf-title">' + esc(pz.title) + '</div>' : '')));
       w.appendChild(hd);
       const sec = (t) => { const e = el('div', 'pf-sec'); e.appendChild(el('h4', '', t)); w.appendChild(e); return e; };
@@ -10542,7 +10394,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           if (ts.thirsty.length) chips += chip('warn', 'Thirsty: ' + names(ts.thirsty));
           if (h.spiders.length && !ts.food) chips += chip('warn', 'No food');
           if (h.spiders.length && !ts.score) chips += chip('ok', 'All good');
-          r.appendChild(el('div', 'tktx', '<div class="tn">' + esc(h.title) + '</div><div class="ts">' + (JT.Biome && JT.Biome.id(h) !== 'classic' ? JT.BIOMES[JT.Biome.id(h)].icon + ' ' + esc(JT.BIOMES[JT.Biome.id(h)].name) + ' \u00b7 ' : '') + esc(H.name) + ' \u00b7 ' + h.spiders.length + '/' + H.cap + ' jumper' + (H.cap === 1 ? '' : 's') + '</div>' + (chips ? '<div class="tst">' + chips + '</div>' : '')));
+          r.appendChild(el('div', 'tktx', '<div class="tn">' + esc(h.title) + '</div><div class="ts">' + esc(H.name) + ' \u00b7 ' + h.spiders.length + '/' + H.cap + ' jumper' + (H.cap === 1 ? '' : 's') + '</div>' + (chips ? '<div class="tst">' + chips + '</div>' : '')));
           const bs = el('div', 'tkb');
           const fv = el('button', 'tkfav' + (h.data.fav ? ' on' : ''), h.data.fav ? '\u2605' : '\u2606'); fv.title = h.data.fav ? 'Unpin' : 'Pin to the top'; fv.setAttribute('aria-label', fv.title);
           fv.onclick = (e) => { e.stopPropagation(); h.data.fav = !h.data.fav; A().sfx('click'); g.save(); draw(); };
@@ -10574,20 +10426,16 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (g.habs.length >= JT.MAX_HABS) w.appendChild(el('p', 'muted', 'You have the maximum of ' + JT.MAX_HABS + ' tanks. Delete one to build another.'));
       else {
         const r = el('div', 'form-row'); const ty = el('select'); ty.setAttribute('aria-label', 'Enclosure'); for (const t in JT.HABITATS) { const o = el('option', '', JT.HABITATS[t].name); o.value = t; ty.appendChild(o); }
-        let nb = this._newBiome || 'classic'; w.appendChild(el('p', 'muted', 'Biome: the climate, weather and native jumpers of the new tank.'));
-        w.appendChild(this.biomePicker(nb, (id) => { nb = this._newBiome = id; fill(); }));
         const ly = el('select'); ly.setAttribute('aria-label', 'Layout');
-        const fill = () => { ly.innerHTML = ''; if (nb !== 'classic') { const ob = el('option', '', JT.BIOMES[nb].name + ' layout (recommended)'); ob.value = 'b'; ly.appendChild(ob); }
-          const o0 = el('option', '', 'Empty (substrate only)'); o0.value = ''; ly.appendChild(o0);
+        const fill = () => { ly.innerHTML = ''; const o0 = el('option', '', 'Empty (substrate only)'); o0.value = ''; ly.appendChild(o0);
           JT.Presets.forType(ty.value).forEach(pp => { const o = el('option', '', esc(pp.name)); o.value = 't:' + pp.theme; ly.appendChild(o); });
           (st.customPresets || []).forEach((pp, k) => { const o = el('option', '', 'Custom: ' + esc(pp.name)); o.value = 'c:' + k; ly.appendChild(o); }); };
         ty.onchange = fill; fill();
         const b = el('button', 'modal-btn gold', 'Build tank'); b.onclick = () => {
           const h = g.createHabitat(ty.value); if (!h) { this.toast('You have the maximum of ' + JT.MAX_HABS + ' tanks.'); return; }
-          const v = ly.value; if (v === 'b') JT.Presets.biome(h, nb, (JT.R() * 1e9) | 0); else if (v[0] === 't') JT.Presets.generate(h, v.slice(2), (JT.R() * 1e9) | 0); else if (v[0] === 'c') JT.Presets.applyCustom(h, st.customPresets[+v.slice(2)]);
-          if (nb !== 'classic') { const B = JT.BIOMES[nb]; h.data.biome = nb; if (!v) { if (B.sub) h.data.substrate = B.sub; if (B.bg) h.data.bg = B.bg; } if (B.hum != null) h.data.humidity = B.hum; }
-          h.decor.forEach(d => { d.preset = true; }); this.closeModal(); this.switchHab(g.habs.length - 1); g.checkUnlocks(); g.save(); A().sfx('place');
-          this.toast('New ' + (nb !== 'classic' ? esc(JT.BIOMES[nb].name.toLowerCase()) + ' ' : '') + esc(JT.HABITATS[h.data.type].name.toLowerCase()) + ' ready. Add a jumper from <b>Jumpers</b>' + (nb !== 'classic' ? ' (natives are listed first)' : '') + ' and the tank takes its name.', '', 4600); };
+          const v = ly.value; if (v[0] === 't') JT.Presets.generate(h, v.slice(2), (JT.R() * 1e9) | 0); else if (v[0] === 'c') JT.Presets.applyCustom(h, st.customPresets[+v.slice(2)]);
+          h.decor.forEach(d => { d.preset = true; }); this.closeModal(); this.switchHab(g.habs.length - 1); g.save(); A().sfx('place');
+          this.toast('New ' + esc(JT.HABITATS[h.data.type].name.toLowerCase()) + ' ready. Add a jumper from <b>Jumpers</b> and the tank takes its name.', '', 4200); };
         r.appendChild(ty); r.appendChild(ly); r.appendChild(b); w.appendChild(r);
       }
       this.openModal('Your Tanks', w);
@@ -10607,19 +10455,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         g.changeType(h, t); if (h === g.hab) { this.R.cur = null; this.undoClear && this.undoClear(); } this.refreshHeader(); g.save(); again(); this.toast('Enclosure changed to ' + JT.HABITATS[t].name + '.');
       };
       r2.appendChild(sel); r2.appendChild(cb); w.appendChild(r2);
-      { const cbid = JT.Biome.id(h); w.appendChild(el('h4', '', 'Biome'));
-        w.appendChild(this.biomePicker(cbid, (id) => { if (id === JT.Biome.id(h)) return; const B = JT.BIOMES[id];
-          const lay = id !== 'classic' && root.confirm('Switch to ' + B.name + '. Also rebuild the decor with a ' + B.name + ' layout?\n\nOK = new biome layout (current decor removed)\nCancel = keep the current decor');
-          if (lay && h === g.hab && this.undoPush) this.undoPush('Biome layout');
-          if (lay) { JT.Presets.biome(h, id, (JT.R() * 1e9) | 0); h.decor.forEach(d => { d.preset = true; }); if (h === g.hab) this.R._speck = null; this.afterLayout && this.afterLayout(h); }
-          h.data.biome = id; h.data.bev = null; g.checkUnlocks(); this.refreshHeader(); g.save(); this.toast('Biome: ' + B.icon + ' ' + esc(id === 'classic' ? 'Classic' : B.name) + '.'); again(); })); }
       const r3 = el('div', 'form-row'); r3.appendChild(el('label', '', 'Preset layout'));
-      const ps = el('select'); if (JT.Biome.id(h) !== 'classic') { const ob = el('option', '', JT.BIOMES[JT.Biome.id(h)].name + ' layout'); ob.value = 'b'; ps.appendChild(ob); } JT.Presets.forType(h.data.type).forEach(pp => { const o = el('option', '', esc(pp.name)); o.value = 't:' + pp.theme; ps.appendChild(o); });
+      const ps = el('select'); JT.Presets.forType(h.data.type).forEach(pp => { const o = el('option', '', esc(pp.name)); o.value = 't:' + pp.theme; ps.appendChild(o); });
       (st.customPresets || []).forEach((pp, k) => { const o = el('option', '', 'Custom: ' + esc(pp.name)); o.value = 'c:' + k; ps.appendChild(o); });
       const ap = el('button', 'modal-btn', 'Apply / Regenerate'); ap.onclick = () => {
         if (!root.confirm('Replace all decor in ' + h.title + ' with this layout? Current decor is removed.')) return;
         if (h === g.hab && this.undoPush) this.undoPush('Layout');
-        const v = ps.value; if (v === 'b') JT.Presets.biome(h, JT.Biome.id(h), (JT.R() * 1e9) | 0); else if (v[0] === 't') JT.Presets.generate(h, v.slice(2), (JT.R() * 1e9) | 0); else JT.Presets.applyCustom(h, st.customPresets[+v.slice(2)]);
+        const v = ps.value; if (v[0] === 't') JT.Presets.generate(h, v.slice(2), (JT.R() * 1e9) | 0); else JT.Presets.applyCustom(h, st.customPresets[+v.slice(2)]);
         h.decor.forEach(d => { d.preset = true; }); if (h === g.hab) this.R._speck = null; this.afterLayout && this.afterLayout(h);
         g.save(); this.toast('New layout ready.'); again();
       };
@@ -10959,7 +10801,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
       if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
         if (lock30 && (now > lock30 || R._unlock30)) { lock30 = 0; R.fps = 60; lowT = 0; } R._unlock30 = false;
-        const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 2;
+        const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 3;
         if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
         if (lock30) { lively = false; lockEnd = now; } }
       R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30;
