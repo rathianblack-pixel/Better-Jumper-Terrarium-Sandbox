@@ -9328,7 +9328,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // taps on other controls (outside the jumper card) close it too; taps on the tank are handled in tap()
       document.addEventListener('click', (e) => { if (!this.panelId || performance.now() - (this._panelAt || 0) < 350) return; const t = e.target; if (!t || !t.closest) return;
         if (t.closest('#spiderPanel') || t === this.cv || t.id === 'glview' || t.closest('#modal')) return; this.hidePanel(); });
-      $('modeRotate').onclick = () => this.rotatePlace(); $('modeLeaves').onclick = () => this.toggleLeaves(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.cancelMode(); $('modeUndo').onclick = () => this.undo(); $('undoBtn').onclick = () => this.undo(); $('redoBtn').onclick = () => this.redo(); this.undoSync();
+      $('modeRotate').onclick = () => this.rotatePlace(); $('modeLeaves').onclick = () => this.toggleLeaves(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.endMode(); $('modeUndo').onclick = () => this.undo(); $('undoBtn').onclick = () => this.undo(); $('redoBtn').onclick = () => this.redo(); this.undoSync();
       $('obsExit').onclick = () => this.toggleObserve(false);
       $('obsPhoto').onclick = (e) => { e.stopPropagation(); A().sfx('click'); this.photoMode(true); };
       $('phExit').onclick = () => { A().sfx('click'); this.photoMode(false); }; $('phShot').onclick = () => this.photoSnap();
@@ -9480,7 +9480,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if ((e.ctrlKey || e.metaKey) && !e.altKey && (k === 'z' || k === 'Z' || k === 'y' || k === 'Y')) { if (this.obs || !$('modalWrap').classList.contains('hidden')) return; e.preventDefault(); if (k === 'y' || k === 'Y' || e.shiftKey) this.redo(); else this.undo(); return; }
       if (this.photo) { if (k === 'Escape' || k === 'p' || k === 'P') this.photoMode(false); else if (k === ' ' || k === 'Enter') { e.preventDefault(); this.photoSnap(); } return; }
       if ((k === 'p' || k === 'P') && this.obs) { this.photoMode(true); return; }
-      if (k === 'Escape') { if (this.obs) this.toggleObserve(false); else if (!$('modalWrap').classList.contains('hidden')) this.closeModal(); else if (this.mode) this.cancelMode(); else if (this.tab) this.closeDrawer(); else if (this.panelId) this.hidePanel(); return; }
+      if (k === 'Escape') { if (this.obs) this.toggleObserve(false); else if (!$('modalWrap').classList.contains('hidden')) this.closeModal(); else if (this.mode) this.endMode(); else if (this.tab) this.closeDrawer(); else if (this.panelId) this.hidePanel(); return; }
       if (k === 'o' || k === 'O') { this.toggleObserve(); return; }
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
@@ -9609,7 +9609,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       else if (t === 'journal') { if (this._sheet === 'journal') this.closeModal(); else { this.closeDrawer(); this.jumpersSheet('journal'); } }
       else if (t === 'mist') this.doMist();
       else if (t === 'clean') this.doClean();
-      else if (t === 'remove') { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); }
+      else if (t === 'remove') { if (this.mode === 'remove') this.endMode(); else this.startRemove(); }
       this.refreshHeader();
     },
     dock(d) {
@@ -9641,7 +9641,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const tabs = $('drawerTabs'); tabs.innerHTML = '';
       const list = tab === 'food' ? [['food', 'Care']] : [['decor', 'Decor'], ['plants', 'Plants'], ['walls', 'Walls'], ['substrate', 'Ground']];
       for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.openDrawer(id); }; tabs.appendChild(b); }
-      if (tab !== 'food') { const b = el('button', 'rm' + (this.mode === 'remove' ? ' on' : ''), 'Remove'); b.title = 'Tap decor in the tank to remove it'; b.onclick = () => { if (this.mode === 'remove') this.cancelMode(); else this.startRemove(); this.openDrawer(this.tab); }; tabs.appendChild(b); }
+      if (tab !== 'food') { const b = el('button', 'rm' + (this.mode === 'remove' ? ' on' : ''), 'Remove'); b.title = 'Tap decor in the tank to remove it'; b.onclick = () => { if (this.mode === 'remove') this.endMode(); else this.startRemove(); if (this.mode !== 'remove') this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
       $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live · humidity ' + Math.round(h.data.humidity * 100) + '%' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Pick a wall, then dress it: wall decor is free' : 'Choose a piece, then place it';
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
@@ -9746,7 +9746,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.mode = 'place'; this.place = { type, rot: 0, seed: (JT.R() * 1e9) | 0, x: null, z: null, ok: false, bare: false };
       const lv = $('modeLeaves'); lv.classList.toggle('hidden', d.arche !== 'tree'); lv.textContent = 'Leaves';
       this.cv.classList.add('placing'); $('modeBar').classList.remove('hidden'); $('modeRotate').classList.toggle('hidden', d.arche === 'backwall'); $('modeDone').classList.remove('hidden');
-      if (this.isMobile()) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); }
+      if (this.tab) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); } // v11.2: minimise the build drawer on every screen while placing
       // start the ghost in the middle so touch users see it immediately
       const r = this.cv.getBoundingClientRect(); this.updateGhost(r.width / 2, r.height * 0.55);
       this.setModeText(); void d;
@@ -9791,6 +9791,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.cancelMode(); this.mode = 'remove'; this.cv.classList.add('removing'); $('modeBar').classList.remove('hidden');
       $('modeRotate').classList.add('hidden'); $('modeLeaves').classList.add('hidden'); $('modeDone').classList.add('hidden');
       $('modeText').innerHTML = '<b>Remove</b> · <span class="hint">tap decor, food or leftovers</span>';
+      if (this.tab) { $('drawer').classList.add('hidden'); this.syncDrawerSpace(); } // v11.2: always minimise the build drawer so the tank is clear to tap (any screen size / orientation)
       this.refreshHeader();
     },
     removeAt(sx, sy) {
@@ -9807,7 +9808,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         this.toast('Removed ' + esc(nm) + (removed.length > 1 ? ' and ' + (removed.length - 1) + ' item(s) resting on it' : '') + '.');
       }
     },
-    modeDone() { if (this.mode === 'place') this.confirmPlace(); else this.cancelMode(); },
+    modeDone() { if (this.mode === 'place') this.confirmPlace(); else this.endMode(); },
+    /** Leave place/remove mode from its own controls: bring a minimised shop drawer back (mobile). */
+    endMode() { this.cancelMode(); if (this.tab && $('drawer').classList.contains('hidden')) { $('drawer').classList.remove('hidden'); this.syncDrawerSpace(); this.openDrawer(this.tab); } },
     // ------------------------------------------------ v11 undo / redo (building in the tank you are viewing)
     _undoSnap(h) { return JSON.stringify({ decor: h.data.decor, sub: h.data.substrate, bg: h.data.bg }); },
     /** Call right before a build change. Keeps up to 20 steps for the tank being viewed. */
@@ -10776,7 +10779,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (vis('modalWrap')) { if (U._modalBack) U._modalBack(); else U.closeModal(); return true; }
         if (vis('popover')) { document.getElementById('popover').classList.add('hidden'); return true; }
         if (U.obs) { U.toggleObserve(false); return true; }
-        if (U.mode) { U.cancelMode(); return true; }
+        if (U.mode) { U.endMode(); return true; }
         if (U.tab) { U.closeDrawer(); return true; }
         if (U.panelId) { U.hidePanel(); return true; }
         return false;
