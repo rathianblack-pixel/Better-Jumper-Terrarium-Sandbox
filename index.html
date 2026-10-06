@@ -572,23 +572,43 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
 @keyframes tipIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 #modal .tiprow{margin:0 0 12px}
 /* fingertip on the glass (v7) */
-/* pre-game splash (v8) */
-#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(20px + var(--sat)) 24px calc(28px + var(--sab));background:radial-gradient(ellipse 90% 70% at 50% 36%,#5a7a3a 0,#2c4622 38%,#16240f 72%,#0c140a 100%);color:#f3ead6;text-align:center;transition:opacity .7s ease,visibility .7s;cursor:pointer;overflow:hidden}
-#splash::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 34%,rgba(243,214,138,.28),rgba(243,214,138,0) 38%);pointer-events:none}
-#splash::after{content:"";position:absolute;left:0;right:0;bottom:0;height:24vh;background:linear-gradient(rgba(30,20,11,0),rgba(30,20,11,.55) 45%,rgba(22,15,8,.85));pointer-events:none}
+/* start screen (v9): still art first, then a live close-up showcase behind a quiet, glowing title */
+#splash{position:fixed;inset:0;z-index:200;overflow:hidden;color:#f4ecd8;text-align:center;font-family:var(--serif);transition:opacity .9s ease,visibility .9s;background:#0c140a}
+#splash.live{background:transparent}
 #splash.gone{opacity:0;visibility:hidden;pointer-events:none}
-#splash .sp-art{position:relative;z-index:1;width:min(64vw,46vh,420px);height:auto;animation:spBob 4.5s ease-in-out infinite;filter:drop-shadow(0 18px 24px rgba(0,0,0,.35))}
-#splash h1{position:relative;z-index:1;margin:2px 0 4px;font-family:var(--serif);font-weight:400;font-size:clamp(30px,8.5vw,52px);letter-spacing:.03em;text-shadow:0 2px 14px rgba(0,0,0,.5)}
-#splash .sp-tag{position:relative;z-index:1;margin:0 0 26px;font-style:italic;font-size:clamp(15px,3.9vw,19px);color:rgba(243,234,214,.78)}
-#splash .sp-go{position:relative;z-index:2;min-height:48px;min-width:190px;padding:0 30px;border-radius:24px;border:1px solid rgba(243,214,138,.7);background:linear-gradient(#f3d68a,#c9a24f);color:#2a1c0c;font-size:17px;letter-spacing:.08em;text-shadow:none;box-shadow:0 6px 22px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .2s,opacity .3s}
-#splash .sp-go:disabled{opacity:.55;background:rgba(243,214,138,.15);color:#f3ead6}
-#splash.ready .sp-go{animation:spPulse 2.4s ease-in-out infinite}
-#splash .sp-go:active{transform:scale(.96)}
-#splash .sp-foot{position:absolute;z-index:1;bottom:calc(12px + var(--sab));left:0;right:0;font-size:12.5px;letter-spacing:.12em;font-variant:small-caps;color:rgba(243,234,214,.5)}
+#splash .sp-still{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-bottom:30vh;background:radial-gradient(ellipse 90% 70% at 50% 36%,#5a7a3a 0,#2c4622 38%,#16240f 72%,#0c140a 100%);transition:opacity 1.6s ease}
+#splash .sp-still::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 34%,rgba(243,214,138,.26),rgba(243,214,138,0) 38%);pointer-events:none}
+#splash .sp-still::after{content:"";position:absolute;left:0;right:0;bottom:0;height:24vh;background:linear-gradient(rgba(30,20,11,0),rgba(30,20,11,.55) 45%,rgba(22,15,8,.85));pointer-events:none}
+#splash.live .sp-still{opacity:0}
+#splash .sp-art{position:relative;z-index:1;width:min(60vw,40vh,400px);height:auto;animation:spBob 4.5s ease-in-out infinite;filter:drop-shadow(0 18px 24px rgba(0,0,0,.35))}
+#splash .sp-veil{position:absolute;inset:0;background:#0b1209;opacity:0;transition:opacity .38s ease;pointer-events:none}
+#splash .sp-veil.on{opacity:1}
+#splash .sp-shade{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 1.6s ease;background:linear-gradient(rgba(8,12,6,.42),rgba(8,12,6,0) 20%,rgba(8,12,6,0) 46%,rgba(8,12,6,.5) 70%,rgba(8,12,6,.78)),radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.32))}
+#splash.live .sp-shade{opacity:1}
+#splash .sp-ui{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:0 24px calc(11vh + var(--sab));display:flex;flex-direction:column;align-items:center}
+#splash .sp-title{margin:0;padding-left:.26em;font-weight:400;font-size:clamp(21px,6vw,40px);letter-spacing:.26em;text-transform:uppercase;line-height:1.25;animation:spGlowT 5.2s ease-in-out infinite}
+#splash .sp-tag{margin:.75em 0 2.6em;font-style:italic;font-size:clamp(14px,3.6vw,17px);letter-spacing:.05em;color:rgba(244,236,216,.72);text-shadow:0 1px 8px rgba(0,0,0,.6)}
+#splash .sp-menu{min-height:120px;display:flex;flex-direction:column;align-items:center}
+#splash .sp-btn{font-family:var(--serif);color:#f4ecd8;background:none;border:0;min-height:48px;min-width:170px;padding:0 1.4em 0 1.8em;font-size:15px;letter-spacing:.42em;text-transform:uppercase;text-shadow:0 1px 8px rgba(0,0,0,.6);cursor:pointer}
+#splash .sp-start{display:inline-flex;align-items:center;gap:1.1em;animation:spGlow 3.4s ease-in-out infinite}
+#splash .sp-start::before,#splash .sp-start::after{content:"";position:static;flex:none;width:30px;height:1px;background:currentColor;opacity:.55;transform:none;transition:none}
+#splash .sp-start:disabled{animation:none;opacity:.35}
+#splash .sp-choices{display:flex;flex-direction:column;align-items:center;gap:4px;animation:spIn .7s ease both}
+#splash #spCont{animation:spGlow 3.4s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#splash .sp-sub{display:block;margin-top:3px;font-size:12.5px;letter-spacing:.06em;text-transform:none;font-style:italic;color:rgba(244,236,216,.66)}
+#splash .sp-minor{font-size:12.5px;letter-spacing:.34em;color:rgba(244,236,216,.7)}
+#splash .sp-minor.arm{letter-spacing:.12em;text-transform:none;font-style:italic;font-size:14px;color:#f3d68a}
+#splash .sp-note{min-height:1.3em;margin:.5em 0 0;font-size:12.5px;font-style:italic;color:rgba(244,236,216,.66)}
+#splash .sp-off{display:none!important}
+#splash .sp-foot{position:absolute;z-index:2;left:0;right:0;bottom:calc(14px + var(--sab));font-size:11.5px;letter-spacing:.3em;color:rgba(244,236,216,.5);transition:opacity .9s ease}
+#splash .sp-foot.off{opacity:0}
+body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
 @keyframes spBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes spPulse{0%,100%{box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 0 rgba(243,214,138,.45),inset 0 1px 0 rgba(255,255,255,.5)}50%{box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 10px rgba(243,214,138,0),inset 0 1px 0 rgba(255,255,255,.5)}}
-@media (max-height:500px) and (orientation:landscape){#splash{flex-direction:row;gap:4vw}#splash .sp-art{width:min(42vh*1.6,38vw)}#splash .sp-txt{text-align:left}}
-@media (prefers-reduced-motion:reduce){#splash .sp-art,#splash.ready .sp-go{animation:none}}
+@keyframes spIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes spGlow{0%,100%{opacity:.5;text-shadow:0 1px 8px rgba(0,0,0,.55)}50%{opacity:1;text-shadow:0 0 14px rgba(255,226,170,.7),0 0 34px rgba(255,214,140,.32),0 1px 8px rgba(0,0,0,.4)}}
+@keyframes spGlowT{0%,100%{opacity:.74;text-shadow:0 1px 10px rgba(0,0,0,.55)}50%{opacity:1;text-shadow:0 0 18px rgba(255,230,180,.55),0 0 42px rgba(255,214,140,.25),0 1px 10px rgba(0,0,0,.4)}}
+@media (max-height:500px) and (orientation:landscape){#splash .sp-still{padding-bottom:44vh}#splash .sp-art{width:min(36vh,30vw)}#splash .sp-ui{padding-bottom:calc(7vh + var(--sab))}#splash .sp-tag{margin:.4em 0 1.2em}#splash .sp-menu{min-height:96px}#splash .sp-title{font-size:clamp(18px,7.5vh,30px)}#splash .sp-tag{font-size:13.5px}#splash .sp-foot{bottom:calc(6px + var(--sab))}}
+@media (prefers-reduced-motion:reduce){#splash .sp-art,#splash .sp-title,#splash .sp-start,#splash #spCont{animation:none}}
 /* slow-motion offer while observing: sits just above the Observe caption, big tap target (v8) */
 #replayDock{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(96px + var(--sab));z-index:21;display:flex;justify-content:center;width:min(440px,92vw);pointer-events:none}
 #replayDock:empty{display:none}
@@ -597,7 +617,7 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
 </head>
 <body>
 <div id="splash" role="dialog" aria-label="Jumper Terrarium">
-  <svg class="sp-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true">
+  <div class="sp-still"><svg class="sp-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true">
 <defs><radialGradient id="sp_fadeG" cx="50%" cy="55%" r="55%"><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="sp_fade"><rect width="1024" height="1024" fill="url(#sp_fadeG)"/></mask>
   <radialGradient id="sp_bg" cx="50%" cy="38%" r="75%">
     <stop offset="0" stop-color="#4f6b34"/><stop offset="0.45" stop-color="#2a4220"/><stop offset="1" stop-color="#0f1a0d"/>
@@ -664,13 +684,23 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
 <path d="M558 630 C562 660 554 684 540 694" stroke="#d8fff4" stroke-width="7" fill="none" opacity=".45" stroke-linecap="round"/>
 <!-- glass arch -->
 <path d="M150 1024 L150 300 A362 250 0 0 1 874 300 L874 1024" fill="none" stroke="#e8cf92" stroke-width="10" opacity=".22"/>
-</g></svg>
-  <div class="sp-txt">
-    <h1>Jumper Terrarium</h1>
-    <p class="sp-tag">A calm jumping-spider terrarium</p>
-    <button class="sp-go" id="splashGo" disabled>Loading…</button>
+</g></svg></div>
+  <div class="sp-veil" id="spVeil"></div>
+  <div class="sp-shade"></div>
+  <div class="sp-ui">
+    <h1 class="sp-title">Jumper Terrarium</h1>
+    <p class="sp-tag">a calm jumping-spider terrarium</p>
+    <div class="sp-menu">
+      <button class="sp-btn sp-start" id="splashGo" disabled>Start</button>
+      <div class="sp-choices sp-off" id="spChoices">
+        <button class="sp-btn" id="spCont">Continue<span class="sp-sub" id="spContSub"></span></button>
+        <button class="sp-btn sp-minor" id="spNew">New game</button>
+      </div>
+      <p class="sp-note" id="spNote"></p>
+    </div>
   </div>
-  <div class="sp-foot">sound on for the full experience</div>
+  <div class="sp-foot" id="spFoot">tap anywhere for sound</div>
+</div>
 </div>
 <div id="app">
   <canvas id="glview" aria-hidden="true"></canvas>
@@ -8263,7 +8293,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // phone held sideways: the dock is a column on the left, so frame the tank in the space to its right
       const dock = root.document && root.document.getElementById('dock');
       const side = root.matchMedia && root.matchMedia('(max-height:500px) and (orientation:landscape)').matches;
-      this.insetL = side && dock ? Math.max(0, Math.min(this.cssW * 0.4, dock.getBoundingClientRect().right)) : 0;
+      this.insetL = side && dock && !this.attract ? Math.max(0, Math.min(this.cssW * 0.4, dock.getBoundingClientRect().right)) : 0;
     }
     /** Forget every cached picture (after loading a different save). */
     resetCaches() { this._baseL = null; this._st = null; this._skPrev = null; this.bgCache = {}; this.motes = null; this._speck = null; this.cur = null; if (this.fcam) this.fcam.st = null; }
@@ -8332,7 +8362,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         }
       } else if (this.fcam) this.fcam.st = null;
       const kk = this.k;
-      const il = this.insetL || 0; this.V.set(cu.yaw, cu.pitch, cu.s * kk, (il + (this.cssW - il) / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
+      const il = this.insetL || 0; this.V.set(cu.yaw, cu.pitch, cu.s * kk, (il + (this.cssW - il) / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.attract ? -this.cssH * (this.cssH > this.cssW * 1.1 ? 0.12 : this.cssH < 520 ? 0.24 : 0.1) : this.cssH > this.cssW * 1.1 ? this.cssH * 0.045 : this.cssH * 0.02)) * kk, cu.c);
       return this.V;
     }
     /** CSS pixel -> world (x,z) at height y. */
@@ -10071,16 +10101,8 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
-    { // pre-game splash: becomes tappable once the game is ready; skipped for automated runs unless ?splash=1
-      const sp = document.getElementById('splash'), go = document.getElementById('splashGo');
-      const force = /[?&]splash=1/.test(location.search);
-      if (sp && navigator.webdriver && !force) sp.remove();
-      else if (sp) {
-        const enter = (ev) => { if (ev) ev.stopPropagation(); if (sp.classList.contains('gone')) return; try { JT.Audio.start(); } catch (e) { void e; } try { JT.UI.buzz && JT.UI.buzz('tap'); } catch (e) { void e; } sp.classList.add('gone'); setTimeout(() => sp.remove(), 800); };
-        requestAnimationFrame(() => requestAnimationFrame(() => { sp.classList.add('ready'); if (go) { go.disabled = false; go.textContent = 'Tap to enter'; } sp.addEventListener('click', enter); document.addEventListener('keydown', function k(e) { if (!document.getElementById('splash')) return document.removeEventListener('keydown', k); if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } }); }));
-      }
-    }
-    if (!restored) setTimeout(() => JT.UI.toast((game._wiped ? 'A fresh start: everything is free now. ' : 'Welcome! ') + 'Meet <b>Pip</b>, your Peacock Spider sling. Raise it to Adult to unlock the next jumper. Tap a jumper to see what it is doing, or press Observe to watch it up close.', '', 7000), 600);
+    const welcome = (fresh) => setTimeout(() => JT.UI.toast((fresh ? 'A fresh start! ' : game._wiped ? 'A fresh start: everything is free now. ' : 'Welcome! ') + 'Meet <b>Pip</b>, your Peacock Spider sling. Raise it to Adult to unlock the next jumper. Tap a jumper to see what it is doing, or press Observe to watch it up close.', '', 7000), 600);
+    const AT = { on: false, g: null }; // the start screen's live showcase (a separate, never-saved game)
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
     root.addEventListener('pagehide', () => game.save());
@@ -10089,7 +10111,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /* Smooth motion: the simulation steps at 30 Hz, the screen may draw at 60. Each step remembers where every critter
        was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
        Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
-    const M = JT.M; const crit = () => { const h = game.hab; return h ? h.data.spiders.concat(h.data.prey) : []; };
+    const M = JT.M; const crit = () => { const h = (AT.on && AT.g ? AT.g : game).hab; return h ? h.data.spiders.concat(h.data.prey) : []; };
     function snapPrev() { for (const e of crit()) { if (!e.pos) continue; e._ip = e.pos.slice(); e._if = e.fwd ? e.fwd.slice() : null; } }
     function blendIn(a) {
       const saved = []; if (a >= 0.999) return () => {};
@@ -10100,6 +10122,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
     function frame(now) {
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+      if (AT.on) { try { AT.frame(dt); } catch (e) { console.error('attract', e); AT.stop(); } requestAnimationFrame(frame); return; }
       acc += dt; let n = 0;
       if (Replay.active) { acc = 0; try { Replay.step(dt); } catch (e) { console.error('replay', e); Replay.stop(); } } // paused while a slow-motion replay plays
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
@@ -10128,6 +10151,99 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
           d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
+    }
+    /* ---------------- start screen (v9) ----------------
+       Still art shows first; meanwhile a throwaway showcase game (random preset, random jumpers incl. locked species,
+       never saved, never the player's tank) is built and pre-simulated, then the screen fades into live Observe-style
+       close-ups. A "director" cuts every 3 s behind a soft veil (a stalk/pounce in progress earns a little more time) and
+       moves to a fresh set-up every 4 shots. The next set-up is built at an earlier cut (hidden behind the veil) and
+       pre-simulated in small slices, so switching never hitches on screen. Battery saver / reduced motion / no WebGL:
+       the still art stays. Automated runs skip the screen unless ?splash=1 (?attract=0 keeps it still). */
+    {
+      const SP = document.getElementById('splash'); const force = /[?&]splash=1/.test(location.search);
+      if (SP && navigator.webdriver && !force) { SP.remove(); if (!restored) welcome(false); }
+      else if (!SP) { if (!restored) welcome(false); }
+      else {
+        const $s = (id) => document.getElementById(id);
+        const go = $s('splashGo'), choices = $s('spChoices'), cont = $s('spCont'), nw = $s('spNew'), note = $s('spNote'), foot = $s('spFoot'), veil = $s('spVeil');
+        const rm = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const still = settings.fps === 'saver' || !R.gp || rm || /[?&]attract=0/.test(location.search);
+        const rnd = Math.random, pick = (a) => a[(rnd() * a.length) | 0];
+        const SHOT = 3, PER = 4;
+        const sg = new JT.Game(); sg.save = () => {}; sg.checkUnlocks = () => {};
+        sg.state = { v: 0, time: JT.DAY * (0.3 + rnd() * 0.32), catches: 0, species: JT.SPECIES.map(x => x.id), best: {}, journal: {}, jmeta: {}, active: 0, timeMode: 'day', customPresets: [], nextId: 5e6 + ((rnd() * 4e6) | 0), habitats: [] };
+        sg.selectedId = null; AT.g = sg;
+        const feedUp = (h) => { if (h.livePreyCount() < 8) { h.addPrey('fruitfly', 4); h.addPrey('gnat', 3); h.addPrey('aphid', 4); } if (rnd() < 0.25 && !h.data.prey.some(p => p.type === 'cricket')) h.addPrey('cricket', 1); };
+        const build = () => {
+          const P = pick(JT.PRESETS); const h = new JT.Habitat({ name: P[0], type: pick(P[2]) }, sg); JT.Presets.generate(h, P[1], (rnd() * 1e9) | 0, true);
+          let ids = JT.SPECIES.map(x => x.id).sort(() => rnd() - 0.5); let n = Math.min(h.dims.cap, rnd() < 0.3 ? 1 : rnd() < 0.75 ? 2 : 3);
+          if (ids[0] === 'portia') n = 1; ids = ids.filter((id, i) => i === 0 || id !== 'portia').slice(0, n); // Portia hunts other jumpers: it gets a tank to itself
+          for (const id of ids) { const x = h.addSpider(id, { stage: 3 + ((rnd() * 3) | 0), sat: 0.45 + rnd() * 0.45 }); x.pos = h.randomFloorPoint(); x.sup = { k: 'floor' }; }
+          feedUp(h); h._warm = 90 + ((rnd() * 240) | 0); return h; // 3-11 s of life before it is shown
+        };
+        const dispose = (h) => { for (const id in h.geoms) { const m = h.geoms[id]._mesh; if (m && m.gl && m.vb) try { m.gl.free(m); } catch (e) { void e; } } };
+        const subject = (h, avoid) => { let best = null, bw = -1;
+          for (const x of h.spiders) { const w = (1 + Math.max(0, JT.SpiderAI.interest(x) || 0) / 12 + (x.target ? 2 : 0)) * (x.id === avoid && h.spiders.length > 1 ? 0.25 : 1) * (0.6 + rnd()); if (w > bw) { bw = w; best = x; } }
+          return best; };
+        const frameShot = () => { // pick a jumper and a fresh angle, then let the follow camera settle while the veil is down
+          const h = sg.hab; const x = subject(h, sg.selectedId); sg.selectedId = x ? x.id : null;
+          for (let i = 0; i < 45; i++) R.updateView(h, 1 / 30);
+          const fc = R.fcam; if (fc && fc.st) { fc.orbit((rnd() - 0.5) * 1.6, (rnd() - 0.4) * 0.28); fc.userZoom = 1.5 + rnd() * 0.8; for (let i = 0; i < 15; i++) R.updateView(h, 1 / 30); if (fc.tS > 0) { fc.st.s = fc.tS; fc.st.vs = 0; R.updateView(h, 1 / 30); } }
+          AT.drift = (rnd() < 0.5 ? -1 : 1) * (0.03 + rnd() * 0.06); AT.push = (rnd() - 0.35) * 0.08; AT.t = 0; AT.ext = 0;
+        };
+        const cut = () => {
+          AT.n++; const nx = sg.habs[1];
+          if (AT.n % PER === 0 && nx && !(nx._warm > 0)) { const old = sg.habs.shift(); dispose(old); sg.state.active = 0; R.cur = null; AT.built = false; }
+          else if (!AT.built && sg.habs.length < 2) { sg.habs.push(build()); AT.built = true; }
+          feedUp(sg.hab); frameShot();
+          requestAnimationFrame(() => requestAnimationFrame(() => { veil.classList.remove('on'); AT.veil = false; }));
+        };
+        AT.frame = (dt) => {
+          const h0 = sg.hab; if (!h0) return;
+          if (h0._warm > 0) { const t0 = performance.now(); while (h0._warm > 0 && performance.now() - t0 < 12) { h0.update(STEP, true); h0._warm--; } if (h0._warm <= 0) frameShot(); return; }
+          for (const h of sg.habs) if (h !== h0 && h._warm > 0) { const t0 = performance.now(); while (h._warm > 0 && performance.now() - t0 < 3) { h.update(STEP, true); h._warm--; } }
+          acc += dt; let n = 0; while (acc >= STEP && n < 4) { snapPrev(); sg.tick(STEP); acc -= STEP; n++; } if (n >= 4) acc = 0;
+          // director: slow drift + gentle push while the shot runs; cut on time
+          const fc = R.fcam; if (fc && fc.st && !AT.veil) { fc.orbit(AT.drift * dt, 0); fc.userZoom = M.clamp(fc.userZoom * (1 + AT.push * dt), 1.2, 2.6); }
+          AT.t += dt; const end = SHOT + AT.ext;
+          if (!AT.veil && AT.t >= end - 0.38) { const x = sg.hab.spider(sg.selectedId); if (!AT.ext && x && /^(stalk|crouch|pounce)$/.test(x.state)) AT.ext = 2.2; else { AT.veil = true; veil.classList.add('on'); } }
+          if (AT.veil && AT.t >= end) { AT.t = -10; cut(); }
+          const undo = blendIn(M.clamp(acc / STEP, 0, 1)); try { R.render(dt); } finally { undo(); }
+          if (!AT.live && ++AT.frames > 3) { AT.live = true; SP.classList.add('live'); }
+          try { JT.Audio.update(dt, sg); } catch (e) { void e; }
+        };
+        AT.start = () => {
+          AT.prevMode = R.cam.mode; AT.n = 0; AT.frames = 0; AT.t = 0; AT.ext = 0; AT.veil = false; AT.built = false;
+          JT.game = sg; R.game = sg; R.attract = true; R.observing = true; R.setMode('follow'); document.body.classList.add('attract'); R.resize();
+          try { sg.habs = [build()]; sg.state.active = 0; } catch (e) { console.error('attract build', e); AT.stop(); return; }
+          AT.on = true; acc = 0;
+        };
+        AT.stop = () => {
+          if (!AT.g || AT.stopped) return; AT.stopped = true; AT.on = false; JT.game = game; R.game = game; R.attract = false; R.observing = false; document.body.classList.remove('attract');
+          for (const h of sg.habs) dispose(h); sg.habs = []; R.setMode(AT.prevMode && AT.prevMode !== 'follow' ? AT.prevMode : 'iso'); R.resetCaches(); R.resize(); acc = 0; last = performance.now();
+        };
+        let sound = false; const soundOn = () => { try { JT.Audio.start(); } catch (e) { void e; } if (sound) return; sound = true; foot.textContent = 'sound on'; setTimeout(() => foot.classList.add('off'), 1800); };
+        const enter = (fresh) => {
+          if (SP.classList.contains('gone')) return; soundOn(); try { JT.UI.buzz && JT.UI.buzz('tap'); } catch (e) { void e; }
+          if (fresh && restored) { try { game.reset(); } catch (e) { console.error(e); } }
+          AT.stop(); if (fresh) { R.cur = null; try { JT.UI.refreshHeader(); } catch (e) { void e; } }
+          SP.classList.add('gone'); setTimeout(() => SP.remove(), 1000);
+          if (fresh || !restored) welcome(fresh && restored);
+        };
+        SP.addEventListener('click', soundOn);
+        go.onclick = (e) => { e.stopPropagation(); soundOn(); if (!restored) { enter(false); return; } go.classList.add('sp-off'); choices.classList.remove('sp-off'); };
+        cont.onclick = (e) => { e.stopPropagation(); enter(false); };
+        nw.onclick = (e) => { e.stopPropagation(); soundOn();
+          if (!nw._arm) { nw._arm = true; nw.classList.add('arm'); nw.textContent = 'Tap again to start over'; note.textContent = 'Your current terrarium and progress will be replaced.'; clearTimeout(nw._t);
+            nw._t = setTimeout(() => { nw._arm = false; nw.classList.remove('arm'); nw.textContent = 'New game'; note.textContent = ''; }, 5000); return; }
+          enter(true); };
+        if (restored) { const h = game.hab, x = h && (h.spider(game.selectedId) || h.spiders[0]); $s('spContSub').textContent = (x ? x.name + ' \u00b7 ' : '') + 'Day ' + game.day(); }
+        const keyH = (e) => { if (!document.getElementById('splash') || SP.classList.contains('gone')) { root.removeEventListener('keydown', keyH, true); return; }
+          e.stopImmediatePropagation(); if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); soundOn();
+          const a = document.activeElement; (a && a.tagName === 'BUTTON' && SP.contains(a) && !a.closest('.sp-off') ? a : go.classList.contains('sp-off') ? cont : go).click(); };
+        root.addEventListener('keydown', keyH, true);
+        requestAnimationFrame(() => { go.disabled = false; if (!still) setTimeout(() => AT.start(), 60); });
+      }
     }
     requestAnimationFrame(frame);
   }
