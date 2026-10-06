@@ -6,7 +6,7 @@ function mk(seed, theme) { JT.reseed(seed); const h = new JT.Habitat({ type: 'st
 const step = (h, secs, mon) => { for (let s = 0; s < secs; s += 1 / 30) { h._t += 1 / 30; h.update(1 / 30, true); if (mon && mon(h) === true) return true; } return false; };
 const jcount = (h, id) => h.events.filter(e => e[1] === 'journal' && e[2].id === id).length;
 const states = (h, sp, secs) => { const c = {}; step(h, secs, () => { c[sp.state] = (c[sp.state] || 0) + 1; }); return c; };
-t('new species present', !!JT.SPECIES_BY_ID.bagheera && !!JT.SPECIES_BY_ID.hasarius && JT.SPECIAL_UNLOCKS.join() === 'bagheera,hasarius', JT.SPECIAL_UNLOCKS);
+t('new species present', !!JT.SPECIES_BY_ID.bagheera && !!JT.SPECIES_BY_ID.hasarius && JT.SPECIAL_UNLOCKS.join() === 'bagheera,hasarius,auralis,hyalina,ignicard,titanica,saltator', JT.SPECIAL_UNLOCKS);
 t('chain unchanged (20)', JT.UNLOCK_ORDER.length === 20 && !JT.UNLOCK_ORDER.includes('bagheera'), JT.UNLOCK_ORDER.length);
 t('looks set', JT.SPECIES_BY_ID.bagheera.look.gait === 'hop' && JT.SPECIES_BY_ID.hasarius.look.palp === 'flag');
 // Portia detours

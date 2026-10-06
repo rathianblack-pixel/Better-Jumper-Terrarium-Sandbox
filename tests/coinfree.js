@@ -32,10 +32,10 @@ g.onEvent(h, 'meal', { sp: z }); t('portia unlocked at 30 catches', g.isUnlocked
 // tank cap still applies
 const nano = g.createHabitat('nano'); t('createHabitat free', !!nano && g.habs.length === 2);
 nano.addSpider('peacock', { stage: 1 }); t('nano cap 1', !g.canAdd(nano, 'zebra').ok && /full/.test(g.canAdd(nano, 'zebra').reason), g.canAdd(nano, 'zebra'));
-while (g.createHabitat('standard')); t('max 8 habitats', g.habs.length === 8, g.habs.length);
+while (g.createHabitat('standard')); t('max 30 tanks', g.habs.length === 30, g.habs.length);
 t('changeType free', g.changeType(nano, 'cube') === true && nano.data.type === 'cube');
 // save / load roundtrip
-g.save(); const g2 = new JT.Game(); t('load v4 save', g2.load() === true && g2.habs.length === 8 && g2.isUnlocked('portia') && g2.state.best.peacock === 5 && !('coins' in g2.state), g2.state && Object.keys(g2.state));
+g.save(); const g2 = new JT.Game(); t('load v4 save', g2.load() === true && g2.habs.length === 30 && g2.isUnlocked('portia') && g2.state.best.peacock === 5 && !('coins' in g2.state), g2.state && Object.keys(g2.state));
 // old (v3) save is wiped
 JT.Store.set('jumperTerrarium.save', JSON.stringify({ v: 3, coins: 9999, species: ['bold', 'regal', 'canopy', 'giant'], habitats: [{ name: 'x', type: 'standard', decor: [], spiders: [], prey: [] }], customPresets: [{ name: 'mine' }] }));
 const g3 = new JT.Game(); const r3 = g3.load(); t('v3 save not loaded (fresh start)', r3 === false && g3._wiped === true && JT.Store.get('jumperTerrarium.save') == null && !!JT.Store.get('jumperTerrarium.save.pre4'));
