@@ -10245,6 +10245,44 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         requestAnimationFrame(() => { go.disabled = false; if (!still) setTimeout(() => AT.start(), 60); });
       }
     }
+    /* ---------------- Android back button / back swipe (v10) ----------------
+       One extra history step is added after the first touch. Back then closes whatever is on top (replay, tip, window,
+       popover, Observe, placing mode, drawer, jumper card); with nothing open the first back only warns, and a second
+       back within ~2 s leaves the app. The step is re-added on the next touch (browsers ignore steps added without one). */
+    {
+      const U = JT.UI; const MSG = 'Go back again to exit'; const WIN = 2200;
+      let armed = false, warnAt = -1e9, warnT = 0;
+      const arm = () => { if (armed || !history.pushState) return; try { history.pushState({ jt: 1 }, ''); armed = true; } catch (e) { void e; } };
+      const vis = (id) => { const e = document.getElementById(id); return !!e && !e.classList.contains('hidden'); };
+      const closeTop = () => {
+        const sp = document.getElementById('splash'); if (sp && !sp.classList.contains('gone')) return false;
+        if (Replay.active) { Replay.stop(); return true; }
+        if (vis('tip')) { U.hideTip(false); return true; }
+        if (vis('modalWrap')) { if (U._modalBack) U._modalBack(); else U.closeModal(); return true; }
+        if (vis('popover')) { document.getElementById('popover').classList.add('hidden'); return true; }
+        if (U.obs) { U.toggleObserve(false); return true; }
+        if (U.mode) { U.cancelMode(); return true; }
+        if (U.tab) { U.closeDrawer(); return true; }
+        if (U.panelId) { U.hidePanel(); return true; }
+        return false;
+      };
+      const warn = () => {
+        warnAt = performance.now(); try { U.buzz && U.buzz('tap', true); } catch (e) { void e; }
+        const sp = document.getElementById('splash'), note = document.getElementById('spNote');
+        if (sp && note && !sp.classList.contains('gone')) { const prev = note.textContent === MSG ? '' : note.textContent; note.textContent = MSG; clearTimeout(warnT); warnT = setTimeout(() => { if (note.textContent === MSG) note.textContent = prev; }, WIN); }
+        else U.toast(MSG, 'quiet back', WIN);
+      };
+      root.addEventListener('popstate', () => {
+        armed = false;
+        if (performance.now() - warnAt < WIN) return; // (only reached if a step was re-added during the window)
+        try { if (closeTop()) { arm(); try { JT.Audio.sfx('click'); } catch (e) { void e; } return; } } catch (e) { console.error('back', e); }
+        try { game.save(); } catch (e) { void e; }
+        warn(); // not re-armed: the next back inside the window leaves the app
+      });
+      let armT = 0; const touch = () => { if (armed) return; const left = WIN - (performance.now() - warnAt); if (left <= 0) arm(); else { clearTimeout(armT); armT = setTimeout(arm, left + 30); } }; // a touch inside the exit window re-arms once it closes
+      for (const ev of ['pointerdown', 'keydown']) root.addEventListener(ev, touch, true);
+      JT.Back = { closeTop, arm, get armed() { return armed; } }; // for tests
+    }
     requestAnimationFrame(frame);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
