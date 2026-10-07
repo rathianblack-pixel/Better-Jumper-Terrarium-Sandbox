@@ -2344,9 +2344,22 @@ button:focus:not(:focus-visible){outline:none}
   const Solid = JT.Solid = {};
   function segD(p, a, b) { const ab = M.sub(b, a); const L2 = M.dot(ab, ab) || 1; const t = Math.max(0, Math.min(1, M.dot(M.sub(p, a), ab) / L2)); return [M.dist(p, M.add(a, M.mul(ab, t))), t]; }
   function edgeD(x, z, P) { let m = 1e9; for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length]; const ex = c[0] - a[0], ez = c[1] - a[1]; const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (z - a[1]) * ez) / (ex * ex + ez * ez || 1))); m = Math.min(m, Math.hypot(a[0] + ex * t - x, a[1] + ez * t - z)); } return m; }
+  /** v16: outline of a prism at height y (straight sides between the base and top outline). */
+  Solid.slice = function (pr, y) { const P = pr.poly; if (!pr.topPoly || pr.topPoly.length !== P.length) return P; const k = M.clamp((y - pr.y0) / ((pr.y1 - pr.y0) || 1), 0, 1); return P.map((q, i) => [M.lerp(q[0], pr.topPoly[i][0], k), M.lerp(q[1], pr.topPoly[i][1], k)]); };
+  /** v16: smooth rocks are drawn with a raised, domed top (centre up to 2.5 above the rim) - the solid includes it. Mirrors the GL prism mesh. */
+  Solid.dome = function (pr) {
+    if (pr._dome != null) return pr._dome; const n = pr.poly.length; const smooth = pr.style !== 'dish' && (pr.round || pr.curved || pr.dome || ['rock', 'river', 'cork', 'coconut', 'drift', 'moss'].includes(pr.style) || n > 10);
+    return (pr._dome = smooth ? Math.min(2.5, (pr.y1 - pr.y0) * 0.12) : 0); };
+  /** v16: height of the drawn top surface (flat rim, linear fan up to the raised centre). */
+  Solid.domeY = function (pr, x, z) {
+    const b = Solid.dome(pr); if (!b) return pr.y1; const top = pr.topPoly || pr.poly; const c = pr._ct || (pr._ct = G.centroid(top));
+    const dx = x - c[0], dz = z - c[1], d = Math.hypot(dx, dz); if (d < 1e-6) return pr.y1 + b;
+    let R = 1e9; for (let i = 0; i < top.length; i++) { const a = top[i], q = top[(i + 1) % top.length]; const ex = q[0] - a[0], ez = q[1] - a[1]; const den = dx * ez - dz * ex; if (Math.abs(den) < 1e-9) continue; const t = ((a[0] - c[0]) * ez - (a[1] - c[1]) * ex) / den, u = ((a[0] - c[0]) * dz - (a[1] - c[1]) * dx) / den; if (t > 0 && u >= -1e-6 && u <= 1 + 1e-6) R = Math.min(R, t * d); }
+    return R > 1e8 ? pr.y1 : pr.y1 + b * Math.max(0, 1 - d / R); };
   /** How deep a point sits inside one primitive (0 = outside). */
   Solid.depth = function (pt, pr) {
-    if (pr.t === 'prism') { if (pt[1] <= pr.y0 || pt[1] >= pr.y1) return 0; let P = pr.poly; if (pr.topPoly && pr.topPoly.length === P.length) { const k = (pt[1] - pr.y0) / (pr.y1 - pr.y0); P = P.map((q, i) => [M.lerp(q[0], pr.topPoly[i][0], k), M.lerp(q[1], pr.topPoly[i][1], k)]); } if (!G.pointInPoly(pt[0], pt[2], P)) return 0; return Math.min(edgeD(pt[0], pt[2], P), pr.y1 - pt[1], pt[1] - pr.y0); }
+    if (pr.t === 'prism') { if (pt[1] <= pr.y0) return 0; if (pt[1] >= pr.y1) { const b = Solid.dome(pr); if (!b || pt[1] >= pr.y1 + b) return 0; const top = pr.topPoly || pr.poly; if (!G.pointInPoly(pt[0], pt[2], top)) return 0; const sy = Solid.domeY(pr, pt[0], pt[2]); return sy > pt[1] ? Math.min(sy - pt[1], edgeD(pt[0], pt[2], top)) : 0; }
+      const P = Solid.slice(pr, pt[1]); if (!G.pointInPoly(pt[0], pt[2], P)) return 0; return Math.min(edgeD(pt[0], pt[2], P), pr.y1 - pt[1] + Solid.dome(pr), pt[1] - pr.y0); }
     if (pr.t === 'tube') { let best = 0; for (let i = 0; i + 1 < pr.pts.length; i++) { const r = segD(pt, pr.pts[i], pr.pts[i + 1]); const rr = M.lerp(pr.r0, pr.r1, (i + r[1]) / (pr.pts.length - 1)); if (rr - r[0] > best) best = rr - r[0]; } return best; }
     if (pr.t === 'log') { const d = segD(pt, pr.a, pr.b)[0]; if (d >= pr.r) return 0; if (pr.hollow) return d < pr.r * 0.72 ? 0 : Math.min(pr.r - d, d - pr.r * 0.72); if (pr.half && pt[1] < Math.min(pr.a[1], pr.b[1])) return 0; return pr.r - d; }
     if (pr.t === 'cap') { const ry = pr.cone ? pr.r * 0.95 : pr.r * 0.42; const dx = (pt[0] - pr.o[0]) / pr.r, dy = (pt[1] - pr.o[1]) / ry, dz = (pt[2] - pr.o[2]) / pr.r; if (dy < -0.15) return 0; const q = Math.hypot(dx, Math.max(0, dy), dz); return q < 1 ? (1 - q) * ry : 0; }
@@ -2360,15 +2373,48 @@ button:focus:not(:focus-visible){outline:none}
     const list = g.prims.filter(pr => pr.t === 'prism' || pr.t === 'log' || pr.t === 'cap' || pr.t === 'pot' || pr.t === 'lamp' || (pr.t === 'tube' && pr.style !== 'blade' && pr.style !== 'plank' && Math.max(pr.r0, pr.r1) >= 0.8));
     const bb = [1e9, 1e9, 1e9, -1e9, -1e9, -1e9]; const add = (x, y, z, r) => { bb[0] = Math.min(bb[0], x - r); bb[1] = Math.min(bb[1], y - r); bb[2] = Math.min(bb[2], z - r); bb[3] = Math.max(bb[3], x + r); bb[4] = Math.max(bb[4], y + r); bb[5] = Math.max(bb[5], z + r); };
     for (const pr of list) { if (pr.poly) for (const q of pr.poly.concat(pr.topPoly || [])) { add(q[0], pr.y0, q[1], 0); add(q[0], pr.y1, q[1], 0); } if (pr.pts) for (const q of pr.pts) add(q[0], q[1], q[2], Math.max(pr.r0, pr.r1)); if (pr.t === 'log') { add(pr.a[0], pr.a[1], pr.a[2], pr.r); add(pr.b[0], pr.b[1], pr.b[2], pr.r); } if (pr.o) add(pr.o[0], pr.o[1] + (pr.h || 0), pr.o[2], pr.r); if (pr.o) add(pr.o[0], pr.o[1], pr.o[2], pr.r); }
-    return (g._solid = { list, bb });
+    let dome = 0; for (const pr of list) if (pr.t === 'prism') dome = Math.max(dome, Solid.dome(pr));
+    // v16: per-primitive boxes so point queries skip far parts of a big tree / wall quickly
+    for (const pr of list) { const b2 = [1e9, 1e9, 1e9, -1e9, -1e9, -1e9]; const ad = (x, y, z, r) => { b2[0] = Math.min(b2[0], x - r); b2[1] = Math.min(b2[1], y - r); b2[2] = Math.min(b2[2], z - r); b2[3] = Math.max(b2[3], x + r); b2[4] = Math.max(b2[4], y + r); b2[5] = Math.max(b2[5], z + r); };
+      if (pr.poly) { for (const q of pr.poly.concat(pr.topPoly || [])) { ad(q[0], pr.y0, q[1], 0); ad(q[0], pr.y1 + (pr.t === 'prism' ? Solid.dome(pr) : 0), q[1], 0); } }
+      if (pr.pts) for (const q of pr.pts) ad(q[0], q[1], q[2], Math.max(pr.r0, pr.r1));
+      if (pr.t === 'log') { ad(pr.a[0], pr.a[1], pr.a[2], pr.r); ad(pr.b[0], pr.b[1], pr.b[2], pr.r); }
+      if (pr.o) { ad(pr.o[0], pr.o[1] + (pr.h || 0), pr.o[2], pr.r); ad(pr.o[0], pr.o[1], pr.o[2], pr.r); }
+      pr._bb = b2[0] < 1e8 ? b2 : null; }
+    return (g._solid = { list, bb, dome });
   };
   /** Deepest penetration of a point into a geometry: {d, pr}. */
   Solid.at = function (g, pt, pad) {
-    const S = Solid.of(g), b = S.bb; pad = pad || 0; let best = null;
-    if (pt[0] < b[0] - pad || pt[1] < b[1] - pad || pt[2] < b[2] - pad || pt[0] > b[3] + pad || pt[1] > b[4] + pad || pt[2] > b[5] + pad) return null;
-    for (const pr of S.list) { const d = Solid.depth(pt, pr); if (d > 0 && (!best || d > best.d)) best = { d, pr }; }
+    const S = Solid.of(g), b = S.bb; pad = pad || 0; let best = null; const dm = S.dome || 0;
+    if (pt[0] < b[0] - pad || pt[1] < b[1] - pad || pt[2] < b[2] - pad || pt[0] > b[3] + pad || pt[1] > b[4] + pad + dm || pt[2] > b[5] + pad) return null;
+    for (const pr of S.list) { const q = pr._bb; if (q && (pt[0] < q[0] || pt[0] > q[3] || pt[1] < q[1] || pt[1] > q[4] || pt[2] < q[2] || pt[2] > q[5])) continue; const d = Solid.depth(pt, pr); if (d > 0 && (!best || d > best.d)) best = { d, pr }; }
     return best;
   };
+  /** v16: shortest way out of a primitive while staying on the surface a critter walks on (plane with normal n):
+      sideways round a rock wall / trunk / cap instead of "out through the floor". Returns {dir, d} or null. */
+  Solid.slide = function (pt, pr, n) {
+    let v = null, d = 0;
+    if (pr.t === 'prism') { const y = M.clamp(pt[1], pr.y0, pr.y1); const P = Solid.slice(pr, y); let best = 1e9, bx = 0, bz = 0;
+      for (let i = 0; i < P.length; i++) { const a = P[i], c = P[(i + 1) % P.length]; const ex = c[0] - a[0], ez = c[1] - a[1]; const t = Math.max(0, Math.min(1, ((pt[0] - a[0]) * ex + (pt[2] - a[1]) * ez) / (ex * ex + ez * ez || 1))); const qx = a[0] + ex * t, qz = a[1] + ez * t; const dd = Math.hypot(qx - pt[0], qz - pt[2]); if (dd < best) { best = dd; bx = qx; bz = qz; } }
+      if (best > 1e8) return null; v = [bx - pt[0], 0, bz - pt[2]]; d = best; if (M.len(v) < 1e-6) { const c = G.centroid(P); v = [pt[0] - c[0], 0, pt[2] - c[1]]; }
+      if (n && Math.abs(n[1]) < 0.8) { // on a wall / stem (surface plane is not level): leaving through the top or a raised piece's underside can be shorter
+        const cands = [v, [0, 1, 0]]; if (pr.y0 > 0.5) cands.push([0, -1, 0]); let bestE = Infinity, bv = null;
+        for (const c of cands) { let w = M.sub(c, M.mul(n, M.dot(c, n))); const l = M.len(w); if (l < 0.3) continue; w = M.mul(w, 1 / l); let hi = 2; for (let k = 0; k < 5 && Solid.depth(M.add(pt, M.mul(w, hi)), pr) > 0; k++) hi *= 2; const e = Solid.exitAlong(pt, pr, w, hi); if (e < bestE) { bestE = e; bv = w; } }
+        if (bv) return { dir: bv, d: bestE }; } }
+    else if (pr.t === 'tube' || pr.t === 'log') { const pts = pr.t === 'log' ? [pr.a, pr.b] : pr.pts; let best = -1e9, ax = null;
+      for (let i = 0; i + 1 < pts.length; i++) { const r = segD(pt, pts[i], pts[i + 1]); const rr = pr.t === 'log' ? pr.r : M.lerp(pr.r0, pr.r1, (i + r[1]) / (pts.length - 1)); if (rr - r[0] > best) { best = rr - r[0]; ax = M.add(pts[i], M.mul(M.sub(pts[i + 1], pts[i]), r[1])); } }
+      if (!ax) return null; v = M.sub(pt, ax); d = Math.max(0, best); }
+    else if (pr.o) { const c = pr.t === 'pot' ? [pr.o[0], pt[1], pr.o[2]] : pr.o; v = M.sub(pt, c); d = Solid.depth(pt, pr); }
+    if (!v) return null;
+    if (n) v = M.sub(v, M.mul(n, M.dot(v, n)));
+    const L = M.len(v); if (L < 1e-4) return null; v = M.mul(v, 1 / L);
+    if (n) { // distance to leave along the in-plane direction (round parts and sloped sides are not a straight edge distance)
+      let hi = Math.max(0.5, d * 1.5 + 0.5); for (let k = 0; k < 4 && Solid.depth(M.add(pt, M.mul(v, hi)), pr) > 0; k++) hi *= 2;
+      const e = Solid.exitAlong(pt, pr, v, hi); if (Number.isFinite(e)) d = e; }
+    return { dir: v, d };
+  };
+  /** v16: distance to leave a primitive straight along a direction (bisection; Infinity if not within max). */
+  Solid.exitAlong = function (pt, pr, dir, max) { if (Solid.depth(M.add(pt, M.mul(dir, max)), pr) > 0) return Infinity; let lo = 0, hi = max; for (let k = 0; k < 10; k++) { const m = (lo + hi) / 2; if (Solid.depth(M.add(pt, M.mul(dir, m)), pr) > 0) lo = m; else hi = m; } return hi; };
   /** Outward direction from a primitive at a point (numerical gradient of depth). */
   Solid.grad = function (pt, pr) {
     const e = 0.25, f = (q) => Solid.depth(q, pr); const gx = f([pt[0] - e, pt[1], pt[2]]) - f([pt[0] + e, pt[1], pt[2]]), gy = f([pt[0], pt[1] - e, pt[2]]) - f([pt[0], pt[1] + e, pt[2]]), gz = f([pt[0], pt[1], pt[2] - e]) - f([pt[0], pt[1], pt[2] + e]);
@@ -2596,7 +2642,7 @@ button:focus:not(:focus-visible){outline:none}
     // push out of floor-level solids whose top is above this point
     for (const inst of hab.decor) {
       const g = hab.geoms[inst.id]; if (!g || inst.parent) continue;
-      for (const s of g.solids) if (G.pointInPoly(x, z, s)) {
+      for (const s of g.solids.concat(g.soft || [])) if (G.pointInPoly(x, z, s)) { // v16: also trunks / stems / logs (soft footprints): never land inside a tree
         const c = G.centroid(s); let dx = x - c[0], dz = z - c[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
         for (let k = 0; k < 60 && G.pointInPoly(x, z, s); k++) { x += dx * 1.5; z += dz * 1.5; }
         [x, z] = Nav.clampInside(hab, x, z, 3);
@@ -7416,31 +7462,55 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const s = M.norm(M.cross(n, f));
     let p = M.add(e.pos, M.mul(n, (fr.r || 0) + (extraLift || 0)));
     if (e.sup && e.sup.d && hab) { const sw = hab.swayAt(e.sup.d, e.pos[1]); if (sw) p = M.add(p, sw); }
-    if (hab && JT.Solid && e.sup && e.sup.k !== 'air') p = D.unclip(hab, e, p, n);
+    if (hab && JT.Solid && e.sup && e.sup.k !== 'air') p = D.unclip(hab, e, p, n, f);
     return { p, f, s, n };
   };
 
-  /** Keep a critter's drawn body out of decor solids: lift it off the piece it stands on, slide it round others. */
-  D.unclip = function (hab, e, p, n) {
+  /** Keep a critter's drawn body out of decor solids: lift it off the piece it stands on, slide it round others.
+      v16: size-aware (head, middle, abdomen and both flanks of the body, scaled to this critter's length, so a tiny sling
+      and a full-grown adult or a big cricket all stay clear), slides sideways round walls / trunks / caps instead of
+      trying to leave through the floor, and also keeps clear of other parts of the piece it is standing on
+      (e.g. the next layer of a stepped rock). */
+  D.unclip = function (hab, e, p, n, f0) {
     const L = e.species ? JT.SpiderAI.len(e) : e.type && JT.PREY_BY_ID[e.type] ? (JT.PREY_BY_ID[e.type].len || 3) : 0; if (!L) return p;
-    const lift = Math.min(L * 0.3, 2.2); let moved = 0;
-    // sample head, middle and abdomen so no part of the body sinks into a trunk, cap, rock or a neighbouring piece
-    let f = e.fwd || null; if (f) { f = M.sub(f, M.mul(n, M.dot(f, n))); f = M.len(f) > 1e-3 ? M.norm(f) : null; }
-    const offs = f ? [0, L * 0.38, -L * 0.42] : [0];
-    for (let it = 0; it < 6; it++) {
-      let hit = null, hg = null, hc = null;
-      for (const o of offs) {
-        const c = o && f ? M.add(M.add(p, M.mul(n, lift)), M.mul(f, o)) : M.add(p, M.mul(n, lift));
-        for (const inst of hab.decor) { if (o && inst.id === e.sup.d) continue; const g = hab.geoms[inst.id]; if (!g) continue; const h = JT.Solid.at(g, c, 0.1); if (h && h.d > 0.08 && (!hit || h.d > hit.d)) { hit = h; hg = inst.id; hc = c; } }
+    const S = JT.Solid; const lift = Math.min(L * 0.3, 2.2); let moved = 0; const own = e.sup && e.sup.d;
+    // resting critters ask the same question every frame: reuse the answer while the input pose and the decor layout are unchanged
+    const ck = L + '|' + p[0].toFixed(3) + ',' + p[1].toFixed(3) + ',' + p[2].toFixed(3) + '|' + n[0].toFixed(3) + ',' + n[1].toFixed(3) + ',' + n[2].toFixed(3) + '|' + (own || '') + '|' + (f0 ? f0[0].toFixed(2) + ',' + f0[1].toFixed(2) + ',' + f0[2].toFixed(2) : e.fwd ? e.fwd.map(v => v.toFixed(2)).join(',') : '');
+    const cv = UC.get(e); if (cv && cv.g === hab.geoms && cv.k === ck) return cv.r.slice();
+    const done = (r) => { UC.set(e, { g: hab.geoms, k: ck, r: r.slice() }); return r; };
+    let f = f0 || e.fwd || null; if (f) { f = M.sub(f, M.mul(n, M.dot(f, n))); f = M.len(f) > 1e-3 ? M.norm(f) : null; } // same heading the body is drawn with
+    const sd = f ? M.norm(M.cross(n, f)) : null;
+    const offs = f ? [[0, 0], [L * 0.38, 0], [-L * 0.42, 0], [0, L * 0.26], [0, -L * 0.26]] : [[0, 0]];
+    const tol = Math.max(0.06, L * 0.03);
+    const near = []; { const R = L * 1.4 + 3; for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g) continue; const bb = S.of(g).bb; if (p[0] < bb[0] - R || p[0] > bb[3] + R || p[2] < bb[2] - R || p[2] > bb[5] + R || p[1] < bb[1] - R || p[1] > bb[4] + R + 3) continue; near.push(inst.id); } }
+    if (!near.length) return done(p);
+    for (let it = 0; it < 8; it++) {
+      let hit = null, hg = null, hc = null, ho = 0;
+      for (let oi = 0; oi < offs.length; oi++) { const o = offs[oi];
+        let c = M.add(p, M.mul(n, lift)); if (f) c = M.add(M.add(c, M.mul(f, o[0])), M.mul(sd, o[1]));
+        for (const id of near) { const g = hab.geoms[id]; const h = S.at(g, c, 0.1); if (h && h.d > tol && (!hit || h.d > hit.d)) { hit = h; hg = id; hc = c; ho = oi; } }
       }
       if (!hit) break;
-      let dir;
-      if (e.sup.d === hg) dir = n; // own support: step out along the surface normal
-      else { const gr = JT.Solid.grad(hc, hit.pr); dir = M.sub(gr, M.mul(n, M.dot(gr, n))); dir = M.len(dir) > 0.2 ? M.norm(dir) : gr; }
-      const step = Math.min(hit.d + 0.15, L * 1.2); p = M.add(p, M.mul(dir, step)); moved += step; if (moved > L * 2.5 + 3) break;
+      let dir = null, step = 0; const sl = S.slide(hc, hit.pr, n);
+      if (hg === own) { // the piece it stands on: step out along the surface normal if that is the short way (dome, curve), else slide round the higher part
+        const up = S.exitAlong(hc, hit.pr, n, L * 1.2 + 2);
+        if (ho === 0 && (!sl || up <= sl.d * 1.15)) { dir = n; step = up; } else if (sl) { dir = sl.dir; step = sl.d; } else if (ho === 0) { dir = n; step = hit.d; }
+      } else if (sl) { dir = sl.dir; step = sl.d; }
+      if (!dir) { const gr = S.grad(hc, hit.pr); dir = M.sub(gr, M.mul(n, M.dot(gr, n))); dir = M.len(dir) > 0.2 ? M.norm(dir) : gr; step = hit.d; }
+      if (!Number.isFinite(step)) step = hit.d;
+      step = Math.min(step + 0.12, sl ? 14 : L * 1.2 + 1); p = M.add(p, M.mul(dir, step)); moved += step; if (moved > L * 2.5 + 16) break; // a big trunk can need a long step (critters walk to its base on the axis)
     }
-    return p;
+    // still touching something (wedged in the V between a trunk and its root, or between two rocks): search outward in
+    // the surface plane for the nearest spot where the whole body is clear
+    const worst = (pp) => { let w = 0; const c0 = M.add(pp, M.mul(n, lift)); for (const o of offs) { const c = f ? M.add(M.add(c0, M.mul(f, o[0])), M.mul(sd, o[1])) : c0; for (const id of near) { const h = S.at(hab.geoms[id], c, 0.1); if (h && h.d > w) w = h.d; } } return w; };
+    if (worst(p) > tol * 2) {
+      const t1 = M.norm(Math.abs(n[1]) < 0.9 ? M.cross(n, [0, 1, 0]) : M.cross(n, [1, 0, 0])), t2 = M.cross(n, t1); const p0 = p; let best = null;
+      for (let r = 0.3; r < L * 2.5 + 16 && !best; r = r * 1.25 + 0.15) for (let k = 0; k < 12; k++) { const a = (k + (r > 2 ? 0.5 : 0)) / 12 * Math.PI * 2; const q = M.add(p0, M.add(M.mul(t1, Math.cos(a) * r), M.mul(t2, Math.sin(a) * r))); if (worst(q) <= tol) { best = q; break; } }
+      if (best) p = best;
+    }
+    return done(p);
   };
+  const UC = new WeakMap(); // v16: unclip answers per critter
   /** Thin round support under a critter (twig, branch, stem, grass blade): how strongly its legs should wrap it. */
   D.gripFor = function (hab, e, L) {
     const sup = e.sup; if (!sup || sup.k !== 'path' || !hab || !hab.geoms) return null;
