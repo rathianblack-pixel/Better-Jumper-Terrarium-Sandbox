@@ -736,6 +736,7 @@ body.tv #app>:not(canvas):not(#tvVeil):not(#tvCatch),body.tv #tip{opacity:0!impo
   body.story:not(.lowfx){--gFBlur:blur(10px) saturate(1.5) brightness(1.04)}
 }
 #view,#glview{contain:strict}
+#wxVeil{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 35%,#6c7684,#3b4350);mix-blend-mode:multiply;opacity:0}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button:focus:not(:focus-visible){outline:none}
 </style>
@@ -830,6 +831,7 @@ button:focus:not(:focus-visible){outline:none}
 <div id="app">
   <canvas id="glview" aria-hidden="true"></canvas>
   <canvas id="view" aria-label="Terrarium view"></canvas>
+  <div id="wxVeil" aria-hidden="true"></div>
 
   <header id="top">
     <div class="brand"><span class="brand-name">Jumper Terrarium</span></div>
@@ -9298,7 +9300,7 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
           P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
           gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
           gl.depthMask(false);
-          const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const am = wet * wet * (3 - 2 * wet) * 0.6;
+          const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0; const am = Math.max(wet * wet * (3 - 2 * wet) * 0.6, rw * rw * (3 - 2 * rw) * 0.5); // v19: rain soaks the ground
           if (am > 0.01) { P = this.use(this.P.wet); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(P.u.uAm, am);
             gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); } }
         const gm = TR ? this.groundMarks(hab, night) : null;
@@ -10017,28 +10019,43 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
  JT.SKY.update=function(game){
   const sky=oldSky.call(this,game),h=game&&game.hab,bm=JT.Biome&&h?JT.Biome.of(h):null;
   const tint=bm&&bm.tint||[1,1,1],dark=bm&&bm.dusk||0;
-  if(game){const st=game._biomeGrade||(game._biomeGrade=[1,1,1,0]);for(let i=0;i<3;i++)st[i]+=(tint[i]-st[i])*0.04;st[3]+=(dark-st[3])*0.04;const moon=JT.SKY.at(0,{});for(let i=0;i<3;i++){sky.grade[i]=(sky.grade[i]*(1-st[3])+moon.grade[i]*st[3])*st[i];sky.amb[i]=sky.amb[i]*(1-st[3])+moon.amb[i]*st[3];sky.key[i]=sky.key[i]*(1-st[3])+moon.key[i]*st[3];}}
+  if(game){const st=game._biomeGrade||(game._biomeGrade=[1,1,1,0]);for(let i=0;i<3;i++)st[i]+=(tint[i]-st[i])*0.04;st[3]+=(dark-st[3])*0.04;const moon=JT.SKY.at(0,{});for(let i=0;i<3;i++){sky.grade[i]=(sky.grade[i]*(1-st[3])+moon.grade[i]*st[3])*st[i];sky.amb[i]=sky.amb[i]*(1-st[3])+moon.amb[i]*st[3];sky.key[i]=sky.key[i]*(1-st[3])+moon.key[i]*st[3];}
+   // v19: overcast light during rain / storms, following the same fade as the rain itself
+   const WF=JT.app&&JT.app.R&&JT.app.R._wxF;if(WF&&WF.hab===h){const ez=x=>x*x*(3-2*x),r=ez(Math.min(1,(WF.f.rain||0)+(WF.f.storm||0))),sm=ez(WF.f.storm||0),d=0.13*r+0.15*sm;game._wxDim=d;
+    if(d>0.001){const gm=(sky.grade[0]+sky.grade[1]+sky.grade[2])/3,cool=[0.96,1,1.05];for(let i=0;i<3;i++){sky.grade[i]=(sky.grade[i]*(1-d*0.6)+gm*d*0.6)*(1-d*0.55)*(1+(cool[i]-1)*d*2.2);sky.key[i]*=1-d*1.3;sky.amb[i]*=1-d*0.25;}}}else game._wxDim=0;
+   const vo=Math.round(game._wxDim*1.6*100)/100;if(vo!==game._wxVo){game._wxVo=vo;const ve=root.document&&root.document.getElementById('wxVeil');if(ve)ve.style.opacity=vo;}}
   return sky;
  };
  const RP=JT.Renderer.prototype;
  RP.drawBiome=function(ctx,V,hab,dt,night,bm){
-  if(!bm||bm.id==='classic')return;
+  if(!bm||bm.id==='classic'){if(this._wxF)this._wxF.hab=null;return;}
   if(!this._bmPool){this._bmPool=new Float32Array(140*7);let s=384701;for(let i=0;i<this._bmPool.length;i++){s=(Math.imul(s,1664525)+1013904223)>>>0;this._bmPool[i]=s/4294967296;}}
   const photo=JT.UI&&JT.UI.photo,frozen=photo||root.document&&root.document.hidden;
   if(this._bmHab!==hab){this._bmHab=hab;this._bmTime=hab.time;}
-  if(!frozen)this._bmTime+=Math.min(0.1,Math.max(0,dt));
+  const fdt=frozen?0:Math.min(0.1,Math.max(0,dt));this._bmTime+=fdt;
   const t=this._bmTime,w=wx(hab),dm=hab.dims,pool=this._bmPool;
+  // v19: weather fades in and out (visual only: the simulation still switches at once). Snaps on tank switch / first frame.
+  const WF=this._wxF||(this._wxF={hab:null,f:{},rainY:0,dustX:0});const KEYS=['rain','storm','heat','wind','mist','fireflies','glow'];
+  if(WF.hab!==hab){WF.hab=hab;for(const k of KEYS)WF.f[k]=k===w?1:0;WF.wet=w==='storm'?1:w==='rain'?0.8:0;}
+  else if(fdt>0){const rm=JT.UI&&JT.UI.reducedMotion?JT.UI.reducedMotion():(root.matchMedia&&root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+   for(const k of KEYS){const on=k===w,cur=WF.f[k]||0;const secs=rm?1.5:on?(k==='storm'?6:8):10;WF.f[k]=on?Math.min(1,cur+fdt/secs):Math.max(0,cur-fdt/secs);}}
+  const F=WF.f,ease=x=>x*x*(3-2*x);
+  {const tw=Math.min(1,(F.rain||0)*0.8+(F.storm||0));WF.wet=WF.wet||0;if(tw>WF.wet)WF.wet=Math.min(tw,WF.wet+fdt/7);else WF.wet=Math.max(0,WF.wet-fdt/90);} // v19: ground soaks in ~7 s, dries over ~90 s
   const quality=this.set.quality==='auto'?(this._autoLow?'low':'medium'):this.set.quality;
   const q=quality==='low'?0.4:quality==='high'?1.5:1;
   const point=(x,y,z)=>V.P([x,y,z]);
   const circle=(p,r,col,a)=>{if(!Number.isFinite(p[0])||!Number.isFinite(p[1]))return;ctx.globalAlpha=a;ctx.fillStyle=col;ctx.beginPath();ctx.arc(p[0],p[1],Math.max(0.7,r),0,Math.PI*2);ctx.fill();};
-  const rain=w==='rain'||w==='storm',mist=bm.id==='rainforest'||bm.id==='cloudforest'||w==='mist';
+  const rA=ease(Math.min(1,(F.rain||0)+(F.storm||0))),sMix=(F.storm||0)/Math.max(1e-6,(F.rain||0)+(F.storm||0));
+  WF.rainY+=fdt*(50+30*sMix);if(WF.rainY>1e6)WF.rainY-=1e6;
+  const mistBase=bm.id==='cloudforest'?0.025:bm.id==='rainforest'?0.012:0,mistA=mistBase+(0.025-mistBase)*ease(F.mist||0),mist=mistA>0.0005;
   ctx.save();
-  if(rain){ctx.strokeStyle=w==='storm'?'#cee5f8':'#bddcec';ctx.lineWidth=Math.max(0.6,this.k*0.65);ctx.globalAlpha=w==='storm'?0.42:0.28;ctx.beginPath();const count=Math.min(140,Math.round((w==='storm'?80:46)*q));for(let i=0;i<count;i++){const a=i*7,x=pool[a]*dm.w,z=pool[a+1]*dm.d,y=((pool[a+2]*dm.h-t*(w==='storm'?80:50))%dm.h+dm.h)%dm.h;const p=point(x,y,z),e=point(x-0.9,Math.max(0,y-4-pool[a+3]*6),z);ctx.moveTo(p[0],p[1]);ctx.lineTo(e[0],e[1]);}ctx.stroke();}
-  if(mist){ctx.fillStyle=bm.id==='cloudforest'?'#d7e3e8':'#bed6c8';const count=Math.round(12*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+t*(0.5+pool[a+1]))%dm.w,z=pool[a+2]*dm.d;const p=point(x,1+pool[a+3]*4,z);ctx.globalAlpha=(w==='mist'||bm.id==='cloudforest'?0.025:0.012)*(0.6+Math.sin(t*0.15+i)*0.3);ctx.beginPath();ctx.ellipse(p[0],p[1],(12+pool[a+4]*22)*V.s,Math.max(2,(2+pool[a+5]*3)*V.s),-0.07,0,Math.PI*2);ctx.fill();}}
-  if(bm.id==='desert'||bm.id==='heath'||w==='wind'){const count=Math.round(22*q);for(let i=0;i<count;i++){const a=i*7,p=point((pool[a]*dm.w+t*(w==='wind'?6:1.5))%dm.w,2+pool[a+1]*dm.h*0.7,pool[a+2]*dm.d);circle(p,(0.35+pool[a+3]*0.45)*V.s,'#d7c098',0.2+pool[a+4]*0.18);}if(w==='heat'){ctx.strokeStyle='#f5d7a1';ctx.lineWidth=Math.max(0.5,this.k*0.5);ctx.globalAlpha=0.13;for(let k=0;k<Math.round(8*q);k++){ctx.beginPath();for(let j=0;j<18;j++){const x=dm.w*j/17,z=dm.d*(k+1)/9,p=point(x,1.5+Math.sin(j*0.8+t*2+k)*0.7,z);if(!j)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}ctx.stroke();}}}
+  if(rA>0.003){ctx.strokeStyle=sMix>0.5?'#cee5f8':'#bddcec';ctx.lineWidth=Math.max(0.6,this.k*0.65);ctx.globalAlpha=(0.28+0.14*sMix)*(0.35+0.65*rA);ctx.beginPath();const count=Math.min(140,Math.round((46+34*sMix)*q*rA));for(let i=0;i<count;i++){const a=i*7,x=pool[a]*dm.w,z=pool[a+1]*dm.d,y=((pool[a+2]*dm.h-WF.rainY)%dm.h+dm.h)%dm.h;const p=point(x,y,z),e=point(x-0.9,Math.max(0,y-4-pool[a+3]*6),z);ctx.moveTo(p[0],p[1]);ctx.lineTo(e[0],e[1]);}ctx.stroke();}
+  if(mist){ctx.fillStyle=bm.id==='cloudforest'?'#d7e3e8':'#bed6c8';const count=Math.round(12*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+t*(0.5+pool[a+1]))%dm.w,z=pool[a+2]*dm.d;const p=point(x,1+pool[a+3]*4,z);ctx.globalAlpha=mistA*(0.6+Math.sin(t*0.15+i)*0.3);ctx.beginPath();ctx.ellipse(p[0],p[1],(12+pool[a+4]*22)*V.s,Math.max(2,(2+pool[a+5]*3)*V.s),-0.07,0,Math.PI*2);ctx.fill();}}
+  const dustHome=bm.id==='desert'||bm.id==='heath',wA=ease(F.wind||0),dA=dustHome?1:wA;WF.dustX+=fdt*(1.5+4.5*wA);if(WF.dustX>1e6)WF.dustX-=1e6;
+  if(dA>0.003){const count=Math.round(22*q*(dustHome?1:dA));for(let i=0;i<count;i++){const a=i*7,p=point(((pool[a]*dm.w+WF.dustX)%dm.w+dm.w)%dm.w,2+pool[a+1]*dm.h*0.7,pool[a+2]*dm.d);circle(p,(0.35+pool[a+3]*0.45)*V.s,'#d7c098',(0.2+pool[a+4]*0.18)*(dustHome?1:0.4+0.6*dA));}if((F.heat||0)>0.003){ctx.strokeStyle='#f5d7a1';ctx.lineWidth=Math.max(0.5,this.k*0.5);ctx.globalAlpha=0.13*ease(F.heat);for(let k=0;k<Math.round(8*q);k++){ctx.beginPath();for(let j=0;j<18;j++){const x=dm.w*j/17,z=dm.d*(k+1)/9,p=point(x,1.5+Math.sin(j*0.8+t*2+k)*0.7,z);if(!j)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}ctx.stroke();}}}
   if(bm.id==='paludarium'){const ponds=JT.Biome.ponds?JT.Biome.ponds(hab):[];ctx.strokeStyle='#b4dfe4';ctx.lineWidth=Math.max(0.5,this.k*0.7);for(const inst of ponds){const g=hab.geoms[inst.id];if(!g)continue;const center=g.center||[inst.x,0,inst.z],p=point(center[0],g.baseY+1,center[2]);for(let k=0;k<3;k++){const phase=(t*0.18+k/3)%1;ctx.globalAlpha=(1-phase)*0.28;ctx.beginPath();ctx.ellipse(p[0],p[1],Math.max(1,(3+phase*7)*V.s),Math.max(0.5,(1.3+phase*3)*V.s*0.6),0,0,Math.PI*2);ctx.stroke();}}}
-  if(bm.id==='nightmoss'||w==='fireflies'||w==='glow'){const count=Math.round((w==='fireflies'||w==='glow'?38:10)*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+Math.sin(t*0.23+i)*8+dm.w)%dm.w,y=4+pool[a+1]*dm.h*0.5+Math.sin(t*0.7+i)*2,z=(pool[a+2]*dm.d+Math.cos(t*0.2+i)*6+dm.d)%dm.d,p=point(x,y,z),a0=(0.3+Math.pow((Math.sin(t*2+pool[a+4]*15)+1)*0.5,3)*0.7)*(0.4+night*0.6);circle(p,2.8*this.k,'#b9ef85',a0*0.06);circle(p,1.35*this.k,'#b9ef85',a0*0.25);circle(p,0.6*this.k,'#e9ffd0',a0);}}
+  const ffA=ease(Math.min(1,(F.fireflies||0)+(F.glow||0))),ffBase=bm.id==='nightmoss'?10:0;
+  if(ffBase||ffA>0.003){const count=Math.round((ffBase+(38-ffBase)*ffA)*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+Math.sin(t*0.23+i)*8+dm.w)%dm.w,y=4+pool[a+1]*dm.h*0.5+Math.sin(t*0.7+i)*2,z=(pool[a+2]*dm.d+Math.cos(t*0.2+i)*6+dm.d)%dm.d,p=point(x,y,z),a0=(0.3+Math.pow((Math.sin(t*2+pool[a+4]*15)+1)*0.5,3)*0.7)*(0.4+night*0.6)*(i<ffBase?1:ffA);circle(p,2.8*this.k,'#b9ef85',a0*0.06);circle(p,1.35*this.k,'#b9ef85',a0*0.25);circle(p,0.6*this.k,'#e9ffd0',a0);}}
   if(bm.id==='antkingdom'){const ants=hab._antPatrol||(hab._antPatrol={count:quality==='low'?4:9});for(let i=0;i<ants.count;i++){const a=i*7,x=(pool[a]*dm.w+t*2.5)%dm.w,z=dm.d*(0.25+0.25*Math.sin(x/dm.w*6.2))+i*0.8,p=point(x,0.8+(JT.Terrain?JT.Terrain.lift(hab,x,z,0):0),z);circle(p,0.55*this.k,'#35251b',0.75);circle([p[0]-1.1*this.k,p[1]],0.48*this.k,'#35251b',0.75);}}
   if(bm.id==='urban'){const daylight=hab.daylight(),phase=hab.game&&hab.game.tod?hab.game.tod():t/600%1;if(daylight>0.25){const x=dm.w*(0.15+0.7*phase),p=point(x,0.4,dm.d*0.52);ctx.globalAlpha=daylight*0.085;ctx.fillStyle='#ffdc9f';ctx.beginPath();ctx.ellipse(p[0],p[1],dm.w*0.22*V.s,dm.d*0.16*V.s,0,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
@@ -10242,9 +10259,9 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       const bed = (type, f, q) => { const src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = Math.random(); const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const g = c.createGain(); g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(this.buses.ambience); src.start(0, Math.random() * 2); return { fl, g }; };
       const hum = c.createGain(); hum.gain.value = 0; hum.connect(this.buses.ambience);
       for (const [f, a] of [[100, 1], [200, 0.45], [300, 0.15]]) { const o = c.createOscillator(); o.frequency.value = f; const g = c.createGain(); g.gain.value = a; o.connect(g); g.connect(hum); o.start(); }
-      this._sc = { wind: bed('lowpass', 420, 0.7), hiss: bed('bandpass', 5200, 0.6), rustle: bed('bandpass', 2600, 0.8), water: bed('bandpass', 1400, 1.4), mist: bed('highpass', 4200, 0.5), hum, t: 0, ev: {}, theme: null, k: 0 };
+      this._sc = { wind: bed('lowpass', 420, 0.7), hiss: bed('bandpass', 5200, 0.6), rustle: bed('bandpass', 2600, 0.8), water: bed('bandpass', 1400, 1.4), mist: bed('highpass', 4200, 0.5), rain: bed('bandpass', 3000, 0.45), rumble: bed('lowpass', 150, 0.7), hum, t: 0, ev: {}, theme: null, k: 0 };
     },
-    _bedsQuiet() { const S = this._sc; if (!S || S.quiet) return; const t = this.ctx.currentTime; for (const k of ['wind', 'hiss', 'rustle', 'water', 'mist']) S[k].g.gain.setTargetAtTime(0, t, 0.4); S.hum.gain.setTargetAtTime(0, t, 0.4); S.quiet = true; },
+    _bedsQuiet() { const S = this._sc; if (!S || S.quiet) return; const t = this.ctx.currentTime; for (const k of ['wind', 'hiss', 'rustle', 'water', 'mist', 'rain', 'rumble']) if (S[k]) S[k].g.gain.setTargetAtTime(0, t, 0.4); S.hum.gain.setTargetAtTime(0, t, 0.4); S.quiet = true; },
     /** Which soundscape a tank gets, from its substrate and backdrop. */
     themeOf(hab) {
       const d = hab.data, sub = d.substrate, bg = d.bg; if (d.sound && d.sound !== 'auto') return d.sound;
@@ -10265,6 +10282,8 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       S.k -= dt; if (S.k <= 0 || S.hab !== hab) { S.k = 2; S.hab = hab; S.theme = this.themeOf(hab); S.set = this.setupOf(hab); }
       const th = S.theme, st = S.set, day = 1 - night, obs = root.JT && JT.UI && JT.UI.obs ? 0.8 : 1;
       const mistOn = hab._mistAt != null && hab.time - hab._mistAt < 5 ? 1 - (hab.time - hab._mistAt) / 5 : 0;
+      const WF = root.JT && JT.app && JT.app.R && JT.app.R._wxF, wf = WF && WF.hab === hab ? WF.f : null; // v19: rain sound follows the visual fade
+      const rainA = wf ? Math.min(1, (wf.rain || 0) + (wf.storm || 0)) : 0, stormA = wf ? wf.storm || 0 : 0;
       // continuous beds (eased)
       S.t -= dt; if (S.t <= 0) { S.t = 0.25; const tc = 0.6, g = (n, v) => S[n].g.gain.setTargetAtTime(v * obs, now, tc);
         const gust = 0.5 + 0.5 * Math.sin(now * 0.21) * Math.sin(now * 0.077 + 1);
@@ -10273,7 +10292,7 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
         g('hiss', th === 'rainforest' ? 0.012 + night * 0.006 : 0.002);
         g('rustle', Math.min(0.035, Math.max(0, st.plants - 3) * 0.004) * (0.4 + gust * 0.9));
         g('water', st.water ? 0.008 + Math.min(2, st.water) * 0.004 : 0);
-        g('mist', mistOn * 0.05);
+        g('mist', mistOn * 0.05); if (S.rain) { g('rain', rainA * rainA * (0.03 + 0.025 * stormA)); g('rumble', stormA * stormA * 0.035); }
         S.hum.gain.setTargetAtTime(st.lamps ? Math.min(2, st.lamps) * 0.0045 * obs : 0, now, 0.8); }
       // one-shots
       const E = S.ev, due = (k, lo, hi) => { E[k] = (E[k] == null ? lo * R() : E[k]) - dt; if (E[k] > 0) return false; E[k] = lo + R() * (hi - lo); return true; };
@@ -10300,6 +10319,8 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
         if (night > 0.4 && due('crk', 1.6, 4.5)) crickets(0.016);
         if (due('scut', 5, 12)) this.noise('ambience', 0.25, { f: 3000, q: 1.5, vol: 0.015 });
       }
+      if (rainA > 0.05 && due('rdrop', 0.04 / rainA, 0.22 / rainA)) drip((0.004 + R() * 0.008) * rainA, 1500 + R() * 2600); // patter on leaves
+      if (stormA > 0.6 && due('thunder', 20, 50)) this.noise('ambience', 3 + R() * 2.5, { ft: 'lowpass', f: 190, fTo: 55, vol: 0.1 * stormA, att: 0.35, delay: R() * 0.5 });
       // setup-reactive one-shots: dish trickle, mist drips, prey in the tank
       if (st.water && due('trk', 0.35, 1.3)) drip(0.012 + R() * 0.01, 1300 + R() * 1400);
       if (mistOn > 0 && due('mdrip', 0.15, 0.6)) drip(0.03 * mistOn + 0.01);
