@@ -475,6 +475,7 @@ body.story #app #modalWrap{background:rgba(60,45,25,.12)}
 .card.fits .pr .ok,.card .pr .ok{color:var(--ok);font-variant:normal;letter-spacing:0}
 body.story .card .pr .ok{color:#4f7a35}
 .card.care-mist canvas,.card.care-clean canvas{filter:none}
+.card canvas.th{filter:none}
 /* modal head: back arrow */
 #app #modal .modal-head{align-items:center;gap:4px}
 #app #modal .modal-head .back{min-width:36px;min-height:36px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:-8px}
@@ -519,7 +520,7 @@ body.story .card .pr .ok{color:#4f7a35}
 .tkfav{font-size:20px;min-width:40px;color:var(--faint)}.tkfav.on{color:var(--accent)}
 .tk-all{font-style:italic;opacity:.85}
 .entry.hybrid{box-shadow:inset 0 0 0 1px rgba(180,120,200,.35)}.entry canvas.mystery{opacity:.9;filter:blur(.4px)}.jnote{margin:-2px 0 8px;font-size:13px}
-#obsPhoto{min-width:40px;display:flex;align-items:center;justify-content:center}
+#obsPhoto,#obsTv{min-width:40px;display:flex;align-items:center;justify-content:center}
 body.photo #top,body.photo #toolbar,body.photo #drawer,body.photo #spiderPanel,body.photo #camCtl,body.photo #modeBar,body.photo #obsHud,body.photo #replayDock,body.photo #tip,body.photo #dock,body.photo #popover{display:none!important}
 #photoUi{position:absolute;inset:0;z-index:14;pointer-events:none;color:var(--ink)}
 #photoUi .ph-top{position:absolute;top:calc(10px + var(--sat));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:4px 6px 4px 16px;border-radius:20px;background:var(--pill);border:1px solid var(--pillLine);box-shadow:var(--pillSh);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);pointer-events:auto;font-size:14px;white-space:nowrap;max-width:calc(100vw - 20px)}
@@ -664,6 +665,11 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
 #splash .sp-foot{position:absolute;z-index:2;left:0;right:0;bottom:calc(14px + var(--sab));font-size:11.5px;letter-spacing:.3em;color:rgba(244,236,216,.5);transition:opacity .9s ease}
 #splash .sp-foot.off{opacity:0}
 body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
+/* v17 Ambient TV: the controls fade away, a soft veil covers cuts between subjects, any tap brings everything back */
+#tvVeil{position:absolute;inset:0;background:#0d0a06;opacity:0;pointer-events:none;transition:opacity .7s ease;z-index:60}
+#tvVeil.on{opacity:1}
+#tvCatch{position:absolute;inset:0;z-index:61;background:transparent;cursor:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+body.tv #app>:not(canvas):not(#tvVeil):not(#tvCatch),body.tv #tip{opacity:0!important;pointer-events:none!important;transition:opacity .9s ease!important}
 @keyframes spBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes spIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes spGlow{0%,100%{opacity:.5;text-shadow:0 1px 8px rgba(0,0,0,.55)}50%{opacity:1;text-shadow:0 0 14px rgba(255,226,170,.7),0 0 34px rgba(255,214,140,.32),0 1px 8px rgba(0,0,0,.4)}}
@@ -834,8 +840,10 @@ button:focus:not(:focus-visible){outline:none}
     <div class="obs-tag">Observing</div>
     <div class="obs-txt"><div id="obsName"></div><div id="obsThought"></div></div>
     <button id="obsPhoto" class="txt" aria-label="Photo mode (P)" title="Photo mode (P)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg></button>
+    <button id="obsTv" class="txt" aria-label="Ambient TV (T)" title="Ambient TV (T): hands-free watching, tap to return"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6.5" width="18" height="12" rx="2"/><path d="M9 3l3 3.2L15 3"/></svg></button>
     <button id="obsExit" class="txt" aria-label="Exit observe (Esc)" title="Exit (Esc)">×</button>
   </div>
+  <div id="tvVeil" aria-hidden="true"></div>
 
   <div id="photoUi" class="hidden" aria-label="Photo mode">
     <div class="ph-top"><span id="phName"></span><button id="phExit" class="txt" aria-label="Leave photo mode (Esc)" title="Leave photo mode (Esc)">×</button></div>
@@ -6757,6 +6765,105 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   }
   const toCam = (yaw, pitch) => { const cp = Math.cos(pitch); return [-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp]; };
   function visibility(occ, pts, yaw, pitch) { const d = toCam(yaw, pitch); let s = 0; for (const p of pts) s += seeThrough(occ, p, d); return s / pts.length; }
+  // ---------- v17 line of sight: the decor's real shapes ----------
+  // Every part that can hide a jumper, in world space with its own box: rock / cork / wall blocks (prisms), trunks, stems,
+  // branches, logs, pots and grass blades (capsules), leaves (flat leaf outlines), flower heads and mushroom caps (balls).
+  // Leaves are nearly opaque; thin stems and grass let some of the view through. The camera is orthographic, so a view
+  // is a direction: a part hides a point if the ray from the point toward the camera passes through it.
+  const Sight = JT.Sight = {};
+  const SM = JT.M;
+  function bbOf(pts, r) { const b = [1e9, 1e9, 1e9, -1e9, -1e9, -1e9]; for (const q of pts) { b[0] = Math.min(b[0], q[0] - r); b[1] = Math.min(b[1], q[1] - r); b[2] = Math.min(b[2], q[2] - r); b[3] = Math.max(b[3], q[0] + r); b[4] = Math.max(b[4], q[1] + r); b[5] = Math.max(b[5], q[2] + r); } return b; }
+  function grow(B, b) { for (let i = 0; i < 3; i++) { B[i] = Math.min(B[i], b[i]); B[i + 3] = Math.max(B[i + 3], b[i + 3]); } }
+  Sight.scene = function (hab) {
+    const key = hab._geomVersion + '|' + hab.decor.length;
+    if (hab._sight && hab._sight.key === key) return hab._sight;
+    const list = [];
+    for (const inst of hab.decor) {
+      const g = hab.geoms[inst.id]; if (!g || !g.def) continue; const def = g.def; if (def.cat === 'ground' && !inst.parent) continue;
+      const parts = []; const wall = def.arche === 'backwall';
+      const cap = (a, b, r, op) => { if (r < 0.12) return; parts.push({ k: 'c', a, b, r, op, bb: bbOf([a, b], r) }); };
+      for (const pr of g.prims) {
+        if (pr.t === 'prism') { const pts = []; const dm = JT.Solid ? JT.Solid.dome(pr) : 0; for (const q of pr.poly.concat(pr.topPoly || [])) { pts.push([q[0], pr.y0, q[1]], [q[0], pr.y1 + dm, q[1]]); } parts.push({ k: 'p', pr, dm, op: 1, bb: bbOf(pts, 0) }); }
+        else if (pr.t === 'tube') { const blade = pr.style === 'blade'; const n = pr.pts.length;
+          for (let i = 0; i + 1 < n; i++) { const r = SM.lerp(pr.r0, pr.r1, (i + 0.5) / Math.max(1, n - 1)) * (blade ? 1.1 : 1); const op = blade ? 0.3 : pr.style === 'plank' ? 0.95 : r >= 0.8 ? 1 : SM.clamp(r * 0.9, 0.18, 0.75); cap(pr.pts[i], pr.pts[i + 1], r, op); } }
+        else if (pr.t === 'log') { parts.push({ k: 'c', a: pr.a, b: pr.b, r: pr.r, op: 1, hollow: !!pr.hollow, bb: bbOf([pr.a, pr.b], pr.r) }); }
+        else if (pr.t === 'leaf') { const L = SM.len(pr.a); if (L < 0.4) continue; let n = SM.cross(pr.a, pr.b); if (SM.len(n) < 1e-6) continue; n = SM.norm(n); const tip = SM.add(pr.o, pr.a);
+          parts.push({ k: 'l', o: pr.o, a: pr.a, b: pr.b, n, aa: SM.dot(pr.a, pr.a), bb2: SM.dot(pr.b, pr.b) || 1, op: L < 1.5 ? 0.5 : 0.88, bb: bbOf([pr.o, tip, SM.add(pr.o, pr.b), SM.sub(pr.o, pr.b), SM.add(tip, pr.b), SM.sub(tip, pr.b)], L * 0.1) }); }
+        else if (pr.t === 'bloom') { const r = pr.r * (pr.kind === 'bud' ? 0.8 : 1); parts.push({ k: 's', c: pr.o, r, ry: r * 0.6, op: 0.6, bb: bbOf([pr.o], r) }); }
+        else if (pr.t === 'cap') { const ry = pr.cone ? pr.r * 0.95 : pr.r * 0.42; const c = [pr.o[0], pr.o[1] + ry * 0.35, pr.o[2]]; parts.push({ k: 's', c, r: pr.r, ry: ry * 0.75, op: 1, bb: bbOf([c], pr.r) }); }
+        else if (pr.t === 'pot') cap(pr.o, [pr.o[0], pr.o[1] + pr.h, pr.o[2]], pr.r, 1);
+        else if (pr.t === 'lamp') parts.push({ k: 's', c: pr.o, r: pr.r, ry: pr.r, op: 1, bb: bbOf([pr.o], pr.r) });
+        else if (pr.t === 'shelf') parts.push({ k: 's', c: pr.o, r: pr.r * 0.9, ry: pr.r * 0.3, op: 0.95, bb: bbOf([pr.o], pr.r) });
+      }
+      if (!parts.length) continue;
+      const B = parts[0].bb.slice(); for (const p of parts) grow(B, p.bb);
+      list.push({ id: inst.id, parts, bb: B, wall, plant: def.cat === 'plants' });
+    }
+    hab._sight = { key, list }; return hab._sight;
+  };
+  // ray p + d t (t in [t0, t1]) against a box: entry/exit or null
+  function slab(p, d, b, t0, t1) {
+    for (let i = 0; i < 3; i++) { const lo = b[i], hi = b[i + 3];
+      if (Math.abs(d[i]) < 1e-9) { if (p[i] < lo || p[i] > hi) return null; continue; }
+      let ta = (lo - p[i]) / d[i], tb = (hi - p[i]) / d[i]; if (ta > tb) { const s = ta; ta = tb; tb = s; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1) return null; }
+    return [t0, t1];
+  }
+  // closest distance between segment P0 + u*(P1-P0) and Q0 + v*(Q1-Q0)
+  function segSeg(P0, P1, Q0, Q1) {
+    const u = SM.sub(P1, P0), v = SM.sub(Q1, Q0), w = SM.sub(P0, Q0); const a = SM.dot(u, u), b = SM.dot(u, v), c = SM.dot(v, v), d = SM.dot(u, w), e = SM.dot(v, w);
+    const D = a * c - b * b; let sN, sD = D, tN, tD = D;
+    if (D < 1e-9) { sN = 0; sD = 1; tN = e; tD = c; } else { sN = b * e - c * d; tN = a * e - b * d; if (sN < 0) { sN = 0; tN = e; tD = c; } else if (sN > sD) { sN = sD; tN = e + b; tD = c; } }
+    if (tN < 0) { tN = 0; if (-d < 0) sN = 0; else if (-d > a) sN = sD; else { sN = -d; sD = a; } } else if (tN > tD) { tN = tD; if (-d + b < 0) sN = 0; else if (-d + b > a) sN = sD; else { sN = -d + b; sD = a; } }
+    const sc = Math.abs(sN) < 1e-9 ? 0 : sN / sD, tc = Math.abs(tN) < 1e-9 ? 0 : tN / tD;
+    const dP = SM.sub(SM.add(w, SM.mul(u, sc)), SM.mul(v, tc)); return SM.len(dP);
+  }
+  function ptSeg(p, a, b) { const ab = SM.sub(b, a); const L2 = SM.dot(ab, ab) || 1; const t = SM.clamp(SM.dot(SM.sub(p, a), ab) / L2, 0, 1); return SM.dist(p, SM.add(a, SM.mul(ab, t))); }
+  /** How much of the part does the ray pass through (0 = misses, else its opacity). */
+  function hitPart(o, p, d, t0, t1) {
+    if (o.k === 'c') { const ds = ptSeg(p, o.a, o.b); if (ds < o.r + 0.15) return o.hollow && ds < o.r * 0.72 ? 1 : 0; // standing on / in it: the part under its feet
+      return segSeg(SM.add(p, SM.mul(d, t0)), SM.add(p, SM.mul(d, t1)), o.a, o.b) < o.r ? o.op : 0; }
+    if (o.k === 'p') { const pr = o.pr; if (JT.Solid && JT.Solid.depth(p, pr) > 0) return 0;
+      let ta = t0, tb = t1; if (d[1] > 1e-6) { ta = Math.max(ta, (pr.y0 - p[1]) / d[1]); tb = Math.min(tb, (pr.y1 + o.dm - p[1]) / d[1]); } else if (p[1] < pr.y0 || p[1] > pr.y1) return 0; if (ta >= tb) return 0;
+      if (!pr.topPoly && !o.dm) return JT.G.segHitsPoly([p[0] + d[0] * ta, p[2] + d[2] * ta], [p[0] + d[0] * tb, p[2] + d[2] * tb], pr.poly) ? 1 : 0;
+      const N = 10; for (let i = 0; i <= N; i++) { const t = ta + (tb - ta) * i / N; if (JT.Solid.depth([p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t], pr) > 0) return 1; } return 0; }
+    if (o.k === 'l') { const den = SM.dot(d, o.n); if (Math.abs(den) < 1e-5) return 0; const t = SM.dot(SM.sub(o.o, p), o.n) / den; if (t < Math.max(t0, 0.25) || t > t1) return 0;
+      const q = SM.sub(SM.add(p, SM.mul(d, t)), o.o); const u = SM.dot(q, o.a) / o.aa; if (u < 0 || u > 1) return 0; const v = SM.dot(q, o.b) / o.bb2; const w = Math.sqrt(Math.max(0, 1 - (2 * u - 1) * (2 * u - 1))); return Math.abs(v) <= w ? o.op : 0; }
+    if (o.k === 's') { // ellipsoid (r, ry, r): scale y and solve
+      const sy = o.r / o.ry; const P = [p[0] - o.c[0], (p[1] - o.c[1]) * sy, p[2] - o.c[2]], Dd = [d[0], d[1] * sy, d[2]]; const a = SM.dot(Dd, Dd), b = 2 * SM.dot(P, Dd), c = SM.dot(P, P) - o.r * o.r;
+      if (c < 0) return 0; const disc = b * b - 4 * a * c; if (disc < 0) return 0; const t = (-b - Math.sqrt(disc)) / (2 * a); return t > t0 && t < t1 ? o.op : 0; }
+    return 0;
+  }
+  /** Fraction of the view from point p toward a camera in direction d that is not blocked (1 clear .. 0 hidden), and
+      (optional) which decor block it: out[id] += opacity. */
+  Sight.ray = function (S, p, d, out, skip) {
+    let v = 1;
+    for (const D of S.list) { if (skip && skip === D.id && D.wall) continue; const r = slab(p, d, D.bb, 0.2, 400); if (!r) continue; let dv = 1;
+      for (const o of D.parts) { const rr = slab(p, d, o.bb, r[0], r[1]); if (!rr) continue; const h = hitPart(o, p, d, rr[0], rr[1]); if (h > 0) { dv *= 1 - h; if (dv < 0.02) { dv = 0; break; } } }
+      if (dv < 1) { v *= dv; if (out) out[D.id] = Math.max(out[D.id] || 0, 1 - dv); if (v < 0.02 && !out) return 0; } }
+    return v;
+  };
+  // v17: many views of the same points (the camera planner tries dozens a few times a second): per point, keep only the
+  // decor whose bounding ball can lie in some view direction at all, with that ball's cone, so most parts cost one dot product
+  Sight.prep = function (hab, pts) { const S = Sight.scene(hab); const per = [];
+    for (const p of pts) { const L = [];
+      for (const D of S.list) { const b = D.bb; const cx = (b[0] + b[3]) / 2 - p[0], cy = (b[1] + b[4]) / 2 - p[1], cz = (b[2] + b[5]) / 2 - p[2]; const r = 0.5 * Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]) + 0.2; const dd = Math.hypot(cx, cy, cz);
+        if (cy + r < 0) continue; // wholly below the point: views look down on it from above (pitch > 0)
+        if (dd <= r) L.push({ D, ux: 0, uy: 0, uz: 0, ca: -2 }); else L.push({ D, ux: cx / dd, uy: cy / dd, uz: cz / dd, ca: Math.sqrt(Math.max(0, 1 - (r / dd) * (r / dd))) }); }
+      per.push({ p, L }); }
+    per.S = S; return per; };
+  // minV: the caller only cares whether the result beats minV - stop as soon as it cannot (returns that upper bound)
+  Sight.viewP = function (per, w, d, out, minV) { let s = 0, ws = 0, wt = 0; for (let i = 0; i < per.length; i++) wt += w ? w[i] : 1; let left = wt;
+    for (let i = 0; i < per.length; i++) { const k = w ? w[i] : 1; ws += k; left -= k; const p = per[i].p; let v = 1;
+      if (minV != null && wt > 0 && (s + k + left) / wt <= minV) return (s + k + left) / wt;
+      if (d[1] <= 0) { s += Sight.ray(per.S, p, d, out) * k; continue; } // looking up from below: the cull above does not hold
+      for (const c of per[i].L) { if (c.ux * d[0] + c.uy * d[1] + c.uz * d[2] < c.ca) continue; const D = c.D; const r = slab(p, d, D.bb, 0.2, 400); if (!r) continue; let dv = 1;
+        for (const o of D.parts) { const rr = slab(p, d, o.bb, r[0], r[1]); if (!rr) continue; const h = hitPart(o, p, d, rr[0], rr[1]); if (h > 0) { dv *= 1 - h; if (dv < 0.02) { dv = 0; break; } } }
+        if (dv < 1) { v *= dv; if (out) out[D.id] = Math.max(out[D.id] || 0, 1 - dv); if (v < 0.02 && !out) { v = 0; break; } if (minV != null && !out && (s + v * k + left) / wt <= minV) return (s + v * k + left) / wt; } }
+      s += v * k; }
+    return ws ? s / ws : 1; };
+  Sight.view = function (hab, pts, w, d, out) { const S = Sight.scene(hab); let s = 0, ws = 0; for (let i = 0; i < pts.length; i++) { const k = w ? w[i] : 1; s += Sight.ray(S, pts[i], d, out) * k; ws += k; } return ws ? s / ws : 1; };
+  // v17: views are judged against the real shapes (Sight) - the old coarse boxes let a camera look straight through a dense fern
+  const viewVis = (hab, pts, w, yaw, pitch, out) => JT.Sight.view(hab, pts, w, toCam(yaw, pitch), out);
 
   class FollowCam {
     constructor() { this.st = null; this.pause = 0; this.userYaw = 0; this.userPitch = 0; this.userZoom = 1; this.dir = null; this.id = null; }
@@ -6834,8 +6941,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const tid = sp.target ? sp.target.kind + sp.target.id : null;
       if (this.huntSide == null || this.huntTid !== tid) {
         // pick the clearer side once per target (sticky); ties go to the side nearer the current view (less swing)
-        const occ = occluders(hab), pts = [head, prey], cur = toCam(this.st.yaw, this.st.pitch);
-        const sc = (side) => { const d = mk(side); const yaw = Math.atan2(-d[0], -d[2]), pitch = Math.asin(M.clamp(d[1], -1, 1)); return visibility(occ, pts, yaw, pitch) * 2 + M.dot(d, cur) * 0.3; };
+        const pts = [head, prey], cur = toCam(this.st.yaw, this.st.pitch);
+        const sc = (side) => { const d = mk(side); const yaw = Math.atan2(-d[0], -d[2]), pitch = Math.asin(M.clamp(d[1], -1, 1)); return viewVis(hab, pts, null, yaw, pitch) * 2 + M.dot(d, cur) * 0.3; };
         this.huntSide = sc(1) >= sc(-1) ? 1 : -1; this.huntTid = tid;
       }
       return { e, head, prey, d: mk(this.huntSide), dist };
@@ -6844,29 +6951,54 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     /** Pick the clearest good view near the preferred one (cheap ray casts against coarse decor shapes, a few times a
         second). Views onto the belly are never taken; views showing the face score higher. Blocked views first swing
         round at the same height, and only then rise a little. */
+    /** v17: points on the jumper the camera must see: head and eyes count most, then abdomen and both flanks (legs). */
+    bodyPts(hab, sp, des, L) {
+      const f0 = sp.fwd && M.finite3(sp.fwd) ? M.norm(sp.fwd) : [1, 0, 0]; const n = des.n; let f = M.sub(f0, M.mul(n, M.dot(f0, n))); f = M.len(f) > 1e-3 ? M.norm(f) : (Math.abs(n[1]) < 0.9 ? M.norm(M.cross(n, [0, 1, 0])) : [1, 0, 0]);
+      const s = M.norm(M.cross(n, f)); let p = sp.pos;
+      if (JT.Draw && JT.Draw.frame && sp.sup && sp.sup.k !== 'air') { try { const fr = JT.Draw.frame(hab, sp, 0.05); if (M.finite3(fr.p)) p = fr.p; } catch (e) { /* drawing helpers missing (tests) */ } }
+      const at = (a, b, c) => M.add(M.add(M.add(p, M.mul(n, a * L)), M.mul(f, b * L)), M.mul(s, c * L));
+      return { pts: [at(0.32, 0.12, 0), at(0.3, 0.36, 0), at(0.2, -0.36, 0), at(0.12, 0, 0.36), at(0.12, 0, -0.36)], w: [2, 1.2, 1, 0.5, 0.5], c: at(0.25, 0, 0) };
+    }
+    /** Pick the clearest good view near the preferred one (rays against the decor's real shapes, a few times a second).
+        Views onto the belly are never taken; views showing the face score higher. Candidates are tried nearest-first
+        (15 degree steps all the way round, three heights, higher still when everything near is blocked). */
     plan(hab, sp, des, L, base, hunt, fresh) {
-      const occ = occluders(hab); const f = sp.fwd && M.finite3(sp.fwd) ? M.norm(sp.fwd) : [1, 0, 0];
-      const head = M.add(sp.pos, M.mul(des.n, L * 0.3)), body = M.sub(M.add(sp.pos, M.mul(des.n, L * 0.15)), M.mul(f, L * 0.35));
-      const pts = hunt && hunt.prey ? [head, body, hunt.prey] : [head, body];
+      const bp = this.bodyPts(hab, sp, des, L); const pts = hunt && hunt.prey ? bp.pts.concat([hunt.prey]) : bp.pts, w = hunt && hunt.prey ? bp.w.concat([2]) : bp.w;
       const prevY = this.fYaw != null ? this.fYaw : base.yaw;
       const good = (y, p) => hunt ? (des.under || des.dorsal(toCam(y, p)) >= 0.15) : des.accept(y, p);
       const face = (y, p) => { if (!des.fh || des.wall) return 0; const tc = toCam(y, p); const hl = Math.hypot(tc[0], tc[2]) || 1; return (tc[0] * des.fh[0] + tc[2] * des.fh[2]) / hl; };
-      const score = (y, p, vis) => vis * 2 - 0.5 * Math.abs(M.wrapAngle(y - base.yaw)) / Math.PI - 1.1 * Math.abs(p - base.pitch) - 0.25 * Math.abs(M.wrapAngle(y - prevY)) / Math.PI + (hunt ? 0 : 0.3 * Math.max(0, face(y, p)));
-      if (!occ.length) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 1; this.better = 0; return; }
-      const pitches = des.wall ? [base.pitch, Math.min(0.7, base.pitch + 0.2)] : des.under ? [base.pitch, 0.3] : [base.pitch, Math.min(0.56, base.pitch + 0.18)];
-      const K = hunt ? 3 : 6; let best = null;
-      for (let k = -K + (hunt ? 0 : 1); k <= K; k++) for (const p of pitches) {
-        const y = M.wrapAngle(base.yaw + k * Math.PI / 6); if (this.wallTank && Math.abs(y) > WALL_ARC + 1e-6) continue; if (!good(y, p)) continue;
-        const vis = visibility(occ, pts, y, p); const sc = score(y, p, vis);
+      const score = (y, p, vis) => vis * 3 - 0.5 * Math.abs(M.wrapAngle(y - base.yaw)) / Math.PI - 1.1 * Math.abs(p - base.pitch) - 0.25 * Math.abs(M.wrapAngle(y - prevY)) / Math.PI + (hunt ? 0 : 0.3 * Math.max(0, face(y, p)));
+      if (!JT.Sight.scene(hab).list.length) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 1; this.better = 0; return; }
+      const PR = JT.Sight.prep(hab, pts); const visAt = (y, p, minV) => JT.Sight.viewP(PR, w, toCam(y, p), null, minV);
+      const cv0 = this.fYaw != null ? visAt(this.fYaw, this.fPitch) : 1;
+      const pitches = des.wall ? [base.pitch, Math.min(0.72, base.pitch + 0.2)] : des.under ? [base.pitch, 0.3] : [base.pitch, Math.min(0.62, base.pitch + 0.16), Math.min(0.86, base.pitch + 0.36)];
+      const K = hunt ? 6 : 12; let best = null; const cands = [];
+      for (let k = 0; k <= K; k++) for (const sg of k ? [1, -1] : [1]) { if (hunt && sg < 0 && k === 0) continue; for (const p of pitches) cands.push([M.wrapAngle(base.yaw + sg * k * Math.PI / 12), p, k]); }
+      let more = false;
+      for (let ci = 0; ci < cands.length; ci++) { const [y, p, k] = cands[ci];
+        if (ci === cands.length - 1 && !more && !des.under && (!best || best.vis < 0.5)) { more = true; for (let k2 = 0; k2 <= K; k2 += 2) for (const sg of k2 ? [1, -1] : [1]) cands.push([M.wrapAngle(base.yaw + sg * k2 * Math.PI / 12), 0.94, k2]); } // nothing near looked clear so far: also try from high above
+        if (this.wallTank && Math.abs(y) > WALL_ARC + 1e-6) continue; if (!good(y, p)) continue;
+        if (best && score(y, p, 1) <= best.sc) continue; // even a perfectly clear view here could not win
+        const vis = visAt(y, p, best ? (best.sc - score(y, p, 0)) / 3 : null); const sc = score(y, p, vis);
         if (!best || sc > best.sc) best = { y, p, vis, sc };
-        if (k === 0 && p === base.pitch && vis > 0.97) { k = K + 1; break; } // preferred view is clear: done
+        if (k === 0 && p === base.pitch && vis > 0.97) break; // preferred view is clear: done
       }
       if (!best) { this.fYaw = base.yaw; this.fPitch = base.pitch; this.fVis = 0.5; this.better = 0; return; }
       if (fresh || this.fYaw == null) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; return; }
-      const cv = visibility(occ, pts, this.fYaw, this.fPitch); let cs = score(this.fYaw, this.fPitch, cv); this.fVis = cv;
+      const cv = cv0; let cs = score(this.fYaw, this.fPitch, cv); this.fVis = cv;
       if (!good(this.fYaw, this.fPitch)) cs -= 3; // the jumper turned: the old angle now shows its belly / rear
-      if (best.sc > cs + 0.3) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.35 || cs < -1 ? 0.3 : 0.8)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
+      if (best.sc > cs + 0.25) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.6 || cs < -1 ? 0.2 : 0.7)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
       else this.better = 0;
+    }
+    /** v17: decor still in front of the jumper in the view actually on screen (while the camera swings round, or when no
+        clear view exists) fades to see-through in a soft circle round the jumper. Eased in and out. */
+    updateFade(hab, sp, des, L, dt) {
+      const F = this.fade || (this.fade = {}); this.fadeT = (this.fadeT || 0) - dt;
+      if (this.fadeT <= 0) { this.fadeT = 0.1; const bp = this.bodyPts(hab, sp, des, L); const out = {}; JT.Sight.view(hab, bp.pts, bp.w, toCam(this.st.yaw, this.st.pitch), out);
+        this._fadeWant = out; this.holeC = bp.c; this.holeR = L * 1.05 + 2.4; }
+      const want = this._fadeWant || {};
+      for (const id in want) if (want[id] >= 0.12 && F[id] == null) F[id] = 0;
+      for (const id in F) { const on = (want[id] || 0) >= 0.12; F[id] = on ? Math.min(1, F[id] + dt / 0.3) : F[id] - dt / 0.5; if (F[id] <= 0) delete F[id]; }
     }
 
     /** Cinematic zoom factor for tense moments (pure function of the jumper's state, smoothed). */
@@ -6933,7 +7065,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         // line of sight: step round decor that would hide the jumper (or its prey)
         this.planT = (this.planT || 0) - dt;
         if (fresh || this.planT <= 0) { this.planT = PLAN_DT; this.plan(hab, sp, des, L, { yaw: this.tYaw, pitch: this.tPitch }, hunt, fresh); }
-        if (this.fVis != null && this.fVis < 0.45) zoomMul *= 1.2; // nothing clear: come in closer (the x-ray outline shows it through the leaves)
+        if (this.fVis != null && this.fVis < 0.45) zoomMul *= 1.1; // nothing clear: come in a little closer (the decor in front fades and the x-ray outline shows it)
         // target point: the upper body, leading toward the landing while airborne
         c = M.add(sp.pos, M.mul(des.n, L * 0.3));
         if (air && air.to && M.finite3(air.to)) { c = M.lerp3(c, air.to, 0.35); zoomMul *= 0.82; }
@@ -6951,7 +7083,10 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       tS *= this.userZoom;
       if (c) { const dm = hab.dims; c = [M.clamp(c[0], 4, dm.w - 4), M.clamp(c[1], 0, dm.h), M.clamp(c[2], 4, dm.d - 4)]; }
       this.tS = tS;
-      const tYaw = this.fYaw != null ? this.fYaw : this.tYaw, tPitch = this.fPitch != null ? this.fPitch : this.tPitch;
+      let tYaw = this.fYaw != null ? this.fYaw : this.tYaw, tPitch = this.fPitch != null ? this.fPitch : this.tPitch;
+      if ((this.tvYaw || this.tvPitch) && !hunt && !des.wall && tYaw != null) { // v17 Ambient TV: slow sway round the planned view, only while it stays a good one
+        let y2 = M.wrapAngle(tYaw + (this.tvYaw || 0)); if (this.wallTank) y2 = M.clamp(y2, -WALL_ARC, WALL_ARC); const p2 = M.clamp(tPitch + (this.tvPitch || 0), PITCH_MIN, PITCH_MAX);
+        if (des.accept(y2, p2)) { tYaw = y2; tPitch = p2; } }
       // rotation: soft springs with limited acceleration and speed, so every move eases in and out
       const urgent = !hunt && !des.accept(st.yaw, st.pitch); const ys = (hunt ? 0.8 : this.ease > 0 ? 0.65 : YAW_SPEED) * (urgent ? 1.6 : 1), om = urgent ? 2.2 : hunt || this.ease > 0 ? 1.25 : 1.5; // seeing its belly: turn round promptly (still eased)
       if (this.pause > 0) { this.pause -= dt; st.vy *= 0.8; st.vp *= 0.8; }
@@ -6984,11 +7119,12 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const tc = this.tC || st.c; let r;
       for (let i = 0; i < 3; i++) { r = spring(st.c[i], st.vc[i], tc[i], air ? 3.6 : 2.4, dt); st.c[i] = r[0]; st.vc[i] = r[1]; }
       if (M.dist(st.c, tc) < 0.02 && Math.hypot(st.vc[0], st.vc[1], st.vc[2]) < 0.05) { st.c = tc.slice(); st.vc = [0, 0, 0]; }
+      try { this.updateFade(hab, sp, des, L, dt); } catch (e) { this.fade = {}; }
       if (!M.finite3(st.c) || !isFinite(st.yaw) || !isFinite(st.pitch) || !isFinite(st.s)) { st.c = (c || sp.pos).slice(); st.yaw = tYaw || 0; st.pitch = tPitch || 0.6; st.s = tS || s0; st.vy = st.vp = st.vs = 0; st.vc = [0, 0, 0]; }
       return st;
     }
   }
-  FollowCam.visibility = (hab, pts, yaw, pitch) => visibility(occluders(hab), pts, yaw, pitch); FollowCam.toCam = toCam;
+  FollowCam.visibility = (hab, pts, yaw, pitch) => viewVis(hab, pts, null, yaw, pitch); FollowCam.visibilityOld = (hab, pts, yaw, pitch) => visibility(occluders(hab), pts, yaw, pitch); FollowCam.toCam = toCam;
   FollowCam.PITCH_MIN = PITCH_MIN; FollowCam.PITCH_MAX = PITCH_MAX; FollowCam.PAUSE = PAUSE;
   JT.FollowCam = FollowCam;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -8805,9 +8941,11 @@ void main(){ vec3 p=aP+uSway*aW; vec3 q=proj(p);
   const MESH_FS = `
 precision highp float;
 varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;
-uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; ${LAMPS}
+uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform vec4 uHole; uniform vec2 uHoleM; ${LAMPS}
+float holeK(){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uToCam); if(al<-uHole.w*0.25) return 0.0; float pp=length(dd-uToCam*al); return (1.0-smoothstep(uHole.w*0.62,uHole.w,pp))*uHoleM.y; }
 void main(){
   if(vWP.y<-0.05) discard;
+  float hk=0.0; if(uHoleM.x>0.5){ hk=holeK(); if(uHoleM.x<1.5){ if(hk>0.02) discard; } else if(hk<=0.02) discard; }
   if(uPass>0.5){ gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*uAlpha, uAlpha); return; }
   float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=floor(f/16.0);
   vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }
@@ -8830,7 +8968,8 @@ void main(){
   vec3 o=grade(col, vWP);
   if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);
   o=mix(o, uGhost.rgb, uGhost.a);
-  gl_FragColor=vec4(o*uAlpha, uAlpha); }`;
+  float A=uAlpha; if(uHoleM.x>1.5) A*=1.0-0.82*hk;
+  gl_FragColor=vec4(o*A, A); }`;
   const TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
   const TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}
@@ -8872,8 +9011,8 @@ uniform vec3 uSway; uniform float uLW; uniform float uMinW; ${PROJ}
 varying vec4 vC; varying vec3 vWP;
 void main(){ vec3 pa=aA+uSway*aSw.x, pb=aB+uSway*aSw.y; vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);
   vec2 nr=vec2(-dir.y,dir.x); float w=max(aW*uLW, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`;
-  const LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}
-void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+  const LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; uniform vec4 uHole; uniform vec2 uHoleM; uniform vec3 uTC; ${LAMPS}
+void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(al>-uHole.w*0.25 && length(dd-uTC*al)<uHole.w*(0.62+0.38*(1.0-uHoleM.y))) discard; } vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
 
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
   const PAPER = [0.945, 0.905, 0.815];
@@ -9134,15 +9273,23 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
       const drawList = hg.meshes.filter(o => visible(o.g)); for (const o of drawList) o._dz = V.depth(o.g._sb.c); drawList.sort((a, b) => a._dz - b._dz); // near first: early depth rejection
+      // v17: decor in front of a followed jumper fades to see-through in a soft circle round it (FollowCam.fade, eased per decor id)
+      const fcF = this.R.cam && this.R.cam.mode === 'follow' && this.R.fcam && this.R.fcam.st && this.R.fcam.holeC ? this.R.fcam : null; let anyFade = false;
+      const fadeOf = (o) => { if (!fcF || !fcF.fade) return 0; const a = fcF.fade[o.inst.id]; if (!(a > 0.01) || o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' || o.g.def.arche === 'backwall') return 0; anyFade = true; const e = Math.min(1, a); return e * e * (3 - 2 * e); };
+      if (fcF) { const hc = fcF.holeC; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], fcF.holeR || 6); }
       const PT = this.R.set.perf ? this.R.set : {}; // performance-readout test switches (Settings)
       for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
         gl.uniform1f(P.u.uPass, pass ? 0 : 1);
-        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
+        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY);
+          const fa = fadeOf(o); gl.uniform2f(P.u.uHoleM, fa > 0.01 ? 1 : 0, fa); this.drawMesh(P, o.m); }
       }
+      gl.uniform2f(P.u.uHoleM, 0, 0);
       // ink strokes on decor
       P = this.use(this.P.line); this.view(P, V); this.light(P); gl.uniform1f(P.u.uLW, lw); gl.uniform1f(P.u.uMinW, 0.6 * k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
-      for (const o of drawList) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
+      if (fcF) { const hc = fcF.holeC; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], fcF.holeR || 6); gl.uniform3f(P.u.uTC, V.toCam[0], V.toCam[1], V.toCam[2]); }
+      for (const o of drawList) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); const fa = anyFade ? fadeOf(o) : 0; gl.uniform2f(P.u.uHoleM, fa > 0.01 ? 1 : 0, fa); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
+      gl.uniform2f(P.u.uHoleM, 0, 0);
       // soil mounds (depth tested against the decor, not written, soft edges)
       if (hg.mb) { P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
         gl.bindBuffer(gl.ARRAY_BUFFER, hg.mb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1]], 7); gl.drawArrays(gl.TRIANGLES, 0, hg.nm); }
@@ -9150,6 +9297,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this.R.ghost && this.R.ghost.geom) this.drawGhost(V, this.R.ghost);
       // critters & small things as sprites, then silk
       if (scene && !PT.ptNoSpr) { this.sprites(V, hab, scene, night); this.silk(V, hab, scene, night); }
+      // v17: the faded decor's wash, see-through inside the circle, laid over the critters (depth-tested, not written)
+      if (anyFade && fcF) { P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uPass, 0);
+        const hc = fcF.holeC; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], fcF.holeR || 6);
+        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        for (const o of drawList) { const fa = fadeOf(o); if (fa <= 0.01) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); gl.uniform2f(P.u.uHoleM, 2, fa); this.drawMesh(P, o.m); }
+        gl.uniform2f(P.u.uHoleM, 0, 0); }
       // paper grain + vignette over everything
       gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.DST_COLOR, gl.ZERO);
       P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.paper); gl.uniform1i(P.u.uTex, 0);
@@ -9778,7 +9932,9 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         V.set(0.52, 0.62, s, size / 2 - (x0 + x1) / 2 * s, size / 2 - (y0 + y1) / 2 * s, [0, 0, 0]);
         const gc = G.centroid(g.foot || [[0, 0]]); const q = V.P([gc[0], g.baseY, gc[1]]); const rr = Math.max(8, Math.sqrt(Math.abs(G.polyArea(g.foot || [[0, 0], [1, 0], [0, 1]]))) * V.s * 0.75);
         const sg = ctx.createRadialGradient(q[0], q[1], 0, q[0], q[1], rr); sg.addColorStop(0, 'rgba(60,40,20,0.28)'); sg.addColorStop(1, 'rgba(60,40,20,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(q[0], q[1], rr, rr * 0.5, 0, 0, 6.283); ctx.fill();
-        const art = this.gp && JT.withBaseLight(() => this.gp.thumb(g, V, size)); if (art) ctx.drawImage(art, 0, 0);
+        const art = this.gp && JT.withBaseLight(() => this.gp.thumb(g, V, size));
+        // v17: the card's drop shadow is painted in once (a CSS drop-shadow on every card made the shop strip slow to scroll)
+        if (art) { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.42)'; ctx.shadowBlur = 7 * size / 112; ctx.shadowOffsetY = 4 * size / 112; ctx.drawImage(art, 0, 0); ctx.restore(); c._baked = true; if (JT.ThumbDB) JT.ThumbDB.save(key, c); }
       } catch (e) { if (JT.DEV) console.warn(e); }
       this.thumbs[key] = c; return c;
     }
@@ -10129,15 +10285,48 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   /* Shop thumbnails are painted by the GPU one at a time (each needs a read-back), which made the first open of a big
      list take most of a second. Cards now appear at once with an empty frame; the pictures fill in over the next few
      frames (a few ms per frame), cached ones instantly. Idle time after start-up pre-paints the common lists. */
+  /* v17: the queue paints cards on screen first (then the rest of the strip, never cards hidden by a filter), and leaves
+     cards that were taken off screen queued (their tab may come back). Painted pictures are also kept on the device
+     (IndexedDB, per build), so later visits never wait for the GPU at all. */
   const TQ = [];
+  const thumbClass = (src) => (src && src._baked ? 'th' : '');
   function lazyThumb(ready, make, size) {
-    if (ready()) return cloneCanvas(make());
-    const c = document.createElement('canvas'); c.width = c.height = size || 112; c.className = 'pending'; TQ.push({ c, make }); return c;
+    if (ready()) { const c = cloneCanvas(make()); c.className = thumbClass(make()); return c; }
+    const c = document.createElement('canvas'); c.width = c.height = size || 112; c.className = 'pending'; c._make = make; TQ.push({ c, make }); return c;
   }
+  const onScreen = (c) => { const r = c.getBoundingClientRect(); return r.width > 0 && r.right > -40 && r.left < innerWidth + 40 && r.bottom > -40 && r.top < innerHeight + 40; };
   function pumpThumbs(budget) {
-    const t0 = performance.now();
-    while (TQ.length && performance.now() - t0 < budget) { const q = TQ.shift(); if (!q.c.isConnected) continue; try { const src = q.make(); q.c.getContext('2d').drawImage(src, 0, 0); } catch (e) { /* keep the empty frame */ } q.c.classList.remove('pending'); }
+    const t0 = performance.now(); let tries = 0;
+    while (TQ.length && performance.now() - t0 < budget && tries++ < 400) {
+      for (let i = TQ.length - 1; i >= 0; i--) if (!TQ[i].c.isConnected || !TQ[i].c.classList.contains('pending')) TQ.splice(i, 1);
+      if (!TQ.length) break;
+      let i = TQ.findIndex(q => onScreen(q.c)); if (i < 0) i = TQ.findIndex(q => q.c.offsetParent !== null); if (i < 0) return; // only hidden cards left: wait
+      const q = TQ.splice(i, 1)[0]; try { const src = q.make(); q.c.getContext('2d').drawImage(src, 0, 0); q.c.className = thumbClass(src); } catch (e) { q.c.classList.remove('pending'); /* keep the empty frame */ } }
   }
+  /** A card taken from the card cache whose picture never got painted goes back in the queue. */
+  function requeue(card) { for (const c of card.querySelectorAll('canvas.pending')) if (c._make && !TQ.some(q => q.c === c)) TQ.push({ c, make: c._make }); }
+  // Thumbnails kept on the device. Keyed by a hash of this build's code, so a new version repaints them once.
+  const ThumbDB = JT.ThumbDB = {
+    build: null, db: null, opening: null, queue: [], busy: false,
+    hash() { if (this.build) return this.build; let h = 2166136261; try { for (const sc of document.scripts) { const t = sc.textContent || ''; for (let i = 0; i < t.length; i += 7) h = Math.imul(h ^ t.charCodeAt(i), 16777619); h = Math.imul(h ^ t.length, 16777619); } } catch (e) { /* no DOM */ } return (this.build = (h >>> 0).toString(36)); },
+    open() { if (this.opening) return this.opening; this.opening = new Promise((res) => { try { if (typeof indexedDB === 'undefined') return res(null); const rq = indexedDB.open('jt-thumbs', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('t'); } catch (e) { /* exists */ } }; rq.onsuccess = () => { this.db = rq.result; res(this.db); }; rq.onerror = () => res(null); rq.onblocked = () => res(null); } catch (e) { res(null); } }); return this.opening; },
+    save(key, canvas) { if (typeof indexedDB === 'undefined' || !canvas.toBlob) return; const k = this.hash() + '|' + key; this.queue.push([k, canvas]); this.flush(); },
+    flush() { if (this.busy || !this.queue.length) return; this.busy = true; const batch = this.queue.splice(0, this.queue.length);
+      const done = () => { this.busy = false; if (this.queue.length) setTimeout(() => this.flush(), 400); };
+      Promise.all(batch.map(([k, c]) => new Promise(res => { try { c.toBlob(b => res(b ? [k, b] : null), 'image/png'); } catch (e) { res(null); } }))).then(list => this.open().then(db => {
+        if (!db) return done(); try { const tx = db.transaction('t', 'readwrite'); const st = tx.objectStore('t'); for (const it of list) if (it) st.put(it[1], it[0]); tx.oncomplete = done; tx.onerror = done; tx.onabort = done; } catch (e) { done(); } }), done); },
+    /** Fill the renderer's thumbnail cache from the device (missing ones only); old builds' pictures are deleted. */
+    load(R) { if (typeof indexedDB === 'undefined' || typeof Image === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return; const pre = this.hash() + '|';
+      this.open().then(db => { if (!db) return; try { const st = db.transaction('t', 'readonly').objectStore('t'); const kq = st.getAllKeys(), vq = st.getAll();
+        vq.onsuccess = () => { const keys = kq.result || [], vals = vq.result || []; const got = [], stale = [];
+          keys.forEach((k, n) => { k = String(k); if (k.startsWith(pre)) got.push([k.slice(pre.length), vals[n]]); else stale.push(k); });
+          if (stale.length) try { const tx = db.transaction('t', 'readwrite'); const s2 = tx.objectStore('t'); for (const k of stale) s2.delete(k); } catch (e) { /* ignore */ }
+          const one = ([key, blob]) => R.thumbs[key] || !blob ? null : new Promise(res => { const u = URL.createObjectURL(blob); const im = new Image();
+            im.onload = () => { if (!R.thumbs[key]) { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); c._baked = true; R.thumbs[key] = c; } URL.revokeObjectURL(u); res(); };
+            im.onerror = () => { URL.revokeObjectURL(u); res(); }; im.src = u; });
+          Promise.all(got.map(one)).then(() => { this.loaded = got.length; }); };
+      } catch (e) { /* storage unavailable */ } }); }
+  };
   const A = () => JT.Audio;
   /* Haptics: Android/Chrome vibrate; iPhone Safari has no vibrate API, but toggling a native switch inside a tap gives a
      light system tick (iOS 18+), so taps you make still get a feel. Game moments (catches, molts) can only buzz where
@@ -10250,6 +10439,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       $('modeRotate').onclick = () => this.rotatePlace(); $('modeLeaves').onclick = () => this.toggleLeaves(); $('modeDone').onclick = () => this.modeDone(); $('modeCancel').onclick = () => this.endMode(); $('modeUndo').onclick = () => this.undo(); $('undoBtn').onclick = () => this.undo(); $('redoBtn').onclick = () => this.redo(); this.undoSync();
       $('obsExit').onclick = () => this.toggleObserve(false);
       $('obsPhoto').onclick = (e) => { e.stopPropagation(); A().sfx('click'); this.photoMode(true); };
+      $('obsTv').onclick = (e) => { e.stopPropagation(); A().sfx('click'); this.tvMode(true); };
       $('phExit').onclick = () => { A().sfx('click'); this.photoMode(false); }; $('phShot').onclick = () => this.photoSnap();
       $('phVigBtn').onclick = () => { if (!this.photo) return; this.photo.vig = this._phVig = !this.photo.vig; A().sfx('click'); this.photoSync(); };
       $('phFrameBtn').onclick = () => { if (!this.photo) return; this.photo.frame = this._phFrame = !this.photo.frame; A().sfx('click'); this.photoSync(); };
@@ -10257,7 +10447,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
       for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => A().start(), { capture: true, passive: true });
       document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
-      { const poke = () => { this._activeUntil = performance.now() + 1800; }; for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'touchmove']) document.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons) return; poke(); }, { passive: true, capture: true }); }
+      { const poke = () => { this._activeUntil = performance.now() + 1800; }; for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'touchmove']) document.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons) return;
+          // v17: scrolling the shop strip doesn't wake the tank up to 60 fps (the GPU stays free for the strip); thumbnails wait while the finger moves
+          const t = e.target; if (ev !== 'keydown' && t && t.closest && t.closest('#drawerBody, #drawerChips')) { if (ev !== 'pointerdown') this._scrollUntil = performance.now() + 160; return; }
+          poke(); }, { passive: true, capture: true }); }
       document.addEventListener('pointerdown', (e) => { this.ptrType = e.pointerType || 'mouse'; A().start(); const pop = $('popover'); if (!pop.classList.contains('hidden') && !pop.contains(e.target) && e.target !== $('btnSound')) pop.classList.add('hidden'); }, true);
       this.bindCanvas();
       // rotation: phones often report the old size in the first resize event, so re-measure after layout settles too
@@ -10397,10 +10590,12 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { if (e.key === 'Escape') e.target.blur(); return; }
       const k = e.key;
       if ((e.ctrlKey || e.metaKey) && !e.altKey && (k === 'z' || k === 'Z' || k === 'y' || k === 'Y')) { if (this.obs || !$('modalWrap').classList.contains('hidden')) return; e.preventDefault(); if (k === 'y' || k === 'Y' || e.shiftKey) this.redo(); else this.undo(); return; }
+      if (this.tv) { if (!/^(Shift|Control|Alt|Meta|CapsLock|Fn)$/.test(k)) { e.preventDefault(); this.tvMode(false); } return; } // Ambient TV: any key brings the controls back
       if (this.photo) { if (k === 'Escape' || k === 'p' || k === 'P') this.photoMode(false); else if (k === ' ' || k === 'Enter') { e.preventDefault(); this.photoSnap(); } return; }
       if ((k === 'p' || k === 'P') && this.obs) { this.photoMode(true); return; }
       if (k === 'Escape') { if (this.obs) this.toggleObserve(false); else if (!$('modalWrap').classList.contains('hidden')) this.closeModal(); else if (this.mode) this.endMode(); else if (this.tab) this.closeDrawer(); else if (this.panelId) this.hidePanel(); return; }
       if (k === 'o' || k === 'O') { this.toggleObserve(); return; }
+      if (k === 't' || k === 'T') { this.tvMode(true); return; }
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
       if ((k === 'l' || k === 'L') && this.mode === 'place') { this.toggleLeaves(); return; }
@@ -10623,6 +10818,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     syncDrawerSpace() { const d = $('drawer'); const open = !d.classList.contains('hidden'); document.body.classList.toggle('drawer-open', open); document.documentElement.style.setProperty('--drawerH', open ? Math.round(d.getBoundingClientRect().height) + 'px' : '0px'); },
     closeDrawer() { this.tab = null; $('drawer').classList.add('hidden'); this.syncDrawerSpace(); document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); this.refreshHeader(); },
     decorCard(d, look) {
+      // v17: cards are kept and reused when a tab opens again (no rebuilding 70 cards and copying their pictures)
+      const CC = this._cardCache || (this._cardCache = new Map()); const h0 = this.hab; const B0 = JT.Biomes;
+      const ck = look ? null : d.id + '|' + (B0 && B0.id ? B0.id(h0) : '') + '|' + ((h0.spiders[0] && h0.spiders[0].species) || h0.data.buildSpecies || '');
+      if (ck && CC.has(ck)) { const e = CC.get(ck); requeue(e); return e; }
+      const e = this.decorCard0(d, look); if (ck) CC.set(ck, e); return e;
+    },
+    decorCard0(d, look) {
       const c = el('div', 'card'); c.title = d.name + (d.desc ? ' — ' + d.desc : '') + (d.platform ? ' — platform (others can stack on top)' : '') + (d.stack ? ' — can be stacked on platforms' : '');
       c.appendChild(lazyThumb(() => this.R.hasThumb(d.id, 0, 112, look), () => this.R.decorThumb(d.id, 0, 112, look)));
       const tgs = [d.platform && 'platform', d.stack && 'stackable', d.cover >= 0.5 && 'cover', d.water && 'water', d.flowers && 'flowers', d.lamp && 'warm light'].filter(Boolean); const tg = tgs.join(', '); if (tg) c.title += ' — ' + tg;
@@ -10876,6 +11078,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         this.obs = { sub: null, hold: 0, prevCam: this.R.cam.mode, t: 0, lock: lockId && this.hab.spider(lockId) ? lockId : null }; document.body.classList.add('observe'); $('obsHud').classList.remove('hidden');
         this.R.observing = true; this.R.setMode('follow'); this.pickSubject(true);
       } else if (this.obs) {
+        if (this.tv) this.tvMode(false, true);
         if (this.photo) this.photoMode(false);
         const prev = this.obs.prevCam; this.obs = null; document.body.classList.remove('observe'); $('obsHud').classList.add('hidden'); this.R.observing = false; this.R.setMode(prev === 'follow' || !this.camModes().includes(prev) ? (this.camModes().includes(this._prevCam) ? this._prevCam : 'iso') : prev);
         document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on'));
@@ -10890,7 +11093,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (force || !cur || (best.id !== o.sub && o.hold > 7 && score(best) > score(cur) + 20)) { o.sub = best.id; o.hold = 0; this.game.selectedId = best.id; }
     },
     updateObs(dt) {
-      const o = this.obs; o.hold += dt; o.t += dt; if (o.t > 1) { o.t = 0; this.pickSubject(false); }
+      const o = this.obs; o.hold += dt; o.t += dt; if (this.tv) { try { this.tvTick(dt); } catch (e) { console.error('tv', e); this.tvMode(false); } if (!this.obs) return; } if (o.t > 1) { o.t = 0; this.pickSubject(false); }
       const sp = this.hab.spider(o.sub); if (!sp) return;
       const S = JT.SPECIES_BY_ID[sp.species];
       $('obsName').textContent = sp.name + ' · ' + S.name + ' · ' + JT.STAGES[sp.stage];
@@ -11106,6 +11309,69 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const pb = this._profBack; this.openModal(sp.name + ' \u00b7 photo', w, { back: () => this.profileModal(sp, pb) });
     },
     /** v11 photo mode: time stops, the interface steps aside, filters preview live; photos go to the jumper's profile. */
+    // ------------------------------------------------ v17 Ambient TV
+    /** Hands-free watching on top of Observe: the controls fade out and a director picks who to watch and how
+        (close, wide, slow orbit, plain follow), holding a hunt or a molt to its end. Any tap or key brings everything back. */
+    tvMode(on, fromObs) {
+      on = on == null ? !this.tv : on;
+      if (on) {
+        if (this.tv) return; if (!this.hab.spiders.length) { this.toast('No jumpers here to watch yet.'); return; }
+        if (this.photo) this.photoMode(false); this.cancelMode(); this.closeDrawer(); this.closeModal(); this.hidePanel && this.hidePanel();
+        if (!this.obs) this.toggleObserve(true); if (!this.obs) return;
+        this.tv = { t: 0, shotT: 0, dur: 0, sub: null, style: null, prevStyle: null, recent: [], prevLock: this.obs.lock, zoom: 1, ph: Math.random() * 6.28, cut: 0, ext: 0 };
+        document.body.classList.add('tv'); const app = $('app');
+        const c = document.createElement('div'); c.id = 'tvCatch'; c.setAttribute('aria-label', 'Tap to show the controls');
+        const out = (e) => { e.preventDefault(); e.stopPropagation(); if (this.tv) this.tvMode(false); };
+        c.addEventListener('pointerdown', out); c.addEventListener('wheel', out, { passive: false }); c.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+        c.addEventListener('touchstart', (e) => { e.preventDefault(); if (this.tv) this.tvMode(false); }, { passive: false });
+        app.appendChild(c); this.tvShot(true);
+      } else if (this.tv) {
+        const T = this.tv; this.tv = null; document.body.classList.remove('tv'); $('tvVeil').classList.remove('on');
+        const c = $('tvCatch'); if (c) setTimeout(() => c.remove(), 450); // keep swallowing the rest of the tap that ended it
+        const fc = this.R.fcam; if (fc) { fc.tvYaw = 0; fc.tvPitch = 0; fc.userZoom = 1; }
+        if (this.obs && !fromObs) this.obs.lock = T.prevLock && this.hab.spider(T.prevLock) ? T.prevLock : null;
+        this.refreshHeader();
+      }
+    },
+    /** Something worth holding the shot for (or cutting to). */
+    tvHot(s) { const AI = JT.SpiderAI; return AI.HUNT.has(s.state) || /^(pounce|subdue|secure|feed|molting|premolt|moltSilk|display|semaphore|lunge|carry|fall|dangle|flee|sip|nectarSeek)$/.test(s.state); },
+    /** Two jumpers close together: a meeting. */
+    tvMeet(s) { const AI = JT.SpiderAI; return this.hab.spiders.some(o => o !== s && M.dist(o.pos, s.pos) < 3 * (AI.len(o) + AI.len(s))); },
+    tvShot(first) {
+      const T = this.tv, h = this.hab, AI = JT.SpiderAI, o = this.obs; if (!T || !o || !h.spiders.length) return;
+      const many = h.spiders.length > 1;
+      const score = (s) => AI.interest(s) + (s.target ? 10 : 0) + (this.tvHot(s) ? 25 : 0) + (this.tvMeet(s) ? 20 : 0) - (many && s.id === T.sub ? 30 : 0) - (many && T.recent.includes(s.id) ? 10 : 0) + Math.random() * 14;
+      let best = h.spiders[0], bs = -1e9; for (const s of h.spiders) { const v = score(s); if (v > bs) { bs = v; best = s; } }
+      const prev = h.spider(T.sub); const far = !prev || prev.id !== best.id && M.dist(prev.pos, best.pos) > 0.35 * Math.max(h.dims.w, h.dims.d);
+      // the shot: hunts get the plain observe camera (it already frames jumper and prey); calm moments get close-ups and slow orbits
+      const calm = /^(rest|sleep|bask|groom|feed|molting|premolt|postMolt|idle|watch|cleanEyes|stretch)$/.test(best.state);
+      let pool = AI.HUNT.has(best.state) || /^(pounce|subdue|secure)$/.test(best.state) ? ['follow'] : calm ? ['close', 'orbit', 'close', 'wide'] : ['follow', 'wide', 'orbit', 'close'];
+      if (pool.length > 1) pool = pool.filter(x => x !== T.style);
+      const style = pool[(Math.random() * pool.length) | 0];
+      const ST = { follow: { z: 1, a: 0.22, ap: 0.04, per: 46 }, close: { z: 1.6, a: 0.26, ap: 0.05, per: 52, push: 0.004 }, wide: { z: 0.62, a: 0.4, ap: 0.08, per: 58 }, orbit: { z: 1.15, a: 0.55, ap: 0.06, per: 64 } }[style];
+      T.prevStyle = T.style; T.style = style; T.cfg = ST; T.shotT = 0; T.ext = 0; T.dur = 30 + Math.random() * 15; T.ph = Math.random() * 6.283; T.dirS = Math.random() < 0.5 ? -1 : 1;
+      if (prev && prev.id !== best.id) { T.recent.unshift(prev.id); T.recent.length = Math.min(T.recent.length, 2); }
+      const go = () => { if (!this.tv || !this.obs) return; T.sub = best.id; o.lock = best.id; o.sub = best.id; o.hold = 0; this.game.selectedId = best.id; };
+      if (first || !far) { go(); return; } // same jumper or a neighbour: glide over
+      // far away: dip to the veil, move the camera there while it is dark, then lift it
+      const veil = $('tvVeil'); veil.classList.add('on'); T.cut = 1;
+      setTimeout(() => { if (!this.tv) { veil.classList.remove('on'); return; } go(); try { for (let i = 0; i < 50; i++) this.R.updateView(h, 1 / 30); } catch (e) { /* camera settles on its own */ }
+        requestAnimationFrame(() => requestAnimationFrame(() => { veil.classList.remove('on'); if (this.tv) T.cut = 0; })); }, 750);
+    },
+    tvTick(dt) {
+      const T = this.tv, h = this.hab; if (!T) return; if (!h.spiders.length) { this.toggleObserve(false); return; }
+      T.t += dt; T.shotT += dt; const cur = h.spider(T.sub);
+      if (!cur) { if (!T.cut) this.tvShot(false); return; }
+      if (!T.cut) {
+        const hot = this.tvHot(cur);
+        if (T.shotT >= T.dur + T.ext) { if (hot && T.ext < 25) T.ext += dt * 2; else this.tvShot(false); } // never cut away in the middle of a hunt or a molt
+        else if (T.shotT > 12 && !hot && h.spiders.length > 1) { const AI = JT.SpiderAI; const busy = h.spiders.find(s => s !== cur && (AI.interest(s) >= 55 || s.state === 'molting')); if (busy) this.tvShot(false); } // something is happening elsewhere
+      }
+      // the shot's slow motion: a gentle sway round the planned view and an easy zoom (the planner still keeps the view clear)
+      const fc = this.R.fcam; if (!fc || !fc.st || !T.cfg) return; const C = T.cfg;
+      const w = 6.283 / C.per; fc.tvYaw = T.dirS * C.a * Math.sin(T.ph + T.t * w); fc.tvPitch = C.ap * Math.sin(T.ph * 1.7 + T.t * w * 0.7);
+      const zt = C.z * (1 + (C.push || 0) * Math.min(40, T.shotT)); T.zoom += (zt - T.zoom) * Math.min(1, dt * 0.35); fc.userZoom = T.zoom; fc.pause = 0;
+    },
     photoMode(on) {
       on = on == null ? !this.photo : on;
       if (on) {
@@ -11302,6 +11568,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       segRow(vs, 'Camera', this.camModes().map(m => [m, JT.CAMS[m].label.replace(/^Isometric$/, 'Iso')]), this.R.cam.mode, (m) => { this.setCam(m); this.moreSheet(); });
       segRow(vs, 'Time', [['auto', 'Natural'], ['day', 'Day'], ['night', 'Night']], g.state.timeMode, (m) => { this.setTimeMode(m); this.moreSheet(); });
       row(vs, this.obs ? 'Stop observing' : 'Observe a jumper', () => { this.closeModal(); this.toggleObserve(!this.obs); });
+      if (this.hab.spiders.length) row(vs, 'Ambient TV', () => { this.closeModal(); this.tvMode(true); }, false, 'Hands-free watching: the camera picks the moments. Tap to come back.');
       // app
       const as = sect('Game');
       row(as, this.set.muted ? 'Sound (muted)' : 'Sound', () => { this.closeModal(); this.soundPopover(); });
@@ -11445,12 +11712,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); this.updateWanting(); this.tipWatch(); }
       this.pumpTips(dt);
       if (this.mode === 'place' && this.place && this._t > 0.5) { this._t = 0; this.updateGhostAtCurrent(); }
-      if (TQ.length) pumpThumbs(this.isMobile() ? 6 : 9);
+      if (TQ.length) { if (performance.now() > (this._scrollUntil || 0)) pumpThumbs(this.isMobile() ? 6 : 9); }
       else this.warmThumbs(dt);
     },
     /** Idle pre-painting of shop thumbnails (one every ~0.3 s, only while nothing else is going on). */
     warmThumbs(dt) {
-      this._warmT = (this._warmT || 0) + dt; if (this._warmT < 4 || this._warmDone) return;
+      this._warmT = (this._warmT || 0) + dt; if (!this._tdb && this._warmT > 0.8) { this._tdb = true; try { JT.ThumbDB.load(this.R); } catch (e) { /* no storage */ } }
+      if (this._warmT < 4 || this._warmDone) return;
       if (this.obs || this.mode || this.R._moving || (this.R.fps && this.R.fps < 24)) return;
       if (this._warmT - (this._warmLast || 0) < 0.3) return; this._warmLast = this._warmT;
       if (!this._warmList) this._warmList = JT.DECOR.filter(d => d.cat === 'decor' || d.cat === 'plants' || d.cat === 'ground').map(d => d.id);
@@ -11482,7 +11750,7 @@ const edit=U.tankEditModal;U.tankEditModal=function(i){edit.apply(this,arguments
 const us=U._undoSnap;U._undoSnap=function(h){const d=JSON.parse(us.call(this,h));d.biome=B.id(h);d.humidity=h.data.humidity;d.buildSpecies=h.data.buildSpecies;return JSON.stringify(d);};const ua=U._undoApply;U._undoApply=function(str){const o=JSON.parse(str),h=this.hab;if(o.biome){B.setBiome(h,o.biome);h.data.humidity=o.humidity;h.data.buildSpecies=o.buildSpecies;}const out=ua.call(this,str);this.biomeHeader();return out;};
 const du=JT.Game.prototype.duplicateHabitat;JT.Game.prototype.duplicateHabitat=function(h){const n=du.call(this,h);if(n){n.data.biome=B.id(h);n.data.humidity=h.data.humidity;n.data.buildSpecies=h.data.buildSpecies||(h.spiders[0]&&h.spiders[0].species);n.data.bev=null;}return n;};
 U.biomeDecorFit=function(d){const h=this.hab,sid=(h.spiders[0]&&h.spiders[0].species)||h.data.buildSpecies,bid=B.id(h);if(bid==='classic'||d.water||d.lamp)return B.suit(d,bid);const a=B.suit(d,bid);if(!sid||sid==='bold')return a;const target=B.homesOf(sid).includes(bid)?bid:B.homeOf(sid);return Math.min(a,B.suit(d,target));};
-const dc=U.decorCard;U.decorCard=function(d){const e=dc.apply(this,arguments);e.dataset.decor=d.id;const fit=this.biomeDecorFit(d);if(B.id(this.hab)!=='classic'&&fit===2){e.classList.add('bm-native');e.prepend(el('span','bm-badge','Native'));}return e;};
+const dc=U.decorCard0;U.decorCard0=function(d){const e=dc.apply(this,arguments);e.dataset.decor=d.id;const fit=this.biomeDecorFit(d);if(B.id(this.hab)!=='classic'&&fit===2){e.classList.add('bm-native');e.prepend(el('span','bm-badge','Native'));}return e;};
 const od=U.openDrawer;U.openDrawer=function(tab){if(this.game.state.biomeSetup){this.biomeWizard(true);return;}if(tab!=='food'&&B.id(this.hab)!=='classic'&&!this.hab.spiders.length&&!this.hab.data.buildSpecies){this.toast('Choose a jumper first to see suitable decor.');this.collectionModal();return;}od.apply(this,arguments);const drawer=$('drawer');drawer.classList.toggle('bm-drawer',tab!=='food');drawer.querySelector('.bm-controls')?.remove();if(tab==='food')return;const controls=el('div','bm-controls');const search=el('input');search.type='search';search.placeholder='Find a plant or decor';search.setAttribute('aria-label','Search build items');search.value=this._bmQuery||'';controls.append(search);const apply=()=>{const q=(this._bmQuery||'').toLowerCase();for(const card of drawer.querySelectorAll('[data-decor]')){const d=JT.DECOR_BY_ID[card.dataset.decor],fit=this.biomeDecorFit(d);card.hidden=!(d.name.toLowerCase().includes(q))||(this._bmFilter!=='all'&&(this._bmFilter==='ideal'?fit<2:fit===0));}for(const b of controls.querySelectorAll('button'))b.classList.toggle('on',b.dataset.filter===(this._bmFilter||'suitable'));};search.oninput=()=>{this._bmQuery=search.value;apply();};for(const [id,label]of [['ideal','Ideal'],['suitable','Suitable'],['all','Show all']]){const b=btn(label,()=>{this._bmFilter=id;apply();});b.dataset.filter=id;controls.append(b);}const cards=drawer.querySelector('.cards');if(cards)cards.before(controls);apply();this.syncDrawerSpace();};
 const place=U.startPlace;U.startPlace=function(id){if(this.game.state.biomeSetup){this.biomeWizard(true);return;}const d=JT.DECOR_BY_ID[id];if(d&&this.biomeDecorFit(d)===0){if(!root.confirm('This piece is not a good fit for this jumper and biome. Place it anyway?'))return;}return place.apply(this,arguments);};
 const cb=U.collectionBody;U.collectionBody=function(){const w=cb.apply(this,arguments),bid=B.id(this.hab),order=JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS,JT.SPECIAL_UNLOCKS||[]),cards=[...w.querySelectorAll('.grid>.entry')];w.classList.add('bm-collection');if(bid!=='classic')w.prepend(el('p','bm-note','This is a '+B.of(this.hab).name+' tank: jumpers at home here are listed first.'));const rows=[];cards.forEach((card,i)=>{const id=order[i],s=JT.SPECIES_BY_ID[id];if(!s)return;card.dataset.species=id;const mystery=s.hybrid&&!this.game.isUnlocked(id),native=B.isHome(bid,id);if(!mystery){card.append(el('p','bm-note','Home biome: '+home(id)));if(native){card.prepend(el('span','bm-badge','At home here'));card.classList.add('bm-native');}}rows.push({card,i,rank:native?(mystery?3:this.game.isUnlocked(id)?0:1):2});});if(bid!=='classic'&&rows.length){const grid=rows[0].card.parentElement;rows.sort((a,b)=>a.rank-b.rank||a.i-b.i).forEach(x=>grid.append(x.card));}return w;};
