@@ -37,8 +37,8 @@ t('changeType free', g.changeType(nano, 'cube') === true && nano.data.type === '
 // save / load roundtrip
 g.save(); const g2 = new JT.Game(); t('load v4 save', g2.load() === true && g2.habs.length === 30 && g2.isUnlocked('portia') && g2.state.best.peacock === 5 && !('coins' in g2.state), g2.state && Object.keys(g2.state));
 // old (v3) save is wiped
-JT.Store.set('jumperTerrarium.v14.save', JSON.stringify({ v: 3, coins: 9999, species: ['bold', 'regal', 'canopy', 'giant'], habitats: [{ name: 'x', type: 'standard', decor: [], spiders: [], prey: [] }], customPresets: [{ name: 'mine' }] }));
-const g3 = new JT.Game(); const r3 = g3.load(); t('v3 save not loaded (fresh start)', r3 === false && g3._wiped === true && JT.Store.get('jumperTerrarium.v14.save') == null && !!JT.Store.get('jumperTerrarium.v14.save.pre4'));
+JT.Store.set('jumperTerrarium.save', JSON.stringify({ v: 3, coins: 9999, species: ['bold', 'regal', 'canopy', 'giant'], habitats: [{ name: 'x', type: 'standard', decor: [], spiders: [], prey: [] }], customPresets: [{ name: 'mine' }] }));
+const g3 = new JT.Game(); const r3 = g3.load(); t('v3 save not loaded (fresh start)', r3 === false && g3._wiped === true && JT.Store.get('jumperTerrarium.save') == null && !!JT.Store.get('jumperTerrarium.save.pre4'));
 g3.newGame(); t('fresh after wipe', g3.state.species.join() === 'peacock' && g3.state.customPresets.length === 0 && !('coins' in g3.state));
 t('import of old save rejected', g3.importSave(JSON.stringify({ v: 3, coins: 5, habitats: [{ name: 'x', type: 'standard' }] })) === false && g3.state.species.join() === 'peacock');
 // new prey: creatable, simulate a peacock sling + every new prey for a few minutes
