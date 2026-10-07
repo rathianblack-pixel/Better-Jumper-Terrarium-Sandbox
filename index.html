@@ -666,6 +666,54 @@ body.drawer-open #tip{bottom:calc(var(--drawerH,0px) + 60px + var(--sab))}
 #splash .sp-foot.off{opacity:0}
 body.attract #app>:not(canvas),body.attract #tip{visibility:hidden!important}
 /* v17 Ambient TV: the controls fade away, a soft veil covers cuts between subjects, any tap brings everything back */
+/* v18 unlock reveal: silhouette on a glow in the species' colour, then the jumper itself, its name, and what earned it */
+#unlockFx{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,rgba(20,14,8,.62),rgba(8,6,3,.9));-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);opacity:0;transition:opacity .45s ease;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#unlockFx.in{opacity:1}#unlockFx.out{opacity:0;transition-duration:.35s}
+#unlockFx .uf-stage{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px;max-width:min(560px,94vw);color:#f6eedb}
+#unlockFx .uf-kick{font-variant:small-caps;letter-spacing:.18em;font-size:15px;color:var(--uf,#e8c476);opacity:0;transform:translateY(6px);transition:opacity .6s ease .15s,transform .6s ease .15s;text-shadow:0 0 14px var(--ufA,rgba(232,196,118,.6))}
+#unlockFx.in .uf-kick{opacity:1;transform:none}
+#unlockFx .uf-art{position:relative;width:min(280px,64vw);height:min(280px,64vw);margin:6px 0 4px}
+#unlockFx .uf-glow{position:absolute;inset:-18%;border-radius:50%;background:radial-gradient(circle,var(--ufA,rgba(232,196,118,.55)) 0%,var(--ufB,rgba(232,196,118,.18)) 38%,rgba(0,0,0,0) 68%);transform:scale(.6);opacity:0;transition:transform 1.1s cubic-bezier(.2,.8,.2,1),opacity .9s ease;animation:ufBreath 3.2s ease-in-out infinite}
+#unlockFx.in .uf-glow{transform:scale(1);opacity:1}
+#unlockFx .uf-rays{position:absolute;inset:-30%;border-radius:50%;background:repeating-conic-gradient(from 0deg,var(--ufB,rgba(232,196,118,.16)) 0deg 7deg,rgba(0,0,0,0) 7deg 22deg);-webkit-mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 66%);mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 66%);opacity:0;transition:opacity 1.2s ease .3s;animation:ufSpin 40s linear infinite}
+#unlockFx.in .uf-rays{opacity:.9}
+#unlockFx canvas{position:absolute;inset:0;width:100%;height:100%}
+#unlockFx .uf-sil{opacity:0;transform:scale(.86);transition:opacity .7s ease .2s,transform 1.4s cubic-bezier(.2,.8,.2,1) .2s;filter:drop-shadow(0 0 10px var(--ufA,rgba(232,196,118,.7)))}
+#unlockFx.in .uf-sil{opacity:1;transform:scale(1)}
+#unlockFx .uf-col{clip-path:inset(0 100% 0 0);-webkit-clip-path:inset(0 100% 0 0);filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+#unlockFx.rev .uf-col{clip-path:inset(0 0 0 0);-webkit-clip-path:inset(0 0 0 0);transition:clip-path 1s cubic-bezier(.45,0,.2,1),-webkit-clip-path 1s cubic-bezier(.45,0,.2,1)}
+#unlockFx.rev .uf-sil{opacity:0;transition:opacity .9s ease .25s}
+#unlockFx .uf-shine{position:absolute;inset:0;pointer-events:none;-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;overflow:hidden}
+#unlockFx .uf-sweep{position:absolute;top:0;bottom:0;width:26%;left:-30%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,250,230,.85),rgba(255,255,255,0));opacity:0;pointer-events:none}
+#unlockFx.rev .uf-sweep{animation:ufSweep 1s cubic-bezier(.45,0,.2,1) forwards}
+#unlockFx .uf-q{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 min(120px,26vw)/1 Georgia,serif;color:var(--uf,#e8c476);text-shadow:0 0 24px var(--ufA,rgba(232,196,118,.8));opacity:0;transition:opacity .6s ease .4s}
+#unlockFx.in .uf-q{opacity:.95}#unlockFx.rev .uf-q{opacity:0;transform:scale(1.4);transition:opacity .5s ease,transform .6s ease}
+#unlockFx .uf-name{font-size:clamp(28px,7.4vw,44px);line-height:1.08;margin-top:4px;opacity:0;transform:translateY(10px) scale(.96);transition:opacity .6s ease .55s,transform .7s cubic-bezier(.2,.8,.2,1) .55s;text-shadow:0 2px 18px rgba(0,0,0,.6),0 0 22px var(--ufB,rgba(232,196,118,.3))}
+#unlockFx .uf-sci{font-style:italic;font-size:15px;color:#d9ceb4;margin-top:4px;opacity:0;transition:opacity .6s ease .8s}
+#unlockFx .uf-why{font-size:15px;line-height:1.4;color:#efe5cd;margin-top:12px;max-width:440px;opacity:0;transition:opacity .6s ease 1s}
+#unlockFx .uf-btns{display:flex;gap:10px;margin-top:20px;opacity:0;transform:translateY(8px);transition:opacity .5s ease 1.25s,transform .5s ease 1.25s;pointer-events:none}
+#unlockFx .uf-btns button{min-height:44px;padding:0 22px;border-radius:22px;font-size:15px;cursor:pointer}
+#unlockFx .uf-add{background:var(--uf,#e8c476);color:#1b130a;border:0;font-weight:600;box-shadow:0 0 18px var(--ufA,rgba(232,196,118,.5))}
+#unlockFx .uf-later{background:rgba(255,255,255,.08);color:#f6eedb;border:1px solid rgba(255,255,255,.22)}
+#unlockFx .uf-hint{margin-top:16px;font-size:12.5px;letter-spacing:.08em;color:#b9ae95;opacity:0;transition:opacity .8s ease}
+#unlockFx.rev .uf-name,#unlockFx.rev .uf-sci,#unlockFx.rev .uf-why{opacity:1;transform:none}
+#unlockFx.rev .uf-btns{opacity:1;transform:none;pointer-events:auto}
+#unlockFx.ready .uf-hint{opacity:1;animation:ufHint 2.4s ease-in-out infinite}
+#unlockFx .uf-dots{position:absolute;inset:0;pointer-events:none;overflow:visible}
+#unlockFx .uf-dots i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:var(--uf,#e8c476);box-shadow:0 0 8px var(--uf,#e8c476);opacity:0}
+#unlockFx.rev .uf-dots i{animation:ufDot 1.6s cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes ufSpin{to{transform:rotate(360deg)}}
+@keyframes ufBreath{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+@keyframes ufSweep{0%{left:-30%;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:108%;opacity:0}}
+@keyframes ufHint{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes ufDot{0%{opacity:0;transform:translate(0,0) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1)}}
+#modalBody .entry.uf-flash{box-shadow:0 0 0 2px var(--accent),0 0 22px rgba(232,196,118,.55);transition:box-shadow .4s ease}
+#unlockFx.rm *{animation:none!important;transition-duration:.25s!important;transition-delay:0s!important}
+/* v18 grown-up moment: lighter, never in the way */
+#adultFx{position:fixed;left:50%;top:calc(18% + var(--sat,0px));transform:translate(-50%,-8px);z-index:85;display:flex;align-items:center;gap:12px;padding:10px 20px 10px 10px;border-radius:40px;background:rgba(18,12,6,.78);border:1px solid var(--uf,#e8c476);box-shadow:0 0 26px var(--ufA,rgba(232,196,118,.45));color:#f6eedb;pointer-events:none;opacity:0;transition:opacity .5s ease,transform .6s cubic-bezier(.2,.8,.2,1);max-width:92vw}
+#adultFx.in{opacity:1;transform:translate(-50%,0)}
+#adultFx canvas{width:58px;height:58px;border-radius:50%;background:radial-gradient(circle,var(--ufA,rgba(232,196,118,.5)),rgba(0,0,0,0) 70%)}
+#adultFx b{display:block;font-size:17px;font-weight:600}#adultFx span{display:block;font-size:13px;color:#d9ceb4;font-style:italic}
 #tvVeil{position:absolute;inset:0;background:#0d0a06;opacity:0;pointer-events:none;transition:opacity .7s ease;z-index:60}
 #tvVeil.on{opacity:1}
 #tvCatch{position:absolute;inset:0;z-index:61;background:transparent;cursor:none;touch-action:none;-webkit-tap-highlight-color:transparent}
@@ -10590,6 +10638,7 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { if (e.key === 'Escape') e.target.blur(); return; }
       const k = e.key;
       if ((e.ctrlKey || e.metaKey) && !e.altKey && (k === 'z' || k === 'Z' || k === 'y' || k === 'Y')) { if (this.obs || !$('modalWrap').classList.contains('hidden')) return; e.preventDefault(); if (k === 'y' || k === 'Y' || e.shiftKey) this.redo(); else this.undo(); return; }
+      if (this._ufEl) { if (k === 'Enter') { e.preventDefault(); this.unlockClose(true); } else if (k === 'Escape' || k === ' ') { e.preventDefault(); this.unlockClose(false); } return; } // v18 unlock reveal
       if (this.tv) { if (!/^(Shift|Control|Alt|Meta|CapsLock|Fn)$/.test(k)) { e.preventDefault(); this.tvMode(false); } return; } // Ambient TV: any key brings the controls back
       if (this.photo) { if (k === 'Escape' || k === 'p' || k === 'P') this.photoMode(false); else if (k === ' ' || k === 'Enter') { e.preventDefault(); this.photoSnap(); } return; }
       if ((k === 'p' || k === 'P') && this.obs) { this.photoMode(true); return; }
@@ -10708,8 +10757,8 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       else if (t === 'finger') { if (d.kind === 'shy') A().sfx('startle'); else if (d.kind === 'curious') { A().sfx('curious'); this.buzz('curious'); } }
       else if (t === 'jump') { if (JT.R() < 0.3) A().sfx('rustle'); }
       else if (t === 'journal') { this.toast('<span class="sc">Journal</span> ' + esc(d.entry.title) + '<span class="sub">' + esc(d.entry.text) + '</span>', 'journal', 5600); A().sfx('journal'); this.buzz('journal'); this.tipOnce('journal'); }
-      else if (t === 'molt') { const sp = d.sp; if (sp) this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); A().sfx('molt'); this.buzz('molt'); }
-      else if (t === 'unlock') { this.toast('<span class="sc">Unlocked</span> ' + esc(d.S.name) + '!<span class="sub">' + esc(d.why) + ' Add one from the Jumper Collection.</span>', 'journal', 6500); A().sfx('unlock'); this.buzz('unlock'); this.tipOnce('unlock'); }
+      else if (t === 'molt') { const sp = d.sp; if (sp) { if (sp.stage === JT.STAGES.length - 1) this.adultFx(sp); else this.toast(esc(sp.name) + ' molted — now a ' + JT.STAGES[sp.stage] + '.', '', 3500); } A().sfx('molt'); this.buzz('molt'); }
+      else if (t === 'unlock') { (this._unlockQ = this._unlockQ || []).push({ S: d.S, why: d.why }); } // v18: the reveal shows once nothing else is on (see unlockPump)
       else if (t === 'toast') this.toast(d.text, d.cls, d.ms);
     },
 
@@ -11309,6 +11358,71 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       const pb = this._profBack; this.openModal(sp.name + ' \u00b7 photo', w, { back: () => this.profileModal(sp, pb) });
     },
     /** v11 photo mode: time stops, the interface steps aside, filters preview live; photos go to the jumper's profile. */
+    // ------------------------------------------------ v18 unlock reveal
+    /** The species' own colour for the glow: its most vivid palette colour, lifted a little. */
+    speciesTint(S) {
+      let best = null, bs = -1; const P = S.pal || {};
+      for (const k of ['chel', 'mark', 'abd', 'ceph', 'leg', 'hair']) { const h = P[k]; if (typeof h !== 'string' || h[0] !== '#') continue; let x = h.slice(1); if (x.length === 3) x = x.split('').map(q => q + q).join(''); const n = parseInt(x, 16); if (x.length !== 6 || !isFinite(n)) continue; const c = [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+        const mx = Math.max(...c), mn = Math.min(...c); const sc = (mx - mn) * (k === 'chel' || k === 'mark' ? 1.1 : 1); if (sc > bs) { bs = sc; best = c; } }
+      // keep the colour's hue, make it glow: rich, mid-bright (blacks, whites and greys get warm gold)
+      let hue = 40, sat = 0.78; if (best && bs >= 0.14) { const [r, g, b] = best; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+        hue = mx === r ? 60 * (((g - b) / d) % 6) : mx === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4); if (hue < 0) hue += 360; sat = 0.88; }
+      const hsl = (a, l) => 'hsla(' + Math.round(hue) + ',' + Math.round(sat * 100) + '%,' + l + '%,' + a + ')'; return { solid: hsl(1, 64), a: hsl(0.6, 58), b: hsl(0.22, 52), hue: Math.round(hue) };
+    },
+    /** Show the next queued unlock, unless something that should not be interrupted is on (a replay, photo mode, TV, the start screen). */
+    unlockPump() {
+      const busy = (JT.Replay && JT.Replay.active) || this.photo || this.tv || (document.getElementById('splash') && !document.getElementById('splash').classList.contains('gone')) || this.game.state.biomeSetup;
+      if (busy || performance.now() < (this._ufNext || 0)) return; const it = this._unlockQ.shift(); if (it) this.unlockFx(it.S, it.why);
+    },
+    unlockFx(S, why) {
+      const old = $('adultFx'); if (old) old.remove();
+      const tint = this.speciesTint(S); const hybrid = !!S.hybrid; const rm = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const w = el('div', rm ? 'rm' : ''); w.id = 'unlockFx'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'New jumper unlocked: ' + S.name);
+      w.style.setProperty('--uf', tint.solid); w.style.setProperty('--ufA', tint.a); w.style.setProperty('--ufB', tint.b);
+      const st = el('div', 'uf-stage'); w.appendChild(st);
+      st.appendChild(el('div', 'uf-kick', hybrid ? 'A hybrid has appeared' : 'New jumper unlocked'));
+      const art = el('div', 'uf-art'); st.appendChild(art); art.appendChild(el('div', 'uf-rays')); art.appendChild(el('div', 'uf-glow'));
+      const N = 360; let col = null; try { col = cloneCanvas(this.R.speciesPortrait(S.id, N)); } catch (e) { col = document.createElement('canvas'); col.width = col.height = N; }
+      const sil = document.createElement('canvas'); sil.width = col.width; sil.height = col.height; { const g = sil.getContext('2d'); g.drawImage(col, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#0b0805'; g.fillRect(0, 0, sil.width, sil.height); }
+      sil.className = 'uf-sil'; col.className = 'uf-col'; art.appendChild(sil); art.appendChild(col);
+      if (hybrid) art.appendChild(el('div', 'uf-q', '?'));
+      { const sw = el('div', 'uf-sweep'); try { const u = 'url(' + col.toDataURL() + ')'; const mk = el('div', 'uf-shine'); mk.style.webkitMaskImage = u; mk.style.maskImage = u; mk.appendChild(sw); art.appendChild(mk); } catch (e) { /* no shine */ } }
+      const dots = el('div', 'uf-dots'); for (let i = 0; i < 18; i++) { const d = el('i'); const a = (i / 18) * 6.283 + Math.random() * 0.3, r = 110 + Math.random() * 90; d.style.setProperty('--dx', Math.round(Math.cos(a) * r) + 'px'); d.style.setProperty('--dy', Math.round(Math.sin(a) * r) + 'px'); d.style.animationDelay = (Math.random() * 0.25).toFixed(2) + 's'; dots.appendChild(d); } art.appendChild(dots);
+      st.appendChild(el('div', 'uf-name', esc(S.name))); if (S.sci) st.appendChild(el('div', 'uf-sci', esc(S.sci)));
+      st.appendChild(el('div', 'uf-why', esc(why)));
+      const btns = el('div', 'uf-btns'); const add = el('button', 'uf-add', 'Add to a tank'); const later = el('button', 'uf-later', 'Later'); btns.appendChild(add); btns.appendChild(later); st.appendChild(btns);
+      st.appendChild(el('div', 'uf-hint', 'Tap anywhere to continue'));
+      add.onclick = (e) => { e.stopPropagation(); this.unlockClose(true); }; later.onclick = (e) => { e.stopPropagation(); this.unlockClose(false); };
+      w.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('.uf-btns')) return; if (w.classList.contains('ready')) this.unlockClose(false); });
+      document.body.appendChild(w); this._ufEl = w; this._ufS = S; A().sfx('journal');
+      const hold = rm ? 300 : hybrid ? 2100 : 1300; // the silhouette holds a moment (longer for a hybrid's "?")
+      requestAnimationFrame(() => requestAnimationFrame(() => { // timers start once the overlay is really on screen, so a slow frame can't eat the silhouette beat
+        if (this._ufEl !== w) return; w.classList.add('in');
+        if (w.classList.contains('rev')) return; // already revealed by an early press (it set its own ready timer)
+        this._ufT1 = setTimeout(() => { if (this._ufEl !== w || w.classList.contains('rev')) return; w.classList.add('rev'); A().sfx('unlock'); this.buzz('unlock'); }, hold);
+        this._ufT2 = setTimeout(() => { if (this._ufEl === w) w.classList.add('ready'); }, hold + 1800); // a stray tap during the reveal can't skip it
+      }));
+    },
+    unlockClose(addNow) {
+      const w = this._ufEl; if (!w) return; const S = this._ufS; clearTimeout(this._ufT1); clearTimeout(this._ufT2);
+      if (!w.classList.contains('rev')) { w.classList.add('rev'); A().sfx('unlock'); this._ufT2 = setTimeout(() => { if (this._ufEl === w) w.classList.add('ready'); }, 900); if (!addNow) return; } // first press while still dark: show it
+      this._ufEl = null; this._ufS = null; A().sfx('click'); w.classList.add('out'); setTimeout(() => w.remove(), 400); this._ufNext = performance.now() + 700;
+      if (addNow && S) { if (this.obs) this.toggleObserve(false); this.jumpersSheet('collection');
+        setTimeout(() => { const e = document.querySelector('#modalBody .entry[data-species="' + S.id + '"]') || document.querySelector('#modalBody [data-bm-species="' + S.id + '"]') || [...document.querySelectorAll('#modalBody .entry, #modalBody .bm-row, #modalBody [class*="row"], #modalBody .card')].filter(x => (x.textContent || '').includes(S.name)).sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e) { e.scrollIntoView({ block: 'center', behavior: 'smooth' }); e.classList.add('uf-flash'); setTimeout(() => e.classList.remove('uf-flash'), 2400); } }, 60); }
+      else this.tipOnce('unlock');
+    },
+    /** A jumper reached adulthood: a short glowing banner with its portrait (no tap needed). */
+    adultFx(sp) {
+      if ((JT.Replay && JT.Replay.active) || this.photo) { this.toast(esc(sp.name) + ' molted — now an Adult.', '', 3500); return; }
+      setTimeout(() => {
+        if (this._ufEl || (this._unlockQ && this._unlockQ.length)) { this.toast(esc(sp.name) + ' is now an Adult.', '', 3500); return; } // an unlock is about to take the stage
+        const S = JT.SPECIES_BY_ID[sp.species]; if (!S) return; const old = $('adultFx'); if (old) old.remove(); const t = this.speciesTint(S);
+        const w = el('div'); w.id = 'adultFx'; w.style.setProperty('--uf', t.solid); w.style.setProperty('--ufA', t.a); w.setAttribute('role', 'status');
+        try { w.appendChild(cloneCanvas(this.R.speciesPortrait(S.id, 116))); } catch (e) { /* no picture */ }
+        const tx = el('div'); tx.appendChild(el('b', '', esc(sp.name) + ' is all grown up')); tx.appendChild(el('span', '', 'Now an Adult ' + esc(S.name))); w.appendChild(tx);
+        document.body.appendChild(w); requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('in')));
+        setTimeout(() => { w.classList.remove('in'); setTimeout(() => w.remove(), 600); }, 4200); }, 650);
+    },
     // ------------------------------------------------ v17 Ambient TV
     /** Hands-free watching on top of Observe: the controls fade out and a director picks who to watch and how
         (close, wide, slow orbit, plain follow), holding a hunt or a molt to its end. Any tap or key brings everything back. */
@@ -11712,6 +11826,7 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       if (this._panelT > 0.3) { this._panelT = 0; this.updateClock(); if (this.panelId) this.renderPanel(false); this.updateWanting(); this.tipWatch(); }
       this.pumpTips(dt);
       if (this.mode === 'place' && this.place && this._t > 0.5) { this._t = 0; this.updateGhostAtCurrent(); }
+      if (this._unlockQ && this._unlockQ.length && !this._ufEl) this.unlockPump();
       if (TQ.length) { if (performance.now() > (this._scrollUntil || 0)) pumpThumbs(this.isMobile() ? 6 : 9); }
       else this.warmThumbs(dt);
     },
