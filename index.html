@@ -3561,6 +3561,7 @@ button:focus:not(:focus-visible){outline:none}
   function sightFrom(hab, sp, eye, sup, e) {
     const tp = AI.surfPt(hab, e, Math.min(lenOfE(e) * 0.3, 1.5));
     if (sup && sup.k === 'path' && Nav.validSup(hab, sup)) { const fr = Nav.supFrame(hab, sup); if ((fr.r || 0) > 0.9) { const dir = M.norm(M.sub(tp, eye)); if (M.dot(fr.n, dir) < -0.3) return false; } }
+    if (JT.Terrain && JT.Terrain.blocks(hab, eye, tp) && JT.R() < 0.65) return false; // v15: a crest of ground between them often hides small things
     return !segBlocked(hab, eye, tp, 0.5, Math.min(1.2, lenOfE(e) * 0.4 + 0.4));
   }
   /** Can this jumper see e right now? (cached briefly per pair) */
@@ -3897,13 +3898,15 @@ button:focus:not(:focus-visible){outline:none}
       if (M.dist(n.pos, sp.pos) < 8) continue;
       const g = n.decor && hab.geoms[n.decor]; const plant = g && g.def.cat === 'plants'; const cov = Nav.coverAt(hab, n.pos);
       const s = S.prefs.height * (n.y / H0) * 5 + S.prefs.foliage * (plant ? 2.5 : 0) + (n.perch ? 1 : 0) + JT.R() * 2.5 - dj.dist[n.id] * 0.015 * (1.2 - act) + cov * (1 - sp.traits.bold) + (AI.blendAt(hab, sp.species, n.sup, n.pos) ? 1.6 : 0)
-        + cov * shyK + boldK * (n.perch ? 1 : 0.2) * (0.3 + n.y / H0) - boldK * cov * 0.6 + climbK * (n.y / H0) + (JT.sigHas(S, 'semaphore') && g && (g.def.arche === 'backwall' || g.wallH || n.vert) ? 3 : 0); // house jumper: walls
+        + cov * shyK + boldK * (n.perch ? 1 : 0.2) * (0.3 + n.y / H0) - boldK * cov * 0.6 + climbK * (n.y / H0) + (JT.sigHas(S, 'semaphore') && g && (g.def.arche === 'backwall' || g.wallH || n.vert) ? 3 : 0) // house jumper: walls
+        + (JT.Terrain && n.sup && n.sup.k === 'floor' ? JT.Terrain.crest(hab, n.pos[0], n.pos[2]) * 1.6 : 0); // v15: little rises in the ground make floor lookouts
       if (s > bs) { bs = s; best = n; }
     }
     if (best) {
       const r2 = Nav.buildRoute(hab, dj, best.sup, best.pos); if (r2) { sp._route = r2; sp._routeStart = hab.time; sp.stats.explores++;
         const high = best.y > 18; const dn = decorName(hab, best.decor);
-        setState(sp, 'explore', high ? (dn ? 'Heading up the ' + dn + ' for a better view.' : 'Looking for a higher lookout.') : (dn ? 'Exploring around the ' + dn + '.' : 'Patrolling the substrate.'));
+        const rise = !high && !dn && JT.Terrain && best.sup && best.sup.k === 'floor' && JT.Terrain.crest(hab, best.pos[0], best.pos[2]) > 0.4; sp._crestP = rise ? best.pos.slice() : null;
+        setState(sp, 'explore', high ? (dn ? 'Heading up the ' + dn + ' for a better view.' : 'Looking for a higher lookout.') : rise ? 'Climbing a little rise for a better view.' : (dn ? 'Exploring around the ' + dn + '.' : 'Patrolling the substrate.'));
         sp._lookout = high; return; }
     }
     setState(sp, 'rest', 'Sitting still, taking everything in.');
@@ -3911,7 +3914,8 @@ button:focus:not(:focus-visible){outline:none}
   H.explore = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.8);
     if (r === 'done' || r === 'none') { sp._route = null; const bl = AI.blendAt(hab, sp.species, sp.sup, sp.pos);
-      const ln = bl ? 'Keeping still on the ' + bl.name.toLowerCase() + ' — its colours blend right in.' : sp._lookout && AI.has(sp, 'bold') ? 'Showing off from the top, out in the open.' : AI.has(sp, 'shy') && Nav.coverAt(hab, sp.pos) > 0.35 ? 'Hidden under the leaves, watching.' : sp._lookout ? 'Watching from a high lookout.' : 'Scanning the habitat.';
+      const rise = sp._crestP && M.dist(sp._crestP, sp.pos) < 4; sp._crestP = null;
+      const ln = bl ? 'Keeping still on the ' + bl.name.toLowerCase() + ' — its colours blend right in.' : rise ? 'Watching from the top of a little rise.' : sp._lookout && AI.has(sp, 'bold') ? 'Showing off from the top, out in the open.' : AI.has(sp, 'shy') && Nav.coverAt(hab, sp.pos) > 0.35 ? 'Hidden under the leaves, watching.' : sp._lookout ? 'Watching from a high lookout.' : 'Scanning the habitat.';
       setState(sp, 'lookout', ln); }
     else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
   };
@@ -4672,26 +4676,26 @@ button:focus:not(:focus-visible){outline:none}
   // ---- thirst ----
   function startDrink(hab, sp, maxCost) {
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
-    const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor })).concat(maxCost ? [] : hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
+    const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor, pool: !!d.pool })).concat(maxCost ? [] : hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
     let best = null, bc = maxCost || 260;
     for (const s of srcs) { const gc = Nav.goalCost(hab, dj, s.sup, s.pos); if (gc && gc.cost < bc) { bc = gc.cost; best = s; } }
     if (!best) { sp._drinkFail = hab.time + (maxCost ? 12 : 30); return false; }
     const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) { sp._drinkFail = hab.time + 30; return false; }
     sp._route = r; sp._routeStart = hab.time; sp._drink = best; AI.dropTarget(hab, sp);
     const dn = decorName(hab, best.decor);
-    setState(sp, 'drinkSeek', (maxCost ? 'Off to sip ' : 'Thirsty — heading for ') + (best.id ? 'a droplet' : 'water') + (dn ? ' on the ' + dn : '') + '.');
+    setState(sp, 'drinkSeek', (maxCost ? 'Off to sip ' : 'Thirsty — heading for ') + (best.id ? (best.pool ? 'a little puddle of mist water' : 'a droplet') : 'water') + (dn ? ' on the ' + dn : '') + '.');
     return true;
   }
   H.drinkSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.9);
     if (sp._drink && sp._drink.id && !hab.data.drops.find(d => d.id === sp._drink.id)) { sp._route = null; setState(sp, 'idle', 'The droplet evaporated.'); return; }
-    if (r === 'done' || r === 'none') { sp._route = null; setState(sp, 'drink', 'Sipping a droplet.'); }
+    if (r === 'done' || r === 'none') { sp._route = null; setState(sp, 'drink', sp._drink && sp._drink.pool ? 'Drinking from a little puddle.' : 'Sipping a droplet.'); }
     else if (stuck(hab, sp)) { sp._route = null; setState(sp, 'idle'); }
   };
   H.drink = function (hab, sp, dt) {
     if (sp.st > 3) {
       sp.hyd = Math.min(1, sp.hyd + 0.55);
-      if (sp._drink && sp._drink.id) hab.data.drops = hab.data.drops.filter(d => d.id !== sp._drink.id);
+      if (sp._drink && sp._drink.id) { const pd = hab.data.drops.find(d => d.id === sp._drink.id); if (pd && pd.pool) { pd.life -= 70; if (pd.life <= 0) hab.data.drops = hab.data.drops.filter(d => d !== pd); } else hab.data.drops = hab.data.drops.filter(d => d.id !== sp._drink.id); } // v15: a mist pool lasts a few drinks
       sp._drink = null; hab.event('journal', { id: 'drink', sp });
       if (JT.Biome && hab.data.bev && ['rain','storm'].includes(hab.data.bev.id)) hab.event('journal', { id: 'rainDrink', sp });
       setState(sp, 'groom', 'Refreshed. Wiping its palps.');
@@ -5454,6 +5458,7 @@ button:focus:not(:focus-visible){outline:none}
       }
       if (M.dist(pos, p.pos) > 90) continue;
       let s = R() * 2;
+      if (JT.Terrain && sup && sup.k === 'floor' && !d.fly && (d.len || 3) < 6) s += JT.Terrain.hollow(hab, pos[0], pos[2]) * 2.5; // v15: small prey keep to the hollows
       if (wantCover) s += Nav.coverAt(hab, pos) * 4;
       if (d.moist) s += moistAt(hab, pos) * 3 * d.moist;
       if (d.foliage && sup && sup.d) { const g = hab.geoms[sup.d]; if (g && g.def && g.def.cat === 'plants') s += 4 * d.foliage; }
@@ -5961,7 +5966,8 @@ button:focus:not(:focus-visible){outline:none}
       if (this.habs.length >= JT.MAX_HABS) return null;
       const n = this.createHabitat(h.data.type); if (!n) return null;
       const items = h.sortedDecor().map(d => ({ type: d.type, fx: d.x / h.dims.w, fz: d.z / h.dims.d, rot: d.rot, seed: d.seed, my: d.my, bare: d.bare || undefined }));
-      JT.Presets.applyCustom(n, { items, sub: h.data.substrate, bg: h.data.bg }); n.decor.forEach(d => { d.preset = true; }); return n;
+      JT.Presets.applyCustom(n, { items, sub: h.data.substrate, bg: h.data.bg }); n.decor.forEach(d => { d.preset = true; });
+      if (h.data.terrain) n.data.terrain = JSON.parse(JSON.stringify(h.data.terrain)); return n; // v15: same ground shape
     }
     /** Delete a tank: its jumpers wait in the holding cup. The last tank cannot be deleted. */
     deleteHabitat(h) {
@@ -6360,6 +6366,200 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
  const check=J.Game.prototype.checkUnlocks;J.Game.prototype.checkUnlocks=function(){const result=check.apply(this,arguments);if(!this.state.biomeTourDone&&['rainforest','desert','paludarium','nightmoss'].every(id=>this.habs.some(h=>B.id(h)===id))){this.state.biomeTourDone=true;this.hab.event('journal',{id:'biomeTour'});}return result;};
  const set=B.setBiome;B.setBiome=function(h,id){const b=set.call(B,h,id);if(b.id!=='classic')h.data.humidity=b.targetHumidity;for(const sp of h.spiders)sp.biomeSpeed=B.speedK(h,sp);return b;};
 })(typeof window!=='undefined'?window:globalThis);
+</script>
+<script>
+/* Jumper Terrarium — terrain (v15): uneven ground per substrate, ground shape, mist pools, footprints and burrow marks.
+   The simulation stays on its flat floor (y = 0); the ground is a height field that the renderer lifts everything near
+   the floor onto. Ground flattens to 0 under every standing piece and near the front/side glass, so decor, climbing routes
+   and wall-climbing stay exactly where the navigation expects them (the "house jumper on the wall" case). */
+(function (root) {
+  'use strict';
+  const JT = root.JT = root.JT || {}; const M = JT.M;
+  const T = JT.Terrain = {};
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v); const sst = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  // ---------- settings ----------
+  T.SHAPES = { flat: { name: 'Flat', k: 0, back: 0 }, gentle: { name: 'Gentle', k: 0.55, back: 1.2 }, rolling: { name: 'Rolling', k: 0.8, back: 1.5 }, rugged: { name: 'Rugged', k: 1, back: 1.8 } };
+  T.SHAPE_ORDER = ['flat', 'gentle', 'rolling', 'rugged'];
+  // kind, feature size, max height (units), extras. A spider is a few units long, so 3 units is already a hill.
+  T.STYLE = {
+    desert:   { kind: 'dune', feat: 50, max: 3, rip: 0.07, label: 'Soft dunes, fine wind ripples' },
+    beach:    { kind: 'dune', feat: 52, max: 2, rip: 0.06, tilt: 0.35, label: 'Gentle slope, small ripples' },
+    redsand:  { kind: 'dune', feat: 42, max: 4, rip: 0.08, sharp: 1, label: 'Steeper dunes, rippled ridges' },
+    dune:     { kind: 'dune', feat: 48, max: 3, rake: 0.05, label: 'Raked dunes' },
+    coco:     { kind: 'crumb', feat: 14, max: 2.5, label: 'Coarse crumbly clumps' },
+    black:    { kind: 'mound', feat: 16, max: 2, label: 'Fine crumbs, small mounds' },
+    peat:     { kind: 'mound', feat: 20, max: 1.5, soft: 1, label: 'Spongy, low and rounded' },
+    moss:     { kind: 'hummock', feat: 20, max: 3, label: 'Cushiony hummocks' },
+    sphagnum: { kind: 'hummock', feat: 22, max: 4, lumpy: 1, label: 'Tall springy hummocks' },
+    clay:     { kind: 'plates', feat: 22, max: 2, label: 'Cracked plates and terraces' },
+    gravel:   { kind: 'stones', feat: 4.5, max: 3, label: 'Piles of rounded stones' },
+    lime:     { kind: 'grit', feat: 6, max: 3, label: 'Angular chunks, low steps' },
+    forest:   { kind: 'litter', feat: 20, max: 2.5, label: 'Low mounds and root ridges' },
+    jungle:   { kind: 'litter', feat: 20, max: 3, vary: 1, label: 'Roots, humps and deep dips' },
+    leafmould:{ kind: 'drift', feat: 28, max: 3, label: 'Soft leaf drifts' },
+    mud:      { kind: 'flats', feat: 30, max: 1.5, label: 'Glossy flats, damp dips' },
+  };
+  // how clearly footprints show (0 = none: moss, sphagnum, gravel, grit)
+  T.PRINT = { desert: 1, beach: 1, redsand: 1, dune: 1, mud: 0.9, coco: 0.45, black: 0.5, peat: 0.55, clay: 0.3, forest: 0.35, jungle: 0.35, leafmould: 0.3, moss: 0, sphagnum: 0, gravel: 0, lime: 0 };
+  T.WET = { sphagnum: 1, moss: 0.9, peat: 0.9, jungle: 0.8, mud: 1, black: 0.5, leafmould: 0.5, forest: 0.4, coco: 0.4 }; // mist pools + wet hollows
+  T.BURROW = (sub) => !['gravel', 'lime'].includes(sub) && ((JT.SUBSTRATES[sub] || {}).burrow || 0) > 0.3;
+  const BIOME_GROUND = { desert: { shape: 'rolling' }, nightmoss: { kind: 'hummock', feat: 18, max: 3.5 }, paludarium: { basin: 1 } };
+  T.conf = function (hab) {
+    const d = hab.data; const t = d.terrain || (d.terrain = {}); if (!(t.seed >= 0)) t.seed = (JT.hashStr ? JT.hashStr(String(d.id)) : 1) % 1000003;
+    const bg = BIOME_GROUND[d.biome] || {}; const shape = T.SHAPES[t.shape] ? t.shape : (bg.shape || 'gentle');
+    const st = Object.assign({}, T.STYLE[d.substrate] || T.STYLE.coco); if (bg.kind) Object.assign(st, { kind: bg.kind, feat: bg.feat, max: bg.max, lumpy: 1 });
+    return { shape, seed: t.seed, style: st, basin: !!bg.basin, auto: !T.SHAPES[t.shape] };
+  };
+  // ---------- noise ----------
+  const hash = (s, i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+  const vn = (s, x, z) => { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j; const u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+    const a = hash(s, i, j), b = hash(s, i + 1, j), c = hash(s, i, j + 1), d = hash(s, i + 1, j + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
+  const fbm = (s, x, z, oct) => { let a = 0, amp = 0.5, f = 1, n = 0; for (let o = 0; o < oct; o++) { a += amp * vn(s + o * 31, x * f, z * f); n += amp; amp *= 0.5; f *= 2.03; } return a / n; };
+  const nf = (s, x, z, oct) => clamp((fbm(s, x, z, oct) - 0.25) / 0.5, 0, 1); // ~0..1
+  const worley = (s, x, z, c) => { const i = Math.floor(x / c), j = Math.floor(z / c); let d1 = 1e9, d2 = 1e9, id = 0;
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const px = (i + a + hash(s, i + a, j + b)) * c, pz = (j + b + hash(s + 7, i + a, j + b)) * c; const d = Math.hypot(x - px, z - pz); if (d < d1) { d2 = d1; d1 = d; id = hash(s + 13, i + a, j + b); } else if (d < d2) d2 = d; }
+    return { d1, d2, id }; };
+  // ---------- one height sample (0..1 of the style's max) ----------
+  function styleH(st, s, x, z, W, D) {
+    const F = st.feat;
+    switch (st.kind) {
+      case 'dune': { const th = (hash(s, 3, 9) - 0.5) * 1.2; const u0 = x * Math.cos(th) + z * Math.sin(th); const w = (fbm(s + 5, x / 60, z / 60, 2) - 0.5) * F * 0.9;
+        const ph = (u0 + w) / F + hash(s, 1, 1); let q = ph - Math.floor(ph); let p = q < 0.72 ? sst(0, 0.72, q) : 1 - sst(0.72, 1, q); if (st.sharp) p = Math.pow(p, 0.75);
+        const m = 0.5 + 0.5 * nf(s + 11, x / 70, z / 40, 2); let h = p * m;
+        if (st.rip) { const u2 = x * Math.cos(th + 0.25) + z * Math.sin(th + 0.25); h += st.rip * Math.sin(u2 * 6.283 / 5) * (0.4 + 0.6 * p); }
+        if (st.rake) h += st.rake * Math.sin(z * 6.283 / 3.2 + Math.sin(x * 0.05) * 0.8);
+        if (st.tilt) h = h * (1 - st.tilt) + st.tilt * clamp(z / D, 0, 1);
+        return h; }
+      case 'crumb': { const n = nf(s, x / F, z / F, 3); const w = worley(s + 2, x, z, 5); const clod = Math.max(0, 1 - w.d1 / 2.6) * (0.5 + w.id * 0.5); const r = 1 - Math.abs(2 * fbm(s + 4, x / (F * 1.8), z / (F * 1.8), 2) - 1);
+        return 0.62 * n + 0.28 * clod + 0.12 * Math.pow(r, 6); }
+      case 'mound': { const n = nf(s, x / F, z / F, st.soft ? 2 : 3); return st.soft ? sst(0.1, 1, n) * 0.95 : sst(0.15, 1, n); }
+      case 'hummock': { let n = nf(s, x / F, z / F, 3); let h = Math.pow(sst(0.25, 0.8, n), 0.85); if (st.lumpy) h = h * 0.78 + 0.22 * nf(s + 9, x / (F * 0.45), z / (F * 0.45), 2); return h; }
+      case 'plates': { const w = worley(s, x, z, F); const lvl = Math.floor(w.id * 3) / 2; const crack = sst(0.6, 2.2, w.d2 - w.d1); return (0.3 + 0.62 * lvl) * crack + 0.08 * nf(s + 3, x / 9, z / 9, 2); }
+      case 'stones': { const pile = nf(s, x / 25, z / 25, 2); const w = worley(s + 1, x, z, F); const r = (0.55 + 0.45 * w.id) * F * 0.5; const st1 = Math.sqrt(Math.max(0, 1 - (w.d1 / r) * (w.d1 / r))) * (r / (F * 0.5));
+        return 0.45 * pile + 0.5 * st1 * (0.45 + 0.55 * pile); }
+      case 'grit': { const w = worley(s + 1, x, z, F); const cone = Math.max(0, 1 - w.d1 / (F * 0.62)); const q = (v, n) => Math.round(v * n) / n; return 0.55 * q(cone * (0.5 + 0.5 * w.id), 4) + 0.45 * q(nf(s, x / 20, z / 20, 2), 3); }
+      case 'litter': { const n = nf(s, x / F, z / F, 3); const root = Math.pow(1 - Math.abs(2 * fbm(s + 6, x / (F * 1.6), z / (F * 1.6), 2) - 1), 7); return st.vary ? 0.75 * sst(0.05, 0.95, n) + 0.32 * root : 0.7 * n + 0.3 * root; }
+      case 'drift': { const n = nf(s, x / (F * 1.4), z / (F * 0.8), 3); return sst(0.15, 0.95, n); }
+      case 'flats': { const d = sst(0.55, 0.78, fbm(s, x / F, z / F, 3)); return 0.62 * (1 - d) + 0.12 * nf(s + 2, x / 8, z / 8, 2); }
+    }
+    return 0;
+  }
+  // ---------- build the height field ----------
+  /** Side profile for the Ground shape cards: n samples along the middle of the tank, in units. */
+  T.profile = function (hab, shape, seed, n) { const c = T.conf(hab), st = c.style, SH = T.SHAPES[shape] || T.SHAPES.gentle; const W = Math.min(140, hab.dims.w), out = [];
+    for (let i = 0; i < n; i++) { const x = i / (n - 1) * W; const e = sst(0, 10, x) * sst(0, 10, W - x); out.push((clamp(styleH(st, seed, x, hab.dims.d * 0.55, hab.dims.w, hab.dims.d), 0, 1.15) * st.max * SH.k + SH.back * 0.5) * e); }
+    return out; };
+  T.CS = 1.25;
+  T.key = (hab) => { const c = T.conf(hab); return [hab.data.substrate, c.shape, c.seed, hab.data.biome || 'classic', hab.data.type, hab._geomVersion].join('|'); };
+  T.rides = (def) => !!def && def.cat === 'ground'; // ground cover follows the ground
+  T.noPad = (def) => T.rides(def) || !!def.mount || def.arche === 'wallmount';
+  T.get = function (hab) {
+    const d0 = hab.data, tc = d0.terrain, F = hab._ter; // fast path (called many times a frame)
+    if (F && tc && F._gv === hab._geomVersion && F._sub === d0.substrate && F._sh === tc.shape && F._sd === tc.seed && F._bi === d0.biome && F._ty === d0.type) return F;
+    const key = T.key(hab); if (F && F.key === key) { Object.assign(F, { _gv: hab._geomVersion, _sub: d0.substrate, _sh: d0.terrain.shape, _sd: d0.terrain.seed, _bi: d0.biome, _ty: d0.type }); return F; }
+    const t0 = Date.now(); const c = T.conf(hab), dm = hab.dims, W = dm.w, D = dm.d, cs = T.CS; const nx = Math.max(2, Math.ceil(W / cs)), nz = Math.max(2, Math.ceil(D / cs)); const sx = W / nx, sz = D / nz;
+    const N = (nx + 1) * (nz + 1); const H = new Float32Array(N), att = new Float32Array(N), pad = new Uint8Array(N); const S = c.shape, SH = T.SHAPES[S]; const st = c.style;
+    const circ = dm.shape === 'circle'; const R = W / 2, Rz = D / 2;
+    const glass = (x, z) => circ ? R - Math.hypot(x - R, (z - Rz) * R / Rz) : Math.min(x, W - x, z, D - z);
+    // the noise field depends only on substrate/shape/seed/size; decor changes reuse it and only redo pads, slopes and hollows
+    const ponds = c.basin ? hab.data.decor.filter(i => i.type === 'pond' || i.type === 'lilypond' || (JT.DECOR_BY_ID[i.type] || {}).arche === 'pond').map(i => { const g = hab.geoms[i.id]; if (!g || !g.foot) return null; const cc = JT.G.centroid(g.foot); return { c: cc, r: Math.sqrt(Math.abs(JT.G.polyArea(g.foot)) / Math.PI) }; }).filter(Boolean) : [];
+    const bkey = [JSON.stringify(ponds.map(p => [p.c[0].toFixed(1), p.c[1].toFixed(1), p.r.toFixed(1)])), hab.data.substrate, S, c.seed, hab.data.biome || 'classic', W, D, dm.shape].join('|');
+    let base = hab._terBase; if (!base || base.key !== bkey) { base = null; }
+    if (SH.k > 0 && base) { H.set(base.H); att.set(base.att); }
+    else if (SH.k > 0) {
+      for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = i * sx, z = j * sz, k = j * (nx + 1) + i; const gd = glass(x, z); const a = sst(1.5, 9, gd); att[k] = a;
+        let h = clamp(styleH(st, c.seed, x, z, W, D), 0, 1.15) * st.max * SH.k * a;
+        const side = circ ? sst(1.5, 9, gd) : sst(1.5, 9, Math.min(x, W - x)); h += SH.back * sst(0.35, 1, z / D) * side * (circ ? 1 : sst(-1, 3, D - z)); // higher at the back
+        for (const p of ponds) { const dd = Math.hypot(x - p.c[0], z - p.c[1]) - p.r; if (dd < 18) h = h * sst(0, 14, dd) + Math.exp(-(((dd - 6) / 3.5) ** 2)) * 1.1 * Math.max(0.5, SH.k) * a; }
+        H[k] = Math.min(4, h); }
+      hab._terBase = { key: bkey, H: H.slice(), att: att.slice() };
+    }
+    // pads: flat under everything standing in the substrate
+    const mark = (poly, grow) => { if (!poly || poly.length < 3) return; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of poly) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
+      const cc = JT.G.centroid(poly); const i0 = Math.max(0, Math.floor((x0 - grow) / sx)), i1 = Math.min(nx, Math.ceil((x1 + grow) / sx)), j0 = Math.max(0, Math.floor((z0 - grow) / sz)), j1 = Math.min(nz, Math.ceil((z1 + grow) / sz));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = i * sx, z = j * sz; let inside = JT.G.pointInPoly(x, z, poly);
+        if (!inside) { const dx = x - cc[0], dz = z - cc[1], L = Math.hypot(dx, dz) || 1; inside = JT.G.pointInPoly(x - dx / L * grow, z - dz / L * grow, poly); }
+        if (inside) pad[j * (nx + 1) + i] = 1; } };
+    for (const inst of hab.data.decor) { const g = hab.geoms[inst.id]; const def = JT.DECOR_BY_ID[inst.type]; if (!g || !def || inst.parent || T.noPad(def) || inst.type === 'heatlamp') continue;
+      let polys = (g.solids || []).concat(g.soft || []); if (g.foot) polys = polys.concat([g.foot]); if (!polys.length && g.contacts && g.contacts.length) { const cc = JT.G.centroid(g.contacts.length >= 3 ? g.contacts : [g.contacts[0], g.contacts[0], g.contacts[0]]); polys = [JT.G.circlePoly(cc[0], cc[1], 2.2, 2.2, 10)]; }
+      for (const p of polys) mark(p, 1.3); }
+    for (let k = 0; k < N; k++) if (pad[k]) H[k] = 0;
+    // slopes capped near 30 degrees (chamfer sweeps: the largest field under the original whose slope never exceeds the cap)
+    const cap = 0.55, dx = cap * sx, dz = cap * sz, dd = cap * Math.hypot(sx, sz), W1 = nx + 1;
+    for (let pass = 0; pass < 2; pass++) {
+      for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const k = j * W1 + i; let v = H[k]; if (i > 0) v = Math.min(v, H[k - 1] + dx); if (j > 0) { v = Math.min(v, H[k - W1] + dz); if (i > 0) v = Math.min(v, H[k - W1 - 1] + dd); if (i < nx) v = Math.min(v, H[k - W1 + 1] + dd); } H[k] = v; }
+      for (let j = nz; j >= 0; j--) for (let i = nx; i >= 0; i--) { const k = j * W1 + i; let v = H[k]; if (i < nx) v = Math.min(v, H[k + 1] + dx); if (j < nz) { v = Math.min(v, H[k + W1] + dz); if (i < nx) v = Math.min(v, H[k + W1 + 1] + dd); if (i > 0) v = Math.min(v, H[k + W1 - 1] + dd); } H[k] = v; }
+    }
+    // hollows and crests: compared with a blurred copy (~5 units around)
+    const blur = (src, r) => { const a = new Float32Array(N), b = new Float32Array(N);
+      for (let j = 0; j <= nz; j++) { let s = 0, n = 0; for (let i = -r; i <= nx + r; i++) { if (i + r <= nx && i + r >= 0) { s += src[j * W1 + i + r]; n++; } if (i - r - 1 >= 0 && i - r - 1 <= nx) { s -= src[j * W1 + i - r - 1]; n--; } if (i >= 0 && i <= nx) a[j * W1 + i] = s / Math.max(1, n); } }
+      for (let i = 0; i <= nx; i++) { let s = 0, n = 0; for (let j = -r; j <= nz + r; j++) { if (j + r <= nz && j + r >= 0) { s += a[(j + r) * W1 + i]; n++; } if (j - r - 1 >= 0 && j - r - 1 <= nz) { s -= a[(j - r - 1) * W1 + i]; n--; } if (j >= 0 && j <= nz) b[j * W1 + i] = s / Math.max(1, n); } }
+      return b; };
+    const B1 = blur(blur(H, 4), 2); const sc = 0.18 * st.max * Math.max(0.3, SH.k) + 0.15; const near = blur(Float32Array.from(pad), 2);
+    const hol = new Float32Array(N), cre = new Float32Array(N);
+    if (SH.k > 0) for (let k = 0; k < N; k++) { const ok = att[k] * (1 - clamp(near[k] * 3, 0, 1)); hol[k] = clamp((B1[k] - H[k]) / sc, 0, 1) * ok; cre[k] = clamp((H[k] - B1[k]) / sc, 0, 1) * ok; }
+    let mx = 0; for (let k = 0; k < N; k++) mx = Math.max(mx, H[k]);
+    const ter = { key, nx, nz, sx, sz, H, hol, cre, pad, max: mx, shape: S, style: st, ms: Date.now() - t0, pools: null };
+    Object.assign(ter, { _gv: hab._geomVersion, _sub: d0.substrate, _sh: d0.terrain.shape, _sd: d0.terrain.seed, _bi: d0.biome, _ty: d0.type }); hab._ter = ter; return ter;
+  };
+  const samp = (ter, A, x, z) => { const fx = clamp(x / ter.sx, 0, ter.nx), fz = clamp(z / ter.sz, 0, ter.nz); const i = Math.min(ter.nx - 1, Math.floor(fx)), j = Math.min(ter.nz - 1, Math.floor(fz)); const u = fx - i, v = fz - j, W1 = ter.nx + 1, k = j * W1 + i;
+    return A[k] * (1 - u) * (1 - v) + A[k + 1] * u * (1 - v) + A[k + W1] * (1 - u) * v + A[k + W1 + 1] * u * v; };
+  /** Ground height at (x, z). */
+  T.at = (hab, x, z) => { const t = T.get(hab); return t.max > 0 ? samp(t, t.H, x, z) : 0; };
+  T.hollow = (hab, x, z) => { const t = T.get(hab); return t.max > 0 ? samp(t, t.hol, x, z) : 0; };
+  T.crest = (hab, x, z) => { const t = T.get(hab); return t.max > 0 ? samp(t, t.cre, x, z) : 0; };
+  /** How far something at height y (above the flat floor) is raised onto the ground: fully on the floor, fading out by ~6 units up. */
+  T.fade = (y) => y <= 0.6 ? 1 : Math.max(0, 1 - (y - 0.6) / 5.4);
+  T.lift = (hab, x, z, y) => { const t = T.get(hab); if (!(t.max > 0)) return 0; const f = T.fade(y || 0); return f > 0 ? samp(t, t.H, x, z) * f : 0; };
+  T.liftWith = (t, p) => { if (!t || !(t.max > 0) || !p) return p; const f = T.fade(p[1] || 0); if (f <= 0) return p; const l = samp(t, t.H, p[0], p[2]) * f; return l > 0.002 ? [p[0], p[1] + l, p[2]] : p; };
+  T.liftP = (hab, p) => { if (!p) return p; const l = T.lift(hab, p[0], p[2], p[1]); return l > 0.002 ? [p[0], p[1] + l, p[2]] : p; };
+  /** A crest between eye and target (both near the floor) hides small things behind it. */
+  T.blocks = function (hab, a, b) {
+    const t = T.get(hab); if (!(t.max > 0.6) || a[1] > 6 || b[1] > 6) return false;
+    const ya = a[1] + T.lift(hab, a[0], a[2], a[1]), yb = b[1] + T.lift(hab, b[0], b[2], b[1]); const L = Math.hypot(b[0] - a[0], b[2] - a[2]); if (L < 6) return false;
+    const n = Math.min(10, Math.ceil(L / 4)); for (let i = 1; i < n; i++) { const u = i / n; const x = a[0] + (b[0] - a[0]) * u, z = a[2] + (b[2] - a[2]) * u; if (samp(t, t.H, x, z) > ya + (yb - ya) * u + 0.35) return true; }
+    return false;
+  };
+  /** Low spots where mist water collects (wet substrates only). */
+  T.poolSpots = function (hab) {
+    const t = T.get(hab); if (t.pools) return t.pools; const out = [];
+    if (t.max > 0.4 && (T.WET[hab.data.substrate] || 0) >= 0.4) { const W1 = t.nx + 1; const c = [];
+      for (let j = 2; j < t.nz - 1; j += 2) for (let i = 2; i < t.nx - 1; i += 2) { const k = j * W1 + i; if (t.hol[k] > 0.5 && !t.pad[k]) c.push([t.hol[k], i * t.sx, j * t.sz]); }
+      c.sort((a, b) => b[0] - a[0]); for (const [, x, z] of c) { if (out.length >= 10) break; if (out.some(q => Math.hypot(q[0] - x, q[2] - z) < 9)) continue; if (JT.Nav && !JT.Nav.inside(hab, x, z, 4)) continue; const b = JT.Nav.supportBelow(hab, [x, 0.2, z]); if (b.sup.k !== 'floor') continue; out.push([x, 0, z]); } }
+    t.pools = out; return out;
+  };
+  // ---------- runtime marks: footprints and burrow mounds (not saved) ----------
+  T.PRINT_LIFE = 45; T.MARK_LIFE = 150;
+  T.track = function (hab) {
+    const sub = hab.data.substrate; const pk = T.PRINT[sub] || 0; const now = hab.time; const P = hab._prints || (hab._prints = []); const MK = hab._marks || (hab._marks = []);
+    if (P.length && now - P[0].t > T.PRINT_LIFE) { let n = 0; while (n < P.length && now - P[n].t > T.PRINT_LIFE) n++; P.splice(0, n); }
+    if (MK.length && now - MK[0].t > T.MARK_LIFE) { let n = 0; while (n < MK.length && now - MK[n].t > T.MARK_LIFE) n++; MK.splice(0, n); }
+    const step = (e, L, kind) => { if (!e.sup || e.sup.k !== 'floor' || e._air || e.owner || e.buried || !M.finite3(e.pos)) { e._pr = null; return; }
+      const q = e._pr; const stride = Math.max(0.9, L * 0.55); if (q && Math.abs(q[0] - e.pos[0]) + Math.abs(q[1] - e.pos[2]) < stride) return;
+      const dir = q ? Math.atan2(e.pos[2] - q[1], e.pos[0] - q[0]) : Math.atan2((e.fwd || [1, 0, 0])[2], (e.fwd || [1, 0, 0])[0]);
+      e._pr = [e.pos[0], e.pos[2]]; if (!q || !pk) return; e._ps = !e._ps; P.push({ x: e.pos[0], z: e.pos[2], a: dir, t: now, s: L, k: kind, side: e._ps ? 1 : -1 }); if (P.length > 260) P.shift(); };
+    for (const sp of hab.data.spiders) step(sp, JT.SpiderAI ? JT.SpiderAI.len(sp) : 6, 'spider');
+    if (!((T.WET[sub] || 0) >= 0.4) && hab.data.drops.some(d => d.pool)) hab.data.drops = hab.data.drops.filter(d => !d.pool); // pools soak away on dry ground
+    const bur = T.BURROW(sub);
+    for (const p of hab.data.prey) { const d = JT.PREY_BY_ID[p.type]; if (!d) continue;
+      if (bur && !!p.buried !== !!p._wasBur && M.finite3(p.pos)) { MK.push({ x: p.pos[0], z: p.pos[2], t: now, r: Math.max(1, (d.len || 3) * 0.45), out: !p.buried }); if (MK.length > 60) MK.shift(); }
+      p._wasBur = !!p.buried; if (!d.fly && !d.flies && (d.len || 3) >= 2.5) step(p, d.len || 3, 'prey'); }
+  };
+  // ---------- hooks into the habitat model ----------
+  const HP = JT.Habitat && JT.Habitat.prototype;
+  if (HP && !HP._terHook) { HP._terHook = true;
+    const up = HP.update; HP.update = function (dt) { const r = up.apply(this, arguments); try { T.track(this); } catch (e) { /* cosmetic */ } return r; };
+    const mi = HP.mist; HP.mist = function () { const r = mi.apply(this, arguments); try { T.addPools(this); } catch (e) { /* cosmetic */ } return r; };
+  }
+  /** Misting a wet substrate: water runs into the hollows and pools there; thirsty jumpers drink from them. */
+  T.addPools = function (hab) {
+    const sp = T.poolSpots(hab); if (!sp.length) return 0; const n = Math.min(sp.length, 2 + Math.floor(JT.R() * 3)); let k = 0; const D = hab.data.drops;
+    for (let i = 0; i < sp.length && k < n; i++) { const q = sp[(i + Math.floor(JT.R() * sp.length)) % sp.length]; if (D.some(d => d.pool && Math.hypot(d.pos[0] - q[0], d.pos[2] - q[2]) < 6)) continue;
+      D.push({ id: JT.newId('w'), pos: q.slice(), sup: { k: 'floor' }, decor: null, life: 240 + JT.R() * 160, r: 2.4 + JT.R() * 1.4, pool: true }); k++; }
+    while (D.length > 34) { const j = D.findIndex(d => !d.pool); D.splice(j >= 0 ? j : 0, 1); }
+    return k;
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
 /* Jumper Terrarium — camera/projection (world habitat space -> screen), resolution independent. */
@@ -8569,6 +8769,20 @@ void main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade
 varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`;
   const MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}
 void main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`;
+  // v15 terrain: wet hollows (darker, slightly glossy where water collects) and ground marks (footprints, burrow mounds, mist pools)
+  const WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}
+varying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`;
+  const WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}
+void main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);
+  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`;
+  const MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}
+varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`;
+  const MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}
+void main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;
+  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);
+  if(a<0.004) discard; vec3 c=vC.rgb;
+  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }
+  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`;
   const SCR_VS = `attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aUV; gl_Position=vec4(aXY,0.999,1.0); }`;
   const SCR_FS = `precision highp float; varying vec2 vUV; uniform sampler2D uTex; uniform vec4 uCol; uniform float uMode; uniform vec2 uRes; uniform vec2 uJit;
 void main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*uCol.rgb,1.0); return; }
@@ -8593,6 +8807,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
   const PAPER = [0.945, 0.905, 0.815];
+  const PT0 = (G0) => (G0.R.set.perf ? G0.R.set : {});
   const NEUTRAL = { kd: 1, key: [1, 1, 1], amb: [1, 1, 1] };
   const hexRGB = (h) => GM.rgb(h);
   const toHex = (c) => '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join('');
@@ -8606,7 +8821,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       this.gl = gl; this.cv = canvas; this.R = R; this.gl2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
       this.uintOK = this.gl2 || !!gl.getExtension('OES_element_index_uint');
       this.P = {
-        mesh: this.prog(MESH_VS, MESH_FS), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS),
+        mesh: this.prog(MESH_VS, MESH_FS), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
       };
       this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
@@ -8684,27 +8899,37 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 
     // ---------- static geometry ----------
     habGeom(hab) {
-      const R = this.R; const key = hab.data.id + '|' + hab._geomVersion + '|' + hab.dims.w + '|' + hab.dims.d + '|' + hab.data.type;
+      const R = this.R; const TR = JT.Terrain; const ter = TR ? TR.get(hab) : null; const tq = R.quality === 'low' ? 2 : 1;
+      const key = hab.data.id + '|' + hab._geomVersion + '|' + hab.dims.w + '|' + hab.dims.d + '|' + hab.data.type + '|' + (ter ? ter.key : '') + '|' + tq;
       if (this.hg && this.hg.key === key) return this.hg;
-      const gl = this.gl; if (this.hg) { for (const b of this.hg.del) gl.deleteBuffer(b); if (this.hg.cs && this.hg.cs.b) gl.deleteBuffer(this.hg.cs.b); }
+      const gl = this.gl; if (this.hg) { for (const b of this.hg.del) gl.deleteBuffer(b); if (this.hg.cs && this.hg.cs.b) gl.deleteBuffer(this.hg.cs.b); if (this.hg.tm) { gl.deleteBuffer(this.hg.tm.vb); gl.deleteBuffer(this.hg.tm.ib); } }
+      const hAt = (x, z) => (ter && ter.max > 0 ? TR.at(hab, x, z) : 0);
       const del = []; const poly = R.floorPoly(hab); const n = poly.length; const c = G.centroid(poly); const dm = hab.dims;
       // floor fan
       const fl = []; const V5 = (q) => [q[0], 0, q[1], q[0] / dm.w, q[1] / dm.d]; for (let i = 0; i < n; i++) fl.push(...V5(c), ...V5(poly[i]), ...V5(poly[(i + 1) % n]));
       const floor = this.buf(new Float32Array(fl)); del.push(floor);
       // slab sides (one quad per edge), u along the perimeter
       const sides = []; const sv = []; let u = 0;
-      for (let i = 0; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; const L = Math.hypot(b[0] - a[0], b[1] - a[1]); const u1 = u + L / 70; const y0 = 0, y1 = -15;
-        sv.push(a[0], y0, a[1], u, 0, b[0], y0, b[1], u1, 0, b[0], y1, b[1], u1, 1, a[0], y0, a[1], u, 0, b[0], y1, b[1], u1, 1, a[0], y1, a[1], u, 1);
-        let nx = b[1] - a[1], nz = -(b[0] - a[0]); const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l; if (nx * ((a[0] + b[0]) / 2 - c[0]) + nz * ((a[1] + b[1]) / 2 - c[1]) < 0) { nx = -nx; nz = -nz; } sides.push([nx, nz]); u = u1; }
+      for (let i = 0; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; const L = Math.hypot(b[0] - a[0], b[1] - a[1]); const u1 = u + L / 70; const y1 = -15;
+        const ns = Math.max(1, Math.min(40, Math.ceil(L / 4))); const sb = sv.length; // subdivided so the top edge follows the ground (v15)
+        for (let s2 = 0; s2 < ns; s2++) { const t0 = s2 / ns, t1 = (s2 + 1) / ns; const ax = a[0] + (b[0] - a[0]) * t0, az = a[1] + (b[1] - a[1]) * t0, bx = a[0] + (b[0] - a[0]) * t1, bz = a[1] + (b[1] - a[1]) * t1; const ua = u + (u1 - u) * t0, ub = u + (u1 - u) * t1; const ya = hAt(ax, az), yb = hAt(bx, bz);
+          sv.push(ax, ya, az, ua, 0, bx, yb, bz, ub, 0, bx, y1, bz, ub, 1, ax, ya, az, ua, 0, bx, y1, bz, ub, 1, ax, y1, az, ua, 1); }
+        let nx = b[1] - a[1], nz = -(b[0] - a[0]); const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l; if (nx * ((a[0] + b[0]) / 2 - c[0]) + nz * ((a[1] + b[1]) / 2 - c[1]) < 0) { nx = -nx; nz = -nz; } sides.push([nx, nz, sb / 5, (sv.length - sb) / 5]); u = u1; }
       const side = this.buf(new Float32Array(sv)); del.push(side);
       // decor meshes
       const meshes = [];
+      const tkey = ter ? ter.key : '';
       for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g) continue; const m = GM.build(g); if (!m.n) continue;
+        if (TR && TR.rides(g.def) && !inst.parent && (m._tk || '') !== tkey && (m._v0 || (ter && ter.max > 0))) { // v15: ground cover follows the uneven ground
+          if (!m._v0) { m._v0 = m.verts.slice(); m._l0 = m.lines ? m.lines.slice() : null; }
+          const S = GM.STRIDE, v = m.verts = m._v0.slice(); for (let o = 0; o < v.length; o += S) v[o + 1] += hAt(v[o], v[o + 2]);
+          if (m._l0) { const l = m.lines = m._l0.slice(); for (let o = 0; o < l.length; o += 15) { l[o + 1] += hAt(l[o], l[o + 2]); l[o + 4] += hAt(l[o + 3], l[o + 5]); } }
+          m._tk = tkey; if (m.vb && m.gl === this) this.free(m); m.vb = null; }
         if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); m.lb = m.nl ? this.buf(m.lines) : null; m.lib = m.nl ? this.buf(m.lidx, 'idx') : null; }
         meshes.push({ inst, g, m }); }
       // soft shadows under decor
       const sh = []; const L = JT.LIGHT; const Lh = [L[0], L[2]]; const ll = Math.hypot(Lh[0], Lh[1]) || 1; const dir = [-Lh[0] / ll, -Lh[1] / ll];
-      const decal = (cx, y, cz, ax, az, a) => { const p = (s, t) => [cx + ax[0] * s + az[0] * t, y, cz + ax[1] * s + az[1] * t]; const q = [p(-1, -1), p(1, -1), p(1, 1), p(-1, 1)]; const uv = [[0, 0], [1, 0], [1, 1], [0, 1]]; for (const k of [0, 1, 2, 0, 2, 3]) sh.push(q[k][0], q[k][1], q[k][2], uv[k][0], uv[k][1], a); };
+      const decal = (cx, y, cz, ax, az, a) => this.liftQuad(hab, sh, cx, y, cz, ax, az, a);
       for (const { g } of meshes) { if (g.def.cat === 'ground' || !g.foot) continue; const fc = G.centroid(g.foot); const solid = g.solids.length > 0; const r = solid ? Math.sqrt(Math.abs(G.polyArea(g.foot)) / Math.PI) * 1.15 : Math.min(18, g.coverR * 0.6);
         decal(fc[0], g.baseY + 0.06, fc[1], [r * 1.05, 0], [0, r * 1.05], 0.5 * (solid ? 1 : 0.75)); }
       const shb = sh.length ? this.buf(new Float32Array(sh)) : null; if (shb) del.push(shb);
@@ -8721,14 +8946,67 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         for (const so of (g.soft || [])) ring(smooth(so), 0.6, 2.3, 1.0);
         if (!g.solids.length && !(g.soft && g.soft.length) && g.contacts && g.contacts.length) { const cs = g.contacts; let poly; if (cs.length >= 3) poly = G.hull(cs.map(q => q.slice())); if (!poly || Math.abs(G.polyArea(poly)) < 4) { const c = G.centroid(cs.length >= 3 ? cs : [cs[0], cs[0], cs[0]]); poly = G.circlePoly(c[0], c[1], 1.4, 1.4, 10); } else poly = G.expandPoly(poly, 0.8); ring(smooth(poly), 0.8, 2.4, 1.05); } }
       const mb = mv.length ? this.buf(new Float32Array(mv)) : null; if (mb) del.push(mb);
-      this.hg = { key, floor, nf: fl.length / 5, side, sides, shb, nsh: sh.length / 6, meshes, del, mb, nm: mv.length / 7 }; return this.hg;
+      this.hg = { key, floor, nf: fl.length / 5, side, sides, shb, nsh: sh.length / 6, meshes, del, mb, nm: mv.length / 7, ter: ter && ter.max > 0 ? ter : null, tq, poly }; return this.hg;
+    }
+    /** v15: a flat decal quad (shadow, lamp pool) cut into a small grid and laid onto the uneven ground. */
+    liftQuad(hab, out, cx, y, cz, ax, az, a) {
+      const TR = JT.Terrain; const ter = TR && TR.get(hab); const uv = [[0, 0], [1, 0], [1, 1], [0, 1]];
+      if (!ter || !(ter.max > 0) || y > 6) { const p = (s, t) => [cx + ax[0] * s + az[0] * t, y, cz + ax[1] * s + az[1] * t]; const q = [p(-1, -1), p(1, -1), p(1, 1), p(-1, 1)]; for (const k of [0, 1, 2, 0, 2, 3]) out.push(q[k][0], q[k][1], q[k][2], uv[k][0], uv[k][1], a); return; }
+      const L = Math.max(Math.hypot(ax[0], ax[1]), Math.hypot(az[0], az[1])); const n = Math.max(2, Math.min(8, Math.ceil(L / 3)));
+      const P = (i, j) => { const s = i / n * 2 - 1, t = j / n * 2 - 1; const x = cx + ax[0] * s + az[0] * t, z = cz + ax[1] * s + az[1] * t; return [x, y + TR.lift(hab, x, z, y), z, i / n, j / n]; };
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const A = P(i, j), B = P(i + 1, j), C = P(i + 1, j + 1), D = P(i, j + 1); for (const q of [A, B, C, A, C, D]) out.push(q[0], q[1], q[2], q[3], q[4], a); }
+    }
+    /** v15: the uneven ground as one indexed grid (x, h, z, u, v, alpha, shade, wet); shading follows the sun/moon. */
+    terrainMesh(hab, hg) {
+      const ter = hg.ter; if (!ter) return null; const gl = this.gl; const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const lk = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
+      let tm = hg.tm; if (tm && tm.lk === lk) return tm;
+      const st = hg.tq, W1 = ter.nx + 1, dm = hab.dims; const circ = dm.shape === 'circle'; const R0 = dm.w / 2, Rz = dm.d / 2;
+      const ix = []; for (let i = 0; i <= ter.nx; i += st) ix.push(i); if (ix[ix.length - 1] !== ter.nx) ix.push(ter.nx);
+      const jz = []; for (let j = 0; j <= ter.nz; j += st) jz.push(j); if (jz[jz.length - 1] !== ter.nz) jz.push(ter.nz);
+      const cw = ix.length, ch = jz.length; const S = 8; const v = new Float32Array(cw * ch * S); const ll = Math.hypot(L[0], L[1], L[2]) || 1; const lx = L[0] / ll, ly = L[1] / ll, lz = L[2] / ll;
+      const H = ter.H; const hv = (i, j) => H[Math.max(0, Math.min(ter.nz, j)) * W1 + Math.max(0, Math.min(ter.nx, i))];
+      const out = new Uint8Array(cw * ch);
+      for (let b = 0; b < ch; b++) for (let a = 0; a < cw; a++) { const i = ix[a], j = jz[b], k = j * W1 + i; let x = i * ter.sx, z = j * ter.sz; const o = (b * cw + a) * S;
+        if (circ) { const dx = x - R0, dz = (z - Rz) * R0 / Rz, r = Math.hypot(dx, dz); if (r > R0 - 0.2) { out[b * cw + a] = 1; const f = (R0 - 0.2) / (r || 1); x = R0 + dx * f; z = Rz + dz * f * Rz / R0; } }
+        const gx = (hv(i + 1, j) - hv(i - 1, j)) / (2 * ter.sx), gz = (hv(i, j + 1) - hv(i, j - 1)) / (2 * ter.sz); const nl = Math.hypot(gx, 1, gz); const ndl = (-gx * lx + ly - gz * lz) / nl;
+        let sh = 1 + 0.9 * (ndl - ly); sh *= 1 - 0.14 * ter.hol[k]; sh *= 1 + 0.05 * ter.cre[k]; sh = Math.max(0.68, Math.min(1.22, sh));
+        const h = out[b * cw + a] ? 0 : H[k];
+        v[o] = x; v[o + 1] = h; v[o + 2] = z; v[o + 3] = x / dm.w; v[o + 4] = z / dm.d; v[o + 5] = 1; v[o + 6] = sh; v[o + 7] = ter.hol[k]; }
+      if (!tm) { const idx = []; for (let b = 0; b + 1 < ch; b++) for (let a = 0; a + 1 < cw; a++) { const k0 = b * cw + a, k1 = k0 + 1, k2 = k0 + cw, k3 = k2 + 1; if (out[k0] && out[k1] && out[k2] && out[k3]) continue;
+          let hs = 0; for (const kk of [k0, k1, k2, k3]) hs += v[kk * S + 1]; if (hs <= 0.0001) continue; // flat cells: the floor below already shows
+          idx.push(k0, k1, k3, k0, k3, k2); }
+        tm = hg.tm = { vb: gl.createBuffer(), ib: this.buf(cw * ch > 65000 ? new Uint32Array(idx) : new Uint16Array(idx), 'idx'), n: idx.length, u32: cw * ch > 65000 }; }
+      gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); gl.bufferData(gl.ARRAY_BUFFER, v, gl.STATIC_DRAW); tm.lk = lk; return tm;
+    }
+    /** v15: footprints, burrow mounds and mist pools, laid on the ground (rebuilt a few times a second). */
+    groundMarks(hab, night) {
+      const TR = JT.Terrain; if (!TR) return null; const now = hab.time; const low = this.R.quality === 'low';
+      const P0 = hab._prints || [], MK0 = hab._marks || []; let np = 0; for (const d of hab.data.drops) if (d.pool) np++;
+      const sig = hab.data.substrate + '|' + P0.length + '|' + (P0.length ? P0[P0.length - 1].x : 0) + '|' + MK0.length + '|' + np + '|' + low + '|' + (hab._ter ? hab._ter.key : '');
+      if (this._gm && this._gm.hab === hab && Math.abs(now - this._gm.t) < 0.2 && this._gm.sig === sig) return this._gm;
+      const S = JT.SUBSTRATES[hab.data.substrate] || JT.SUBSTRATES.coco; const dk = GM.rgb(S.dark), tp = GM.rgb(S.top), md = GM.rgb(S.mid); const pr = dk.map(c => c * 0.45); const v = [];
+      const quad = (x, z, r, ang, el, col, a, kind) => { const c = Math.cos(ang), s = Math.sin(ang); const ax = [c * r, s * r], az = [-s * r * el, c * r * el];
+        const P = (u, w) => { const px = x + ax[0] * u + az[0] * w, pz = z + ax[1] * u + az[1] * w; return [px, TR.at(hab, px, pz) + 0.07, pz, (u + 1) / 2, (w + 1) / 2]; };
+        const A = P(-1, -1), B = P(1, -1), C = P(1, 1), D = P(-1, 1); for (const q of [A, B, C, A, C, D]) v.push(q[0], q[1], q[2], q[3], q[4], col[0], col[1], col[2], a, kind); };
+      const pk = TR.PRINT[hab.data.substrate] || 0;
+      if (pk > 0) { const P = hab._prints || []; const step = low ? 2 : 1; for (let i = P.length - 1; i >= 0; i -= step) { const p = P[i]; const age = now - p.t; if (age < 0 || age > TR.PRINT_LIFE) continue; const f = 1 - age / TR.PRINT_LIFE;
+          const a = Math.min(0.85, 0.75 * pk * f * (0.6 + 0.4 * f)); const r = Math.max(0.45, p.s * 0.14); const off = p.s * 0.17; const nx = -Math.sin(p.a), nz = Math.cos(p.a); const fx = Math.cos(p.a), fz = Math.sin(p.a);
+          for (const sd of [-1, 1]) quad(p.x + nx * off * sd + fx * off * 0.5 * p.side * sd, p.z + nz * off * sd + fz * off * 0.5 * p.side * sd, r, p.a, 0.7, pr, a, 0); } }
+      for (const m of hab._marks || []) { const age = now - m.t; if (age < 0 || age > TR.MARK_LIFE) continue; const f = Math.min(1, (TR.MARK_LIFE - age) / 40);
+        quad(m.x, m.z, m.r * 1.5, 0, 1, dk, 0.36 * f, 1); quad(m.x + m.r * 0.5, m.z + m.r * 0.35, m.r * 0.95, 0.6, 0.8, tp, 0.45 * f, 0); quad(m.x - m.r * 0.15, m.z - m.r * 0.1, m.r * 0.55, 0, 1, dk, 0.4 * f, 0); }
+      const water = [0.36 + 0.05 * (1 - night), 0.42, 0.46];
+      for (const d of hab.data.drops) { if (!d.pool || !M.finite3(d.pos)) continue; const f = M.clamp(d.life / 60, 0, 1); const r = d.r || 2;
+        quad(d.pos[0], d.pos[2], r * 1.7, 0.3, 0.85, md.map(c => c * 0.55), 0.3 * f, 0); quad(d.pos[0], d.pos[2], r, 0.3, 0.85, water, 0.62 * f, 2); }
+      const gm = this._gm || (this._gm = { b: this.gl.createBuffer() }); gm.hab = hab; gm.t = now; gm.sig = sig; gm.n = v.length / 10;
+      if (gm.n) { this.gl.bindBuffer(this.gl.ARRAY_BUFFER, gm.b); this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(v), this.gl.DYNAMIC_DRAW); }
+      return gm;
     }
     /** Long soft shadows thrown away from the sun/moon. Rebuilt only when the light has moved ~1.5 degrees. */
-    castShadows(hg) {
+    castShadows(hg, hab) {
       const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const key = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
       if (hg.cs && hg.csKey === key) return hg.cs; const gl = this.gl; if (hg.cs && hg.cs.b) gl.deleteBuffer(hg.cs.b);
       const Lh = [L[0], L[2]]; const ll = Math.hypot(Lh[0], Lh[1]) || 1; const dir = [-Lh[0] / ll, -Lh[1] / ll]; const sh = [];
-      const decal = (cx, y, cz, ax, az, a) => { const p = (s, t) => [cx + ax[0] * s + az[0] * t, y, cz + ax[1] * s + az[1] * t]; const qd = [p(-1, -1), p(1, -1), p(1, 1), p(-1, 1)]; const uv = [[0, 0], [1, 0], [1, 1], [0, 1]]; for (const k of [0, 1, 2, 0, 2, 3]) sh.push(qd[k][0], qd[k][1], qd[k][2], uv[k][0], uv[k][1], a); };
+      const decal = (cx, y, cz, ax, az, a) => (hab ? this.liftQuad(hab, sh, cx, y, cz, ax, az, a) : null);
       for (const { g } of hg.meshes) { if (g.def.cat === 'ground' || !g.foot) continue; const fc = G.centroid(g.foot); const solid = g.solids.length > 0; const r = solid ? Math.sqrt(Math.abs(G.polyArea(g.foot)) / Math.PI) * 1.15 : Math.min(18, g.coverR * 0.6);
         const len = Math.min(70, Math.max(4, g.height) * ll / Math.max(0.3, L[1])) * (solid ? 0.8 : 0.65); const cc = [fc[0] + dir[0] * len * 0.45, fc[1] + dir[1] * len * 0.45];
         // longer shadows spread and soften, so the same darkness isn't smeared over a bigger patch
@@ -8754,12 +9032,27 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0);
       gl.bindTexture(gl.TEXTURE_2D, gt.s); gl.bindBuffer(gl.ARRAY_BUFFER, hg.side); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform1f(P.u.uLit, 1);
       const Lg = JT.LIGHT;
-      hg.sides.forEach((s, i) => { const f = s[0] * V.toCam[0] + s[1] * V.toCam[2]; if (f <= 0) return; const dd = s[0] * Lg[0] + s[1] * Lg[2]; const lit = M.clamp(0.72 + 0.4 * dd * SK.kd, 0.45, 1.1); const tw = M.clamp(0.5 + dd, 0, 1) * SK.kd; gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1); gl.drawArrays(gl.TRIANGLES, i * 6, 6); });
+      hg.sides.forEach((s, i) => { const f = s[0] * V.toCam[0] + s[1] * V.toCam[2]; if (f <= 0) return; const dd = s[0] * Lg[0] + s[1] * Lg[2]; const lit = M.clamp(0.72 + 0.4 * dd * SK.kd, 0.45, 1.1); const tw = M.clamp(0.5 + dd, 0, 1) * SK.kd; gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1); gl.drawArrays(gl.TRIANGLES, s[2] != null ? s[2] : i * 6, s[3] || 6); });
       gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform4f(P.u.uCol, 1, 1, 1, 1); gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
+      // v15: the uneven ground over the flat floor. Depth-tested against itself (hills hide the ground behind them), then the depth is cleared,
+      // so decor and critters draw exactly as before. Wet hollows darken with humidity; footprints, burrow mounds and mist pools sit on top.
+      { const TR = JT.Terrain; const tm = hg.ter && !PT0(this).ptNoTer ? this.terrainMesh(hab, hg) : null; const L8 = [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1], ['aW', 1]];
+        if (tm && tm.n) { gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+          P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
+          gl.depthMask(false);
+          const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const am = wet * wet * (3 - 2 * wet) * 0.6;
+          if (am > 0.01) { P = this.use(this.P.wet); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(P.u.uAm, am);
+            gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); } }
+        const gm = TR ? this.groundMarks(hab, night) : null;
+        if (gm && gm.n) { if (tm && tm.n) gl.enable(gl.DEPTH_TEST); P = this.use(this.P.mark); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, gm.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aC', 4], ['aK', 1]], 10); gl.drawArrays(gl.TRIANGLES, 0, gm.n); }
+        if (tm && tm.n) { gl.depthMask(true); gl.clear(gl.DEPTH_BUFFER_BIT); }
+        gl.disable(gl.DEPTH_TEST); gl.depthMask(false); P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0); }
       // shadows on the ground
       if (hg.shb) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
         gl.uniform4f(P.u.uCol, 0.16, 0.1, 0.05, 0.42 - night * 0.12); gl.drawArrays(gl.TRIANGLES, 0, hg.nsh); }
-      { const cs = this.castShadows(hg); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+      { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
         gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
       // warm pools under lamps (added light)
       if (LL.length) this.lampPools(V, hab, LL, night);
@@ -8835,7 +9128,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     dynBuf(name, data) { const gl = this.gl; let b = this.dyn[name]; if (!b) b = this.dyn[name] = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW); return b; }
     lampPools(V, hab, LL, night) {
       const gl = this.gl; const v = [];
-      for (const L of LL) { const y = this.R.lampSurface(hab, L) + 0.08; const R = L.r * 1.1; const a = 0.22 + night * 0.25; const q = [[-1, -1], [1, -1], [1, 1], [-1, -1], [1, 1], [-1, 1]]; for (const [s, t] of q) v.push(L.pool[0] + s * R, y, L.pool[2] + t * R, (s + 1) / 2, (t + 1) / 2, a); }
+      for (const L of LL) { const y = this.R.lampSurface(hab, L) + 0.08; const R = L.r * 1.1; const a = 0.22 + night * 0.25; this.liftQuad(hab, v, L.pool[0], y, L.pool[2], [R, 0], [0, R], a); }
       const P = this.use(this.P.tex); this.view(P, V); gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('pool', new Float32Array(v))); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6);
       gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.uniform1f(P.u.uLit, 0); gl.blendFunc(gl.ONE, gl.ONE); gl.uniform4f(P.u.uCol, 1.0, 0.72, 0.4, 0.22 + night * 0.28); gl.drawArrays(gl.TRIANGLES, 0, v.length / 6); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
@@ -8851,12 +9144,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /** Critters, remains, drops, nests and leaf bits: drawn by the 2D art code into one sprite sheet, then placed in 3D. */
     sprites(V, hab, scene, night) {
       const gl = this.gl, R = this.R, k = R.k; const W = this.cv.width, H = this.cv.height; const list = []; const tS = performance.now();
+      const TR = JT.Terrain, ter = TR ? TR.get(hab) : null; // v15: things on the floor stand on the uneven ground (the simulation itself stays flat)
       for (const it of scene.items) {
         if (it.inst || it.noGL || it.ln || it.silk || it.ghost || !it.p || !M.finite3(it.p)) continue;
-        const q = V.P(it.p); let r = it.r * V.s + 6 * k; if (q[0] < -r || q[0] > W + r || q[1] < -r || q[1] > H + r) continue;
+        const lp = ter ? TR.liftWith(ter, it.p) : it.p; const q = V.P(lp), q0 = lp === it.p ? q : V.P(it.p); let r = it.r * V.s + 6 * k; if (q[0] < -r || q[0] > W + r || q[1] < -r || q[1] > H + r) continue;
         // close-up critters: paint at ~1.5x CSS pixels (not full device pixels) and let the GPU scale them up; keeps the per-frame sheet small
         let sc = 1; const capS = Math.min(1, 1.25 / k); if (r > 100 && capS < 1) sc = Math.max(capS, 100 / r); if (r * sc > 254) sc = 254 / r; r *= sc;
-        const rp = Math.ceil(r); list.push({ it, q, rp, sc, dep: V.depth(it.p), z: V.depth(it.p) - (it.bias != null ? it.bias : it.ground ? 0.2 : it.r * 0.35) });
+        const rp = Math.ceil(r); list.push({ it, q, q0, rp, sc, dep: V.depth(lp), z: V.depth(lp) - (it.bias != null ? it.bias : it.ground ? 0.2 : it.r * 0.35) });
       }
       if (!list.length) return;
       // pixel budget: every critter is repainted and copied to the GPU each frame, so cap the total painted area (~0.4 Mpx).
@@ -8892,7 +9186,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
         if (k) SC.set(k, { ax: s.ax, ay: s.ay, rp: s.rp, ps: s.ps, f: sf, sig, h: k.charCodeAt(k.length - 1) & 1 }); // id parity: half the critters refresh on odd frames, half on even
         g.clearRect(s.ax - 1, s.ay - 1, s.rp * 2 + 2, s.rp * 2 + 2);
         const cx = s.ax + s.rp, cy = s.ay + s.rp;
-        if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q[0]), V.cy + (cy - s.q[1]), V.c);
+        if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q0[0]), V.cy + (cy - s.q0[1]), V.c);
         else { V2.set(V.yaw, V.pitch, V.s * s.sc, 0, 0, V.c); const q2 = V2.P(s.it.p); V2.set(V.yaw, V.pitch, V.s * s.sc, cx - q2[0], cy - q2[1], V.c); }
         g.save(); g.beginPath(); g.rect(s.ax, s.ay, s.rp * 2, s.rp * 2); g.clip();
         try { scene.run(s.it, g, V2); } catch (e) { if (JT.DEV) console.warn(e); }
@@ -8923,10 +9217,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     }
     silk(V, hab, scene, night) {
       const v = []; const push = (a, b, w, al, col) => { for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 0], [1, 1], [-1, 1]]) v.push(a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, col[0], col[1], col[2], 0, 0); };
-      const white = [0.97, 0.97, 1];
+      const white = [0.97, 0.97, 1]; const TR = JT.Terrain, ter = TR ? TR.get(hab) : null; const LW = (p) => (ter ? TR.liftWith(ter, p) : p);
       for (const it of scene.items) {
-        if (it.ln) push(it.ln.a, it.ln.b, it.ln.w, it.ln.al, white);
-        else if (it.silk) { const s = it.silk; const m = M.lerp3(s.a, s.b, 0.5); m[1] -= M.dist(s.a, s.b) * 0.05; const fade = Math.max(0, 1 - s.age / (s.kind === 'retreat' ? 1800 : 600)); const al = (s.kind === 'retreat' ? 0.5 : 0.32) * fade + night * 0.08; if (al < 0.02) continue; push(s.a, m, 0.12, al, white); push(m, s.b, 0.12, al, white); }
+        if (it.ln) push(LW(it.ln.a), LW(it.ln.b), it.ln.w, it.ln.al, white);
+        else if (it.silk) { const s = { a: LW(it.silk.a), b: LW(it.silk.b), age: it.silk.age, kind: it.silk.kind }; const m = M.lerp3(s.a, s.b, 0.5); m[1] -= M.dist(s.a, s.b) * 0.05; const fade = Math.max(0, 1 - s.age / (s.kind === 'retreat' ? 1800 : 600)); const al = (s.kind === 'retreat' ? 0.5 : 0.32) * fade + night * 0.08; if (al < 0.02) continue; push(s.a, m, 0.12, al, white); push(m, s.b, 0.12, al, white); }
       }
       if (!v.length) return; const gl = this.gl; const P = this.use(this.P.line); this.view(P, V); this.light(P);
       gl.uniform1f(P.u.uLW, V.s); gl.uniform1f(P.u.uMinW, 0.6 * this.R.k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 1); gl.uniform3f(P.u.uSway, 0, 0, 0);
@@ -9144,7 +9438,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       const animalDepth = (e) => { let d = V.depth(e.pos); if (e.sup && e.sup.d && decDepth[e.sup.d] != null && decDepth[e.sup.d] < 1e8) d = Math.min(d, decDepth[e.sup.d] - 0.05); return d; };
       for (const r of hab.data.remains) { if (!M.finite3(r.pos)) continue; let fr = D.frame(hab, r, 0.1);
         if (r._fall && M.finite3(r._fall.from)) { const u = M.clamp(r._fall.t / r._fall.dur, 0, 1); const e2 = u * u; const a = r.ang || 0; fr = { p: M.lerp3(M.add(r._fall.from, [0, 0.1, 0]), fr.p, e2), f: M.norm([Math.cos(a), 0.4 * Math.sin(u * 9), Math.sin(a)]), s: M.norm([-Math.sin(a), 0, Math.cos(a)]), n: [0, 1, 0] }; fr.n = M.norm(M.cross(fr.f, fr.s)); if (fr.n[1] < 0) fr.n = M.mul(fr.n, -1); } items.push({ key: r.id != null ? 'r' + r.id : null, d: animalDepth(r) + 0.02, f: () => D.remains(ctx, V, r, fr, {}), p: r.pos, r: ((JT.PREY_BY_ID[r.type] || { len: 3 }).len || 3) * 1.3 + 2 }); }
-      for (const w of hab.data.drops) { if (!M.finite3(w.pos)) continue; const fr = JT.Nav.supFrame(hab, w.sup); const pos = M.add(w.pos, M.mul(fr.n, (fr.r || 0) + 0.3)); items.push({ d: animalDepth(w) + 0.01, f: () => D.drop(ctx, V, w, pos), p: pos, r: (w.r || 0.6) * 2 + 1 }); }
+      for (const w of hab.data.drops) { if (!M.finite3(w.pos)) continue; const fr = JT.Nav.supFrame(hab, w.sup); const pos = M.add(w.pos, M.mul(fr.n, (fr.r || 0) + 0.3)); items.push({ d: animalDepth(w) + 0.01, f: () => D.drop(ctx, V, w, pos), p: pos, r: (w.r || 0.6) * 2 + 1, noGL: !!w.pool }); } // v15: mist pools are painted on the ground by the GL painter
       for (const p of hab.prey) {
         if (p.owner || p.buried || !M.finite3(p.pos) || !onScreen(p.pos)) continue; const def = JT.PREY_BY_ID[p.type]; if (!def) continue;
         const pd = animalDepth(p); const drawP = () => { let fr = D.frame(hab, p, 0.05); const wk = JT.PreyAI.weakK ? JT.PreyAI.weakK(p) : 0; const L0 = def.len || 3;
@@ -9340,7 +9634,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     pick(sx, sy, opts) {
       opts = opts || {}; const hab = this.game.hab; const V = this.V; const X = sx * this.k, Y = sy * this.k;
       let best = null, bd = 1e9;
-      const test = (e, kind, rad) => { if (!e.pos || !M.finite3(e.pos)) return; const q = V.P(e.pos); const d = Math.hypot(q[0] - X, q[1] - Y); const r = Math.max((opts.touch ? 34 : 16) * this.k, rad * V.s * (opts.touch ? 1.3 : 1)); if (d < r && d / r < bd) { bd = d / r; best = { kind, ent: e }; } };
+      const TRp = JT.Terrain, terP = TRp ? TRp.get(hab) : null; const test = (e, kind, rad) => { if (!e.pos || !M.finite3(e.pos)) return; const q = V.P(terP ? TRp.liftWith(terP, e.pos) : e.pos); const d = Math.hypot(q[0] - X, q[1] - Y); const r = Math.max((opts.touch ? 34 : 16) * this.k, rad * V.s * (opts.touch ? 1.3 : 1)); if (d < r && d / r < bd) { bd = d / r; best = { kind, ent: e }; } };
       for (const sp of hab.spiders) test(sp, 'spider', JT.SpiderAI.len(sp) * 1.1);
       if (best) return best;
       if (!opts.noPrey) for (const p of hab.prey) if (!p.owner && !p.buried) test(p, 'prey', (JT.PREY_BY_ID[p.type] || { len: 3 }).len * 1.2);
@@ -9471,7 +9765,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   if(bm.id==='desert'||bm.id==='heath'||w==='wind'){const count=Math.round(22*q);for(let i=0;i<count;i++){const a=i*7,p=point((pool[a]*dm.w+t*(w==='wind'?6:1.5))%dm.w,2+pool[a+1]*dm.h*0.7,pool[a+2]*dm.d);circle(p,(0.35+pool[a+3]*0.45)*V.s,'#d7c098',0.2+pool[a+4]*0.18);}if(w==='heat'){ctx.strokeStyle='#f5d7a1';ctx.lineWidth=Math.max(0.5,this.k*0.5);ctx.globalAlpha=0.13;for(let k=0;k<Math.round(8*q);k++){ctx.beginPath();for(let j=0;j<18;j++){const x=dm.w*j/17,z=dm.d*(k+1)/9,p=point(x,1.5+Math.sin(j*0.8+t*2+k)*0.7,z);if(!j)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}ctx.stroke();}}}
   if(bm.id==='paludarium'){const ponds=JT.Biome.ponds?JT.Biome.ponds(hab):[];ctx.strokeStyle='#b4dfe4';ctx.lineWidth=Math.max(0.5,this.k*0.7);for(const inst of ponds){const g=hab.geoms[inst.id];if(!g)continue;const center=g.center||[inst.x,0,inst.z],p=point(center[0],g.baseY+1,center[2]);for(let k=0;k<3;k++){const phase=(t*0.18+k/3)%1;ctx.globalAlpha=(1-phase)*0.28;ctx.beginPath();ctx.ellipse(p[0],p[1],Math.max(1,(3+phase*7)*V.s),Math.max(0.5,(1.3+phase*3)*V.s*0.6),0,0,Math.PI*2);ctx.stroke();}}}
   if(bm.id==='nightmoss'||w==='fireflies'||w==='glow'){const count=Math.round((w==='fireflies'||w==='glow'?38:10)*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+Math.sin(t*0.23+i)*8+dm.w)%dm.w,y=4+pool[a+1]*dm.h*0.5+Math.sin(t*0.7+i)*2,z=(pool[a+2]*dm.d+Math.cos(t*0.2+i)*6+dm.d)%dm.d,p=point(x,y,z),a0=(0.3+Math.pow((Math.sin(t*2+pool[a+4]*15)+1)*0.5,3)*0.7)*(0.4+night*0.6);circle(p,2.8*this.k,'#b9ef85',a0*0.06);circle(p,1.35*this.k,'#b9ef85',a0*0.25);circle(p,0.6*this.k,'#e9ffd0',a0);}}
-  if(bm.id==='antkingdom'){const ants=hab._antPatrol||(hab._antPatrol={count:quality==='low'?4:9});for(let i=0;i<ants.count;i++){const a=i*7,x=(pool[a]*dm.w+t*2.5)%dm.w,z=dm.d*(0.25+0.25*Math.sin(x/dm.w*6.2))+i*0.8,p=point(x,0.8,z);circle(p,0.55*this.k,'#35251b',0.75);circle([p[0]-1.1*this.k,p[1]],0.48*this.k,'#35251b',0.75);}}
+  if(bm.id==='antkingdom'){const ants=hab._antPatrol||(hab._antPatrol={count:quality==='low'?4:9});for(let i=0;i<ants.count;i++){const a=i*7,x=(pool[a]*dm.w+t*2.5)%dm.w,z=dm.d*(0.25+0.25*Math.sin(x/dm.w*6.2))+i*0.8,p=point(x,0.8+(JT.Terrain?JT.Terrain.lift(hab,x,z,0):0),z);circle(p,0.55*this.k,'#35251b',0.75);circle([p[0]-1.1*this.k,p[1]],0.48*this.k,'#35251b',0.75);}}
   if(bm.id==='urban'){const daylight=hab.daylight(),phase=hab.game&&hab.game.tod?hab.game.tod():t/600%1;if(daylight>0.25){const x=dm.w*(0.15+0.7*phase),p=point(x,0.4,dm.d*0.52);ctx.globalAlpha=daylight*0.085;ctx.fillStyle='#ffdc9f';ctx.beginPath();ctx.ellipse(p[0],p[1],dm.w*0.22*V.s,dm.d*0.16*V.s,0,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
  };
@@ -10198,7 +10492,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       for (const [id, lab] of list) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.openDrawer(id); }; tabs.appendChild(b); }
       if (tab !== 'food') { const b = el('button', 'rm' + (this.mode === 'remove' ? ' on' : ''), 'Remove'); b.title = 'Tap decor in the tank to remove it'; b.onclick = () => { if (this.mode === 'remove') this.endMode(); else this.startRemove(); if (this.mode !== 'remove') this.openDrawer(this.tab); }; tabs.appendChild(b); }
       const h = this.hab;
-      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live · humidity ' + Math.round(h.data.humidity * 100) + '%' : tab === 'substrate' ? 'Substrate and ground cover' : tab === 'walls' ? 'Pick a wall, then dress it: wall decor is free' : 'Choose a piece, then place it';
+      $('drawerTitle').textContent = tab === 'food' ? h.livePreyCount() + ' of ' + JT.PREY_CAP + ' live · humidity ' + Math.round(h.data.humidity * 100) + '%' : tab === 'substrate' ? 'Substrate, ground shape and ground cover' : tab === 'walls' ? 'Pick a wall, then dress it: wall decor is free' : 'Choose a piece, then place it';
       const body = $('drawerBody'); body.innerHTML = ''; body.scrollLeft = 0;
       const chips = $('drawerChips'); chips.innerHTML = ''; chips.classList.add('hidden');
       const sect = (label, id) => { const e = el('div', 'sect', esc(label)); if (id) e.dataset.g = id; body.appendChild(e); return e; };
@@ -10229,9 +10523,10 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       }
       else if (tab === 'substrate') {
         sect('Substrate', 'gs'); for (const id in JT.SUBSTRATES) body.appendChild(this.substrateCard(id));
+        if (JT.Terrain) { sect('Ground shape', 'gh'); for (const id of JT.Terrain.SHAPE_ORDER) body.appendChild(this.shapeCard(id)); body.appendChild(this.shapeCard('reroll')); }
         sect('Ground cover', 'gc');
         for (const d of JT.DECOR.filter(x => x.cat === 'ground')) body.appendChild(this.decorCard(d));
-        chip('Substrate', false, () => jump('gs')); chip('Ground cover', false, () => jump('gc'));
+        chip('Substrate', false, () => jump('gs')); if (JT.Terrain) chip('Ground shape', false, () => jump('gh')); chip('Ground cover', false, () => jump('gc'));
       } else if (tab === 'food') {
         // care first (mist, clean), then live food from smallest to largest, with the sizes your jumpers can take marked
         sect('Care', 'gk'); body.appendChild(this.careCard('mist')); body.appendChild(this.careCard('clean'));
@@ -10277,6 +10572,27 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       c.onclick = () => {
         if (cur) return;
         this.undoPush('Ground: ' + S.name); h.data.substrate = id; if (h.backWall()) h.rebuild(); /* the wall is built from the substrate */ this.R._speck = null; A().sfx('place'); this.buzz('place', true); this.toast('Substrate changed to ' + esc(S.name) + '.'); this.openDrawer('substrate');
+      };
+      return c;
+    },
+    /** v15: Ground shape cards (Flat / Gentle / Rolling / Rugged) and "New shape" (same style, new random lumps; undoable). */
+    shapeCard(id) {
+      const T = JT.Terrain, h = this.hab, cf = T.conf(h), S = JT.SUBSTRATES[h.data.substrate] || JT.SUBSTRATES.coco; const re = id === 'reroll'; const cur = !re && cf.shape === id;
+      const c = el('div', 'card shape-card' + (cur ? ' cur' : '')); const cv = document.createElement('canvas'); cv.width = cv.height = 112; const g = cv.getContext('2d');
+      g.fillStyle = '#efe6d2'; g.fillRect(0, 0, 112, 112); const prof = T.profile(h, re ? 'rugged' : id, re ? (cf.seed * 7 + 13) % 1000003 : cf.seed, 112);
+      const base = 78; g.beginPath(); g.moveTo(0, 112); for (let x = 0; x < 112; x++) g.lineTo(x, base - prof[x] * 5.5); g.lineTo(112, 112); g.closePath();
+      const gr = g.createLinearGradient(0, 40, 0, 112); gr.addColorStop(0, S.top); gr.addColorStop(0.55, S.mid); gr.addColorStop(1, S.dark); g.fillStyle = gr; g.fill();
+      g.strokeStyle = 'rgba(43,34,25,.75)'; g.lineWidth = 1.6; g.beginPath(); for (let x = 0; x < 112; x++) { const y = base - prof[x] * 5.5; if (x) g.lineTo(x, y); else g.moveTo(x, y); } g.stroke();
+      if (re) { g.strokeStyle = 'rgba(43,34,25,.85)'; g.lineWidth = 3; g.beginPath(); g.arc(56, 32, 13, 0.5, 5.2); g.stroke(); g.beginPath(); g.moveTo(68, 18); g.lineTo(70, 31); g.lineTo(57, 28); g.stroke(); }
+      c.appendChild(cv); c.appendChild(el('div', 'nm', re ? 'New shape' : esc(T.SHAPES[id].name)));
+      c.appendChild(el('div', 'pr', re ? 'reroll the lumps' : cur ? 'current' + (cf.auto && id !== 'gentle' ? ' · biome' : '') : id === 'flat' ? 'level floor' : id === 'gentle' ? 'soft bumps' : id === 'rolling' ? 'hills and dips' : 'steep and lumpy'));
+      c.title = re ? 'New shape — same ground style, new random hills and hollows (undo with the arrow)' : T.SHAPES[id].name + ' ground — ' + (cf.style.label || '') + '. Flattens under decor and near the glass.';
+      c.onclick = () => {
+        if (cur) return; const t = h.data.terrain || (h.data.terrain = {});
+        if (re) { this.undoPush('New ground shape'); t.seed = Math.floor(JT.R() * 1000003); if (!T.SHAPES[t.shape]) t.shape = cf.shape; }
+        else { this.undoPush('Ground shape: ' + T.SHAPES[id].name); t.shape = id; }
+        h._ter = null; A().sfx('place'); this.buzz('place', true);
+        this.toast(re ? (cf.shape === 'flat' ? 'New shape saved — pick Gentle, Rolling or Rugged to see it.' : 'New ground shape.') : 'Ground shape: ' + T.SHAPES[id].name + '.', 'quiet'); this.game.save(); this.openDrawer('substrate');
       };
       return c;
     },
@@ -10367,7 +10683,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     /** Leave place/remove mode from its own controls: bring a minimised shop drawer back (mobile). */
     endMode() { this.cancelMode(); if (this.tab && $('drawer').classList.contains('hidden')) { $('drawer').classList.remove('hidden'); this.syncDrawerSpace(); this.openDrawer(this.tab); } },
     // ------------------------------------------------ v11 undo / redo (building in the tank you are viewing)
-    _undoSnap(h) { return JSON.stringify({ decor: h.data.decor, sub: h.data.substrate, bg: h.data.bg }); },
+    _undoSnap(h) { return JSON.stringify({ decor: h.data.decor, sub: h.data.substrate, bg: h.data.bg, ter: h.data.terrain || null }); },
     /** Call right before a build change. Keeps up to 20 steps for the tank being viewed. */
     undoPush(label, h) {
       h = h || this.hab; if (!h) return; const U = this._undo && this._undo.h === h ? this._undo : (this._undo = { h, u: [], r: [] });
@@ -10386,7 +10702,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
     },
     _undoApply(str) {
       const h = this.hab; const o = JSON.parse(str); const bgCh = o.bg !== h.data.bg;
-      h.data.decor = o.decor; h.data.substrate = o.sub; h.data.bg = o.bg;
+      h.data.decor = o.decor; h.data.substrate = o.sub; h.data.bg = o.bg; if (o.ter) h.data.terrain = o.ter; // v15: ground shape + seed
       h.rebuild(); h.validateRefs(); this.R._speck = null; this.R.hover = null; if (bgCh) this.R.bgCache = {};
       for (const sp of h.spiders) if (sp.retreat && sp.retreat.d && !h.geoms[sp.retreat.d]) sp.retreat = null;
       if (this.mode === 'place') this.updateGhostAtCurrent();
