@@ -2610,11 +2610,18 @@ button:focus:not(:focus-visible){outline:none}
       if (!Nav.inside(hab, x, z, 4)) continue; if (fr.obstacles.some(o => G.pointInPoly(x, z, G.expandPoly(o, 2)))) continue;
       addNode({ pos: [x, 0, z], region: 'F', sup: { k: 'floor' }, decor: null, kind: 'floor', y: 0, lattice: true });
     }
+    // v21: a trunk / stem climb starts on its centre line, inside the trunk's footprint. Floor walkers come to (and leave from)
+    // the visible foot of the climb instead: the spot on the floor where the climbing body is drawn (centre + belly side x clearance).
+    const NP = (n) => n.appr || n.pos;
+    if (nav.regions.F) for (const nid of nav.regions.F.nodes) { const n = nav.nodes[nid]; if (!n.path || !n.sup || n.sup.k !== 'path') continue; const ob = nav.regions.F.obstacles;
+      if (!ob.some(o => G.pointInPoly(n.pos[0], n.pos[2], o))) continue; let fr0 = null; try { fr0 = Nav.supFrame(hab, n.sup); } catch (er) { fr0 = null; } if (!fr0 || !fr0.n) continue;
+      let h = [fr0.n[0], 0, fr0.n[2]]; const hl = Math.hypot(h[0], h[2]); if (hl < 0.2) continue; h = [h[0] / hl, 0, h[2] / hl]; const r0 = Math.max(0.5, (fr0.r || 0) * Math.min(1, fr0.n[1] < 0.95 ? 1 : 0));
+      for (let k = 0; k < 6; k++) { const rr = r0 + k * 0.8; const q = [n.pos[0] + h[0] * rr, n.pos[1], n.pos[2] + h[2] * rr]; if (Nav.inside(hab, q[0], q[2], 2) && !ob.some(o => G.pointInPoly(q[0], q[2], o))) { n.appr = q; break; } } }
     // ---- region edges (visibility within open areas) ----
     for (const key in nav.regions) {
       const r = nav.regions[key], ns = r.nodes;
       for (let a = 0; a < ns.length; a++) for (let b = a + 1; b < ns.length; b++) {
-        const A = nav.nodes[ns[a]].pos, Bn = nav.nodes[ns[b]].pos; const d = M.dist2(A, Bn);
+        const A = NP(nav.nodes[ns[a]]), Bn = NP(nav.nodes[ns[b]]); const d = M.dist2(A, Bn);
         if (d > 150) continue;
         if (!Nav.regionClear(nav, r, A, Bn)) continue;
         both(ns[a], ns[b], { type: 'region', cost: d, len: d, region: key });
@@ -2652,7 +2659,7 @@ button:focus:not(:focus-visible){outline:none}
         lid = addNode({ pos: below.pos, region: rk, sup: below.sup, decor: below.sup.d || null, kind: rk === 'F' ? 'floor' : 'top', y: below.pos[1], landing: true });
         landings[key] = lid;
         const r = nav.regions[rk];
-        for (const nid of r.nodes) if (nid !== lid) { const B = nav.nodes[nid].pos; const d = M.dist2(below.pos, B); if (d < 150 && Nav.regionClear(nav, r, below.pos, B)) both(lid, nid, { type: 'region', cost: d, len: d, region: rk }); }
+        for (const nid of r.nodes) if (nid !== lid) { const B = NP(nav.nodes[nid]); const d = M.dist2(below.pos, B); if (d < 150 && Nav.regionClear(nav, r, below.pos, B)) both(lid, nid, { type: 'region', cost: d, len: d, region: rk }); }
       }
       addEdge(a.id, lid, { type: 'drop', cost: 6 + h * 0.25, len: h, rise: -h });
     }
@@ -2664,6 +2671,12 @@ button:focus:not(:focus-visible){outline:none}
         else { const n = Nav.nearestNodeOfDecor(nav, inst.id, w.pos); if (n) nav.water.push({ pos: n.pos, sup: n.sup, decor: inst.id, permanent: true }); }
       }
     }
+    // v21: floor nodes inside a footprint (climb bases, landings). 'inSoft' ones may be walked TO (to start a climb) but are
+    // never walked THROUGH (floor -> base -> floor cut straight across trunks); 'buried' ones sit inside another piece's body
+    for (const nid of (nav.regions.F ? nav.regions.F.nodes : [])) { const n = nav.nodes[nid]; const x = n.pos[0], z = n.pos[2];
+      for (const inst of hab.decor) { const g = geoms[inst.id]; if (!g || inst.parent) continue;
+        if (!n.inSoft && !n.appr) for (const s of g.solids.concat(g.soft || [])) if (G.pointInPoly(x, z, s)) { n.inSoft = true; break; }
+        if (inst.id !== n.decor && !n.buried && g.def.cat !== 'ground') { const r = JT.Solid.at(g, [x, 1, z], 0.1); if (r && r.d > 0.4) n.buried = true; } } }
     return nav;
   };
 
@@ -2676,8 +2689,12 @@ button:focus:not(:focus-visible){outline:none}
     return false;
   }
 
+  /** v21: how far a floor segment runs inside a footprint (sampled). */
+  const insideLen = (A, B, o) => { const L = Math.hypot(B[0] - A[0], B[2] - A[2]); const n = Math.max(2, Math.ceil(L / 0.75)); let k = 0; for (let i = 0; i <= n; i++) { const t = i / n; if (G.pointInPoly(A[0] + (B[0] - A[0]) * t, A[2] + (B[2] - A[2]) * t, o)) k++; } return L * k / (n + 1); };
+  Nav.SOFT_IN = 4.5;
   Nav.regionClear = function (nav, r, A, B) {
-    for (const o of r.obstacles) if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)))) return false;
+    /* a soft footprint (trunk, stem, log) may be entered only for a short way to reach a climb base standing in it, never crossed */
+    for (const o of r.obstacles) if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)) && insideLen(A, B, o) <= Nav.SOFT_IN)) return false;
     if (r.poly) { for (let k = 1; k < 4; k++) { const t = k / 4; if (!G.pointInPoly(M.lerp(A[0], B[0], t), M.lerp(A[2], B[2], t), r.poly)) return false; } }
     return true;
   };
@@ -2770,7 +2787,7 @@ button:focus:not(:focus-visible){outline:none}
   };
 
   /** Graph attachment points for an arbitrary supported position. */
-  Nav.attach = function (hab, sup, pos) {
+  Nav.attach = function (hab, sup, pos, strict) {
     const nav = hab.nav, out = [];
     if (sup.k === 'path') {
       const a = nav.pathIndex[sup.d + '|' + sup.p + '|' + sup.s], b = nav.pathIndex[sup.d + '|' + sup.p + '|' + (sup.s + 1)];
@@ -2779,9 +2796,9 @@ button:focus:not(:focus-visible){outline:none}
       return out;
     }
     const key = Nav.regionKey(sup); const r = key && nav.regions[key]; if (!r) return out;
-    for (const nid of r.nodes) { const q = nav.nodes[nid].pos; const d = M.dist2(pos, q); if (d < 160 && Nav.regionClear(nav, r, pos, q)) out.push([nid, d, { type: 'region', region: key }]); }
-    if (!out.length) { // fall back to nearest few nodes ignoring obstacles (tiny drift cases)
-      const ns = r.nodes.map(n => [n, M.dist2(pos, nav.nodes[n].pos)]).sort((a, b) => a[1] - b[1]).slice(0, 2);
+    for (const nid of r.nodes) { const nn = nav.nodes[nid]; if (nn.buried) continue; const q = nn.appr && key === 'F' ? nn.appr : nn.pos; const d = M.dist2(pos, q); if (d < 160 && Nav.regionClear(nav, r, pos, q)) out.push([nid, d, { type: 'region', region: key }]); }
+    if (!out.length && !strict) { // fall back to nearest few nodes ignoring obstacles (tiny drift cases; v21: never for a destination - no clear way there means pick another)
+      const ns = r.nodes.map(n => [n, M.dist2(pos, nav.nodes[n].appr || nav.nodes[n].pos)]).sort((a, b) => a[1] - b[1]).slice(0, 2);
       for (const [n, d] of ns) out.push([n, d * 1.5 + 2, { type: 'region', region: key }]);
     }
     return out;
@@ -2797,7 +2814,8 @@ button:focus:not(:focus-visible){outline:none}
     if (nav._fl) return nav._fl; const N = nav.nodes.length; let E = 0; for (const a of nav.adj) E += a.length;
     const off = new Int32Array(N + 1), to = new Int32Array(E), ty = new Uint8Array(E), len = new Float64Array(E), cost = new Float64Array(E), fF = new Uint8Array(E), ref = new Array(E);
     let k = 0; for (let u = 0; u < N; u++) { off[u] = k; for (const e of nav.adj[u]) { to[k] = e.to; ty[k] = ET[e.type] || 0; len[k] = e.len; cost[k] = e.cost; fF[k] = e.region === 'F' ? 1 : 0; ref[k] = e; k++; } } off[N] = k;
-    return (nav._fl = { N, off, to, ty, len, cost, fF, ref });
+    const ins = new Uint8Array(N), bur = new Uint8Array(N); for (let u = 0; u < N; u++) { const n = nav.nodes[u]; if (n.inSoft) ins[u] = 1; if (n.buried) bur[u] = 1; }
+    return (nav._fl = { N, off, to, ty, len, cost, fF, ref, ins, bur });
   }
   let HP = new Float64Array(1024), HN = new Int32Array(1024);
   Nav.dijkstra = function (hab, sup, pos, caps) {
@@ -2807,24 +2825,25 @@ button:focus:not(:focus-visible){outline:none}
     let hn = 0; const cap = F.to.length + att.length + 8; if (HP.length < cap) { HP = new Float64Array(cap); HN = new Int32Array(cap); } const P = HP, Q = HN; // pushes <= edges + attach points
     const push = (n, p) => { let i = hn++; P[i] = p; Q[i] = n; while (i > 0) { const j = (i - 1) >> 1; if (P[j] <= P[i]) break; const tp = P[i]; P[i] = P[j]; P[j] = tp; const tq = Q[i]; Q[i] = Q[j]; Q[j] = tq; i = j; } };
     for (const [nid, c, e] of att) { if (c < dist[nid]) { dist[nid] = c; prev[nid] = -1; pe[nid] = e; push(nid, c); } }
+    const viaR = new Uint8Array(N); for (const [nid, c, e] of att) if (e.type === 'region' && F.ins[nid] && M.dist2(pos, nav.nodes[nid].pos) > 9) viaR[nid] = 1; // walking in from outside counts as entering
     const maxJ = caps.jump || 0, cDrop = !!caps.drop, cClimb = !!caps.climb, carry = !!caps.carry, hunt = !!caps.hunt;
-    const off = F.off, to = F.to, ty = F.ty, len = F.len, cost = F.cost, fF = F.fF, ref = F.ref;
+    const off = F.off, to = F.to, ty = F.ty, len = F.len, cost = F.cost, fF = F.fF, ref = F.ref, ins = F.ins, bur = F.bur;
     while (hn) {
       // pop (same sift-down as Heap.pop)
       const d = P[0], u = Q[0]; hn--; if (hn) { P[0] = P[hn]; Q[0] = Q[hn]; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < hn && P[l] < P[m]) m = l; if (r < hn && P[r] < P[m]) m = r; if (m === i) break; const tp = P[i]; P[i] = P[m]; P[m] = tp; const tq = Q[i]; Q[i] = Q[m]; Q[m] = tq; i = m; } }
-      if (d > dist[u]) continue;
+      if (d > dist[u]) continue; const thru = ins[u] && viaR[u]; // v21: walked into a footprint: climb, jump or drop on, but not out across the floor
       for (let k = off[u], k1 = off[u + 1]; k < k1; k++) {
-        const t = ty[k];
+        const t = ty[k]; if (t === 0 && thru) continue; if (bur[to[k]]) continue;
         if (t === 1 && len[k] > maxJ) continue;
         if (t === 2 && !cDrop) continue;
         if ((t === 3 || t === 4) && !cClimb) continue;
         // carrying a meal: leaping between decor beats a long exposed walk across the floor
         // hunting: hopping across decor toward the prey beats a long walk over the open floor
         const c = cost[k]; const nd = d + (carry ? (t === 1 ? c * 0.55 : fF[k] ? c * 1.9 : c) : hunt ? (t === 1 ? c * 0.72 : fF[k] ? c * 1.2 : c) : c);
-        const v = to[k]; if (nd < dist[v]) { dist[v] = nd; prev[v] = u; pe[v] = ref[k]; push(v, nd); }
+        const v = to[k]; if (nd < dist[v]) { dist[v] = nd; prev[v] = u; pe[v] = ref[k]; viaR[v] = t === 0 ? 1 : 0; push(v, nd); }
       }
     }
-    return { dist, prev, pe, sup, pos };
+    return { dist, prev, pe, sup, pos, viaR, ins };
   };
 
   /** Cost to a goal support/pos from a dijkstra result (+ best attach node). */
@@ -2834,7 +2853,7 @@ button:focus:not(:focus-visible){outline:none}
     const rk = Nav.regionKey(gsup);
     if (rk && rk === Nav.regionKey(dj.sup)) { const r = hab.nav.regions[rk]; if (r && Nav.regionClear(hab.nav, r, dj.pos, gpos)) return { cost: M.dist2(dj.pos, gpos), direct: true }; }
     let best = null;
-    for (const [nid, c, e] of Nav.attach(hab, gsup, gpos)) { const t = dj.dist[nid] + c; if (isFinite(t) && (!best || t < best.cost)) best = { cost: t, node: nid, e }; }
+    for (const [nid, c, e] of Nav.attach(hab, gsup, gpos, true)) { if (dj.viaR && dj.viaR[nid] && dj.ins[nid] && e.type === 'region' && M.dist2(hab.nav.nodes[nid].pos, gpos) > 3) continue; /* v21: no walking out across a footprint just entered */ const t = dj.dist[nid] + c; if (isFinite(t) && (!best || t < best.cost)) best = { cost: t, node: nid, e }; }
     return best;
   };
 
@@ -2857,11 +2876,17 @@ button:focus:not(:focus-visible){outline:none}
     const chain = []; let u = gc.node;
     while (u >= 0) { chain.push(u); u = dj.prev[u]; if (chain.length > 5000) return null; }
     chain.reverse();
+    /* v21: floor legs to / from a climb foot end at its approach point; the hop between that point and the centre line is
+       instant (the climbing body is drawn exactly there), so nobody is seen walking into the trunk */
+    const apIn = (n, e) => n.appr && e && e.type === 'region' && e.region === 'F', fl = { k: 'floor' };
     for (let k = 0; k < chain.length; k++) {
       const n = nav.nodes[chain[k]], e = dj.pe[chain[k]];
       const mode = e && (e.type === 'jump' || e.type === 'drop') ? e.type : 'walk';
+      if (k > 0 && apIn(nav.nodes[chain[k - 1]], e)) steps.push({ pos: nav.nodes[chain[k - 1]].appr.slice(), mode: 'walk', snap: true, during: fl, arrive: { k: 'floor' }, edge: 'appr' });
+      if (apIn(n, e)) { steps.push({ pos: n.appr.slice(), mode: 'walk', during: fl, arrive: { k: 'floor' }, edge: 'region' }); steps.push({ pos: n.pos.slice(), mode: 'walk', snap: true, during: null, arrive: JT.deepClone(n.sup), edge: 'appr', decor: n.decor }); continue; }
       steps.push({ pos: n.pos.slice(), mode, during: stepSupFor(hab, e), arrive: JT.deepClone(n.sup), edge: e ? e.type : 'start', decor: n.decor });
     }
+    if (chain.length && apIn(nav.nodes[chain[chain.length - 1]], gc.e)) steps.push({ pos: nav.nodes[chain[chain.length - 1]].appr.slice(), mode: 'walk', snap: true, during: fl, arrive: { k: 'floor' }, edge: 'appr' });
     steps.push({ pos: gpos.slice(), mode: 'walk', during: stepSupFor(hab, gc.e) || JT.deepClone(gsup), arrive: JT.deepClone(gsup), edge: 'goal' });
     return { steps, i: 0, cost: gc.cost, goalSup: gsup, goalPos: gpos };
   };
@@ -3401,6 +3426,7 @@ button:focus:not(:focus-visible){outline:none}
         if (opts.onLand) opts.onLand(st);
         return R.i >= R.steps.length ? 'done' : 'moving';
       }
+      if (st.snap) { e.pos = st.pos.slice(); e.sup = JT.deepClone(st.arrive); R.i++; continue; } // v21: centre line <-> visible foot of a climb (drawn in the same place)
       const to = st.pos; const dv = M.sub(to, e.pos); const d = M.len(dv);
       if (st.during && st.during.k === 'path') {
         // parameterize along the actual visible segment (no nearest-point snapping: deliberate progress)
@@ -5519,6 +5545,7 @@ button:focus:not(:focus-visible){outline:none}
         const x = p.pos[0] + Math.cos(a) * L, z = p.pos[2] + Math.sin(a) * L;
         if (key === 'F' ? !Nav.inside(hab, x, z, 3) : !JT.G.pointInPoly(x, z, r.poly)) continue;
         if (r.obstacles.some(o => JT.G.pointInPoly(x, z, o))) continue;
+        if (!Nav.regionClear(hab.nav, r, p.pos, [x, r.y, z])) continue; // v21: a low hop never passes through a trunk or rock
         target = { pos: [x, r.y, z], sup: JT.deepClone(p.sup) };
       }
       if (!target && key !== 'F') { const b = Nav.supportBelow(hab, [p.pos[0] + dir[0] * dist, 0, p.pos[2] + dir[2] * dist]); target = b; }
@@ -5551,7 +5578,7 @@ button:focus:not(:focus-visible){outline:none}
     let best = null, bs = -1e9;
     for (let k = 0; k < 14; k++) {
       let pos, sup;
-      if (caps.climb) { const n = nav.nodes[Math.floor(R() * nav.nodes.length)]; if (!n || n.kind === 'face') continue; pos = n.pos; sup = n.sup; }
+      if (caps.climb) { const n = nav.nodes[Math.floor(R() * nav.nodes.length)]; if (!n || n.kind === 'face' || n.buried) continue; pos = n.pos; sup = n.sup; }
       else {
         const key = Nav.regionKey(p.sup) || 'F'; const r = nav.regions[key]; if (!r) continue;
         const a = R() * 6.28, L = 10 + R() * 40; let x = p.pos[0] + Math.cos(a) * L, z = p.pos[2] + Math.sin(a) * L;
@@ -6560,7 +6587,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   T.get = function (hab) {
     const d0 = hab.data, tc = d0.terrain, F = hab._ter; // fast path (called many times a frame)
     if (F && tc && F._gv === hab._geomVersion && F._sub === d0.substrate && F._sh === tc.shape && F._sd === tc.seed && F._bi === d0.biome && F._ty === d0.type) return F;
-    const key = T.key(hab); if (F && F.key === key) { Object.assign(F, { _gv: hab._geomVersion, _sub: d0.substrate, _sh: d0.terrain.shape, _sd: d0.terrain.seed, _bi: d0.biome, _ty: d0.type }); return F; }
+    const key = T.key(hab); if (F && F.key === key) { Object.assign(F, { _gv: hab._geomVersion, _sub: d0.substrate, _sh: d0.terrain.shape, _sd: d0.terrain.seed, _bi: d0.biome, _ty: d0.type }); F.cv = T.cover(hab); return F; }
     const t0 = Date.now(); const c = T.conf(hab), dm = hab.dims, W = dm.w, D = dm.d, cs = T.CS; const nx = Math.max(2, Math.ceil(W / cs)), nz = Math.max(2, Math.ceil(D / cs)); const sx = W / nx, sz = D / nz;
     const N = (nx + 1) * (nz + 1); const H = new Float32Array(N), att = new Float32Array(N), pad = new Uint8Array(N); const S = c.shape, SH = T.SHAPES[S]; const st = c.style;
     const circ = dm.shape === 'circle'; const R = W / 2, Rz = D / 2;
@@ -6604,7 +6631,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     if (SH.k > 0) for (let k = 0; k < N; k++) { const ok = att[k] * (1 - clamp(near[k] * 3, 0, 1)); hol[k] = clamp((B1[k] - H[k]) / sc, 0, 1) * ok; cre[k] = clamp((H[k] - B1[k]) / sc, 0, 1) * ok; }
     let mx = 0; for (let k = 0; k < N; k++) mx = Math.max(mx, H[k]);
     const ter = { key, nx, nz, sx, sz, H, hol, cre, pad, max: mx, shape: S, style: st, ms: Date.now() - t0, pools: null };
-    Object.assign(ter, { _gv: hab._geomVersion, _sub: d0.substrate, _sh: d0.terrain.shape, _sd: d0.terrain.seed, _bi: d0.biome, _ty: d0.type }); hab._ter = ter; return ter;
+    Object.assign(ter, { _gv: hab._geomVersion, _sub: d0.substrate, _sh: d0.terrain.shape, _sd: d0.terrain.seed, _bi: d0.biome, _ty: d0.type }); ter.cv = T.cover(hab); hab._ter = ter; return ter;
   };
   const samp = (ter, A, x, z) => { const fx = clamp(x / ter.sx, 0, ter.nx), fz = clamp(z / ter.sz, 0, ter.nz); const i = Math.min(ter.nx - 1, Math.floor(fx)), j = Math.min(ter.nz - 1, Math.floor(fz)); const u = fx - i, v = fz - j, W1 = ter.nx + 1, k = j * W1 + i;
     return A[k] * (1 - u) * (1 - v) + A[k + 1] * u * (1 - v) + A[k + W1] * (1 - u) * v + A[k + W1 + 1] * u * v; };
@@ -6615,7 +6642,33 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   /** How far something at height y (above the flat floor) is raised onto the ground: fully on the floor, fading out by ~6 units up. */
   T.fade = (y) => y <= 0.6 ? 1 : Math.max(0, 1 - (y - 0.6) / 5.4);
   T.lift = (hab, x, z, y) => { const t = T.get(hab); if (!(t.max > 0)) return 0; const f = T.fade(y || 0); return f > 0 ? samp(t, t.H, x, z) * f : 0; };
-  T.liftWith = (t, p) => { if (!t || !(t.max > 0) || !p) return p; const f = T.fade(p[1] || 0); if (f <= 0) return p; const l = samp(t, t.H, p[0], p[2]) * f; return l > 0.002 ? [p[0], p[1] + l, p[2]] : p; };
+  /** v21 ground cover relief (draw only): bulgy cover (moss cushions, pebbles, pods, cones, twigs) is walked OVER, flat litter
+   *  (leaves, chips) is walked on normally. A fine height grid of the cover tops, widened and smoothed so bodies ride up gently. */
+  T.COVER_CS = 0.5; T.COVER_MIN = 0.35;
+  T.cover = function (hab) {
+    const gv = hab._geomVersion; const C0 = hab._cov; if (C0 && C0._gv === gv && C0._n === hab.data.decor.length) return C0;
+    const dm = hab.dims, cs = T.COVER_CS, nx = Math.max(2, Math.ceil(dm.w / cs)), nz = Math.max(2, Math.ceil(dm.d / cs)), W1 = nx + 1, N = W1 * (nz + 1);
+    let A = null, any = false, bi0 = 1e9, bi1 = -1, bj0 = 1e9, bj1 = -1; const put = (x0, x1, z0, z1, fn) => { const i0 = Math.max(0, Math.floor(x0 / cs)), i1 = Math.min(nx, Math.ceil(x1 / cs)), j0 = Math.max(0, Math.floor(z0 / cs)), j1 = Math.min(nz, Math.ceil(z1 / cs));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const v = fn(i * cs, j * cs); if (v > T.COVER_MIN) { if (!A) A = new Float32Array(N); const k = j * W1 + i; if (v > A[k]) A[k] = v; if (!any || i < bi0) bi0 = i; if (i > bi1) bi1 = i; if (j < bj0) bj0 = j; if (j > bj1) bj1 = j; any = true; } } };
+    for (const inst of hab.data.decor) { const g = hab.geoms[inst.id]; const def = JT.DECOR_BY_ID[inst.type]; if (!g || !def || def.arche !== 'scatter' || inst.parent || (g.baseY || 0) > 0.5) continue; const b0 = g.baseY || 0;
+      for (const pr of g.prims) {
+        if (pr.t === 'moss') for (const b of pr.blobs) { const r = b[2], hy = Math.min(1.6, r * 0.32); put(b[0] - r, b[0] + r, b[1] - r, b[1] + r, (x, z) => { const d2 = ((x - b[0]) ** 2 + (z - b[1]) ** 2) / (r * r); return d2 < 1 ? 0.05 + hy * Math.sqrt(1 - d2) : 0; }); }
+        else if (pr.t === 'pebble' && pr.o) { const r = pr.r, a = pr.ang || 0, cn = pr.kind === 'cones', pd = pr.kind === 'pods'; const ax = cn ? r * 1.3 : r, az = cn ? r * 0.7 : pd ? r * 0.45 : r * 0.8, ry = cn ? r * 0.6 : pd ? r * 0.45 : r * 0.55, cy = pr.o[1] - b0 + (cn ? r * 0.4 : ry * 0.4);
+          const ca = Math.cos(a), sa = Math.sin(a), R = Math.max(ax, az); put(pr.o[0] - R, pr.o[0] + R, pr.o[2] - R, pr.o[2] + R, (x, z) => { const dx = x - pr.o[0], dz = z - pr.o[2]; const u = dx * ca + dz * sa, w = -dx * sa + dz * ca; const d2 = (u / ax) ** 2 + (w / az) ** 2; return d2 < 1 ? cy + ry * Math.sqrt(1 - d2) : 0; }); }
+        else if (pr.t === 'tube' && pr.pts && pr.pts.length === 2 && pr.pts[0][1] - b0 < 1.5) { const p0 = pr.pts[0], p1 = pr.pts[1], rr = Math.max(pr.r0 || 0.5, pr.r1 || 0.5), yy = (p0[1] + p1[1]) / 2 - b0; const ex = p1[0] - p0[0], ez = p1[2] - p0[2], L2 = ex * ex + ez * ez || 1;
+          put(Math.min(p0[0], p1[0]) - rr, Math.max(p0[0], p1[0]) + rr, Math.min(p0[2], p1[2]) - rr, Math.max(p0[2], p1[2]) + rr, (x, z) => { const t = Math.max(0, Math.min(1, ((x - p0[0]) * ex + (z - p0[2]) * ez) / L2)); const d2 = ((x - p0[0] - ex * t) ** 2 + (z - p0[2] - ez * t) ** 2) / (rr * rr); return d2 < 1 ? yy + rr * Math.sqrt(1 - d2) : 0; }); }
+      } }
+    let H = null, mx = 0;
+    if (any) { /* widen by a body's half-width so feet rest on the edge, then smooth so the ride up and over is gentle (only inside the cover's own box) */
+      const I0 = Math.max(0, bi0 - 6), I1 = Math.min(nx, bi1 + 6), J0 = Math.max(0, bj0 - 6), J1 = Math.min(nz, bj1 + 6);
+      const pass = (src, r, mode) => { const a = new Float32Array(N), b = new Float32Array(N);
+        for (let j = J0; j <= J1; j++) for (let i = I0; i <= I1; i++) { let v = 0, n = 0; for (let d = -r; d <= r; d++) { const ii = i + d; if (ii >= 0 && ii <= nx) { const q = src[j * W1 + ii]; if (mode) { if (q > v) v = q; } else { v += q; n++; } } } a[j * W1 + i] = mode ? v : v / n; }
+        for (let j = J0; j <= J1; j++) for (let i = I0; i <= I1; i++) { let v = 0, n = 0; for (let d = -r; d <= r; d++) { const jj = j + d; if (jj >= 0 && jj <= nz) { const q = a[jj * W1 + i]; if (mode) { if (q > v) v = q; } else { v += q; n++; } } } b[j * W1 + i] = mode ? v : v / n; } return b; };
+      H = pass(pass(pass(A, 2, 1), 2, 0), 1, 0); for (let j = J0; j <= J1; j++) for (let i = I0; i <= I1; i++) { const k = j * W1 + i; if (H[k] < 0.05) H[k] = 0; if (H[k] > mx) mx = H[k]; } }
+    const C = { _gv: gv, _n: hab.data.decor.length, nx, nz, sx: cs, sz: cs, H, max: mx }; hab._cov = C; return C;
+  };
+  T.coverAt = (hab, x, z) => { const c = T.cover(hab); return c.max > 0 ? samp(c, c.H, x, z) : 0; };
+  T.liftWith = (t, p) => { if (!t || !p) return p; const c = t.cv; if (!(t.max > 0) && !(c && c.max > 0)) return p; const f = T.fade(p[1] || 0); if (f <= 0) return p; let l = t.max > 0 ? samp(t, t.H, p[0], p[2]) : 0; if (c && c.max > 0) l += samp(c, c.H, p[0], p[2]); l *= f; return l > 0.002 ? [p[0], p[1] + l, p[2]] : p; };
   T.liftP = (hab, p) => { if (!p) return p; const l = T.lift(hab, p[0], p[2], p[1]); return l > 0.002 ? [p[0], p[1] + l, p[2]] : p; };
   /** A crest between eye and target (both near the floor) hides small things behind it. */
   T.blocks = function (hab, a, b) {
@@ -7007,7 +7060,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const s = M.norm(M.cross(n, f)); let p = sp.pos;
       if (JT.Draw && JT.Draw.frame && sp.sup && sp.sup.k !== 'air') { try { const fr = JT.Draw.frame(hab, sp, 0.05); if (M.finite3(fr.p)) p = fr.p; } catch (e) { /* drawing helpers missing (tests) */ } }
       const at = (a, b, c) => M.add(M.add(M.add(p, M.mul(n, a * L)), M.mul(f, b * L)), M.mul(s, c * L));
-      return { pts: [at(0.32, 0.12, 0), at(0.3, 0.36, 0), at(0.2, -0.36, 0), at(0.12, 0, 0.36), at(0.12, 0, -0.36)], w: [2, 1.2, 1, 0.5, 0.5], c: at(0.25, 0, 0) };
+      return { pts: [at(0.32, 0.12, 0), at(0.3, 0.36, 0), at(0.2, -0.36, 0), at(0.12, 0, 0.36), at(0.12, 0, -0.36)], w: [2, 1.2, 1, 0.5, 0.5], c: at(0.25, 0, 0), f, p };
     }
     /** Pick the clearest good view near the preferred one (rays against the decor's real shapes, a few times a second).
         Views onto the belly are never taken; views showing the face score higher. Candidates are tried nearest-first
@@ -7045,7 +7098,11 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     updateFade(hab, sp, des, L, dt) {
       const F = this.fade || (this.fade = {}); this.fadeT = (this.fadeT || 0) - dt;
       if (this.fadeT <= 0) { this.fadeT = 0.1; const bp = this.bodyPts(hab, sp, des, L); const out = {}; JT.Sight.view(hab, bp.pts, bp.w, toCam(this.st.yaw, this.st.pitch), out);
-        this._fadeWant = out; this.holeC = bp.c; this.holeR = L * 1.05 + 2.4; }
+        this._fadeWant = out; this._hc0 = bp.c; this._hp0 = sp.pos.slice(); this._hf = bp.f; this.holeR = L * 1.05 + 2.4; }
+      { // v20: the oval follows the jumper every frame (centre carried along with it between samples), size and axis eased
+        const c0 = this._hc0, p0 = this._hp0; if (c0 && p0 && M.finite3(sp.pos)) this.holeC = [c0[0] + sp.pos[0] - p0[0], c0[1] + sp.pos[1] - p0[1], c0[2] + sp.pos[2] - p0[2]];
+        const kL = Math.min(1, dt * 3); this.holeL = this.holeL > 0 ? this.holeL + (L - this.holeL) * kL : L;
+        let fT = this._hf || [1, 0, 0]; const fa = this.holeAx; if (fa && fa[0] * fT[0] + fa[1] * fT[1] + fa[2] * fT[2] < 0) fT = [-fT[0], -fT[1], -fT[2]]; /* the oval is symmetric: turning round never swings it */ if (!fa) this.holeAx = fT.slice(); else { const kA = Math.min(1, dt * 6); let q = [fa[0] + (fT[0] - fa[0]) * kA, fa[1] + (fT[1] - fa[1]) * kA, fa[2] + (fT[2] - fa[2]) * kA]; const ql = Math.hypot(q[0], q[1], q[2]); this.holeAx = ql > 1e-4 ? [q[0] / ql, q[1] / ql, q[2] / ql] : fT.slice(); } }
       const want = this._fadeWant || {};
       for (const id in want) if (want[id] >= 0.12 && F[id] == null) F[id] = 0;
       for (const id in F) { const on = (want[id] || 0) >= 0.12; F[id] = on ? Math.min(1, F[id] + dt / 0.3) : F[id] - dt / 0.5; if (F[id] <= 0) delete F[id]; }
@@ -8986,17 +9043,19 @@ attribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attr
 uniform vec3 uSway; uniform float uOut; uniform float uPass; ${PROJ}
 varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;
 void main(){ vec3 p=aP+uSway*aW; vec3 q=proj(p);
-  if(uPass>0.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }
+  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }
   vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`;
   const MESH_FS = `
 precision highp float;
 varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;
-uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform vec4 uHole; uniform vec2 uHoleM; ${LAMPS}
-float holeK(){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uToCam); if(al<-uHole.w*0.25) return 0.0; float pp=length(dd-uToCam*al); return (1.0-smoothstep(uHole.w*0.62,uHole.w,pp))*uHoleM.y; }
+uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform vec4 uHole; uniform vec2 uHoleM; uniform vec4 uHoleE; uniform float uHoleB; ${LAMPS}
+// v20: see-through oval round the jumper: clear core sized to its body + legs (radii uHoleE.w along the body's on-screen axis uHoleE.xyz, uHoleB across), long soft fade of width uHole.w beyond it
+float holeK(){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uToCam); float dk=smoothstep(-(uHoleB+0.3*uHole.w),-0.2*uHoleB,al); if(dk<=0.0) return 0.0; vec3 q=dd-uToCam*al; vec3 v=cross(uToCam,uHoleE.xyz); float e=length(vec2(dot(q,uHoleE.xyz)/uHoleE.w, dot(q,v)/uHoleB)); float dc=e>1.0?length(q)*(1.0-1.0/e):0.0; return (1.0-smoothstep(0.0,uHole.w,dc))*uHoleM.y*dk; } // v21: decor behind the jumper eases back to solid (no hard depth line)
 void main(){
   if(vWP.y<-0.05) discard;
   float hk=0.0; if(uHoleM.x>0.5){ hk=holeK(); if(uHoleM.x<1.5){ if(hk>0.02) discard; } else if(hk<=0.02) discard; }
-  if(uPass>0.5){ gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*uAlpha, uAlpha); return; }
+  if(uPass>1.5){ if(uAlpha*(1.0-hk)<0.5) discard; gl_FragColor=vec4(0.0); return; } // v21 depth pre-pass: only the still mostly-solid part of a faded piece hides what is behind it
+  if(uPass>0.5){ float ia=uAlpha; if(uHoleM.x>1.5){ ia*=1.0-hk; if(ia<0.004) discard; } gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }
   float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=floor(f/16.0);
   vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }
   float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);
@@ -9018,7 +9077,7 @@ void main(){
   vec3 o=grade(col, vWP);
   if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);
   o=mix(o, uGhost.rgb, uGhost.a);
-  float A=uAlpha; if(uHoleM.x>1.5) A*=1.0-0.82*hk;
+  float A=uAlpha; if(uHoleM.x>1.5){ A*=1.0-hk; if(A<0.004) discard; } // v20: fully clear inside
   gl_FragColor=vec4(o*A, A); }`;
   const TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
@@ -9061,8 +9120,8 @@ uniform vec3 uSway; uniform float uLW; uniform float uMinW; ${PROJ}
 varying vec4 vC; varying vec3 vWP;
 void main(){ vec3 pa=aA+uSway*aSw.x, pb=aB+uSway*aSw.y; vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);
   vec2 nr=vec2(-dir.y,dir.x); float w=max(aW*uLW, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`;
-  const LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; uniform vec4 uHole; uniform vec2 uHoleM; uniform vec3 uTC; ${LAMPS}
-void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(al>-uHole.w*0.25 && length(dd-uTC*al)<uHole.w*(0.62+0.38*(1.0-uHoleM.y))) discard; } vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+  const LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; uniform vec4 uHole; uniform vec2 uHoleM; uniform vec3 uTC; uniform vec4 uHoleE; uniform float uHoleB; ${LAMPS}
+void main(){ float hk=0.0; if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); float dk=smoothstep(-(uHoleB+0.3*uHole.w),-0.2*uHoleB,al); if(dk>0.0){ vec3 q=dd-uTC*al; vec3 v=cross(uTC,uHoleE.xyz); float e=length(vec2(dot(q,uHoleE.xyz)/uHoleE.w, dot(q,v)/uHoleB)); float dc=e>1.0?length(q)*(1.0-1.0/e):0.0; hk=(1.0-smoothstep(0.0,uHole.w,dc))*uHoleM.y*dk; if(hk>0.996) discard; } } vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha*(1.0-hk); gl_FragColor=vec4(c*a,a); }`;
 
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
   const PAPER = [0.945, 0.905, 0.815];
@@ -9326,7 +9385,10 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       // v17: decor in front of a followed jumper fades to see-through in a soft circle round it (FollowCam.fade, eased per decor id)
       const fcF = this.R.cam && this.R.cam.mode === 'follow' && this.R.fcam && this.R.fcam.st && this.R.fcam.holeC ? this.R.fcam : null; let anyFade = false;
       const fadeOf = (o) => { if (!fcF || !fcF.fade) return 0; const a = fcF.fade[o.inst.id]; if (!(a > 0.01) || o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' || o.g.def.arche === 'backwall') return 0; anyFade = true; const e = Math.min(1, a); return e * e * (3 - 2 * e); };
-      if (fcF) { const hc = fcF.holeC; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], fcF.holeR || 6); }
+      const holeU = (P) => { const hc = fcF.holeC, tc = V.toCam, L = fcF.holeL || 4, f = fcF.holeAx || [1, 0, 0]; const d = f[0] * tc[0] + f[1] * tc[1] + f[2] * tc[2]; let u = [f[0] - tc[0] * d, f[1] - tc[1] * d, f[2] - tc[2] * d]; let ul = Math.hypot(u[0], u[1], u[2]); const fp = Math.min(1, ul);
+        if (ul < 1e-3) { u = [-tc[2], 0, tc[0]]; ul = Math.hypot(u[0], u[2]) || 1; } u = [u[0] / ul, u[1] / ul, u[2] / ul]; // v20: oval axis = the body's direction as seen on screen
+        const b0 = 0.55 * L + 0.3, a0 = Math.max(b0, 0.8 * L * fp + 0.3), w = 0.65 * L + 0.6; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], w); gl.uniform4f(P.u.uHoleE, u[0], u[1], u[2], a0); gl.uniform1f(P.u.uHoleB, b0); };
+      if (fcF) holeU(P);
       const PT = this.R.set.perf ? this.R.set : {}; // performance-readout test switches (Settings)
       for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
         gl.uniform1f(P.u.uPass, pass ? 0 : 1);
@@ -9337,7 +9399,7 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       // ink strokes on decor
       P = this.use(this.P.line); this.view(P, V); this.light(P); gl.uniform1f(P.u.uLW, lw); gl.uniform1f(P.u.uMinW, 0.6 * k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
-      if (fcF) { const hc = fcF.holeC; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], fcF.holeR || 6); gl.uniform3f(P.u.uTC, V.toCam[0], V.toCam[1], V.toCam[2]); }
+      if (fcF) { holeU(P); gl.uniform3f(P.u.uTC, V.toCam[0], V.toCam[1], V.toCam[2]); }
       for (const o of drawList) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); const fa = anyFade ? fadeOf(o) : 0; gl.uniform2f(P.u.uHoleM, fa > 0.01 ? 1 : 0, fa); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
       gl.uniform2f(P.u.uHoleM, 0, 0);
       // soil mounds (depth tested against the decor, not written, soft edges)
@@ -9350,9 +9412,14 @@ void main(){ if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); if(a
       // v17: the faded decor's wash, see-through inside the circle, laid over the critters (depth-tested, not written)
       if (anyFade && fcF) { P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uPass, 0);
-        const hc = fcF.holeC; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], fcF.holeR || 6);
+        holeU(P);
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        for (const o of drawList) { const fa = fadeOf(o); if (fa <= 0.01) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); gl.uniform2f(P.u.uHoleM, 2, fa); this.drawMesh(P, o.m); }
+        const ghostList = drawList.filter(o => fadeOf(o) > 0.01);
+        const ghostDraw = () => { for (const o of ghostList) { const fa = fadeOf(o); const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); gl.uniform2f(P.u.uHoleM, 2, fa); this.drawMesh(P, o.m); } };
+        // v21: depth first, so only the nearest faded surface shows (blades behind no longer paint over nearer ones: no seam at the window's edge)
+        gl.colorMask(false, false, false, false); gl.depthMask(true); gl.uniform1f(P.u.uPass, 2); ghostDraw(); gl.uniform1f(P.u.uPass, 0); gl.colorMask(true, true, true, true); gl.depthMask(false);
+        if (!PT.ptNoInk) { gl.uniform1f(P.u.uPass, 1); ghostDraw(); gl.uniform1f(P.u.uPass, 0); } // its ink outline fades with it instead of being cut off
+        ghostDraw();
         gl.uniform2f(P.u.uHoleM, 0, 0); }
       // paper grain + vignette over everything
       gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.DST_COLOR, gl.ZERO);

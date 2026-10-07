@@ -18,8 +18,8 @@ t('looks set', JT.SPECIES_BY_ID.bagheera.look.gait === 'hop' && JT.SPECIES_BY_ID
     const c = states(h, a, 240); marchT += c.antMarch || 0; march += jcount(h, 'antMarch'); fooled += jcount(h, 'antFooled'); }
   INFO.ant = { march, fooled, marchT }; t('ant mimic marches', march >= 3, INFO.ant); t('others fooled by the ant disguise', fooled >= 1, INFO.ant); }
 // Giant power leaps
-{ let leaps = 0; for (let k = 0; k < 6; k++) { const h = mk(500 + k, k % 2 ? 'canopy' : 'jungle'); h.addSpider('giant', { stage: 5, sat: 0.95 }); step(h, 240); leaps += jcount(h, 'giantLeap'); }
-  INFO.giant = leaps; t('giant power leaps', leaps >= 2, leaps); t('giant jump reach boosted', AI.jump({ species: 'giant', stage: 5, traits: { jump: 0.8 }, soft: 0 }) > AI.jump({ species: 'regal', stage: 5, traits: { jump: 0.8 }, soft: 0 }) * 1.2); }
+{ let leaps = 0; for (let k = 0; k < 12; k++) { const h = mk(500 + k, k % 2 ? 'canopy' : 'jungle'); /* v21: 12 tanks (routes changed: floor legs no longer cut through trunks) */ h.addSpider('giant', { stage: 5, sat: 0.95 }); step(h, 240); leaps += jcount(h, 'giantLeap'); }
+  INFO.giant = leaps; t('giant power leaps', leaps >= 3, leaps); t('giant jump reach boosted', AI.jump({ species: 'giant', stage: 5, traits: { jump: 0.8 }, soft: 0 }) > AI.jump({ species: 'regal', stage: 5, traits: { jump: 0.8 }, soft: 0 }) * 1.2); }
 // Bagheera sips nectar, hunts only when hungry
 { let sips = 0, fullHunts = 0, sat0 = 0; for (let k = 0; k < 5; k++) { const h = mk(600 + k, 'flower'); const b = h.addSpider('bagheera', { stage: 3, sat: 0.55 }); h.addPrey('fruitfly', 6);
     step(h, 200, () => { for (const e of h.events.splice(0)) { if (e[1] === 'journal' && e[2].id === 'nectarSip') sips++; if (e[1] === 'pounce' && e[2].sp === b && b.sat > 0.4) fullHunts++; } }); sat0 += b.sat; }
