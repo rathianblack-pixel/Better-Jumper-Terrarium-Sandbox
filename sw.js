@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 // Terrarium service worker: keeps the title screen and both games playable offline. Version changes with every build.
-const CACHE = 'tr-mv05o20f', FILES = ["./", "index.html", "jumper.html", "mantis.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/card-jumper.png", "icons/card-mantis.png", "icons/dome.png"];
-=======
-// Jumper Terrarium service worker: keeps the game playable offline. Version changes with every build.
-const CACHE = 'jt-f8905de4bc', FILES = ["./","index.html","manifest.webmanifest","icons/apple-touch-icon.png","icons/favicon-64.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png"];
->>>>>>> d21d62257f6c15acecb85daff0eb3d5c20ca7f5b
+const CACHE = 'tr-mv06noow', FILES = ["./", "index.html", "jumper.html", "mantis.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/card-jumper.png", "icons/card-mantis.png", "icons/dome.png"];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('tr-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

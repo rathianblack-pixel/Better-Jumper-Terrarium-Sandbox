@@ -1,0 +1,49 @@
+<svg class="sp-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+<defs><radialGradient id="ms_fadeG" cx="50%" cy="55%" r="55%"><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="ms_fade"><rect width="512" height="512" fill="url(#ms_fadeG)"/></mask></defs>
+<g mask="url(#ms_fade)">
+ <defs>
+  <radialGradient id="ms_bg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#9aa860"/><stop offset=".45" stop-color="#3d6a2f"/><stop offset="1" stop-color="#16240f"/></radialGradient>
+  <linearGradient id="ms_body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd06a"/><stop offset="1" stop-color="#4f8f35"/></linearGradient>
+  <linearGradient id="ms_eye" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9f5a8"/><stop offset="1" stop-color="#7fb046"/></linearGradient>
+  <linearGradient id="ms_soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4a2c"/><stop offset="1" stop-color="#3b2716"/></linearGradient>
+ </defs>
+ <rect width="512" height="512" fill="url(#ms_bg)"/>
+ <ellipse cx="80" cy="120" rx="40" ry="70" fill="#2c5224" opacity=".5" transform="rotate(-25 80 120)"/>
+ <ellipse cx="440" cy="110" rx="36" ry="66" fill="#2c5224" opacity=".5" transform="rotate(25 440 110)"/>
+ <path d="M0 438 Q256 400 512 438 V512 H0Z" fill="url(#ms_soil)"/>
+ <path d="M60 470 Q200 455 350 466 M190 492 Q300 482 460 488" stroke="#2c1d10" stroke-width="3" fill="none" opacity=".6"/>
+ <!-- twig -->
+ <path d="M30 404 Q250 360 490 392" stroke="#5c3d22" stroke-width="18" stroke-linecap="round" fill="none"/>
+ <path d="M30 404 Q250 360 490 392" stroke="#8a6440" stroke-width="6" stroke-linecap="round" fill="none" opacity=".7" transform="translate(0,-4)"/>
+ <!-- legs -->
+ <g stroke="#4f8f35" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none">
+  <path d="M226 330 L170 316 L140 384"/><path d="M286 330 L342 316 L372 384"/>
+  <path d="M232 352 L196 376 L188 394"/><path d="M280 352 L316 376 L324 394"/>
+ </g>
+ <!-- abdomen / thorax -->
+ <ellipse cx="256" cy="350" rx="44" ry="34" fill="url(#ms_body)" stroke="#2f5a20" stroke-width="4"/>
+ <path d="M232 340 Q256 352 280 340 M236 358 Q256 368 276 358" stroke="#3e7429" stroke-width="3" fill="none"/>
+ <path d="M246 300 Q256 240 266 300 L270 330 L242 330Z" fill="url(#ms_body)" stroke="#2f5a20" stroke-width="4" stroke-linejoin="round"/>
+ <!-- raptorial arms (folded, praying) -->
+ <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M250 300 L208 322 L196 262 L226 296" stroke="#2f5a20" stroke-width="22"/>
+  <path d="M262 300 L304 322 L316 262 L286 296" stroke="#2f5a20" stroke-width="22"/>
+  <path d="M250 300 L208 322 L196 262 L226 296" stroke="#8cc45c" stroke-width="14"/>
+  <path d="M262 300 L304 322 L316 262 L286 296" stroke="#8cc45c" stroke-width="14"/>
+ </g>
+ <g fill="#f4f1c8"><circle cx="203" cy="282" r="3.5"/><circle cx="205" cy="300" r="3.5"/><circle cx="309" cy="282" r="3.5"/><circle cx="307" cy="300" r="3.5"/></g>
+ <g fill="#24401a"><circle cx="208" cy="322" r="6"/><circle cx="304" cy="322" r="6"/></g>
+ <!-- head -->
+ <path d="M150 168 Q256 132 362 168 Q330 214 282 250 Q256 268 230 250 Q182 214 150 168Z" fill="url(#ms_body)" stroke="#2f5a20" stroke-width="5" stroke-linejoin="round"/>
+ <ellipse cx="176" cy="176" rx="40" ry="34" fill="url(#ms_eye)" stroke="#2f5a20" stroke-width="5" transform="rotate(-14 176 176)"/>
+ <ellipse cx="336" cy="176" rx="40" ry="34" fill="url(#ms_eye)" stroke="#2f5a20" stroke-width="5" transform="rotate(14 336 176)"/>
+ <circle cx="186" cy="182" r="9" fill="#2a3a18"/><circle cx="326" cy="182" r="9" fill="#2a3a18"/>
+ <circle cx="166" cy="164" r="8" fill="#fff" opacity=".85"/><circle cx="346" cy="164" r="8" fill="#fff" opacity=".85"/>
+ <g fill="#f3f7c6"><circle cx="244" cy="166" r="4"/><circle cx="256" cy="160" r="4"/><circle cx="268" cy="166" r="4"/></g>
+ <path d="M246 236 Q256 246 266 236" stroke="#2f5a20" stroke-width="4" fill="none" stroke-linecap="round"/>
+ <!-- antennae -->
+ <path d="M244 158 Q214 70 150 38 M268 158 Q298 70 362 38" stroke="#3e6a2a" stroke-width="5" fill="none" stroke-linecap="round"/>
+ <!-- glass dome -->
+ <path d="M76 512 V170 Q76 30 256 26 Q436 30 436 170 V512" fill="none" stroke="#e8f0d0" stroke-opacity=".28" stroke-width="7"/>
+ <path d="M104 220 Q108 90 220 56" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="10" stroke-linecap="round"/>
+</g></svg>

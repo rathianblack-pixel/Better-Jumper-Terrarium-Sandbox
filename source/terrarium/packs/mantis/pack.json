@@ -12,6 +12,10 @@
   [
    "<meta name=\"apple-mobile-web-app-title\" content=\"Terrarium\">",
    "<meta name=\"apple-mobile-web-app-title\" content=\"Mantis\">"
+  ],
+  [
+   "<p class=\"sp-tag\">a calm jumping-spider terrarium</p>",
+   "<p class=\"sp-tag\">a calm praying-mantis terrarium</p>"
   ]
  ],
  "inject": {
@@ -44,5 +48,6 @@
   "11-native-biome-decor-extensions.js": [
    "biomes.js"
   ]
- }
+ },
+ "splash": "art/splash.svg"
 }

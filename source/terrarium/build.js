@@ -9,6 +9,7 @@ function page(id, extra) {
   extra = extra || {}; const dir = 'packs/' + id, P = JSON.parse(R(dir + '/pack.json'));
   const shellOf = (k) => P.shell && P.shell[k] ? P.shell[k] : 'packs/jumper/shell/' + k + '.html';
   let headTxt = R(shellOf('head')); for (const [a, b] of P.headReplace || []) { if (!headTxt.includes(a)) throw new Error(id + ': head text not found: ' + a.slice(0, 60)); headTxt = headTxt.split(a).join(b); }
+  if (P.splash) { const a = headTxt.indexOf('<svg class="sp-art"'), e = headTxt.indexOf('</svg>', a); if (a < 0 || e < 0) throw new Error(id + ': splash art not found'); headTxt = headTxt.slice(0, a) + R(dir + '/' + P.splash).trim() + headTxt.slice(e + 6); }
   if (P.headAppend) headTxt = headTxt.replace('</style>', R(dir + '/' + P.headAppend) + '\n</style>');
   const out = [headTxt]; const inj = P.inject || {}; if (extra.combined) out.push('<script>window.JT_COMBINED = true;</script>');
   const script = (body) => { out.push('<script>'); out.push(body); out.push('</script>'); };
