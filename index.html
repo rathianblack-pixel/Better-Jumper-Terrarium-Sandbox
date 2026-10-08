@@ -7093,20 +7093,6 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       if (best.sc > cs + 0.25) { this.better = (this.better || 0) + PLAN_DT; if (this.better >= (cv < 0.6 || cs < -1 ? 0.2 : 0.7)) { this.fYaw = best.y; this.fPitch = best.p; this.fVis = best.vis; this.better = 0; } }
       else this.better = 0;
     }
-    /** v17: decor still in front of the jumper in the view actually on screen (while the camera swings round, or when no
-        clear view exists) fades to see-through in a soft circle round the jumper. Eased in and out. */
-    updateFade(hab, sp, des, L, dt) {
-      const F = this.fade || (this.fade = {}); this.fadeT = (this.fadeT || 0) - dt;
-      if (this.fadeT <= 0) { this.fadeT = 0.1; const bp = this.bodyPts(hab, sp, des, L); const out = {}; JT.Sight.view(hab, bp.pts, bp.w, toCam(this.st.yaw, this.st.pitch), out);
-        this._fadeWant = out; this._hc0 = bp.c; this._hp0 = sp.pos.slice(); this._hf = bp.f; this.holeR = L * 1.05 + 2.4; }
-      { // v20: the oval follows the jumper every frame (centre carried along with it between samples), size and axis eased
-        const c0 = this._hc0, p0 = this._hp0; if (c0 && p0 && M.finite3(sp.pos)) this.holeC = [c0[0] + sp.pos[0] - p0[0], c0[1] + sp.pos[1] - p0[1], c0[2] + sp.pos[2] - p0[2]];
-        const kL = Math.min(1, dt * 3); this.holeL = this.holeL > 0 ? this.holeL + (L - this.holeL) * kL : L;
-        let fT = this._hf || [1, 0, 0]; const fa = this.holeAx; if (fa && fa[0] * fT[0] + fa[1] * fT[1] + fa[2] * fT[2] < 0) fT = [-fT[0], -fT[1], -fT[2]]; /* the oval is symmetric: turning round never swings it */ if (!fa) this.holeAx = fT.slice(); else { const kA = Math.min(1, dt * 6); let q = [fa[0] + (fT[0] - fa[0]) * kA, fa[1] + (fT[1] - fa[1]) * kA, fa[2] + (fT[2] - fa[2]) * kA]; const ql = Math.hypot(q[0], q[1], q[2]); this.holeAx = ql > 1e-4 ? [q[0] / ql, q[1] / ql, q[2] / ql] : fT.slice(); } }
-      const want = this._fadeWant || {};
-      for (const id in want) if (want[id] >= 0.12 && F[id] == null) F[id] = 0;
-      for (const id in F) { const on = (want[id] || 0) >= 0.12; F[id] = on ? Math.min(1, F[id] + dt / 0.3) : F[id] - dt / 0.5; if (F[id] <= 0) delete F[id]; }
-    }
 
     /** Cinematic zoom factor for tense moments (pure function of the jumper's state, smoothed). */
     cinema(sp, hunt, dt) {
@@ -7172,7 +7158,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         // line of sight: step round decor that would hide the jumper (or its prey)
         this.planT = (this.planT || 0) - dt;
         if (fresh || this.planT <= 0) { this.planT = PLAN_DT; this.plan(hab, sp, des, L, { yaw: this.tYaw, pitch: this.tPitch }, hunt, fresh); }
-        if (this.fVis != null && this.fVis < 0.45) zoomMul *= 1.1; // nothing clear: come in a little closer (the decor in front fades and the x-ray outline shows it)
+        if (this.fVis != null && this.fVis < 0.45) zoomMul *= 1.1; // nothing clear: come in a little closer (the jumper shows through the decor in front)
         // target point: the upper body, leading toward the landing while airborne
         c = M.add(sp.pos, M.mul(des.n, L * 0.3));
         if (air && air.to && M.finite3(air.to)) { c = M.lerp3(c, air.to, 0.35); zoomMul *= 0.82; }
@@ -7226,7 +7212,6 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const tc = this.tC || st.c; let r;
       for (let i = 0; i < 3; i++) { r = spring(st.c[i], st.vc[i], tc[i], air ? 3.6 : 2.4, dt); st.c[i] = r[0]; st.vc[i] = r[1]; }
       if (M.dist(st.c, tc) < 0.02 && Math.hypot(st.vc[0], st.vc[1], st.vc[2]) < 0.05) { st.c = tc.slice(); st.vc = [0, 0, 0]; }
-      try { this.updateFade(hab, sp, des, L, dt); } catch (e) { this.fade = {}; }
       if (!M.finite3(st.c) || !isFinite(st.yaw) || !isFinite(st.pitch) || !isFinite(st.s)) { st.c = (c || sp.pos).slice(); st.yaw = tYaw || 0; st.pitch = tPitch || 0.6; st.s = tS || s0; st.vy = st.vp = st.vs = 0; st.vc = [0, 0, 0]; }
       return st;
     }
@@ -9048,14 +9033,10 @@ void main(){ vec3 p=aP+uSway*aW; vec3 q=proj(p);
   const MESH_FS = `
 precision highp float;
 varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;
-uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform vec4 uHole; uniform vec2 uHoleM; uniform vec4 uHoleE; uniform float uHoleB; ${LAMPS}
-// v20: see-through oval round the jumper: clear core sized to its body + legs (radii uHoleE.w along the body's on-screen axis uHoleE.xyz, uHoleB across), long soft fade of width uHole.w beyond it
-float holeK(){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uToCam); float dk=smoothstep(-(uHoleB+0.3*uHole.w),-0.2*uHoleB,al); if(dk<=0.0) return 0.0; vec3 q=dd-uToCam*al; vec3 v=cross(uToCam,uHoleE.xyz); float e=length(vec2(dot(q,uHoleE.xyz)/uHoleE.w, dot(q,v)/uHoleB)); float dc=e>1.0?length(q)*(1.0-1.0/e):0.0; return (1.0-smoothstep(0.0,uHole.w,dc))*uHoleM.y*dk; } // v21: decor behind the jumper eases back to solid (no hard depth line)
+uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; ${LAMPS}
 void main(){
   if(vWP.y<-0.05) discard;
-  float hk=0.0; if(uHoleM.x>0.5){ hk=holeK(); if(uHoleM.x<1.5){ if(hk>0.02) discard; } else if(hk<=0.02) discard; }
-  if(uPass>1.5){ if(uAlpha*(1.0-hk)<0.5) discard; gl_FragColor=vec4(0.0); return; } // v21 depth pre-pass: only the still mostly-solid part of a faded piece hides what is behind it
-  if(uPass>0.5){ float ia=uAlpha; if(uHoleM.x>1.5){ ia*=1.0-hk; if(ia<0.004) discard; } gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }
+  if(uPass>0.5){ float ia=uAlpha; gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }
   float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=floor(f/16.0);
   vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }
   float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);
@@ -9077,7 +9058,7 @@ void main(){
   vec3 o=grade(col, vWP);
   if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);
   o=mix(o, uGhost.rgb, uGhost.a);
-  float A=uAlpha; if(uHoleM.x>1.5){ A*=1.0-hk; if(A<0.004) discard; } // v20: fully clear inside
+  float A=uAlpha;
   gl_FragColor=vec4(o*A, A); }`;
   const TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
@@ -9120,8 +9101,8 @@ uniform vec3 uSway; uniform float uLW; uniform float uMinW; ${PROJ}
 varying vec4 vC; varying vec3 vWP;
 void main(){ vec3 pa=aA+uSway*aSw.x, pb=aB+uSway*aSw.y; vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);
   vec2 nr=vec2(-dir.y,dir.x); float w=max(aW*uLW, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`;
-  const LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; uniform vec4 uHole; uniform vec2 uHoleM; uniform vec3 uTC; uniform vec4 uHoleE; uniform float uHoleB; ${LAMPS}
-void main(){ float hk=0.0; if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot(dd,uTC); float dk=smoothstep(-(uHoleB+0.3*uHole.w),-0.2*uHoleB,al); if(dk>0.0){ vec3 q=dd-uTC*al; vec3 v=cross(uTC,uHoleE.xyz); float e=length(vec2(dot(q,uHoleE.xyz)/uHoleE.w, dot(q,v)/uHoleB)); float dc=e>1.0?length(q)*(1.0-1.0/e):0.0; hk=(1.0-smoothstep(0.0,uHole.w,dc))*uHoleM.y*dk; if(hk>0.996) discard; } } vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha*(1.0-hk); gl_FragColor=vec4(c*a,a); }`;
+  const LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}
+void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
 
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
   const PAPER = [0.945, 0.905, 0.815];
@@ -9382,26 +9363,15 @@ void main(){ float hk=0.0; if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
       const drawList = hg.meshes.filter(o => visible(o.g)); for (const o of drawList) o._dz = V.depth(o.g._sb.c); drawList.sort((a, b) => a._dz - b._dz); // near first: early depth rejection
-      // v17: decor in front of a followed jumper fades to see-through in a soft circle round it (FollowCam.fade, eased per decor id)
-      const fcF = this.R.cam && this.R.cam.mode === 'follow' && this.R.fcam && this.R.fcam.st && this.R.fcam.holeC ? this.R.fcam : null; let anyFade = false;
-      const fadeOf = (o) => { if (!fcF || !fcF.fade) return 0; const a = fcF.fade[o.inst.id]; if (!(a > 0.01) || o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' || o.g.def.arche === 'backwall') return 0; anyFade = true; const e = Math.min(1, a); return e * e * (3 - 2 * e); };
-      const holeU = (P) => { const hc = fcF.holeC, tc = V.toCam, L = fcF.holeL || 4, f = fcF.holeAx || [1, 0, 0]; const d = f[0] * tc[0] + f[1] * tc[1] + f[2] * tc[2]; let u = [f[0] - tc[0] * d, f[1] - tc[1] * d, f[2] - tc[2] * d]; let ul = Math.hypot(u[0], u[1], u[2]); const fp = Math.min(1, ul);
-        if (ul < 1e-3) { u = [-tc[2], 0, tc[0]]; ul = Math.hypot(u[0], u[2]) || 1; } u = [u[0] / ul, u[1] / ul, u[2] / ul]; // v20: oval axis = the body's direction as seen on screen
-        const b0 = 0.55 * L + 0.3, a0 = Math.max(b0, 0.8 * L * fp + 0.3), w = 0.65 * L + 0.6; gl.uniform4f(P.u.uHole, hc[0], hc[1], hc[2], w); gl.uniform4f(P.u.uHoleE, u[0], u[1], u[2], a0); gl.uniform1f(P.u.uHoleB, b0); };
-      if (fcF) holeU(P);
       const PT = this.R.set.perf ? this.R.set : {}; // performance-readout test switches (Settings)
       for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
         gl.uniform1f(P.u.uPass, pass ? 0 : 1);
-        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY);
-          const fa = fadeOf(o); gl.uniform2f(P.u.uHoleM, fa > 0.01 ? 1 : 0, fa); this.drawMesh(P, o.m); }
+        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
       }
-      gl.uniform2f(P.u.uHoleM, 0, 0);
       // ink strokes on decor
       P = this.use(this.P.line); this.view(P, V); this.light(P); gl.uniform1f(P.u.uLW, lw); gl.uniform1f(P.u.uMinW, 0.6 * k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0);
       gl.enable(gl.BLEND); gl.depthMask(false);
-      if (fcF) { holeU(P); gl.uniform3f(P.u.uTC, V.toCam[0], V.toCam[1], V.toCam[2]); }
-      for (const o of drawList) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); const fa = anyFade ? fadeOf(o) : 0; gl.uniform2f(P.u.uHoleM, fa > 0.01 ? 1 : 0, fa); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
-      gl.uniform2f(P.u.uHoleM, 0, 0);
+      for (const o of drawList) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
       // soil mounds (depth tested against the decor, not written, soft edges)
       if (hg.mb) { P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
         gl.bindBuffer(gl.ARRAY_BUFFER, hg.mb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1]], 7); gl.drawArrays(gl.TRIANGLES, 0, hg.nm); }
@@ -9409,18 +9379,6 @@ void main(){ float hk=0.0; if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot
       if (this.R.ghost && this.R.ghost.geom) this.drawGhost(V, this.R.ghost);
       // critters & small things as sprites, then silk
       if (scene && !PT.ptNoSpr) { this.sprites(V, hab, scene, night); this.silk(V, hab, scene, night); }
-      // v17: the faded decor's wash, see-through inside the circle, laid over the critters (depth-tested, not written)
-      if (anyFade && fcF) { P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
-        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uPass, 0);
-        holeU(P);
-        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        const ghostList = drawList.filter(o => fadeOf(o) > 0.01);
-        const ghostDraw = () => { for (const o of ghostList) { const fa = fadeOf(o); const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); gl.uniform2f(P.u.uHoleM, 2, fa); this.drawMesh(P, o.m); } };
-        // v21: depth first, so only the nearest faded surface shows (blades behind no longer paint over nearer ones: no seam at the window's edge)
-        gl.colorMask(false, false, false, false); gl.depthMask(true); gl.uniform1f(P.u.uPass, 2); ghostDraw(); gl.uniform1f(P.u.uPass, 0); gl.colorMask(true, true, true, true); gl.depthMask(false);
-        if (!PT.ptNoInk) { gl.uniform1f(P.u.uPass, 1); ghostDraw(); gl.uniform1f(P.u.uPass, 0); } // its ink outline fades with it instead of being cut off
-        ghostDraw();
-        gl.uniform2f(P.u.uHoleM, 0, 0); }
       // paper grain + vignette over everything
       gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.DST_COLOR, gl.ZERO);
       P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.paper); gl.uniform1i(P.u.uTex, 0);
@@ -9553,8 +9511,8 @@ void main(){ float hk=0.0; if(uHoleM.x>0.5){ vec3 dd=vWP-uHole.xyz; float al=dot
       const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu ? 1 : 0);
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('spr', new Float32Array(v))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, v.length / 9);
-      if (xr.length) { // follow / observe: the jumper (and its prey) show softly through anything in front of them
-        gl.depthFunc(gl.GREATER); gl.uniform1f(P.u.uAlpha, 0.5); gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('sprx', new Float32Array(xr))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, xr.length / 9); gl.depthFunc(gl.LEQUAL); gl.uniform1f(P.u.uAlpha, 1); }
+      if (xr.length) { // observe: the watched jumper (and the prey it is hunting) show through anything in front of them at 65%
+        gl.depthFunc(gl.GREATER); gl.uniform1f(P.u.uAlpha, 0.65); gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('sprx', new Float32Array(xr))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, xr.length / 9); gl.depthFunc(gl.LEQUAL); gl.uniform1f(P.u.uAlpha, 1); }
     }
     silk(V, hab, scene, night) {
       const v = []; const push = (a, b, w, al, col) => { for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 0], [1, 1], [-1, 1]]) v.push(a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, col[0], col[1], col[2], 0, 0); };
