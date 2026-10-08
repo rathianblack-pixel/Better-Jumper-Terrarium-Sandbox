@@ -1,7 +1,7 @@
 // Headless simulation harness: loads the DOM-free modules (core..game) from index.html into a VM context.
 const fs = require('fs'), vm = require('vm'), path = require('path');
 function load(file) {
-  const html = fs.readFileSync(file || path.join(__dirname, '..', 'index.html'), 'utf8');
+  const html = fs.readFileSync(file || process.env.GAME || path.join(__dirname, '..', 'index.html'), 'utf8');
   const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   const store = {};
   const ctx = { console, Math, Date, JSON, setTimeout, clearTimeout, performance: { now: () => Date.now() },

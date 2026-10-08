@@ -1,0 +1,8 @@
+<script>/* app install prompt (Android/desktop Chrome): offered later from Settings */
+addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); if (window.JT) window.JT._installPrompt = e; });
+</script>
+<script>/* offline + installable: register the service worker when served over http(s) */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('sw', e); }); });
+</script>
+</body>
+</html>

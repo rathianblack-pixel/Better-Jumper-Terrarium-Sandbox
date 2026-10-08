@@ -1,0 +1,48 @@
+{
+ "name": "Mantis Terrarium",
+ "out": "mantis-terrarium",
+ "static": [
+  "packs/mantis/static"
+ ],
+ "headReplace": [
+  [
+   "<title>Jumper Terrarium</title>",
+   "<title>Mantis Terrarium</title>"
+  ],
+  [
+   "<meta name=\"apple-mobile-web-app-title\" content=\"Terrarium\">",
+   "<meta name=\"apple-mobile-web-app-title\" content=\"Mantis\">"
+  ]
+ ],
+ "inject": {
+  "01-core-namespace-math-rng.js": [
+   "pre.js"
+  ],
+  "03-procedural-decor-geometry.js": [
+   "content.js"
+  ],
+  "07-prey-cleanup-fauna-locomotion.js": [
+   "journal.js",
+   "mantis-ai.js"
+  ],
+  "10-biomes-v14-climates-weather.js": [
+   "unlock.js"
+  ],
+  "13-legacy-adapter-retained-for.js": [
+   "homes.js"
+  ],
+  "20-storybook-renderer-part-1.js": [
+   "mantis-draw.js"
+  ],
+  "28-boot-main-loop-fixed.js": [
+   "mantis-meal.js",
+   "ui.js"
+  ],
+  "04-physical-navigation.js": [
+   "decor.js"
+  ],
+  "11-native-biome-decor-extensions.js": [
+   "biomes.js"
+  ]
+ }
+}

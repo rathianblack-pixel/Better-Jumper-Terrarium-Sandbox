@@ -1,0 +1,118 @@
+{
+ "scripts": [
+  "01-core-namespace-math-rng.js",
+  {
+   "gap": []
+  },
+  "02-static-content-definitions-no.js",
+  {
+   "gap": []
+  },
+  "03-procedural-decor-geometry.js",
+  {
+   "gap": []
+  },
+  "04-physical-navigation.js",
+  {
+   "gap": []
+  },
+  "05-habitat-model-decor-placement.js",
+  {
+   "gap": []
+  },
+  "06-jumping-spider-runtime-state.js",
+  {
+   "gap": []
+  },
+  "07-prey-cleanup-fauna-locomotion.js",
+  {
+   "gap": []
+  },
+  "08-adaptive-habitat-presets-themes.js",
+  {
+   "gap": []
+  },
+  "09-game-state-shelf-of.js",
+  {
+   "gap": []
+  },
+  "10-biomes-v14-climates-weather.js",
+  {
+   "gap": []
+  },
+  "11-native-biome-decor-extensions.js",
+  {
+   "gap": []
+  },
+  "12-v14-biomes-runtime-extends.js",
+  {
+   "gap": [
+    ""
+   ]
+  },
+  "13-legacy-adapter-retained-for.js",
+  {
+   "gap": []
+  },
+  "14-terrain-v15-uneven-ground.js",
+  {
+   "gap": []
+  },
+  "15-camera-projection-world-habitat.js",
+  {
+   "gap": []
+  },
+  "16-smart-follow-camera-pure.js",
+  {
+   "gap": []
+  },
+  "17-procedural-decor-drawing-uses.js",
+  {
+   "gap": []
+  },
+  "18-procedural-animals-drawn-in.js",
+  "18a-sized-droplets.js",
+  {
+   "gap": []
+  },
+  "19-volumetric-critters-field-guide.js",
+  {
+   "gap": []
+  },
+  "20-storybook-renderer-part-1.js",
+  {
+   "gap": []
+  },
+  "21-storybook-renderer-part-2.js",
+  {
+   "gap": []
+  },
+  "22-renderer-camera-rigs-frame.js",
+  {
+   "gap": []
+  },
+  "23-biome-visual-and-microclimate.js",
+  {
+   "gap": []
+  },
+  "24-procedural-webaudio-calm-generative.js",
+  {
+   "gap": []
+  },
+  "25-interface-header-toolbar-drawers.js",
+  {
+   "gap": []
+  },
+  "26-v14-mobile-first-biome.js",
+  {
+   "gap": [
+    ""
+   ]
+  },
+  "27-v14-collection-and-responsive.js",
+  {
+   "gap": []
+  },
+  "28-boot-main-loop-fixed.js"
+ ]
+}
