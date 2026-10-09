@@ -9152,6 +9152,13 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   const toHex = (c) => '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join('');
   const towardPaper = (h, t) => { const c = hexRGB(h); return toHex([c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t]); };
 
+  // v1.3 still-camera cache: copy colour + depth of the cached static layer onto the screen (WebGL2)
+  const BLIT_VS = `#version 300 es
+in vec2 aXY; void main(){ gl_Position=vec4(aXY,0.5,1.0); }`;
+  const BLIT_FS = `#version 300 es
+precision highp float; uniform sampler2D uCol; uniform highp sampler2D uDep; out vec4 oC;
+void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDepth=texelFetch(uDep,p,0).r; }`;
+
   class GLPaint {
     constructor(canvas, R) {
       const opts = { alpha: false, antialias: true, premultipliedAlpha: true, depth: true, stencil: false, powerPreference: 'high-performance' };
@@ -9168,6 +9175,51 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; });
       canvas.addEventListener('webglcontextrestored', () => { this.lost = false; this.reinit = true; });
       const q = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, q); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 0, 1, 1, -1, 1, 1, 1, 1, 1, 0, -1, -1, 0, 1, 1, 1, 1, 0, -1, 1, 0, 0]), gl.STATIC_DRAW); this.quad = q;
+    }
+    // ---------- v1.3 still-camera cache ----------
+    cacheFree(dead) { const gl = this.gl, C = this._cache; if (C) { for (const k of ['ms', 'rs']) if (C[k]) gl.deleteFramebuffer(C[k]); for (const k of ['crb', 'drb']) if (C[k]) gl.deleteRenderbuffer(C[k]); for (const k of ['ct', 'dt']) if (C[k]) gl.deleteTexture(C[k]); }
+      this._cache = dead ? { dead: true } : null; }
+    cacheAlloc(W, H) {
+      const gl = this.gl; this.cacheFree(); const C = { W, H, key: null };
+      try {
+        if (!this.P.blit) this.P.blit = this.prog(BLIT_VS, BLIT_FS);
+        const ns = Math.max(0, Math.min(4, gl.getParameter(gl.MAX_SAMPLES) | 0)); const aa = gl.getContextAttributes && gl.getContextAttributes().antialias ? ns : 0;
+        C.crb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, C.crb); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, aa, gl.RGBA8, W, H);
+        C.drb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, C.drb); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, aa, gl.DEPTH_COMPONENT24, W, H);
+        C.ms = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, C.ms); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, C.crb); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, C.drb);
+        const ok1 = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+        const tx = (ifmt, fmt, type) => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, W, H, 0, fmt, type, null); return t; };
+        C.ct = tx(gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE); C.dt = tx(gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT);
+        C.rs = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, C.rs); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, C.ct, 0); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, C.dt, 0);
+        const ok2 = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        this._cache = C; if (!ok1 || !ok2) { this.cacheFree(true); return null; }
+        return C;
+      } catch (e) { if (JT.DEV) console.warn('cache', e); try { gl.bindFramebuffer(gl.FRAMEBUFFER, null); } catch (e2) { /* ignore */ } this._cache = C; this.cacheFree(true); return null; }
+    }
+    /** 'direct' (draw everything), 'build' (repaint the cached static layer, then use it) or 'blit' (reuse it as is). */
+    cacheMode(V, hab, hg, gt, PT, live, night, W, H) {
+      const gl = this.gl; const R = this.R;
+      if (!this.gl2 || PT.ptNoCache || R.ghost || (this._cache && this._cache.dead)) return 'direct';
+      const vk = V.yaw + ',' + V.pitch + ',' + V.s + ',' + V.cx + ',' + V.cy + ',' + V.c[0] + ',' + V.c[1] + ',' + V.c[2] + ',' + W + 'x' + H;
+      const now = performance.now(); if (this._cache && !this._cache.dead && now - (this._cache.used || now) > 15000) this.cacheFree(); // camera kept moving (follow): give the memory back
+      if (vk !== this._cvk) { this._cvk = vk; this._still = 0; return 'direct'; }
+      this._still = (this._still || 0) + 1;
+      // the inputs of every static pass. Light and colour grade drift slowly with the time of day: the cached layer is kept until
+      // they have moved ~1% (or anything at all for over a second), so dusk still glides but the layer isn't repainted every frame.
+      const F = this.F, SK = F.sky || NEUTRAL, L = JT.LIGHT;
+      const TR = JT.Terrain; const tm = hg.ter && !PT.ptNoTer ? this.terrainMesh(hab, hg) : null; const gm = TR ? this.groundMarks(hab, night) : null;
+      const wet = TR ? (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1) : 0; const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0;
+      const key = vk + '|' + hg.key + '|' + hab.data.bg + '|' + gt.key + '|' + F.lamps.length + '|' + (tm ? tm.lk + ':' + tm.n : '-') + '|' + Math.round(wet * 100) + ',' + Math.round(rw * 100)
+        + '|' + (gm && gm.n ? gm.t + ':' + gm.sig + ':' + gm.n : '-') + '|' + (hg.csKey || '') + '|' + (PT.ptNoInk ? 1 : 0) + '|' + live.map(o => o.inst.id).join(',');
+      const soft = [F.grade[0], F.grade[1], F.grade[2], night, SK.kd, SK.key[0], SK.key[1], SK.key[2], SK.amb[0], SK.amb[1], SK.amb[2], L[0], L[1], L[2]]; for (let i = 0; i < F.lampU.length; i++) soft.push(F.lampU[i]);
+      let C = this._cache;
+      if (C && C.key === key && C.W === W && C.H === H && C.soft && C.soft.length === soft.length) { let d = 0; for (let i = 0; i < soft.length; i++) d = Math.max(d, Math.abs(soft[i] - C.soft[i]));
+        if (d <= 3 / 256 && !(d > 0.5 / 256 && now - C.t > 1000)) { C.used = now; return 'blit'; } }
+      if (this._still < 2) return 'direct'; // the camera has to rest a moment first
+      if (!C || C.W !== W || C.H !== H) { C = this.cacheAlloc(W, H); if (!C) return 'direct'; }
+      C.soft = soft; C.t = now;
+      C.key = key; C.used = now; C.builds = (C.builds || 0) + 1; return 'build';
     }
     // ---------- GL plumbing ----------
     prog(vs, fs) {
@@ -9356,62 +9408,88 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
 
     // ---------- per-frame ----------
     frame(V, hab, night, lamps, scene) {
-      const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
+      const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
       const SK = JT.SKY; const grade = SK.grade.slice();
       const lampU = new Float32Array(16); const LL = []; lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
       this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, W, H); gl.clearColor(PAPER[0], PAPER[1], PAPER[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
-      // background
-      let P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4);
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.bgTexture(hab.data.bg)); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uMode, 0); gl.uniform4f(P.u.uCol, grade[0] * 0.98, grade[1] * 0.98, grade[2], 1); gl.drawArrays(gl.TRIANGLES, 0, 6);
-      const hg = this.habGeom(hab); const gt = this.groundTexture(hab);
-      // slab sides (facing ones), then the floor
-      P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0);
-      gl.bindTexture(gl.TEXTURE_2D, gt.s); gl.bindBuffer(gl.ARRAY_BUFFER, hg.side); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform1f(P.u.uLit, 1);
-      const Lg = JT.LIGHT;
-      hg.sides.forEach((s, i) => { const f = s[0] * V.toCam[0] + s[1] * V.toCam[2]; if (f <= 0) return; const dd = s[0] * Lg[0] + s[1] * Lg[2]; const lit = M.clamp(0.72 + 0.4 * dd * SK.kd, 0.45, 1.1); const tw = M.clamp(0.5 + dd, 0, 1) * SK.kd; gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1); gl.drawArrays(gl.TRIANGLES, s[2] != null ? s[2] : i * 6, s[3] || 6); });
-      gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform4f(P.u.uCol, 1, 1, 1, 1); gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
-      // v15: the uneven ground over the flat floor. Depth-tested against itself (hills hide the ground behind them), then the depth is cleared,
-      // so decor and critters draw exactly as before. Wet hollows darken with humidity; footprints, burrow mounds and mist pools sit on top.
-      { const TR = JT.Terrain; const tm = hg.ter && !PT0(this).ptNoTer ? this.terrainMesh(hab, hg) : null; const L8 = [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1], ['aW', 1]];
-        if (tm && tm.n) { gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
-          P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
-          gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
-          gl.depthMask(false);
-          const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0; const am = Math.max(wet * wet * (3 - 2 * wet) * 0.6, rw * rw * (3 - 2 * rw) * 0.5); // v19: rain soaks the ground
-          if (am > 0.01) { P = this.use(this.P.wet); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(P.u.uAm, am);
-            gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); } }
-        const gm = TR ? this.groundMarks(hab, night) : null;
-        if (gm && gm.n) { if (tm && tm.n) gl.enable(gl.DEPTH_TEST); P = this.use(this.P.mark); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
-          gl.bindBuffer(gl.ARRAY_BUFFER, gm.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aC', 4], ['aK', 1]], 10); gl.drawArrays(gl.TRIANGLES, 0, gm.n); }
-        if (tm && tm.n) { gl.depthMask(true); gl.clear(gl.DEPTH_BUFFER_BIT); }
-        gl.disable(gl.DEPTH_TEST); gl.depthMask(false); P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0); }
-      // shadows on the ground
-      if (hg.shb) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
-        gl.uniform4f(P.u.uCol, 0.16, 0.1, 0.05, 0.42 - night * 0.12); gl.drawArrays(gl.TRIANGLES, 0, hg.nsh); }
-      { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
-        gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
-      // warm pools under lamps (added light)
-      if (LL.length) this.lampPools(V, hab, LL, night);
-      // decor: ink outline pass + wash pass, per object so plants can sway
-      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
+      const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT;
       const outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; const lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k;
-      P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]);
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
       const drawList = hg.meshes.filter(o => visible(o.g)); for (const o of drawList) o._dz = V.depth(o.g._sb.c); drawList.sort((a, b) => a._dz - b._dz); // near first: early depth rejection
       const PT = this.R.set.perf ? this.R.set : {}; // performance-readout test switches (Settings)
-      for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
-        gl.uniform1f(P.u.uPass, pass ? 0 : 1);
-        for (const o of drawList) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
+      // decor: ink outline pass + wash pass, per object so plants can sway
+      const decorPass = (list) => {
+        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
+        let P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]);
+        for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
+          gl.uniform1f(P.u.uPass, pass ? 0 : 1);
+          for (const o of list) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
+        }
+        // ink strokes on decor
+        P = this.use(this.P.line); this.view(P, V); this.light(P); gl.uniform1f(P.u.uLW, lw); gl.uniform1f(P.u.uMinW, 0.6 * k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0);
+        gl.enable(gl.BLEND); gl.depthMask(false);
+        for (const o of list) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
+      };
+      // everything that only changes when the camera, light, decor or ground changes
+      const statics = (list) => {
+        // background
+        let P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.bgTexture(hab.data.bg)); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uMode, 0); gl.uniform4f(P.u.uCol, grade[0] * 0.98, grade[1] * 0.98, grade[2], 1); gl.drawArrays(gl.TRIANGLES, 0, 6);
+        // slab sides (facing ones), then the floor
+        P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0);
+        gl.bindTexture(gl.TEXTURE_2D, gt.s); gl.bindBuffer(gl.ARRAY_BUFFER, hg.side); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform1f(P.u.uLit, 1);
+        hg.sides.forEach((s, i) => { const f = s[0] * V.toCam[0] + s[1] * V.toCam[2]; if (f <= 0) return; const dd = s[0] * Lg[0] + s[1] * Lg[2]; const lit = M.clamp(0.72 + 0.4 * dd * SK.kd, 0.45, 1.1); const tw = M.clamp(0.5 + dd, 0, 1) * SK.kd; gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1); gl.drawArrays(gl.TRIANGLES, s[2] != null ? s[2] : i * 6, s[3] || 6); });
+        gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.uniform4f(P.u.uCol, 1, 1, 1, 1); gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
+        // v15: the uneven ground over the flat floor. Depth-tested against itself (hills hide the ground behind them), then the depth is cleared,
+        // so decor and critters draw exactly as before. Wet hollows darken with humidity; footprints, burrow mounds and mist pools sit on top.
+        { const TR = JT.Terrain; const tm = hg.ter && !PT0(this).ptNoTer ? this.terrainMesh(hab, hg) : null; const L8 = [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1], ['aW', 1]];
+          if (tm && tm.n) { gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+            P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
+            gl.depthMask(false);
+            const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0; const am = Math.max(wet * wet * (3 - 2 * wet) * 0.6, rw * rw * (3 - 2 * rw) * 0.5); // v19: rain soaks the ground
+            if (am > 0.01) { P = this.use(this.P.wet); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(P.u.uAm, am);
+              gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); } }
+          const gm = TR ? this.groundMarks(hab, night) : null;
+          if (gm && gm.n) { if (tm && tm.n) gl.enable(gl.DEPTH_TEST); P = this.use(this.P.mark); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, gm.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aC', 4], ['aK', 1]], 10); gl.drawArrays(gl.TRIANGLES, 0, gm.n); }
+          if (tm && tm.n) { gl.depthMask(true); gl.clear(gl.DEPTH_BUFFER_BIT); }
+          gl.disable(gl.DEPTH_TEST); gl.depthMask(false); P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0); }
+        // shadows on the ground
+        if (hg.shb) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+          gl.uniform4f(P.u.uCol, 0.16, 0.1, 0.05, 0.42 - night * 0.12); gl.drawArrays(gl.TRIANGLES, 0, hg.nsh); }
+        { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+          gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
+        // warm pools under lamps (added light)
+        if (LL.length) this.lampPools(V, hab, LL, night);
+        decorPass(list);
+      };
+      // v1.3 still-camera cache: while the camera rests, the static layer (backdrop, slab, ground, shadows, decor + its ink) is
+      // painted once into an offscreen buffer (colour + depth) and each frame starts from a copy of it. Only swaying plants,
+      // soil mounds, critters, silk and the paper grain are drawn live. WebGL2 only; anything unusual falls back to drawing it all.
+      const live = []; for (const o of drawList) if (o.inst._sw) live.push(o);
+      const mode = this.cacheMode(V, hab, hg, gt, PT, live, night, W, H);
+      if (mode === 'direct') statics(drawList);
+      else {
+        const C = this._cache;
+        if (mode === 'build') { gl.bindFramebuffer(gl.FRAMEBUFFER, C.ms); gl.viewport(0, 0, W, H); gl.clearColor(PAPER[0], PAPER[1], PAPER[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+          gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+          statics(live.length ? drawList.filter(o => !o.inst._sw) : drawList);
+          gl.bindFramebuffer(gl.READ_FRAMEBUFFER, C.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, C.rs); gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, gl.NEAREST);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+          if (!C.checked) { C.checked = true; if (gl.getError() !== gl.NO_ERROR) { this.cacheFree(true); statics(drawList); C.dead = true; } } }
+        if (!C.dead) { const P = this.use(this.P.blit); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2]], 4);
+          gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, C.dt); gl.uniform1i(P.u.uDep, 1); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, C.ct); gl.uniform1i(P.u.uCol, 0);
+          gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.ALWAYS); gl.depthMask(true); gl.drawArrays(gl.TRIANGLES, 0, 6); gl.depthFunc(gl.LEQUAL);
+          if (live.length) decorPass(live);
+          gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); }
       }
-      // ink strokes on decor
-      P = this.use(this.P.line); this.view(P, V); this.light(P); gl.uniform1f(P.u.uLW, lw); gl.uniform1f(P.u.uMinW, 0.6 * k); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uLitL, 0);
-      gl.enable(gl.BLEND); gl.depthMask(false);
-      for (const o of drawList) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
+      let P;
       // soil mounds (depth tested against the decor, not written, soft edges)
       if (hg.mb) { P = this.use(this.P.mound); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0);
         gl.bindBuffer(gl.ARRAY_BUFFER, hg.mb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1], ['aS', 1]], 7); gl.drawArrays(gl.TRIANGLES, 0, hg.nm); }
@@ -9514,41 +9592,55 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       // The sheet lives in CPU memory (willReadFrequently): on iPhone a GPU-backed 2D canvas must be read back before WebGL
       // can use it, which cost 16-28 ms a frame. CPU-side, only the rows in use are copied up (a plain memory copy).
       const cpu = !(R.set.perf && R.set.ptGpuAtlas);
-      if (this._atlasCPU !== cpu) { this._atlasCPU = cpu; this.atlas = mkCanvas(this.atlas.width, this.atlas.height); this.actx = this.atlas.getContext('2d', cpu ? { willReadFrequently: true } : undefined); this._atexSz = null; }
-      if (this.atlas.width !== AW || this.atlas.height < need || this.atlas.height > need * 2 + 256) { this._atlasGrow = (this._atlasGrow || 0) + 1; this.atlas.width = AW; this.atlas.height = need; this.actx = this.atlas.getContext('2d'); }
-      const g = this.actx; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-      const V2 = this.V2; const sig = AW + 'x' + this.atlas.height + (cpu ? 'c' : 'g'); const reuse = !(R.set.perf && R.set.ptNoReuse);
+      // v1.3: CPU sheet without the read-back. Each repainted critter is painted into a small CPU-side scratch canvas of its own
+      // size and copied straight into its slot of the GPU sheet (texSubImage2D from the canvas, premultiplied: no getImageData,
+      // no per-pixel un-premultiply, no ImageData garbage). The old getImageData path stays behind the 'ptOldAtlas' test switch.
+      const old = cpu && R.set.perf && R.set.ptOldAtlas, direct = cpu && !old;
+      if (this._atlasCPU !== cpu) { this._atlasCPU = cpu; this.atlas = mkCanvas(direct ? 1 : this.atlas.width, direct ? 1 : this.atlas.height); this.actx = this.atlas.getContext('2d', cpu ? { willReadFrequently: true } : undefined); this._atexSz = null; }
+      if (direct !== !!this._atlasDirect) { this._atlasDirect = direct; this._atexSz = null; if (direct) { this.atlas.width = 1; this.atlas.height = 1; } }
+      let ATW, ATH; if (direct) { ATW = AW; const ch = this._atH || 0; ATH = ch < need || ch > need * 2 + 256 ? need : ch; this._atH = ATH; }
+      else { if (this.atlas.width !== AW || this.atlas.height < need || this.atlas.height > need * 2 + 256) { this._atlasGrow = (this._atlasGrow || 0) + 1; this.atlas.width = AW; this.atlas.height = need; this.actx = this.atlas.getContext('2d'); } ATW = this.atlas.width; ATH = this.atlas.height; }
+      const g0 = this.actx; g0.setTransform(1, 0, 0, 1, 0, 0); g0.globalAlpha = 1; g0.globalCompositeOperation = 'source-over';
+      const V2 = this.V2; const sig = AW + 'x' + ATH + (direct ? 'd' : cpu ? 'c' : 'g'); const reuse = !(R.set.perf && R.set.ptNoReuse);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex);
+      if (direct) { const sz = ATW + 'x' + ATH; if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, ATW, ATH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; } gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); }
+      const pool = this._scr || (this._scr = new Map()); let upT = 0;
       for (const s of order) {
-        if (s.ay + s.rp * 2 > this.atlas.height) { s.skip = true; continue; }
+        if (direct ? s.ay - 1 + s.rp * 2 + 2 > ATH : s.ay + s.rp * 2 > ATH) { s.skip = true; continue; }
         const k = s.it.key, pv = k ? SC.get(k) : null; s.ps = V.s * s.sc;
         if (reuse && pv && !s.it.xr && !s.it.hot && pv.sig === sig && pv.ax === s.ax && pv.ay === s.ay && pv.rp === s.rp && sf - pv.f < 2 && ((sf + pv.h) & 1)) { s.ps = pv.ps; s.keep = true; continue; }
         if (k) SC.set(k, { ax: s.ax, ay: s.ay, rp: s.rp, ps: s.ps, f: sf, sig, h: k.charCodeAt(k.length - 1) & 1 }); // id parity: half the critters refresh on odd frames, half on even
-        g.clearRect(s.ax - 1, s.ay - 1, s.rp * 2 + 2, s.rp * 2 + 2);
-        const cx = s.ax + s.rp, cy = s.ay + s.rp;
+        let g = g0, ox = 0, oy = 0, sc0 = null; const S = s.rp * 2 + 2;
+        if (direct) { sc0 = pool.get(S); if (!sc0) { const c = mkCanvas(S, S); sc0 = { c, g: c.getContext('2d', { willReadFrequently: true }) }; pool.set(S, sc0); } sc0.f = sf; g = sc0.g; ox = 1 - s.ax; oy = 1 - s.ay;
+          g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, S, S); }
+        else g.clearRect(s.ax - 1, s.ay - 1, S, S);
+        const cx = s.ax + s.rp + ox, cy = s.ay + s.rp + oy;
         if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q0[0]), V.cy + (cy - s.q0[1]), V.c);
         else { V2.set(V.yaw, V.pitch, V.s * s.sc, 0, 0, V.c); const q2 = V2.P(s.it.p); V2.set(V.yaw, V.pitch, V.s * s.sc, cx - q2[0], cy - q2[1], V.c); }
-        g.save(); g.beginPath(); g.rect(s.ax, s.ay, s.rp * 2, s.rp * 2); g.clip();
+        g.save(); g.beginPath(); g.rect(s.ax + ox, s.ay + oy, s.rp * 2, s.rp * 2); g.clip();
         try { scene.run(s.it, g, V2); } catch (e) { if (JT.DEV) console.warn(e); }
         g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+        if (direct) { const t1 = performance.now(); gl.texSubImage2D(gl.TEXTURE_2D, 0, s.ax - 1, s.ay - 1, gl.RGBA, gl.UNSIGNED_BYTE, sc0.c); upT += performance.now() - t1; }
       }
-      if (!(sf % 120)) for (const [k, v] of SC) if (sf - v.f > 120) SC.delete(k);
-      const tU = performance.now(); R._sprT = tU - tS;
+      if (!(sf % 120)) { for (const [k, v] of SC) if (sf - v.f > 120) SC.delete(k); for (const [k, v] of pool) if (sf - v.f > 240) pool.delete(k); }
+      const tU = performance.now(); R._sprT = tU - tS - upT;
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      const g = g0;
       // same size as last frame: update the texture in place (no GPU reallocation)
-      { const sz = this.atlas.width + 'x' + this.atlas.height;
+      if (!direct) { const sz = this.atlas.width + 'x' + this.atlas.height;
         if (cpu) { gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); // raw pixels as read; the shader premultiplies (saves a CPU pass)
           if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.atlas.width, this.atlas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; }
           // copy each sprite's own square only (no empty packing space)
           const AHc = this.atlas.height; for (const s of order) { if (s.skip || s.keep) continue; const x0 = Math.max(0, s.ax - 1), y0 = Math.max(0, s.ay - 1), w = Math.min(AW - x0, s.rp * 2 + 2), h = Math.min(AHc - y0, s.rp * 2 + 2); if (w <= 0 || h <= 0) continue;
             gl.texSubImage2D(gl.TEXTURE_2D, 0, x0, y0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, g.getImageData(x0, y0, w, h).data); } }
         else if (sz === this._atexSz) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.atlas); this._atexSz = sz; } }
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false); R._upT = performance.now() - tU;
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); this.texParams(false); R._upT = performance.now() - tU + upT;
       // quads, far to near
-      list.sort((a, b) => b.dep - a.dep); const AH = this.atlas.height; const v = []; const xr = [];
+      list.sort((a, b) => b.dep - a.dep); const AH = ATH; const v = []; const xr = [];
       const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp * V.s / s.ps; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
         const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
-      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu ? 1 : 0);
+      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0);
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('spr', new Float32Array(v))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, v.length / 9);
       if (xr.length) { // observe: the watched jumper (and the prey it is hunting) show through anything in front of them at 65%
@@ -11843,7 +11935,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
       q.appendChild(seg); w.appendChild(q);
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Frame rate')); const sg = el('div', 'seg small');
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: smooth while you touch or watch, 30 fps when idle')); w.appendChild(fr); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: 60 fps while the device keeps up, 30 when it is busy')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       w.appendChild(el('h4', '', 'Feel & help'));
       { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }
@@ -12080,7 +12172,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
     { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
-    const STEP = 1 / 30; let acc = 0, last = performance.now(), skip = false, cost = 8, lastDt = 0, rAcc = 0, lock30 = 0, lockEnd = -1e9, lowT = 0, perfT = 0; void lastDt; void skip;
+    const STEP = 1 / 30; let idleSlowUntil = 0, idleSlowLast = -1e9, idleLowT = 0, idleUp = false; void idleUp; let acc = 0, last = performance.now(), skip = false, cost = 8, lastDt = 0, rAcc = 0, lock30 = 0, lockEnd = -1e9, lowT = 0, perfT = 0; void lastDt; void skip;
     /* Smooth motion: the simulation steps at 30 Hz, the screen may draw at 60. Each step remembers where every critter
        was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
        Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
@@ -12108,6 +12200,11 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
       // 120 Hz screens); 'saver' always uses 30.
       rAcc += dt; const fm = settings.fps || 'auto'; const U = JT.UI;
       let lively = fm === 'smooth' || !!Replay.active || !!U.photo || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
+      // v1.3: Auto also draws idle scenes at 60 fps while the device keeps up (the still-camera cache makes those frames cheap).
+      // If idle frames can't hold ~50 fps for 3 s, idle drops back to 30 for a minute (two minutes after a repeat).
+      if (fm === 'auto' && !lively) { const tn = performance.now(); if (tn > idleSlowUntil) { lively = true; idleUp = true;
+          if (R.fps < 50) { idleLowT += dt; if (idleLowT > 3) { idleSlowUntil = tn + (tn - idleSlowLast < 180000 ? 120000 : 60000); idleSlowLast = tn; idleLowT = 0; lively = false; idleUp = false; } } else idleLowT = Math.max(0, idleLowT - dt); }
+        else idleUp = false; }
       // A phone that can't hold 60 (hot, Low Power Mode) gets a steady 30 instead of an uneven 35-50, which feels far worse.
       // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
       if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
@@ -12115,14 +12212,14 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
         const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 3;
         if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
         if (lock30) { lively = false; lockEnd = now; } }
-      R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30;
+      R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30; if (lively && idleUp) R.targetFps = 47; // idle 60 is a bonus: it never pushes the resolution down by itself
       const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
       if (due) { skip = !skip;
         { const t0 = performance.now(); const undo = blendIn(Replay.active ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
       lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
-          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }

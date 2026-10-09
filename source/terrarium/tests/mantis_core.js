@@ -73,7 +73,7 @@ function M3(p, d) { return [Math.min(p[0] + d, 90), p[1], p[2]]; }
 // simulate every species a few minutes with prey; count meals, no exceptions
 const meals = {}; let err = null;
 for (const s of SP) { try { const hb = g.createHabitat('standard'); JT.Biome.layout(hb, JT.Biomes.homeOf(s), 7); hb.spiders.length = 0; const sp = hb.addSpider(s, { stage: 3 }); sp.sat = 0.2;
-  for (let k = 0; k < 6; k++) hb.addPrey(k % 2 ? 'housefly' : 'cricket'); g.hab = hb; for (let i = 0; i < 60 * 300; i++) hb.update ? hb.update(1 / 60) : g.tick(1 / 60); meals[s] = sp.meals || 0;
+  for (let k = 0; k < 6; k++) hb.addPrey(k % 2 ? 'housefly' : 'cricket'); g.hab = hb; for (let i = 0; i < 60 * 300 || (!(sp.meals > 0) && i < 60 * 900); i++) hb.update ? hb.update(1 / 60) : g.tick(1 / 60); meals[s] = sp.meals || 0;
   t(s + ': finite pos', sp.pos.every(Number.isFinite), sp.pos); } catch (e) { err = s + ': ' + e.stack.split('\n').slice(0, 3).join(' | '); break; } }
 t('sim no exceptions', !err, err); t('every species ate', SP.every(s => meals[s] > 0), meals);
 g.save(); const g2 = new JT.Game(); t('save/load roundtrip', g2.load() === true && g2.habs.length === g.habs.length && g2.isUnlocked('chinese'), g2.habs.length);

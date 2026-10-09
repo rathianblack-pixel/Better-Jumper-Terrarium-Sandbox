@@ -108,3 +108,23 @@ pollinators), `atmos-draw.js` (egg cases, hatchlings, drifting leaves), `mantis-
   saves + holding cup, courtship → egg case → hatch with cap respected, eaten by mate), `tests/behave.js`
   (+ peering, missed strike, tiny bead, play dead, wing buzz, boxing, life cycle, wind sway + leaves, basking
   colour, molt colour, pollinators), `SIG=1 tests/lineup.js` (signature poses), `ONLY=… CELL=… tests/lineup.js`.
+
+## v1.3 — performance pass (both games)
+
+Same look and same simulation, cheaper frames.
+
+- **Still-camera cache** (renderer, WebGL2): while the camera rests, the static layer — backdrop, slab, ground,
+  terrain, shadows, lamp pools, decor and its ink — is painted once into an offscreen buffer (colour + depth,
+  4× MSAA resolved) and every frame starts from a copy of it. Swaying plants, soil mounds, critters, silk and
+  the paper grain are still drawn live, depth-tested against the cached depth. The cache rebuilds when the
+  view, light/grade (rounded to 1/256), lamps, ground marks, wetness, decor or the set of swaying plants
+  changes; it is skipped while the camera moves, in build mode (placement ghost) and on WebGL1, and its memory is
+  released after 15 s of continuous camera motion. Test switch: `ptNoCache`.
+- **Sprite sheet without read-back**: each repainted critter is painted into a small CPU canvas of its own size
+  and copied straight into its slot of the GPU sheet (`texSubImage2D` from the canvas, premultiplied). No more
+  `getImageData` + per-pixel un-premultiply + garbage per sprite. Old path: test switch `ptOldAtlas`.
+- **Frame pacing**: *Auto* now also draws idle scenes at 60 fps while the device keeps up. If idle frames can't
+  hold ~50 fps for 3 s it goes back to 30 fps for a minute (two after a repeat). Idle-60 never lowers the
+  resolution by itself. *Battery saver* (always 30) and *Smooth* (always 60) are unchanged.
+- Measured with headless Chromium + software GPU at a 390×844 @2× phone viewport (only ratios are meaningful):
+  see the v1.3 hand-off notes. Jumper legacy suite: outputs identical to v1.2 (apart from wall-clock `ms`).
