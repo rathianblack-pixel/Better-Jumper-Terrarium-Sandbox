@@ -27,9 +27,12 @@
   ],
   "07-prey-cleanup-fauna-locomotion.js": [
    "journal.js",
-   "mantis-ai.js"
+   "mantis-ai.js",
+   "mantis-ai2.js",
+   "mantis-life.js"
   ],
   "10-biomes-v14-climates-weather.js": [
+   "mantis-save.js",
    "unlock.js"
   ],
   "13-legacy-adapter-retained-for.js": [
@@ -40,13 +43,20 @@
   ],
   "28-boot-main-loop-fixed.js": [
    "mantis-meal.js",
-   "ui.js"
+   "ui.js",
+   "mantis-ui2.js"
   ],
   "04-physical-navigation.js": [
    "decor.js"
   ],
   "11-native-biome-decor-extensions.js": [
    "biomes.js"
+  ],
+  "08-adaptive-habitat-presets-themes.js": [
+   "atmos.js"
+  ],
+  "24-procedural-webaudio-calm-generative.js": [
+   "atmos-draw.js"
   ]
  },
  "splash": "art/splash.svg"

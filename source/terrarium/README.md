@@ -71,3 +71,40 @@ Engine hooks added for packs (the jumper game behaves exactly as before):
 - Droplets (shared engine `engine/18a-sized-droplets.js`): mist/dew drops sized to the critters in the tank
   (r ≈ 0.22 tiny sling … 0.75 big adult mantis; before 0.6–1.5), plus a few smaller random beads beside some drops.
 - Tests: `tests/combined.js` (title → pick → mantis → switch → jumper → title), `tests/setup_mist.js`.
+
+## Mantis Terrarium v1.2 (Jumper Terrarium unchanged — `jumper.html` is byte-identical to v1.1)
+New files in `packs/mantis/`: `mantis-ai2.js` (species signatures + behaviour polish), `mantis-life.js` (sex,
+courtship, egg cases, hatching), `mantis-save.js` (old-save migration), `atmos.js` (breeze, leaf drift,
+pollinators), `atmos-draw.js` (egg cases, hatchlings, drifting leaves), `mantis-ui2.js` (Female/Male on the profile).
+- **8 new species** (unlock order after orchid): boxer → budwing → bark → stick → dead leaf → violin →
+  giant Asian → devil's flower. Each has data, drawing (`mlook`), behaviour flags (`mflags`), home biome, egg-case
+  shape and journal entry + hint.
+  - boxer: pumps raised forelegs at a nearby mantis or finger; quick, twitchy walk
+  - budwing: cannot fly; stubby-wing buzz display with a dry clicking rattle (WebAudio noise clicks)
+  - bark: dashes on bark/trunk faces, then freezes pressed flat
+  - stick: lies flat along twigs, forelegs stretched forward; very slow
+  - dead leaf: plays dead when startled (drops off its perch, lies tucked and still, then rights itself); rocks like a leaf
+  - violin: slow rocking walk, takes only flying prey (unless starving), hangs patiently from high twigs
+  - giant Asian: bold, takes the biggest prey, barely bothered by your finger while eating, comes to the glass to stare
+  - devil's flower: hangs upside-down from tips and sways like a bloom; huge display with blue/purple foreleg lobes
+- **Polish (all mantises)**: peering head-rock before a strike; missed strikes (more likely for flying/fast prey,
+  young nymphs, long reach; prey flees; short pause; "Missed!"); swaying in the breeze in phase with the decor
+  (dead leaf/devil's flower more); eye wiping; drinking (head lowers, drop shrinks away; nymphs pick tiny beads);
+  finger tracking head-first, body turning later; night shift (ghost, violin, dead leaf, devil's flower stay up
+  hunting after dark); darker when cold, brightening as they warm/bask; colour shift at a molt toward the biome
+  (green in wet/tropical, brown in dry/litter/bark) for Chinese, European, Carolina, ghost, dead leaf, stick,
+  giant Asian — stored per mantis (`sp.morph`), saved, written to the diary.
+- **Life cycle**: `sp.sex` for every mantis (old saves get one at random); adult male creeps up from behind,
+  freezes when she looks, mounts; paired ~40–85 s; she may eat him (more likely when hungry); later she climbs to
+  a high twig and lays an egg case (`hab.data.ooth`, pale → hardens/darkens after ½ day, per-species shape);
+  hatches after 2½ days: up to 36 visible nymphs stream out on threads, dangle, drop and scatter; the tank keeps
+  what fits (tank cap + 2 per species), up to 3 go to the holding cup, the rest are released — one toast only.
+  Old adults (>16 days grown) slow down and fade a little (no death).
+- **Decor**: Bamboo Stalks, Spanish Moss Hangings, Dead-Leaf Cluster, Upright Bark Slab (explicit biome tags via
+  `def.mtags`; added to Orchid Garden / Dry Leaf / jungle / bark themes). Orchid Garden: flying prey visit the
+  flowers, hover, land and stay (more often near a flower mantis). Dry Leaf Forest: autumn leaves tumble down
+  (≤ 6 at once), settle and fade; mantises snap their heads round, prey may startle.
+- Tests: `tests/mantis_core.js` (65 checks: 14 species, unlock chain, homes, journal ids, sex in saves incl. old
+  saves + holding cup, courtship → egg case → hatch with cap respected, eaten by mate), `tests/behave.js`
+  (+ peering, missed strike, tiny bead, play dead, wing buzz, boxing, life cycle, wind sway + leaves, basking
+  colour, molt colour, pollinators), `SIG=1 tests/lineup.js` (signature poses), `ONLY=… CELL=… tests/lineup.js`.

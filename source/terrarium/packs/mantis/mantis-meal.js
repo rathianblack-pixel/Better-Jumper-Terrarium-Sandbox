@@ -175,8 +175,8 @@
   };
   function mealStart(hab, sp, p) {
     const g = sp.sup && sp.sup.d != null ? hab.geoms[sp.sup.d] : null; const def = g && g.def;
-    if ((sp.species === 'orchid' || sp.species === 'spiny') && def && (def.flowers || def.arche === 'flower' || /orchid|flower/.test(def.id))) hab.event('journal', { id: 'flowerLure', sp });
-    const bid = JT.Biomes.id(hab); if ((sp.species === 'ghost' || sp.species === 'carolina') && (bid === 'dryleaf' || bid === 'oldbark')) hab.event('journal', { id: 'camoHunt', sp });
+    if ((sp.species === 'orchid' || sp.species === 'spiny' || sp.species === 'devilsflower') && def && (def.flowers || def.arche === 'flower' || /orchid|flower/.test(def.id))) hab.event('journal', { id: 'flowerLure', sp });
+    const bid = JT.Biomes.id(hab); if (['ghost', 'carolina', 'deadleaf', 'bark', 'stick'].includes(sp.species) && (bid === 'dryleaf' || bid === 'oldbark')) hab.event('journal', { id: 'camoHunt', sp });
   }
   const nm = (p) => p.type === 'jumperMeal' ? 'mantis' : AI.preyName ? AI.preyName(JT.PREY_BY_ID[p.type] || { name: 'prey' }) : ((JT.PREY_BY_ID[p.type] || {}).name || 'prey').toLowerCase();
   const groom0 = H.groom;

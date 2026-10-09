@@ -47,6 +47,33 @@
     ['flowerLure', 'species', 'Waiting in the Flowers', 'An orchid or spiny flower mantis caught a visitor while sitting on a flower.', 'Orchid and spiny flower mantises: give them flowers to sit on.'],
     ['camoHunt', 'species', 'Hidden in Plain Sight', 'A bark or dead-leaf mantis hunted from its home woodland, almost invisible against it.', 'Ghost and Carolina mantises: keep them in Dry Leaf or Old Bark Forest.'],
   ];
+  // v1.2: species specialities, behaviour polish and the life cycle
+  ADD.push(
+    ['boxing', 'species', 'Boxing Match', 'A boxer mantis pumped its banded forelegs up and down at a neighbour, like a tiny boxer sparring.', 'Boxer mantis: bring your finger close, or keep two in one tank.'],
+    ['wingBuzz', 'species', 'Wing Buzz', 'A budwing mantis flicked its stubby wings so fast they rattled, flashing orange underneath.', 'Budwing mantis: startle it gently with your finger.'],
+    ['barkSprint', 'species', 'Bark Sprinter', 'A bark mantis dashed across a trunk in a quick burst, then froze flat against it.', 'Bark mantis: give it a bark slab, trunk or cork to run on.'],
+    ['stickFlat', 'species', 'Just a Twig', 'A stick mantis lay flat along a twig, forelegs stretched out ahead, and disappeared into it.', 'Stick mantis: give it thin twigs and stems.'],
+    ['playDead', 'species', 'Playing Dead', 'Startled, a dead leaf mantis dropped flat and lay still as a fallen leaf until the danger passed.', 'Dead leaf mantis: give it a fright.'],
+    ['violinFlyer', 'species', 'Only Things That Fly', 'A wandering violin mantis ignored everything that walked and snatched a flying insect out of the air.', 'Violin mantis: offer flies or moths.'],
+    ['giantStare', 'species', 'Face to Face', 'A giant Asian mantis walked up to the glass and stared straight back at you.', 'Giant Asian mantis: hold your finger still on the glass.'],
+    ['flowerDisplay', 'species', 'The Devil\u2019s Flower', 'A devil\u2019s flower mantis spread its leafy forelegs wide and showed the red, blue and purple hidden inside.', 'Devil\u2019s flower mantis: startle it, or let another mantis come too close.'],
+    ['flowerHang', 'species', 'Swaying Bloom', 'A flower mantis hung upside-down from a high tip and swayed gently, like a bloom on its stem.', 'Devil\u2019s flower or violin mantis: give it tall tips to hang from.'],
+    ['missedStrike', 'hunt', 'Missed!', 'A strike shot out and closed on nothing: the prey was faster. The mantis paused, then settled back to wait.', 'Fast flyers and young nymphs make misses more likely.'],
+    ['peering', 'hunt', 'Measuring the Distance', 'Before striking, a mantis rocked its head from side to side to judge how far away its prey was.', 'Watch closely just before a strike.'],
+    ['nightShift', 'hunt', 'Night Shift', 'A night-active mantis hunted a moth after dark while the others slept.', 'Ghost, dead leaf, violin and devil\u2019s flower mantises stay up at dusk.'],
+    ['breezeSway', 'life', 'In the Breeze', 'When the breeze came through, a mantis rocked in time with its stem, just like a leaf.', 'A breezy biome (Prairie, Heath, Dry Leaf) brings the wind.'],
+    ['eyeWipe', 'life', 'Clean Eyes', 'A mantis drew a foreleg over each big eye to wipe it clean.', 'Watch a resting mantis for a while.'],
+    ['beadSip', 'life', 'A Tiny Bead', 'A nymph lowered its head and sipped from one of the smallest water beads.', 'Mist the tank while nymphs are about.'],
+    ['morningBask', 'life', 'Morning Warm-up', 'In the morning a mantis settled under the warm lamp; its colours brightened as it warmed up.', 'Add a basking lamp and watch at sunrise.'],
+    ['colourShift', 'grow', 'New Colours', 'After a molt, a mantis came out in colours closer to its surroundings.', 'Chinese, European, Carolina, ghost, dead leaf, stick and giant Asian mantises can change colour when they molt.'],
+    ['courtship', 'social', 'Courtship', 'A male mantis crept up on a female from behind, very slowly, freezing whenever she turned her head.', 'Keep an adult male and female of the same species together.'],
+    ['mating', 'social', 'A Pair', 'The male climbed onto the female\u2019s back and the two stayed together for a long while.', 'Let a courting male reach the female.'],
+    ['eatenByMate', 'social', 'Eaten by His Mate', 'The female turned round and ate the male. It happens, especially when she is hungry.', 'Mate a hungry female (or just be unlucky).'],
+    ['oothLaid', 'grow', 'Egg Case', 'A female worked a foamy egg case onto a high twig with the tip of her abdomen.', 'Some time after mating, the female lays.'],
+    ['oothHard', 'grow', 'Hardened', 'The pale, soft egg case dried to a tough, dark shell.', 'Wait a day after the egg case is laid.'],
+    ['hatchDay', 'grow', 'Hatching Day', 'Dozens of tiny nymphs streamed out of the egg case, dangled for a moment, then scattered.', 'Keep the egg case for a few days.'],
+    ['elder', 'life', 'Old Age', 'An old adult has slowed down; its strikes are slower and its colours a little faded.', 'Keep an adult for a long time.'],
+  );
   for (const [id, cat, title, text, hint] of ADD) { if (!JT.JOURNAL.some(e => e.id === id)) JT.JOURNAL.push({ id, title, icon: '', text }); JT.JOURNAL_META[id] = [cat, hint]; }
 })(typeof window !== 'undefined' ? window : globalThis);
 (function (root) {

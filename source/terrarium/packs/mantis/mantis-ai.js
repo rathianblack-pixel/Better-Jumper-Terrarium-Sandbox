@@ -173,7 +173,7 @@
     const A = sp._air;
     sp._sweep = st === 'pounce' && A ? M.clamp((A.t - 0.45) / 0.45, 0, 1) : M.lerp(sp._sweep || 0, 0, Math.min(1, dt * 8));
     sp._mFly = !!(A && A.fly);
-    const hangT = sp._mHangOK && MOLTH.has(st) ? 1 : 0;
+    const hangT = sp._mHangOK && (MOLTH.has(st) || st === 'mHang') ? 1 : 0;
     sp._mHangK = M.lerp(sp._mHangK || 0, hangT, Math.min(1, dt * (hangT ? 0.7 : 1.2))); if (sp._mHangK < 0.002) sp._mHangK = 0;
     const slT = st === 'molting' ? M.smooth(M.clamp((sp.st - 1) / 9, 0, 1)) : st === 'postMolt' ? 1 : 0;
     sp._mSlide = M.lerp(sp._mSlide || 0, slT, Math.min(1, dt * (slT ? 3 : 0.9))); if (sp._mSlide < 0.002) sp._mSlide = 0;

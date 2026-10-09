@@ -1740,8 +1740,63 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
       { lobes: 'petal', wingLen: 0.72, abdW: 1.2, head: 1.05 },
       { stealth: .85, patience: .85, jump: .3, bold: .55, tactics: .7 }, { height: .6, foliage: .5, rear: .3, display: .3, activity: .35 },
       'A living orchid. Petal-shaped flaps on its legs and a pink-white body draw in flies that think it is a flower.'),
+    // ---- v1.2: eight more species (appended; the first six are unchanged) ----
+    MS('boxer', 'Boxer Mantis', 'Ephestiasula sp.', 10,
+      { body: '#4e443a', body2: '#2c2620', wing: '#5c5246', wingEdge: '#2a221c', hind: '#8a7a6a', leg: '#40382f', eye: '#cbbb92', accent: '#f0ece0', belly: '#6e6254' },
+      { bands: true, head: 1.25, pro: 0.72, abdW: 1.15, wingLen: 0.7, curl: 1.3, antL: 0.9 },
+      { stealth: .6, patience: .5, jump: .45, bold: .7, tactics: .55 }, { height: .55, foliage: .5, rear: .3, display: .4, activity: .7 },
+      'A tiny, quick mantis from Asian forests. It holds up black-and-white banded forelegs and pumps them like a boxer when anything comes close.'),
+    MS('budwing', 'Budwing Mantis', 'Parasphendale affinis', 18,
+      { body: '#8e7a5a', body2: '#6a5a40', wing: '#a08a62', wingEdge: '#5a4a34', hind: '#e8642a', leg: '#86735a', eye: '#c2b088', accent: '#d8502a', belly: '#b09a78' },
+      { stub: true, wingLen: 0.42, abdW: 0.88, thin: 0.9, pro: 1.05 },
+      { stealth: .6, patience: .65, jump: .3, bold: .65, tactics: .5 }, { height: .6, foliage: .45, rear: .3, display: .5, activity: .5 },
+      'A slim East African mantis whose wings stay short buds even when grown. Startle it and the stubs buzz with a dry rattle and a flash of orange.'),
+    MS('bark', 'Bark Mantis', 'Liturgusa sp.', 16,
+      { body: '#7f8a6e', body2: '#59634f', wing: '#8a9478', wingEdge: '#4a5440', hind: '#a0a890', leg: '#77816a', eye: '#a8b090', accent: '#3e4636', belly: '#9aa28a' },
+      { lichen: true, flat: true, abdW: 1.2, wingLen: 0.95, wideWing: 1.15, pro: 0.8, legL: 1.2, curl: 0.7 },
+      { stealth: .9, patience: .55, jump: .4, bold: .55, tactics: .6 }, { height: .75, foliage: .2, rear: .4, display: .2, activity: .7 },
+      'A flat, lichen-mottled runner of tree trunks. It sprints across bark in quick bursts, then presses itself flat and vanishes.'),
+    MS('stick', 'Stick Mantis', 'Brunneria borealis', 30,
+      { body: '#9a8a64', body2: '#76684a', wing: '#a8986e', wingEdge: '#6a5c40', hind: '#bcae88', leg: '#90805c', eye: '#c0b088', accent: '#5a4c34', belly: '#b0a07a' },
+      { thin: 0.5, pro: 1.5, head: 0.62, arm: 0.88, abdW: 0.62, aLen: 1.22, wingLen: 0.34, legL: 1.35, antL: 0.7, curl: 0.6 },
+      { stealth: .95, patience: .95, jump: .2, bold: .4, tactics: .6 }, { height: .65, foliage: .55, rear: .3, display: .15, activity: .2 },
+      'Long, thin and slow. It lies flat along a twig with its forelegs stretched out in front and simply becomes part of the plant.'),
+    MS('deadleaf', 'Dead Leaf Mantis', 'Deroplatys desiccata', 26,
+      { body: '#7a5636', body2: '#5a3e26', wing: '#8a6440', wingEdge: '#4a3220', hind: '#a37a50', leg: '#6e4e32', eye: '#a88660', accent: '#3a2818', belly: '#94704c' },
+      { shield: 'leaf', shieldW: 2.1, ragged: true, veins: true, abdW: 1.3, wideWing: 1.5, pro: 0.85, head: 0.95, leafRock: 1, curl: 1.2 },
+      { stealth: .95, patience: .9, jump: .2, bold: .3, tactics: .6 }, { height: .6, foliage: .85, rear: .4, display: .3, activity: .25 },
+      'A crumpled brown leaf with a wide shield over its neck. When startled it drops and lies flat and still, just one more dead leaf.'),
+    MS('violin', 'Wandering Violin Mantis', 'Gongylus gongylodes', 32,
+      { body: '#a08a5c', body2: '#7a6640', wing: '#ae9a6a', wingEdge: '#6a5838', hind: '#c09a70', leg: '#9a865a', eye: '#c8b47e', accent: '#5a7a3a', belly: '#b8a47a' },
+      { thin: 0.6, pro: 1.9, shield: 'diamond', shieldW: 1.2, crown: 1.2, legLobes: true, abdW: 0.85, wingLen: 0.9, antL: 0.8, curl: 1.1 },
+      { stealth: .85, patience: .95, jump: .2, bold: .4, tactics: .65 }, { height: .75, foliage: .45, rear: .3, display: .3, activity: .2 },
+      'An impossibly thin mantis with a violin-shaped neck, a pointed crown and leafy flaps on its legs. Rocks slowly as it walks, and only eats things that fly.'),
+    MS('giantasian', 'Giant Asian Mantis', 'Hierodula membranacea', 32,
+      { body: '#6fae3e', body2: '#4f8a2a', wing: '#7cbc4a', wingEdge: '#3f7a24', hind: '#a8c88a', leg: '#6aa63a', eye: '#d4e6a0', accent: '#e8e070', belly: '#9ccc6a' },
+      { arm: 1.3, abdW: 1.3, head: 1.08, pro: 1.05, wideWing: 1.35, stigma: '#f2f0d0' },
+      { stealth: .5, patience: .6, jump: .3, bold: .98, tactics: .5 }, { height: .65, foliage: .6, rear: .3, display: .3, activity: .6 },
+      'Big, bright green and fearless. Takes the largest prey in the tank and often comes to the glass to look you in the eye.'),
+    MS('devilsflower', "Devil's Flower Mantis", 'Idolomantis diabolica', 34,
+      { body: '#93aa6c', body2: '#6d8a4c', wing: '#a8bb80', wingEdge: '#5d7a3e', hind: '#c8b7d8', leg: '#94ab70', eye: '#d8d6a6', accent: '#c23a3a', belly: '#d6dcc0' },
+      { pro: 1.55, head: 0.9, arm: 1.2, abdW: 0.82, thin: 0.8, wingLen: 0.9, crown: 1.45, shield: 'flare', shieldW: 1.4, armLobe: { out: '#c4d2a2', edge: '#8aa06a', inner: ['#f4f1ea', '#7a3fa0', '#2f5fb8', '#c8323a'] }, legLobes: true, curl: 1.1 },
+      { stealth: .85, patience: .9, jump: .25, bold: .55, tactics: .65 }, { height: .85, foliage: .5, rear: .3, display: .65, activity: .3 },
+      "The largest flower mantis. Hangs upside-down from a tip and sways like a bloom; when threatened it spreads leafy forelegs to show red, blue and purple inside."),
   ];
   JT.SPECIES.forEach(s => { s.look = Object.assign({}, base, { gait: 'patient', fuzz: 0, tufts: null, palp: 'plain', irid: 0, note: s.desc }); });
+  // v1.2 per-species behaviour flags (read by mantis-ai2.js / mantis-life.js)
+  const FLAGS = {
+    ghost: { night: true, morph: true }, violin: { night: true, flyOnly: true, slow: 0.6, hangs: true, rockWalk: true, morph: false }, deadleaf: { night: true, morph: true, playDead: true },
+    devilsflower: { night: true, hangs: true, display: 'flower' }, chinese: { morph: true }, european: { morph: true }, carolina: { morph: true },
+    stick: { morph: true, slow: 0.55, flat: true }, giantasian: { morph: true, bigPrey: 0.35, curious: true }, budwing: { noFly: true, display: 'buzz' },
+    boxer: { box: true }, bark: { sprint: true },
+  };
+  for (const id in FLAGS) { const S = JT.SPECIES.find(x => x.id === id); if (S) S.mflags = FLAGS[id]; }
+  const GAITS = { boxer: 'twitchy', bark: 'stopgo' };
+  for (const id in GAITS) { const S = JT.SPECIES.find(x => x.id === id); if (S) S.look.gait = GAITS[id]; }
+  // egg-case shape per species (mantis-life.js): k = shape, n = typical clutch
+  const OOTH = { carolina: ['long', 40], chinese: ['round', 60], european: ['elong', 50], ghost: ['thin', 25], spiny: ['round', 30], orchid: ['flat', 45],
+    boxer: ['tiny', 12], budwing: ['elong', 30], bark: ['flat', 20], stick: ['thin', 30], deadleaf: ['long', 35], violin: ['thin', 25], giantasian: ['round', 70], devilsflower: ['ribbon', 55] };
+  for (const S of JT.SPECIES) { const o = OOTH[S.id] || ['elong', 30]; S.ooth = { k: o[0], n: o[1] }; }
   JT.SPECIES_BY_ID = {}; JT.SPECIES.forEach(s => JT.SPECIES_BY_ID[s.id] = s);
   // mantises eat each other: at most two share a tank (cannibalism arrives with the behaviour pack)
   for (const k in JT.HABITATS) JT.HABITATS[k].cap = Math.min(JT.HABITATS[k].cap, 2);
@@ -2534,6 +2589,8 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
   'use strict';
   const JT = root.JT, Geo = JT.Geo, ARCH = Geo.ARCH, bez = Geo._bez; if (!ARCH) return;
   const DOWN = [0, -1, 0];
+  const shade = (hex, a) => { const h = hex.replace('#', ''); const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); return '#' + c.map(v => Math.round(M.clamp(a < 0 ? v * (1 + a) : v + (255 - v) * a, 0, 255)).toString(16).padStart(2, '0')).join(''); };
+  const M = JT.M;
 
   // ---- molting cross-perch: an upright twig with two crossbars high up, plenty of open air below them ----
   ARCH.mcross = function (B, p, sc) {
@@ -2546,6 +2603,58 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     }
     B.height = h + 2; B.coverR = p.bar * 0.4;
   };
+
+  // ---- v1.2: bamboo stalks — segmented canes with pale nodes and a few lance leaves near the top ----
+  ARCH.bamboo = function (B, p, sc) {
+    const rng = B.rng, n = p.n || 4; let top = 0;
+    for (let i = 0; i < n; i++) {
+      const a = i / n * 6.28 + rng() * 0.8, r0 = 2 + rng() * 4; const bx = Math.cos(a) * r0, bz = Math.sin(a) * r0 * 0.8;
+      const H = p.h * sc * (0.7 + rng() * 0.35), lean = (rng() - 0.5) * 6, r = p.r * (0.8 + rng() * 0.35); top = Math.max(top, H);
+      const pts = []; for (let s = 0; s <= 8; s++) { const t = s / 8; pts.push([bx + lean * t * t, t * H, bz + lean * 0.4 * t * t]); }
+      const col = shade(p.col, (rng() - 0.5) * 0.2);
+      B.prim({ t: 'tube', pts, r0: r, r1: r * 0.75, col, style: 'stem' });
+      const seg = 4 + Math.floor(rng() * 2);
+      for (let k = 1; k < seg; k++) { const t = k / seg; const q = pts[Math.round(t * 8)]; const rr = r * (1 - 0.25 * t) * 1.18; B.prim({ t: 'tube', pts: [[q[0], q[1] - 0.5, q[2]], [q[0], q[1] + 0.5, q[2]]], r0: rr, r1: rr, col: p.node, style: 'stem' }); }
+      B.path(pts, r, 'stem', { flex: 0.3, perch: true });
+      for (let k = 0; k < 4; k++) { const q = pts[5 + Math.floor(rng() * 4)]; Geo._leaf(B, q, rng() * 6.28, 9 + rng() * 5, 1.8, p.leaf, null, 'lance', -0.25 - rng() * 0.4, q[1]); }
+    }
+    B.height = top + 3; B.coverR = 9;
+  };
+  // ---- v1.2: Spanish moss — a bare stand with grey-green strands hanging from its arms ----
+  ARCH.moss = function (B, p, sc) {
+    const rng = B.rng, H = p.h * sc;
+    const post = [[0, 0, 0], [0.6, H * 0.35, 0.2], [-0.3, H * 0.7, -0.2], [0.2, H, 0]];
+    B.prim({ t: 'tube', pts: post, r0: 1.6, r1: 1.1, col: p.col, style: 'bark' }); B.path(post, 1.4, 'branch', { flex: 0.05 });
+    const arms = [[H * 0.95, 0, p.arm], [H * 0.78, 2.4, p.arm * 0.75]];
+    for (const [y, ang, L] of arms) {
+      const d = [Math.cos(ang), 0, Math.sin(ang) * 0.8]; const pts = [-0.5, -0.25, 0, 0.25, 0.5].map((t, i) => [d[0] * t * L, y + (i === 2 ? 0.5 : 0) - Math.abs(t) * 2, d[2] * t * L]);
+      B.prim({ t: 'tube', pts, r0: 0.9, r1: 0.7, col: p.col, style: 'bark' }); B.path(pts, 0.8, 'branch', { flex: 0.08, perch: true });
+      const ns = p.strands || 8;
+      for (let k = 0; k < ns; k++) {
+        const t = -0.45 + 0.9 * (k + rng() * 0.6) / ns; const o = [d[0] * t * L, y - Math.abs(t) * 2 - 0.3, d[2] * t * L]; const len = 10 + rng() * (y * 0.35);
+        const st = []; for (let s = 0; s <= 6; s++) { const u = s / 6; st.push([o[0] + Math.sin(u * 5 + k) * 1.4 * u, o[1] - u * len, o[2] + Math.cos(u * 4 + k) * 1.1 * u]); }
+        B.prim({ t: 'tube', pts: st, r0: 0.9, r1: 0.3, col: shade(p.moss, (rng() - 0.5) * 0.25), style: 'vine' });
+        for (let s = 1; s < 6; s++) if (rng() < 0.8) Geo._leaf(B, st[s], rng() * 6.28, 3.2, 0.9, shade(p.moss, (rng() - 0.5) * 0.2), null, 'lance', -1.25, st[s][1]);
+        if (k % 3 === 1) B.path(st.slice().reverse(), 0.4, 'stem', { flex: 0.7 });
+      }
+    }
+    B.height = H + 2; B.coverR = p.arm * 0.45;
+  };
+  // ---- v1.2: dead-leaf cluster — a curved twig hung with curled brown leaves ----
+  ARCH.leafcluster = function (B, p, sc) {
+    const rng = B.rng, H = p.h * sc;
+    const pts = bez([0, 0, 0], [3, H * 0.6, 1], [p.reach, H, 0], 9);
+    B.prim({ t: 'tube', pts, r0: 1.4, r1: 0.6, col: p.col, style: 'bark' }); B.path(pts, 1.0, 'branch', { flex: 0.25, perch: true });
+    const tw = bez(pts[5], [pts[5][0] - 5, pts[5][1] + 6, 4], [pts[5][0] - 9, pts[5][1] + 4, 7], 5);
+    B.prim({ t: 'tube', pts: tw, r0: 0.6, r1: 0.35, col: p.col, style: 'bark' }); B.path(tw, 0.5, 'branch', { flex: 0.35 });
+    const cols = p.leaves;
+    for (let k = 0; k < (p.n || 16); k++) {
+      const src = rng() < 0.35 ? tw : pts; const q = src[Math.max(2, Math.floor(src.length * (0.35 + rng() * 0.65)) - 1)];
+      const c = cols[Math.floor(rng() * cols.length)];
+      Geo._leaf(B, [q[0] + (rng() - 0.5) * 2, q[1] - 0.5, q[2] + (rng() - 0.5) * 2], rng() * 6.28, 5 + rng() * 3, 2.6 + rng(), c, shade(c, -0.25), 'oval', -0.9 - rng() * 0.5, q[1], { roll: 0.6 + rng() * 0.6 });
+    }
+    B.height = H + 2; B.coverR = Math.max(8, p.reach * 0.6);
+  };
   const DD = (id, name, cat, arche, p, f) => Object.assign({ id, name, cat, arche, p: p || {}, platform: false, stack: false, cover: 0, small: false }, f || {});
   const add = [
     DD('crossperch', 'Molting Cross-Perch', 'decor', 'mcross', { h: 70, r: 1.4, bar: 26, col: '#6a4e34' }, { small: true, desc: 'High crossbars with open air below: room to hang and molt' }),
@@ -2554,6 +2663,10 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     DD('flowerspike', 'Flower Spike', 'plants', 'flower', { n: 4, h: 58, petal: '#f4ecf6', center: '#e8c840', spike: true }, { stack: true, cover: .25, flowers: true, small: true, desc: 'Tall blooms: flies come to them, mantises wait on them' }),
     DD('orchidspray', 'Orchid Spray', 'plants', 'flower', { n: 4, h: 50, petal: '#fae6f2', center: '#d0508a', orchid: true, leaves: true }, { stack: true, cover: .3, flowers: true, desc: 'Pale orchids: an orchid mantis vanishes among them' }),
     DD('deadleafbranch', 'Dead Leaf Branch', 'decor', 'branch', { kind: 'vine', L: 80, h: 50, r: 1.6, col: '#6a5038', leaves: '#9a6a34' }, { cover: .3, desc: 'Brown curled leaves: a ghost mantis hides as one' }),
+    DD('bamboo', 'Bamboo Stalks', 'plants', 'bamboo', { n: 4, h: 72, r: 1.5, col: '#8ea24a', node: '#c8c890', leaf: '#6f9a3c' }, { stack: true, cover: .2, small: true, mtags: ['tropical', 'grass'], blend: ['stick', 'chinese'], desc: 'Segmented canes with a few leaves on top: tall, springy perches' }),
+    DD('spanishmoss', 'Spanish Moss Hangings', 'decor', 'moss', { h: 64, arm: 34, strands: 10, col: '#5e4a36', moss: '#a3ad94' }, { cover: .25, mtags: ['tropical', 'bark'], blend: ['ghost', 'violin', 'bark'], desc: 'Grey-green strands hanging from a bare stand' }),
+    DD('leafcluster', 'Dead-Leaf Cluster', 'decor', 'leafcluster', { h: 48, reach: 18, n: 18, col: '#5a4430', leaves: ['#8a5a2e', '#a8743c', '#6e4a2a', '#b88a4a'] }, { cover: .3, small: true, mtags: ['litter', 'bark'], blend: ['deadleaf', 'ghost'], desc: 'Curled brown leaves on a bent twig: a dead leaf mantis vanishes here' }),
+    DD('barkslab', 'Upright Bark Slab', 'decor', 'slab', { w: 26, d: 5, h: 62, style: 'cork' }, { cover: .15, mtags: ['bark'], blend: ['bark', 'giantasian'], desc: 'A tall flat slab of bark: bark mantises sprint up it and freeze' }),
   ];
   for (const d of add) if (!JT.DECOR_BY_ID[d.id]) { JT.DECOR.push(d); JT.DECOR_BY_ID[d.id] = d; }
 
@@ -2562,6 +2675,13 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     orchidgarden: { sub: 'jungle', bg: 'canopy', tall: ['crossperch', 'tinytree', 'tallTwig'], mid: ['twigperch', 'branchperch', 'corkround'], plants: ['orchidspray', 'orchid', 'flowerspike', 'miniorchid', 'pinkflowers', 'bromeliad'], ground: ['mosspatch', 'leaflitter'] },
     dryleaf: { sub: 'leafmould', bg: 'log', tall: ['crossperch', 'forked', 'tallTwig'], mid: ['deadleafbranch', 'twigtangle', 'driftwood', 'hollowlog'], plants: ['driedflowers', 'fern', 'tallgrass'], ground: ['oaklitter', 'leaflitter', 'twigs'] },
   });
+
+  // v1.2 decor in the themes
+  const addTo = (th, key, ids) => { const T = JT.PRESET_THEMES[th]; if (!T) return; const a = T[key] || (T[key] = []); for (const id of ids) if (!a.includes(id)) a.push(id); };
+  addTo('orchidgarden', 'tall', ['bamboo']); addTo('orchidgarden', 'mid', ['spanishmoss']);
+  addTo('dryleaf', 'mid', ['leafcluster', 'barkslab']);
+  addTo('jungle', 'tall', ['bamboo', 'spanishmoss']); addTo('canopy', 'mid', ['spanishmoss']); addTo('paradise', 'tall', ['bamboo']);
+  addTo('barkwall', 'tall', ['barkslab']); addTo('trunkwall', 'tall', ['barkslab']); addTo('forest', 'mid', ['leafcluster']); addTo('birch', 'mid', ['leafcluster']);
   JT.PRESETS.unshift(['Orchid Garden', 'orchidgarden', ['standard', 'wide', 'cube', 'arboreal', 'panoramic']], ['Dry Leaf Forest', 'dryleaf', ['standard', 'wide', 'cube', 'arboreal']]);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -5570,6 +5690,33 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     ['flowerLure', 'species', 'Waiting in the Flowers', 'An orchid or spiny flower mantis caught a visitor while sitting on a flower.', 'Orchid and spiny flower mantises: give them flowers to sit on.'],
     ['camoHunt', 'species', 'Hidden in Plain Sight', 'A bark or dead-leaf mantis hunted from its home woodland, almost invisible against it.', 'Ghost and Carolina mantises: keep them in Dry Leaf or Old Bark Forest.'],
   ];
+  // v1.2: species specialities, behaviour polish and the life cycle
+  ADD.push(
+    ['boxing', 'species', 'Boxing Match', 'A boxer mantis pumped its banded forelegs up and down at a neighbour, like a tiny boxer sparring.', 'Boxer mantis: bring your finger close, or keep two in one tank.'],
+    ['wingBuzz', 'species', 'Wing Buzz', 'A budwing mantis flicked its stubby wings so fast they rattled, flashing orange underneath.', 'Budwing mantis: startle it gently with your finger.'],
+    ['barkSprint', 'species', 'Bark Sprinter', 'A bark mantis dashed across a trunk in a quick burst, then froze flat against it.', 'Bark mantis: give it a bark slab, trunk or cork to run on.'],
+    ['stickFlat', 'species', 'Just a Twig', 'A stick mantis lay flat along a twig, forelegs stretched out ahead, and disappeared into it.', 'Stick mantis: give it thin twigs and stems.'],
+    ['playDead', 'species', 'Playing Dead', 'Startled, a dead leaf mantis dropped flat and lay still as a fallen leaf until the danger passed.', 'Dead leaf mantis: give it a fright.'],
+    ['violinFlyer', 'species', 'Only Things That Fly', 'A wandering violin mantis ignored everything that walked and snatched a flying insect out of the air.', 'Violin mantis: offer flies or moths.'],
+    ['giantStare', 'species', 'Face to Face', 'A giant Asian mantis walked up to the glass and stared straight back at you.', 'Giant Asian mantis: hold your finger still on the glass.'],
+    ['flowerDisplay', 'species', 'The Devil\u2019s Flower', 'A devil\u2019s flower mantis spread its leafy forelegs wide and showed the red, blue and purple hidden inside.', 'Devil\u2019s flower mantis: startle it, or let another mantis come too close.'],
+    ['flowerHang', 'species', 'Swaying Bloom', 'A flower mantis hung upside-down from a high tip and swayed gently, like a bloom on its stem.', 'Devil\u2019s flower or violin mantis: give it tall tips to hang from.'],
+    ['missedStrike', 'hunt', 'Missed!', 'A strike shot out and closed on nothing: the prey was faster. The mantis paused, then settled back to wait.', 'Fast flyers and young nymphs make misses more likely.'],
+    ['peering', 'hunt', 'Measuring the Distance', 'Before striking, a mantis rocked its head from side to side to judge how far away its prey was.', 'Watch closely just before a strike.'],
+    ['nightShift', 'hunt', 'Night Shift', 'A night-active mantis hunted a moth after dark while the others slept.', 'Ghost, dead leaf, violin and devil\u2019s flower mantises stay up at dusk.'],
+    ['breezeSway', 'life', 'In the Breeze', 'When the breeze came through, a mantis rocked in time with its stem, just like a leaf.', 'A breezy biome (Prairie, Heath, Dry Leaf) brings the wind.'],
+    ['eyeWipe', 'life', 'Clean Eyes', 'A mantis drew a foreleg over each big eye to wipe it clean.', 'Watch a resting mantis for a while.'],
+    ['beadSip', 'life', 'A Tiny Bead', 'A nymph lowered its head and sipped from one of the smallest water beads.', 'Mist the tank while nymphs are about.'],
+    ['morningBask', 'life', 'Morning Warm-up', 'In the morning a mantis settled under the warm lamp; its colours brightened as it warmed up.', 'Add a basking lamp and watch at sunrise.'],
+    ['colourShift', 'grow', 'New Colours', 'After a molt, a mantis came out in colours closer to its surroundings.', 'Chinese, European, Carolina, ghost, dead leaf, stick and giant Asian mantises can change colour when they molt.'],
+    ['courtship', 'social', 'Courtship', 'A male mantis crept up on a female from behind, very slowly, freezing whenever she turned her head.', 'Keep an adult male and female of the same species together.'],
+    ['mating', 'social', 'A Pair', 'The male climbed onto the female\u2019s back and the two stayed together for a long while.', 'Let a courting male reach the female.'],
+    ['eatenByMate', 'social', 'Eaten by His Mate', 'The female turned round and ate the male. It happens, especially when she is hungry.', 'Mate a hungry female (or just be unlucky).'],
+    ['oothLaid', 'grow', 'Egg Case', 'A female worked a foamy egg case onto a high twig with the tip of her abdomen.', 'Some time after mating, the female lays.'],
+    ['oothHard', 'grow', 'Hardened', 'The pale, soft egg case dried to a tough, dark shell.', 'Wait a day after the egg case is laid.'],
+    ['hatchDay', 'grow', 'Hatching Day', 'Dozens of tiny nymphs streamed out of the egg case, dangled for a moment, then scattered.', 'Keep the egg case for a few days.'],
+    ['elder', 'life', 'Old Age', 'An old adult has slowed down; its strikes are slower and its colours a little faded.', 'Keep an adult for a long time.'],
+  );
   for (const [id, cat, title, text, hint] of ADD) { if (!JT.JOURNAL.some(e => e.id === id)) JT.JOURNAL.push({ id, title, icon: '', text }); JT.JOURNAL_META[id] = [cat, hint]; }
 })(typeof window !== 'undefined' ? window : globalThis);
 (function (root) {
@@ -5755,7 +5902,7 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     const A = sp._air;
     sp._sweep = st === 'pounce' && A ? M.clamp((A.t - 0.45) / 0.45, 0, 1) : M.lerp(sp._sweep || 0, 0, Math.min(1, dt * 8));
     sp._mFly = !!(A && A.fly);
-    const hangT = sp._mHangOK && MOLTH.has(st) ? 1 : 0;
+    const hangT = sp._mHangOK && (MOLTH.has(st) || st === 'mHang') ? 1 : 0;
     sp._mHangK = M.lerp(sp._mHangK || 0, hangT, Math.min(1, dt * (hangT ? 0.7 : 1.2))); if (sp._mHangK < 0.002) sp._mHangK = 0;
     const slT = st === 'molting' ? M.smooth(M.clamp((sp.st - 1) / 9, 0, 1)) : st === 'postMolt' ? 1 : 0;
     sp._mSlide = M.lerp(sp._mSlide || 0, slT, Math.min(1, dt * (slT ? 3 : 0.9))); if (sp._mSlide < 0.002) sp._mSlide = 0;
@@ -5784,6 +5931,518 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
       to = ok ? Nav.supPos(hab, base, to) : A.from.slice(); A.land = JT.deepClone(base);
     }
     A.to = to; A.dur = Math.max(A.dur, 0.12);
+  }
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Mantis Terrarium pack v1.2 — species signatures and behaviour polish (wraps JT.SpiderAI after mantis-ai.js).
+   Species (S.mflags): playDead (dead leaf), box (boxer), display:'buzz' + noFly (budwing), display:'flower' + hangs
+   (devil's flower), flyOnly + rockWalk + hangs (violin), bigPrey + curious (giant Asian), flat (stick), sprint (bark),
+   slow, night, morph.
+   Polish for every mantis: peering before a strike, missed strikes, swaying in the breeze, eye wiping, sipping
+   droplets (nymphs pick the tiny beads), head-first finger tracking, a night shift for night species, cold-dark
+   colours that brighten as it warms, colour shift toward its surroundings at a molt (morph species), old age. */
+(function (root) {
+  'use strict';
+  const JT = root.JT, AI = JT.SpiderAI, H = AI.H, M = JT.M, Nav = JT.Nav, PRI = AI.PRI;
+  const R = () => JT.R();
+  const FL = (sp) => ((JT.SPECIES_BY_ID[sp.species] || {}).mflags) || {};
+  const DAY = JT.DAY || 480;
+  const MOLTH = new Set(['moltSeek', 'moltSilk', 'premolt', 'molting', 'postMolt']);
+  const CALM = new Set(['idle', 'explore', 'lookout', 'groom', 'rest', 'watch', 'look', 'stretch', 'homeSeek', 'postFeed', 'mHang']);
+  const preyDef = (p) => p && JT.PREY_BY_ID[p.type];
+  const preyNm = (p) => p && p.type === 'jumperMeal' ? 'mantis' : ((preyDef(p) || {}).name || 'prey').toLowerCase();
+  const J = (hab, id, sp, soft) => hab.event('journal', { id, sp, soft: !!soft });
+  const watched = (hab) => !!(hab.game && hab.game.hab === hab);
+  AI.MFL = FL;
+
+  // ---- new states ----
+  Object.assign(PRI, { mDead: 62, mBox: 20, mHang: 8, mHangSeek: 9, mMiss: 30 });
+  const LINES = { mDead: 'Playing dead', mBox: 'Boxing', mHang: 'Hanging like a flower', mHangSeek: 'Climbing to hang', mMiss: 'Missed — regrouping' };
+  AI.M_LINES = LINES;
+  const line0 = AI.stateLine;
+  AI.stateLine = function (hab, sp) {
+    if (LINES[sp.state]) return LINES[sp.state];
+    if (sp.state === 'display' && FL(sp).display === 'buzz') return 'Buzzing its wing stubs';
+    if (sp.state === 'display' && FL(sp).display === 'flower') return 'Flower display';
+    if (sp.state === 'cleanEyes') return 'Wiping its eyes';
+    if (sp.state === 'drink') return 'Sipping a droplet';
+    return line0.apply(this, arguments);
+  };
+  const restore0 = AI.restore;
+  AI.restore = function (hab, sp) {
+    const st = sp.state; if (/^m[A-Z]/.test(st || '')) { sp.state = 'idle'; sp.st = 0; }
+    restore0.apply(this, arguments);
+    if (st === 'mDead') sp.thought = 'Settling in and looking around.';
+  };
+
+  // on bark: a climbable face (trunk, slab, cork wall) or a thick barky branch
+  function onBark(hab, sp) {
+    const u = sp.sup; if (!u || !hab) return false; if (u.k === 'face') return true; if (u.k !== 'path' || u.d == null) return false;
+    const g = hab.geoms[u.d]; const pa = g && g.paths[u.p]; if (!pa) return false; if (pa.kind === 'face') return true;
+    return (pa.r || 0) >= 2 && !!(JT.Biomes && JT.Biomes.tags(g.def).bark);
+  }
+  AI.mantisOnBark = onBark;
+  // ---- movement: slow species, bark sprinters, old age ----
+  const speed0 = AI.speed;
+  AI.speed = function (sp) {
+    const f = FL(sp); let k = f.slow || 1;
+    if (f.sprint && onBark(AI._mHab, sp)) k *= 1.8; // bursts up the bark
+    if (sp._mAge) k *= 1 - 0.3 * sp._mAge;
+    return speed0(sp) * k;
+  };
+  // budwing: stubby wings, never flies
+  const caps0 = AI.caps;
+  AI.caps = function (sp, carry, hunt) {
+    if (!FL(sp).noFly) return caps0(sp, carry, hunt);
+    const fu = sp._mFlyUntil; sp._mFlyUntil = 0; try { return caps0(sp, carry, hunt); } finally { sp._mFlyUntil = fu; }
+  };
+  // violin: only things that fly (unless starving); giant Asian: the biggest prey
+  const hf0 = AI.huntableFor;
+  AI.huntableFor = function (sp, d) { if (!hf0(sp, d)) return false; if (FL(sp).flyOnly && d && !d.fly && sp.sat > 0.12) return false; return true; };
+  const size0 = AI.sizeLimit;
+  AI.sizeLimit = function (sp) { const k = size0(sp); const b = FL(sp).bigPrey; return b && sp.stage >= 3 ? k + b : k; };
+
+  // ---- peering: a few side-to-side head rocks to judge the distance, then the strike ----
+  const crouch0 = H.crouch;
+  H.crouch = function (hab, sp, dt) {
+    const e = AI.targetEnt(hab, sp);
+    if (e && sp._mPeerId !== e.id) { sp._mPeerId = e.id; sp._mPeerT = e.sup && e.sup.k === 'air' ? 0 : 0.55 + R() * 0.6; if (sp._mPeerT) { sp.thought = 'Rocking its head side to side — measuring the distance.'; J(hab, 'peering', sp, true); } }
+    if (sp._mPeerT > 0) { sp._mPeerT -= dt; sp.st = Math.max(0, sp.st - dt); }
+    return crouch0(hab, sp, dt);
+  };
+
+  // ---- missed strikes: some strikes close on nothing (fast or flying prey, young nymphs, a long reach) ----
+  function rollMiss(hab, sp, A) {
+    A._mm = 1; const e = AI.targetEnt(hab, sp); if (!e || !sp.target || sp.target.kind !== 'prey') return;
+    const d = preyDef(e) || {}; const L = AI.len(sp); const v = e._vel ? M.len(e._vel) : 0;
+    let p = 0.07 + (d.fly ? 0.12 : 0) + (e.sup && e.sup.k === 'air' ? 0.12 : 0) + M.clamp((v - 3) * 0.02, 0, 0.12) + ((sp.stage | 0) <= 2 ? 0.1 : 0) + (M.dist(A.from, e.pos) > L * 0.9 ? 0.07 : 0) - (sp.traits.patience - 0.5) * 0.08 + (sp._mAge || 0) * 0.1;
+    if (sp._mForceMiss) { p = sp._mForceMiss; sp._mForceMiss = 0; }
+    if (sp._mAge) A.dur *= 1 + 0.4 * sp._mAge;
+    if (R() < p) { A._miss = e.id; JT.PreyAI.escape(hab, e, sp, true); }
+  }
+  const pounce0 = H.pounce;
+  H.pounce = function (hab, sp, dt) {
+    const A = sp._air;
+    if (!A || !A._miss) return pounce0(hab, sp, dt);
+    const tg = sp.target; sp.target = null; const mem = sp.mem.misses;
+    pounce0(hab, sp, dt);
+    if (sp.state === 'pounce') { sp.target = tg; return; }
+    sp.target = tg; const e = tg && (hab.preyById(tg.id)); const nm = preyNm(e);
+    if (e && e.type) { const pt = sp.mem.ptype || (sp.mem.ptype = {}); const r = pt[e.type] || (pt[e.type] = { c: 0, m: 0 }); r.m++; }
+    AI.dropTarget(hab, sp); void mem;
+    if (sp.state === 'idle' || sp.state === 'rest' || sp.state === 'assess') { AI.setState(sp, 'mMiss', 'Missed! The ' + nm + ' got away — a short pause before it settles back to wait.'); sp._mMissDur = 1.2 + R() * 1.4; }
+    else if (sp.state === 'fall') sp._afterFall = 'mMiss';
+    sp._mMissN = (sp._mMissN || 0) + 1; J(hab, 'missedStrike', sp);
+  };
+  H.mMiss = function (hab, sp, dt) { if (sp.st > (sp._mMissDur || 1.5)) AI.setState(sp, 'lookout', 'Still again, watching for the next chance.'); };
+
+  // ---- play dead (dead leaf mantis): drops and lies flat like a fallen leaf, then slowly recovers ----
+  function startDead(hab, sp, why) {
+    sp._mDeadCD = hab.time + 40 + R() * 30; sp._route = null; AI.dropTarget(hab, sp); sp._mDeadDur = 7 + R() * 7;
+    sp.thought = why + ' — drops and lies still, legs tucked: just a dead leaf.';
+    J(hab, 'playDead', sp);
+    if (sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' && !sp._air) {
+      const b = Nav.supportBelow(hab, [sp.pos[0], sp.pos[1] - 0.6, sp.pos[2]]);
+      const drop = sp.pos[1] - b.pos[1];
+      if (drop > 1.5 && b.sup && b.sup.k !== 'air') { sp._air = { from: sp.pos.slice(), to: b.pos.slice(), t: 0, dur: 0.22 + drop / 140, apex: 0, land: JT.deepClone(b.sup) }; sp.sup = { k: 'air' }; sp._afterFall = 'mDead'; AI.setState(sp, 'fall', sp.thought); return; }
+    }
+    AI.setState(sp, 'mDead', sp.thought);
+  }
+  AI.mantisPlayDead = startDead;
+  H.mDead = function (hab, sp, dt) {
+    if (sp.st > sp._mDeadDur) { if (!sp._mRise) { sp._mRise = 1; sp.thought = 'Slowly rolls back onto its feet.'; } if (sp.st > sp._mDeadDur + 1.6) { sp._mRise = 0; AI.setState(sp, 'lookout', 'Up again, swaying gently like a leaf.'); } }
+  };
+
+  // ---- boxing (boxer mantis): pumps its forelegs at a nearby mantis or your finger ----
+  function startBox(hab, sp, pos, who) { sp._mBoxCD = hab.time + 14 + R() * 10; sp._watchPos = pos.slice(); sp._mBoxDur = 2 + R() * 1.6; AI.setState(sp, 'mBox', 'Boxing at ' + who + ' — forelegs pumping up and down.'); J(hab, 'boxing', sp); }
+  H.mBox = function (hab, sp, dt) { if (sp._watchPos) faceSlow(sp, sp._watchPos, dt, 2); if (sp.st > sp._mBoxDur) { sp._watchPos = null; AI.setState(sp, 'lookout'); } };
+
+  // ---- hanging (devil's flower, violin): climbs to a high tip and hangs upside-down, swaying like a flower ----
+  function startHangSeek(hab, sp) {
+    sp._mHangCD = hab.time + 45 + R() * 40;
+    const spot = AI.chooseSpot(hab, sp, 'molt'); if (!spot) return false;
+    sp._route = spot.route; sp._routeStart = hab.time; sp._mHangGoal = spot.node.pos.slice();
+    AI.setState(sp, 'mHangSeek', FL(sp).display === 'flower' ? 'Climbing to a high tip to hang like a flower.' : 'Climbing to a high twig to hang and wait.');
+    return true;
+  }
+  AI.mantisHangSeek = startHangSeek;
+  function beginHang(hab, sp) {
+    const L = AI.len(sp); sp._route = null; sp._mPiv = null; sp._mNh = null;
+    if (!(sp.sup && sp.sup.k === 'path' && AI.clearBelow(hab, sp.pos) > L * 1.4)) { AI.setState(sp, 'idle'); return; }
+    sp._mHangOK = true; sp._mHangDur = 40 + R() * 50;
+    AI.setState(sp, 'mHang', FL(sp).display === 'flower' ? 'Hanging upside-down from the tip, swaying gently — a flower on its stem.' : 'Hanging patiently beneath the twig, waiting for something to fly by.');
+    J(hab, 'flowerHang', sp);
+  }
+  AI.mantisBeginHang = beginHang;
+  H.mHangSeek = function (hab, sp, dt) {
+    const r = JT.Loco.follow(hab, sp, dt, AI.speed(sp) * 0.75);
+    if (r === 'done' || r === 'none') beginHang(hab, sp);
+    else if (hab.time - (sp._routeStart || 0) > 40) { sp._route = null; AI.setState(sp, 'idle'); }
+  };
+  H.mHang = function (hab, sp, dt) { if (sp.st > sp._mHangDur) AI.setState(sp, 'idle', 'Climbs back up onto the twig.'); };
+
+  // ---- drinking: nymphs choose the tiny beads; the head lowers and the drop shrinks away ----
+  const drink0 = H.drink;
+  H.drink = function (hab, sp, dt) {
+    const dr = sp._drink && sp._drink.id ? hab.data.drops.find(d => d.id === sp._drink.id) : null;
+    if (dr && !dr.pool) { if (dr._r0 == null) dr._r0 = dr.r || 1; dr.r = Math.max(0.15, dr._r0 * (1 - M.clamp(sp.st / 3, 0, 1) * 0.85)); }
+    const tiny = dr && dr.tiny; const st0 = sp.state;
+    if (sp.st < dt * 1.5) sp.thought = tiny ? 'Head lowered to a tiny bead of water, sipping.' : 'Head lowered to the droplet, sipping.';
+    drink0(hab, sp, dt);
+    if (st0 === 'drink' && sp.state !== 'drink' && tiny && (sp.stage | 0) <= 2) J(hab, 'beadSip', sp);
+  };
+  function preferTiny(hab, sp) {
+    const cur = sp._drink; if (!cur || !cur.id) return;
+    const cd = hab.data.drops.find(d => d.id === cur.id); if (cd && cd.tiny) return;
+    let best = null, bd = 1e9; for (const d of hab.data.drops) { if (!d.tiny) continue; const k = M.dist(d.pos, sp.pos); if (k < bd) { bd = k; best = d; } }
+    if (!best || bd > M.dist(cur.pos, sp.pos) + 45) return;
+    const r = Nav.route(hab, sp.sup, sp.pos, best.sup, best.pos, AI.caps(sp)); if (!r) return;
+    sp._route = r; sp._routeStart = hab.time; sp._drink = { pos: best.pos, sup: best.sup, id: best.id, decor: best.decor, pool: false };
+    sp.thought = 'Thirsty — picking out one of the tiny water beads.';
+  }
+
+  // ---- finger tracking: the head turns first, then the body follows slowly ----
+  function faceSlow(sp, target, dt, rate) {
+    const d = M.sub(target, sp.pos); d[1] = 0; if (M.len(d) < 1e-3) return; const want = M.norm(d); const f = sp.fwd || [1, 0, 0]; const k = Math.min(1, dt * rate);
+    const nf = M.norm([M.lerp(f[0], want[0], k), sp.sup && sp.sup.k === 'path' ? f[1] * (1 - k) : 0, M.lerp(f[2], want[2], k)]); if (M.finite3(nf)) sp.fwd = nf;
+  }
+  function headFirst(hab, sp, dt, pos) {
+    const a = AI.aimResidual(hab, sp, pos); sp._gaze = M.clamp(a, -0.75, 0.75) / 0.3; sp._gazeT = 0.5;
+    if (Math.abs(a) < 0.3) { sp._mTurnT = 0; return; }
+    sp._mTurnT = (sp._mTurnT || 0) + dt; if (sp._mTurnT > 0.45) faceSlow(sp, pos, dt, 0.9); // the body turns only after the head has
+  }
+  for (const k of ['fingerWatch', 'curious', 'display', 'watch']) {
+    const h0 = H[k]; if (!h0) continue;
+    H[k] = function (hab, sp, dt) {
+      const f = hab.finger; const live = f && f.pos && hab.time - f.t < 2 && sp._fingerT != null && hab.time - sp._fingerT < 2.5;
+      const w = sp._watchPos; if (!w || sp._route) return h0(hab, sp, dt);
+      sp._watchPos = null; h0(hab, sp, dt); if (sp.state === k && sp._watchPos == null) sp._watchPos = live && k !== 'watch' ? f.pos.slice() : w;
+      if (sp._watchPos && sp.state === k) headFirst(hab, sp, dt, sp._watchPos);
+    };
+  }
+
+  // ---- colours: cold-dark mornings, molt colour morphs, old age ----
+  const GREEN = new Set(['rainforest', 'orchidgarden', 'tropical', 'meadow', 'classic', 'cloud', 'mossy', 'jungle']);
+  const BROWN = new Set(['desert', 'dryleaf', 'oldbark', 'heath', 'prairie', 'scrub', 'savanna', 'arid']);
+  function biomeTone(hab) { const id = JT.Biomes && JT.Biomes.id ? JT.Biomes.id(hab) : 'classic'; return BROWN.has(id) ? 'brown' : GREEN.has(id) ? 'green' : null; }
+  function baseTone(S) { const c = (S.pal && (S.pal.body || S.pal.abd)) || '#888888'; const h = c.replace('#', ''); const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16); return g > r + 8 ? 'green' : 'brown'; }
+  function moltColour(hab, sp) {
+    if (!FL(sp).morph) return; const want = biomeTone(hab); if (!want) return; const S = JT.SPECIES_BY_ID[sp.species]; const base = baseTone(S);
+    const mo = sp.morph || null; const a0 = mo ? mo.a : 0; let next;
+    if (want === base) next = mo && mo.a > 0 ? { k: mo.k, a: Math.max(0, mo.a - 0.5) } : null; // back toward its natural colours
+    else next = mo && mo.k === want ? { k: want, a: Math.min(1, mo.a + 0.5) } : mo && mo.a > 0.25 ? { k: mo.k, a: mo.a - 0.5 } : { k: want, a: 0.5 };
+    if (next && next.a <= 0.02) next = null; sp.morph = next;
+    const a1 = next ? next.a : 0; if (Math.abs(a1 - a0) < 0.05) return;
+    const word = next ? (next.k === 'green' ? 'greener' : 'browner') : (base === 'green' ? 'greener' : 'browner');
+    sp.thought = 'Out of its old skin a little ' + word + ', closer to its surroundings.';
+    if (hab.game && hab.game.diary) hab.game.diary(sp, 'Molted into ' + word + ' colours to match the ' + ((JT.Biome && JT.Biome.of(hab) && JT.Biome.of(hab).name) || 'tank').toLowerCase() + '.');
+    J(hab, 'colourShift', sp);
+  }
+  AI.mantisMoltColour = moltColour;
+  function warmth(hab, sp, dt) {
+    const dl = hab.daylight(); const tod = hab.game && hab.game.tod ? hab.game.tod() : 0.4; const warm = hab.warmthAt ? hab.warmthAt(sp.pos) : 0;
+    let tgt = dl < 0.3 ? 0.85 : tod < 0.34 ? 0.55 : 0; if (warm > 0.25 || sp.state === 'bask') tgt = 0;
+    const c0 = sp._mCold == null ? tgt : sp._mCold; const rate = tgt < c0 ? (sp.state === 'bask' ? 0.05 : 0.012) : 0.008;
+    sp._mCold = c0 + M.clamp(tgt - c0, -rate * dt, rate * dt);
+    if (c0 > 0.5) sp._mWasCold = true;
+    if (sp.state === 'bask' && sp._mWasCold && sp._mCold < 0.2 && tod < 0.5) { sp._mWasCold = false; sp.thought = 'Warmed through under the lamp — its colours are brighter now.'; J(hab, 'morningBask', sp); }
+  }
+
+  // ---- the per-tick wrapper ----
+  const update0 = AI.update;
+  AI.update = function (hab, sp, dt) {
+    const f = FL(sp), L = AI.len(sp), stg0 = sp.stage, s0 = sp.state, hold0 = sp.hold;
+    if (f.noFly && sp._air && sp._air.mode === 'jump') sp._air._m = 1;
+    // giant Asian: barely bothered by your finger while eating
+    if (f.curious && sp.hold && hab.finger && hab.finger.id !== sp._mPokeSeen && R() > 0.15) sp._mPokeSeen = hab.finger.id;
+    // night shift: night species stay up after dark while they are not full
+    let dlOwn = null; const dl = hab.daylight();
+    if (f.night && dl < 0.2 && sp.sat < 0.9) { dlOwn = Object.getOwnPropertyDescriptor(hab, 'daylight'); const d0 = hab.daylight; hab.daylight = function () { return Math.max(0.3, d0.call(this)); }; }
+    try { update0.call(this, hab, sp, dt); }
+    finally { if (dlOwn) Object.defineProperty(hab, 'daylight', dlOwn); else if (f.night && dl < 0.2 && sp.sat < 0.9) delete hab.daylight; }
+    const st = sp.state, fresh = hab.finger && hab.finger.pos && hab.time - hab.finger.t < 0.6 ? hab.finger : null;
+    if (f.noFly) sp._mFlyUntil = 0;
+    // a strike just launched: roll for a miss
+    if (st === 'pounce' && sp._air && sp._air.straight && !sp._air._mm) rollMiss(hab, sp, sp._air);
+    // a catch: species / night journal moments
+    if (sp.hold && sp.hold !== hold0 && (st === 'subdue' || st === 'secure' || st === 'feed' || st === 'fall')) {
+      const p = hab.preyById(sp.hold); const d = preyDef(p) || {};
+      if (f.flyOnly && d.fly) J(hab, 'violinFlyer', sp);
+      if (f.night && dl < 0.2 && (d.fly || /moth/.test(p && p.type || ''))) { sp.thought = 'A night hunter: caught a ' + preyNm(p) + ' in the dark.'; J(hab, 'nightShift', sp); }
+    }
+    if (st !== s0) {
+      if (st === 'drinkSeek' && (sp.stage | 0) <= 2) preferTiny(hab, sp);
+      // dead leaf: startled → plays dead instead of running or displaying
+      if (f.playDead && (st === 'flee' || st === 'display' || st === 'avoid' || (st === 'fingerWatch' && fresh && fresh.fast)) && !(sp._mDeadCD > hab.time) && (st !== 'display' || R() < 0.75)) startDead(hab, sp, fresh ? 'Startled by your finger' : 'Startled');
+      else if (st === 'display') {
+        if (f.display === 'buzz') { sp._mBuzzOn = true; sp.thought = 'Wing stubs buzzing — a dry, clicking rattle!'; J(hab, 'wingBuzz', sp); if (watched(hab)) rattle(); }
+        else if (f.display === 'flower') { sp.thought = 'Rears up and spreads its flower-coloured forelegs and wings — a sudden bloom!'; J(hab, 'flowerDisplay', sp); }
+        if (sp._mHangOK) sp._mHangOK = false;
+      }
+      if (s0 === 'display') sp._mBuzzOn = false;
+      if (s0 === 'mHang' && st !== 'mHang' && !MOLTH.has(st)) { sp._mHangOK = false; sp._mPiv = null; }
+    }
+    if (sp.state !== 'mHang' && !MOLTH.has(sp.state) && sp._mHangOK) { sp._mHangOK = false; sp._mPiv = null; }
+    const st2 = sp.state, calm = CALM.has(st2) && !sp.hold && !sp._air;
+    // boxer: pump the forelegs at a mantis or a finger coming close
+    if (f.box && (calm || ((st2 === 'curious' || st2 === 'fingerWatch' || st2 === 'watch') && !sp.hold && !sp._air)) && st2 !== 'mHang' && !(sp._mBoxCD > hab.time) && (sp._mBoxT = (sp._mBoxT || 0) - dt) <= 0) {
+      sp._mBoxT = 0.5;
+      if (fresh && M.dist(fresh.pos, sp.pos) < 34) startBox(hab, sp, fresh.pos, 'your finger');
+      else for (const o of hab.data.spiders) { if (o !== sp && M.dist(o.pos, sp.pos) < L * 3 + AI.len(o) + 8 && !MOLTH.has(o.state)) { startBox(hab, sp, o.pos, o.name); break; } }
+    }
+    // hangers: now and then climb up to hang
+    if (f.hangs && (st2 === 'idle' || st2 === 'lookout' || st2 === 'rest') && sp.sat > 0.25 && !(sp._mHangCD > hab.time) && (sp.stage | 0) >= 2 && sp.soft <= 0) {
+      if (sp._mHangCD == null) sp._mHangCD = hab.time + 8 + R() * 20; else if (R() < 0.5) startHangSeek(hab, sp); else sp._mHangCD = hab.time + 15;
+    }
+    // giant Asian: comes right up to the glass to stare at your finger
+    if (f.curious && st2 === 'curious' && fresh && M.dist(sp.pos, fresh.pos) < L * 1.5 + 12 && !(sp._mStareJ > hab.time)) { sp._mStareJ = hab.time + 60; sp.thought = 'Right up at the glass, staring at your finger with its big eyes.'; J(hab, 'giantStare', sp); }
+    if (f.curious && st2 === 'fingerWatch' && fresh && !fresh.fast && R() < 0.3) { sp._fingerT = hab.time; AI.setState(sp, 'curious', 'Turns its whole head toward your finger, curious.'); }
+    // eye wiping (now and then while resting)
+    if (calm && (st2 === 'idle' || st2 === 'rest' || st2 === 'lookout') && (sp._mEyeT = (sp._mEyeT == null ? 40 + R() * 60 : sp._mEyeT) - dt) <= 0) {
+      sp._mEyeT = 70 + R() * 90; AI.setState(sp, 'cleanEyes', 'Drawing a foreleg over one big eye, then the other.'); J(hab, 'eyeWipe', sp, true);
+    }
+    // a molt just finished: colour shift toward the surroundings
+    if (sp.stage !== stg0 && sp.stage > stg0) moltColour(hab, sp);
+    // old age (no death: only slower and a little faded)
+    sp._mAge = (sp.stage | 0) >= 5 ? M.clamp(((sp.adultDays || 0) - 16) / 12, 0, 1) : 0;
+    if (sp._mAge > 0.3 && !sp.elderNoted) { sp.elderNoted = true; if (hab.game && hab.game.diary) hab.game.diary(sp, 'Getting old: slower now, its colours a little faded.'); J(hab, 'elder', sp); }
+    warmth(hab, sp, dt);
+    // ---- animation drivers for the drawing ----
+    const k8 = Math.min(1, dt * 8), k4 = Math.min(1, dt * 4);
+    const deadT = st2 === 'mDead' && !sp._mRise ? 1 : (st2 === 'fall' && sp._afterFall === 'mDead') ? 0.6 : 0;
+    sp._mDead = M.lerp(sp._mDead || 0, deadT, Math.min(1, dt * (deadT ? 7 : 1.4))); if (sp._mDead < 0.003) sp._mDead = 0;
+    const bark = f.sprint && onBark(hab, sp); const onTwig = sp.sup && (sp.sup.k === 'path' || bark);
+    const still = !sp._moving && (st2 === 'idle' || st2 === 'rest' || st2 === 'lookout' || st2 === 'sleep' || st2 === 'watch');
+    if (still) sp._mStillT = (sp._mStillT || 0) + dt; else sp._mStillT = 0;
+    const flatT = (f.flat && onTwig && sp._mStillT > 2.5) || (bark && sp._mStillT > 0.6) ? 1 : 0;
+    sp._mFlatK = M.lerp(sp._mFlatK || 0, flatT, Math.min(1, dt * (f.sprint ? 5 : 1.2))); if (sp._mFlatK < 0.003) sp._mFlatK = 0;
+    if (flatT && sp._mFlatK > 0.9 && !(sp._mFlatJ > hab.time)) { sp._mFlatJ = hab.time + 120; if (f.flat) { sp.thought = 'Pressed flat along the twig, forelegs stretched out in front — just another stick.'; J(hab, 'stickFlat', sp); } }
+    if (bark && sp._moving && !(sp._mSprJ > hab.time)) { sp._mSprJ = hab.time + 90; sp.thought = 'A quick dash up the bark — then frozen flat again.'; J(hab, 'barkSprint', sp); }
+    sp._mBuzz = M.lerp(sp._mBuzz || 0, st2 === 'display' && sp._mBuzzOn ? 1 : 0, k8);
+    sp._mBox = M.lerp(sp._mBox || 0, st2 === 'mBox' ? 1 : 0, k8);
+    sp._mSip = M.lerp(sp._mSip || 0, st2 === 'drink' ? 1 : 0, k4);
+    sp._mEyeW = M.lerp(sp._mEyeW || 0, st2 === 'cleanEyes' ? 1 : 0, k4);
+    sp._mPeer = M.lerp(sp._mPeer || 0, st2 === 'crouch' && sp._mPeerT > 0 ? 1 : 0, Math.min(1, dt * 10));
+    sp._mHangSway = M.lerp(sp._mHangSway || 0, st2 === 'mHang' ? (f.display === 'flower' ? 1 : 0.6) * (1 + windK(hab) * 0.8) : 0, Math.min(1, dt * 1.5));
+    for (const k of ['_mBuzz', '_mBox', '_mSip', '_mEyeW', '_mPeer', '_mHangSway']) if (sp[k] < 0.003) sp[k] = 0;
+    // breeze: rocks in time with the swaying stems (the same spring as the decor)
+    const W = hab._mWind; const wk = windK(hab);
+    if (W && (wk > 0 || Math.abs(W.x) > 0.002) && !sp._air && sp._mDead < 0.3 && !MOLTH.has(st2)) {
+      const kk = f.playDead || f.display === 'flower' ? 1.8 : 1; sp._mRock = M.clamp(W.x * 5.5 * kk, -1.5, 1.5);
+      if (wk > 0 && Math.abs(sp._mRock) > 0.35 && calm && !(sp._mBreezeJ > hab.time)) { sp._mBreezeJ = hab.time + 200; sp.thought = 'Rocking gently in time with the breeze, like a leaf.'; J(hab, 'breezeSway', sp, true); }
+    } else sp._mRock = M.lerp(sp._mRock || 0, 0, k4);
+    if (Math.abs(sp._mRock) < 0.002) sp._mRock = 0;
+  };
+  function windK(hab) { const w = hab.data && (hab.data.bev || hab.data.wx); return w && w.id === 'wind' ? 1 : 0; }
+  AI.mantisWindK = windK;
+  function rattle() {
+    const A = JT.Audio; if (!A || !A.started || !A.noise) return;
+    for (let i = 0; i < 16; i++) A.noise('effects', 0.016, { f: 3400 + (i % 3) * 500, q: 4, vol: 0.06 * (1 - i / 22), att: 0.002, delay: i * 0.032 });
+  }
+  AI.mantisRattle = rattle;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Mantis Terrarium pack v1.2 — life cycle: sex, courtship, mating, egg cases (oothecae) and hatching day.
+   - every mantis has sp.sex ('f' | 'm'); old saves get one at random on load
+   - an adult male creeps up on an adult female of his species from behind, slowly, freezing whenever she looks his way
+   - he climbs onto her back and the pair stay together for a while; now and then she eats him (more likely when hungry)
+   - some time later she climbs to a high twig and lays a foamy egg case: pale and soft, it hardens and darkens
+   - after a few days dozens of tiny nymphs stream out on short threads and scatter; the tank keeps what fits
+     (tank cap and per-species limit), a few wait in the holding cup and the rest are released — one calm toast
+   Egg cases live in hab.data.ooth (saved with the tank). */
+(function (root) {
+  'use strict';
+  const JT = root.JT, AI = JT.SpiderAI, H = AI.H, M = JT.M, Nav = JT.Nav, PRI = AI.PRI;
+  const R = () => JT.R(); const DAY = JT.DAY || 480;
+  const MOLTH = new Set(['moltSeek', 'moltSilk', 'premolt', 'molting', 'postMolt', 'emerge']);
+  const J = (hab, id, sp, soft) => hab.event('journal', { id, sp, soft: !!soft });
+  const diary = (hab, sp, t) => { if (hab.game && hab.game.diary && sp) hab.game.diary(sp, t); };
+  const L = AI.LIFE = { LAY_DAYS: 0.5, HARD_DAYS: 0.5, HATCH_DAYS: 2.5, EMPTY_DAYS: 1.5, MATE_CD_DAYS: 1.5, CUP_MAX: 3, VIS_MAX: 36 };
+  Object.assign(PRI, { mCourt: 61, mMount: 66, mPaired: 66, mLaySeek: 48, mLay: 88 });
+  Object.assign(AI.M_LINES || (AI.M_LINES = {}), { mCourt: 'Courting', mMount: 'Climbing onto her back', mPaired: 'Paired', mLaySeek: 'Looking for a place to lay', mLay: 'Laying an egg case' });
+  const rndSex = () => (R() < 0.5 ? 'f' : 'm');
+
+  // ---- sex: new mantises, restored mantises, old saves (tanks + holding cup) ----
+  const create0 = AI.create;
+  AI.create = function (hab, speciesId, o) { const sp = create0.apply(this, arguments); if (sp) sp.sex = (o && (o.sex === 'f' || o.sex === 'm')) ? o.sex : rndSex(); return sp; };
+  const restore0 = AI.restore;
+  AI.restore = function (hab, sp) { if (sp.sex !== 'f' && sp.sex !== 'm') sp.sex = rndSex(); return restore0.apply(this, arguments); };
+  const adult = (sp) => (sp.stage | 0) >= 5;
+  const busy = (sp) => MOLTH.has(sp.state) || sp.state === 'sleep' || sp.state === 'mDead' || /^m(Court|Mount|Paired|Lay)/.test(sp.state) || sp.soft > 0;
+  function canCourt(hab, m) {
+    if (m.sex !== 'm' || !adult(m) || busy(m) || m.hold || m._air || m.sat < 0.25) return null;
+    if (m.lastMate != null && (m.ageDays || 0) - m.lastMate < L.MATE_CD_DAYS) return null;
+    if ((PRI[m.state] || 0) >= 30) return null;
+    let best = null, bd = 1e9;
+    for (const f of hab.data.spiders) {
+      if (f === m || f.species !== m.species || f.sex !== 'f' || !adult(f) || busy(f) || f.hold || f.gravid || f._air) continue;
+      if ((PRI[f.state] || 0) >= 40) continue; const d = M.dist(f.pos, m.pos); if (d < bd) { bd = d; best = f; }
+    }
+    return best;
+  }
+  AI.mantisCanCourt = canCourt;
+  function startCourt(hab, m, f) {
+    m._mMate = f.id; m._route = null; m._mCourtT0 = hab.time; m._mReplan = 0; AI.dropTarget(hab, m);
+    AI.setState(m, 'mCourt', 'Has seen ' + f.name + ' — creeping toward her from behind, very slowly.');
+    J(hab, 'courtship', m); diary(hab, m, 'Courted ' + f.name + '.');
+  }
+  AI.mantisStartCourt = startCourt;
+  const horiz = (v) => { const h = [v[0], 0, v[2]]; const l = Math.hypot(h[0], h[2]); return l > 1e-6 ? [h[0] / l, 0, h[2] / l] : [1, 0, 0]; };
+  H.mCourt = function (hab, m, dt) {
+    const f = hab.spider(m._mMate);
+    if (!f || f.gravid || busy(f) && !/^m(Mount|Paired)/.test(f.state) || f.hold) { m._route = null; m.lastMate = (m.ageDays || 0) - L.MATE_CD_DAYS * 0.7; AI.setState(m, 'idle', 'Gives up on courting for now.'); return; }
+    if (hab.time - (m._mCourtT0 || 0) > 150) { m._route = null; m.lastMate = (m.ageDays || 0) - L.MATE_CD_DAYS * 0.5; AI.setState(m, 'idle', 'Gives up on courting for now.'); return; }
+    const Lm = AI.len(m), Lf = AI.len(f); const d = M.dist(m.pos, f.pos);
+    if (d < Lm * 0.3 + Lf * 0.2 + 1.5) { mount(hab, m, f); return; }
+    // she looks his way: freeze mid-step
+    const toM = horiz(M.sub(m.pos, f.pos)); const looks = (M.dot(horiz(f.fwd || [1, 0, 0]), toM) > 0.6 && d < 60) || (f._glance && f._glance.id === m.id && hab.time < f._glance.until);
+    if (looks && !(m._mFreeze > hab.time) && !(m._mFreezeCD > hab.time)) { m._mFreeze = hab.time + 1.4 + R() * 2; m._mFreezeCD = m._mFreeze + 1.2; m.thought = 'Frozen mid-step — ' + f.name + ' turned her head his way.'; }
+    const wantFace = f.pos; const dd = horiz(M.sub(wantFace, m.pos)); const fw = m.fwd || [1, 0, 0]; const k = Math.min(1, dt * 1.5);
+    if (m._mFreeze > hab.time) { m._gaze = 0; return; }
+    if (m.thought && /^Frozen/.test(m.thought)) m.thought = 'Creeping closer again, one slow step at a time.';
+    if ((m._mReplan -= dt) <= 0 || !m._route) {
+      m._mReplan = 2.5; let gpos = f.pos, gsup = f.sup;
+      if (f.sup && f.sup.k === 'floor') { const b = M.add(f.pos, M.mul(horiz(f.fwd || [1, 0, 0]), -Lf * 0.7)); if (Nav.inside(hab, b[0], b[2], 2)) { gpos = [b[0], f.pos[1], b[2]]; gsup = { k: 'floor' }; } }
+      m._route = Nav.route(hab, m.sup, m.pos, gsup, gpos, AI.caps(m)) || Nav.route(hab, m.sup, m.pos, f.sup, f.pos, AI.caps(m)); m._routeStart = hab.time;
+    }
+    const r = JT.Loco.follow(hab, m, dt, AI.speed(m) * (d < Lm * 2 ? 0.12 : 0.2));
+    if (r === 'done' || r === 'none') { m._route = null; if (m.sup && m.sup.k !== 'path') m.fwd = M.norm([M.lerp(fw[0], dd[0], k), 0, M.lerp(fw[2], dd[2], k)]); }
+  };
+  function mount(hab, m, f) {
+    m._route = null; f._route = null; AI.dropTarget(hab, f); AI.dropTarget(hab, m);
+    m._mPairDur = 40 + R() * 45; m._mEatAt = null;
+    const pEat = m._mForceEat != null ? m._mForceEat : 0.1 + (f.sat < 0.35 ? 0.3 : f.sat < 0.6 ? 0.1 : 0) + ((f.pers && f.pers.cannibal) || 0.6) * 0.1 - 0.06;
+    if (R() < pEat) m._mEatAt = 4 + R() * (m._mPairDur - 6);
+    m._mForceEat = null;
+    AI.setState(m, 'mMount', 'Climbs carefully onto ' + f.name + '\u2019s back.');
+    AI.setState(f, 'mPaired', 'Stands still while ' + m.name + ' climbs onto her back.'); f._mMate = m.id;
+  }
+  AI.mantisMount = mount;
+  function stickTo(m, f) { m.pos = f.pos.slice(); m.sup = JT.deepClone(f.sup); m.fwd = (f.fwd || [1, 0, 0]).slice(); }
+  H.mMount = function (hab, m, dt) {
+    const f = hab.spider(m._mMate); if (!f || f.state !== 'mPaired') { AI.setState(m, 'idle'); return; }
+    stickTo(m, f); if (m.st > 2) { AI.setState(m, 'mPaired', 'Paired with ' + f.name + ' — the two stay together for a long while.'); J(hab, 'mating', m); diary(hab, m, 'Mated with ' + f.name + '.'); diary(hab, f, 'Mated with ' + m.name + '.'); }
+  };
+  H.mPaired = function (hab, sp, dt) {
+    if (sp.sex === 'f') { const m = hab.spider(sp._mMate); if (!m || (m.state !== 'mPaired' && m.state !== 'mMount')) { sp._mMate = null; AI.setState(sp, 'idle'); } return; }
+    const m = sp, f = hab.spider(m._mMate); if (!f || f.state !== 'mPaired') { AI.setState(m, 'idle'); return; }
+    stickTo(m, f);
+    if (m._mEatAt != null && m.st > m._mEatAt) { eatenByMate(hab, f, m); return; }
+    if (m.st > m._mPairDur) {
+      m.lastMate = m.ageDays || 0; f.gravid = { d: f.ageDays || 0 }; f._mMate = null; m._mMate = null; m._mMount = 0;
+      AI.setState(f, 'idle', 'The male has gone. She grooms her forelegs.');
+      AI.setState(m, 'idle', 'Climbs down and walks away, carefully.');
+      const b = Nav.supportBelow(hab, M.add(m.pos, M.mul(horiz(m.fwd || [1, 0, 0]), -AI.len(m) * 0.8))); if (b && b.sup && b.sup.k !== 'air' && Nav.inside(hab, b.pos[0], b.pos[2], 2) && Math.abs(b.pos[1] - m.pos[1]) < 6) { m.pos = b.pos; m.sup = b.sup; }
+    }
+  };
+  function eatenByMate(hab, f, m) {
+    const Lm = AI.len(m); const pos = m.pos.slice(); const nm = m.name;
+    hab.removeEntity(m, 'eaten');
+    const meal = { id: JT.newId('p'), type: 'jumperMeal', species: m.species, stage: m.stage, vname: nm, len: Lm, pos, sup: { k: 'air' }, state: 'held', owner: f.id, full: 1, fwd: (f.fwd || [1, 0, 0]).slice() };
+    hab.data.prey.push(meal); f.hold = meal.id; f._mMate = null; f.gravid = { d: f.ageDays || 0 }; f.target = null;
+    AI.setState(f, 'subdue', 'Turned round and seized ' + nm + ' — she is eating her mate.');
+    if (AI._beginSubdue) AI._beginSubdue(hab, f);
+    J(hab, 'eatenByMate', f); diary(hab, f, 'Ate her mate, ' + nm + '.');
+    if (hab.game && hab.game.hab === hab && JT.UI && JT.UI.toast) JT.UI.toast('<b>' + esc(f.name) + '</b> ate her mate, ' + esc(nm) + '.');
+  }
+  AI.mantisEatenByMate = eatenByMate;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---- laying ----
+  function startLay(hab, f) {
+    f._mLayCD = hab.time + 30;
+    const spot = AI.chooseSpot(hab, f, 'molt');
+    if (spot) { f._route = spot.route; f._routeStart = hab.time; AI.setState(f, 'mLaySeek', 'Heavy with eggs — climbing to a high twig to lay.'); return true; }
+    if (f.sup && (f.sup.k === 'path' || f.sup.k === 'face')) { beginLay(hab, f); return true; }
+    return false;
+  }
+  AI.mantisStartLay = startLay;
+  function beginLay(hab, f) { f._route = null; f._mLayDur = 22 + R() * 10; AI.setState(f, 'mLay', 'Working a foamy egg case onto the twig with the tip of her abdomen.'); }
+  H.mLaySeek = function (hab, f, dt) {
+    const r = JT.Loco.follow(hab, f, dt, AI.speed(f) * 0.7);
+    if (r === 'done' || r === 'none') beginLay(hab, f);
+    else if (hab.time - (f._routeStart || 0) > 60) { f._route = null; if (f.sup && f.sup.k !== 'floor') beginLay(hab, f); else AI.setState(f, 'idle'); }
+  };
+  H.mLay = function (hab, f, dt) { if (f.st > f._mLayDur) layOoth(hab, f); };
+  function layOoth(hab, f) {
+    const S = JT.SPECIES_BY_ID[f.species] || {}; const Lf = AI.len(f); const fr = JT.Draw && JT.Draw.frame ? JT.Draw.frame(hab, f, 0.05) : { p: f.pos, f: f.fwd || [1, 0, 0], n: [0, 1, 0] };
+    const pos = M.add(fr.p, M.mul(fr.f, -Lf * 0.42));
+    const o = { id: JT.newId('o'), species: f.species, pos, up: fr.n.slice(), dir: fr.f.slice(), decor: f.sup && f.sup.d != null ? f.sup.d : null, sup: JT.deepClone(f.sup), age: 0, hard: false, k: (S.ooth || {}).k || 'elong', n: (S.ooth || {}).n || 30, size: Lf, mom: f.name, momId: f.id, state: 'fresh', seed: (R() * 1e6) | 0 };
+    (hab.data.ooth || (hab.data.ooth = [])).push(o);
+    f.gravid = null; f.layN = (f.layN || 0) + 1;
+    AI.setState(f, 'idle', 'Done — a pale, foamy egg case hangs from the twig.');
+    J(hab, 'oothLaid', f); diary(hab, f, 'Laid an egg case.');
+    return o;
+  }
+  AI.mantisLayOoth = layOoth;
+
+  // ---- per-mantis tick ----
+  const update0 = AI.update;
+  AI.update = function (hab, sp, dt) {
+    update0.call(this, hab, sp, dt);
+    if (!hab.data.spiders.includes(sp)) return;
+    const st = sp.state;
+    sp._mMount = M.lerp(sp._mMount || 0, (st === 'mPaired' || st === 'mMount') && sp.sex === 'm' ? AI.len(sp) * 0.2 * (st === 'mMount' ? M.clamp(sp.st / 2, 0, 1) : 1) : 0, Math.min(1, dt * 4)); if (sp._mMount < 0.01) sp._mMount = 0;
+    sp._mLay = M.lerp(sp._mLay || 0, st === 'mLay' ? 1 : 0, Math.min(1, dt * 2)); if (sp._mLay < 0.003) sp._mLay = 0;
+    if ((sp._mLifeT = (sp._mLifeT || R() * 3) - dt) > 0) return; sp._mLifeT = 2.5 + R();
+    if (sp.sex === 'm') { if (R() < 0.4) { const f = canCourt(hab, sp); if (f) startCourt(hab, sp, f); } }
+    else if (sp.gravid && (sp.ageDays || 0) - sp.gravid.d > L.LAY_DAYS && !busy(sp) && !sp.hold && (PRI[st] || 0) < 40 && !(sp._mLayCD > hab.time)) startLay(hab, sp);
+  };
+  const restoreL = AI.restore;
+  AI.restore = function (hab, sp) { const r = restoreL.apply(this, arguments); sp._mMate = null; sp._mMount = 0; return r; };
+
+  // ---- egg cases: harden, hatch, empty case fades ----
+  function oothTick(hab, dt) {
+    const os = hab.data.ooth; if (!os || !os.length) return;
+    const dd = dt / DAY;
+    for (const o of os.slice()) {
+      o.age = (o.age || 0) + dd;
+      if (o.decor != null && !hab.geoms[o.decor]) { const b = Nav.supportBelow(hab, [o.pos[0], o.pos[1] + 0.3, o.pos[2]]); o.pos = b.pos; o.decor = null; o.sup = b.sup; o.up = [0, 1, 0]; o.fallen = true; }
+      if (o.state === 'fresh' && o.age >= L.HARD_DAYS) { o.state = 'hard'; o.hard = true; const mom = hab.spider(o.momId) || hab.data.spiders[0]; if (mom) J(hab, 'oothHard', mom); if (mom && mom.id === o.momId) diary(hab, mom, 'Her egg case has hardened.'); }
+      if (o.state === 'hard' && o.age >= L.HATCH_DAYS) startHatch(hab, o);
+      if (o.state === 'hatching') { const hv = (hab._mHatch || []).find(h => h.o === o); if (!hv) finishHatch(hab, o); else { hv.t += dt; if (hv.t > 9 && !hv.done) { hv.done = true; finishHatch(hab, o); } } }
+      if (o.state === 'empty' && o.age - (o.emptyAt || o.age) > L.EMPTY_DAYS) hab.data.ooth = hab.data.ooth.filter(x => x !== o);
+    }
+    if (hab._mHatch) { for (const h of hab._mHatch) if (h.o.state !== 'hatching') h.t += dt; hab._mHatch = hab._mHatch.filter(h => h.t < 22 && (hab.data.ooth || []).includes(h.o)); }
+  }
+  AI.mantisOothTick = oothTick;
+  function startHatch(hab, o) {
+    o.state = 'hatching';
+    const n = Math.min(L.VIS_MAX, o.n || 30); const b = Nav.supportBelow(hab, [o.pos[0], o.pos[1] - 0.5, o.pos[2]]);
+    const nym = []; for (let i = 0; i < n; i++) { const a = R() * 6.283, r = 6 + R() * 22; let x = b.pos[0] + Math.cos(a) * r, z = b.pos[2] + Math.sin(a) * r; const c = Nav.clampInside(hab, x, z, 3); nym.push({ dl: i * 0.16 + R() * 0.2, th: 2 + R() * 4, hang: 1 + R() * 1.5, to: [c[0], 0, c[1]], ph: R() * 6.28, run: 2.5 + R() * 3 }); }
+    (hab._mHatch || (hab._mHatch = [])).push({ o, t: 0, floor: b.pos.slice(), nym });
+  }
+  AI.mantisStartHatch = startHatch;
+  function finishHatch(hab, o) {
+    if (o.state !== 'hatching') return null; o.state = 'empty'; o.emptyAt = o.age;
+    const g = hab.game; const S = JT.SPECIES_BY_ID[o.species]; const total = o.n || 30;
+    const cap = hab.dims.cap || 2; const per = JT.PER_SPECIES || 2;
+    const same = hab.data.spiders.filter(s => s.species === o.species).length;
+    const keep = Math.max(0, Math.min(cap - hab.data.spiders.length, per - same, total));
+    const b = Nav.supportBelow(hab, [o.pos[0], o.pos[1] - 0.5, o.pos[2]]); const kept = [];
+    for (let i = 0; i < keep; i++) { const a = R() * 6.283; const c = Nav.clampInside(hab, b.pos[0] + Math.cos(a) * (5 + R() * 10), b.pos[2] + Math.sin(a) * (5 + R() * 10), 3); const nb = Nav.supportBelow(hab, [c[0], hab.dims.h, c[1]]); const sp = hab.addSpider(o.species, { stage: 1, pos: nb.pos, sup: nb.sup, sat: 0.6 }); if (sp) kept.push(sp); else { const last = hab.data.spiders[hab.data.spiders.length - 1]; if (last && last.species === o.species && last.stage === 1) kept.push(last); } }
+    for (const sp of kept) { sp.thought = 'Just hatched — a tiny nymph, already looking for something to catch.'; sp.born = 'hatched'; diary(hab, sp, 'Hatched from ' + (o.mom ? o.mom + '\u2019s' : 'an') + ' egg case.'); }
+    let cupN = 0;
+    if (g && g.state) { const cup = g.state.cup || (g.state.cup = []); const room = Math.max(0, Math.min(L.CUP_MAX, total - keep, 8 - cup.length));
+      for (let i = 0; i < room; i++) { const sp = AI.create(hab, o.species, { stage: 1, pos: [0, 0, 0], sup: { k: 'floor' }, sat: 0.6 }); for (const k of Object.keys(sp)) if (k[0] === '_') delete sp[k]; sp.born = 'hatched'; cup.push(sp); cupN++; diary(hab, sp, 'Hatched from ' + (o.mom ? o.mom + '\u2019s' : 'an') + ' egg case — waiting in the holding cup.'); } }
+    const rel = Math.max(0, total - keep - cupN);
+    const mom = hab.spider(o.momId); const who = kept[0] || mom || hab.data.spiders[0];
+    if (who) J(hab, 'hatchDay', who); if (mom) diary(hab, mom, 'Her egg case hatched: ' + total + ' nymphs.');
+    const nm = S ? S.name.toLowerCase() : 'mantis';
+    const msg = 'Hatching day! ' + total + ' tiny ' + nm + ' nymphs streamed out of the egg case. ' + (keep ? keep + ' stayed in this tank' : 'None stayed (the tank is full)') + (cupN ? ', ' + cupN + ' went to the holding cup' : '') + (rel ? ' and ' + rel + ' were released.' : '.');
+    o.result = { total, keep, cup: cupN, released: rel };
+    if (g && g.hab === hab && JT.UI && JT.UI.toast) JT.UI.toast(msg);
+    hab._mLastHatch = o.result;
+    return o.result;
+  }
+  AI.mantisFinishHatch = finishHatch;
+  if (JT.Habitat) {
+    const HP = JT.Habitat.prototype, up0 = HP.update;
+    HP.update = function (dt, full) { up0.apply(this, arguments); if (dt > 0) oothTick(this, dt); };
   }
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -6124,6 +6783,112 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
   PA.lampGoal = lampGoal;
 })(typeof window !== 'undefined' ? window : globalThis);
 
+</script>
+<script>
+/* Mantis Terrarium pack v1.2 — atmosphere: breeze spring, autumn leaf drift (Dry Leaf Forest) and pollinators
+   (Orchid Garden). Simulation side only; drawing is in atmos-draw.js. */
+(function (root) {
+  'use strict';
+  const JT = root.JT, M = JT.M, Nav = JT.Nav, AI = JT.SpiderAI, PA = JT.PreyAI;
+  const R = () => JT.R();
+  const bid = (h) => (JT.Biomes && JT.Biomes.id ? JT.Biomes.id(h) : 'classic');
+  const windK = (h) => { const w = h.data && (h.data.bev || h.data.wx); return w && w.id === 'wind' ? 1 : 0; };
+  const SWAY_ARCHE = new Set(['bamboo', 'moss', 'leafcluster']);
+  const A = JT.MAtmos = { LEAF_CAP: 6 };
+
+  // ---- breeze: one shared spring kicked at the same moments as the swaying stems (biome tick every 2 s) ----
+  function windTick(h, dt) {
+    const W = h._mWind || (h._mWind = { x: 0, vx: 0 });
+    const be = h._bmExtra; const kicked = windK(h) && be != null && h._mBmPrev != null && be < h._mBmPrev; h._mBmPrev = be;
+    if (kicked) {
+      W.vx += 0.8;
+      for (const inst of h.data.decor) { const d = JT.DECOR_BY_ID[inst.type]; if (d && SWAY_ARCHE.has(d.arche)) { const sw = inst._sw || (inst._sw = { x: 0, z: 0, vx: 0, vz: 0 }); sw.vx += d.arche === 'moss' ? 1.1 : 0.8; sw.vz += 0.25; } }
+    }
+    W.vx += (-W.x * 26 - W.vx * 5.5) * dt; W.x += W.vx * dt; if (Math.abs(W.x) + Math.abs(W.vx) < 1e-4) { W.x = 0; W.vx = 0; }
+  }
+  A.windTick = windTick;
+
+  // ---- autumn leaf drift ----
+  function spawnLeaf(h) {
+    const dm = h.dims; const x = 6 + R() * Math.max(4, dm.w - 12), z = 6 + R() * Math.max(4, dm.d - 12); if (!Nav.inside(h, x, z, 4)) return null;
+    const y = dm.h - 3 - R() * 4; const b = Nav.supportBelow(h, [x, y - 1, z]);
+    const lf = { id: JT.newId('al'), pos: [x, y, z], y0: b.pos[1], sup: b.sup, t: 0, rest: 0, falling: true, seed: R() * 100, ang: R() * 6.28, spin: (R() < 0.5 ? -1 : 1) * (1.5 + R() * 2.5), hue: R(), size: 2.2 + R() * 1.4, flip: R() * 6.28 };
+    (h._mLeaves || (h._mLeaves = [])).push(lf); return lf;
+  }
+  A.spawnLeaf = spawnLeaf;
+  function leafTick(h, dt) {
+    const on = bid(h) === 'dryleaf'; const L = h._mLeaves || (h._mLeaves = []);
+    if (on) {
+      h._mLeafT = (h._mLeafT == null ? 2 + R() * 5 : h._mLeafT) - dt;
+      if (h._mLeafT <= 0) { h._mLeafT = windK(h) ? 2.5 + R() * 3 : 6 + R() * 8; if (L.filter(l => l.falling || l.rest < 20).length < A.LEAF_CAP) spawnLeaf(h); }
+    }
+    const wind = windK(h), W = h._mWind;
+    for (const l of L) {
+      l.t += dt;
+      if (l.falling) {
+        const flut = Math.sin(l.t * 2.4 + l.seed);
+        l.pos[1] -= dt * (2.6 + flut * 1.2);
+        l.pos[0] += (Math.sin(l.t * 1.3 + l.seed) * 3.2 + (wind ? 5 + (W ? W.x * 30 : 0) : 0)) * dt; l.pos[2] += Math.cos(l.t * 0.9 + l.seed) * 2.2 * dt;
+        l.ang += l.spin * dt * (0.6 + 0.4 * Math.abs(flut)); l.flip += dt * (2.2 + Math.abs(l.spin) * 0.5);
+        const c = Nav.clampInside(h, l.pos[0], l.pos[2], 2); l.pos[0] = c[0]; l.pos[2] = c[1];
+        if ((l._yT = (l._yT || 0) - dt) <= 0) { l._yT = 0.4; const b = Nav.supportBelow(h, [l.pos[0], l.pos[1] - 0.2, l.pos[2]]); l.y0 = b.pos[1]; l.sup = b.sup; }
+        if (l.pos[1] <= l.y0 + 0.15 || l.t > 60) { l.pos[1] = l.y0 + 0.12; l.falling = false; landed(h, l); }
+        else if ((l._gT = (l._gT || R() * 0.3) - dt) <= 0) { l._gT = 0.35; glance(h, l); }
+      } else l.rest += dt;
+    }
+    h._mLeaves = L.filter(l => l.rest < 32);
+  }
+  A.leafTick = leafTick;
+  function glance(h, l) {
+    for (const sp of h.data.spiders) {
+      if (sp._air || sp.hold || (AI.PRI[sp.state] || 0) >= 45 || sp.state === 'sleep' || sp.state === 'mDead') continue;
+      const d = M.dist(sp.pos, l.pos); if (d > 34 || (sp._mLeafG > h.time)) continue;
+      sp._mLeafG = h.time + 2.5 + R() * 2; sp._glance = { id: l.id, pos: l.pos.slice(), until: h.time + 0.7 }; sp._mLeafSnaps = (sp._mLeafSnaps || 0) + 1;
+      if ((AI.PRI[sp.state] || 0) < 15 && !(sp._mLeafTh > h.time)) { sp._mLeafTh = h.time + 40; sp.thought = 'Head snaps round to a drifting leaf.'; }
+    }
+  }
+  function landed(h, l) {
+    for (const p of h.data.prey) { if (p.owner || p.buried || p.dead || !p.sup || p.sup.k === 'air') continue; if (M.dist(p.pos, l.pos) < 7 && R() < 0.6) PA.startle(h, p, 0.4); }
+  }
+
+  // ---- pollinators: flying insects in the Orchid Garden visit the flowers, hover, then land and stay a while ----
+  const fly0 = PA.H.fly;
+  PA.H.fly = function (hab, p, d, dt) {
+    if (bid(hab) !== 'orchidgarden' || !hab.nav || !hab.nav.flowers || !hab.nav.flowers.length || !d.fly) return fly0(hab, p, d, dt);
+    const g = p._goal;
+    if (!g || (!g.hov && !g.pol && (p._goalT || 0) > 1 && R() < dt * 0.6)) { const ng = flowerGoal(hab, p, d); if (ng) { p._goal = ng; p._goalT = 0; } }
+    const G = p._goal;
+    if (G && G.hov != null) {
+      const dd = M.dist(p.pos, G.pos);
+      if (dd < 2.6) { // hovering in front of the bloom
+        G.hov -= dt; p._goalT = 0; const t = p._anim || 0; const ph = (p.seed % 100) / 10;
+        const want = M.add(M.mul(M.sub(G.pos, p.pos), 2.5), [Math.sin(t * 9 + ph) * 1.6, Math.sin(t * 7 + ph) * 0.9, Math.cos(t * 8 + ph) * 1.6]);
+        p._v = M.lerp3(p._v || [0, 0, 0], want, Math.min(1, dt * 4)); p.pos = M.add(p.pos, M.mul(p._v, dt)); p._hover = 1;
+        const fw = M.sub(G.land.pos, p.pos); if (Math.hypot(fw[0], fw[2]) > 0.2) p.fwd = M.norm([fw[0], 0, fw[2]]);
+        if (G.hov <= 0) { p._goal = { pos: G.land.pos, sup: G.land.sup, pol: 1 }; p._goalT = 0; }
+        return;
+      }
+    }
+    p._hover = 0;
+    const was = p._goal; fly0(hab, p, d, dt);
+    if (was && was.pol && p.state !== 'fly') { p.dur = 5 + R() * 14; p._pollen = hab.time; hab._mVisits = (hab._mVisits || 0) + 1; }
+  };
+  function flowerGoal(hab, p, d) {
+    const nav = hab.nav; if (R() > 0.35 + (d.flowers || 0.3) * 0.6) return null;
+    let pick = null; const lures = hab.data.spiders.filter(s => ['orchid', 'devilsflower', 'spiny'].includes(s.species) && s.sup && s.sup.d != null);
+    if (lures.length && R() < 0.4) { const s = lures[Math.floor(R() * lures.length)]; let bd = 1e9; for (const id of nav.flowers) { const n = nav.nodes[id]; if (!n) continue; const k = M.dist(n.pos, s.pos); if (k < bd) { bd = k; pick = n; } } if (bd > 25) pick = null; }
+    if (!pick) pick = nav.nodes[nav.flowers[Math.floor(R() * nav.flowers.length)]];
+    if (!pick || !Nav.validSup(hab, pick.sup)) return null;
+    const off = [(R() - 0.5) * 4, 2.5 + R() * 2.5, (R() - 0.5) * 4];
+    return { pos: M.add(pick.pos, off), sup: null, hov: 0.8 + R() * 1.8, land: { pos: pick.pos.slice(), sup: JT.deepClone(pick.sup) } };
+  }
+  A.flowerGoal = flowerGoal;
+
+  if (JT.Habitat) {
+    const HP = JT.Habitat.prototype, up0 = HP.update;
+    HP.update = function (dt, full) { up0.apply(this, arguments); if (!(dt > 0)) return; windTick(this, dt); if (full !== false) leafTick(this, dt); };
+  }
+})(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
 /* Jumper Terrarium — adaptive habitat presets (themes generated for any enclosure shape),
@@ -6505,8 +7270,28 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
 
 </script>
 <script>
-/* Mantis Terrarium pack — unlock order (after game state is defined). */
-(function (root) { const JT = root.JT; JT.UNLOCK_ORDER = ['carolina', 'chinese', 'european', 'ghost', 'spiny', 'orchid']; })(typeof window !== 'undefined' ? window : globalThis);
+/* Mantis Terrarium pack v1.2 — save migration: sex for old saves, egg-case sanity. Loaded after the game state (09). */
+(function (root) {
+  'use strict';
+  const JT = root.JT; if (!JT || !JT.Game) return;
+  const M = JT.M; const rndSex = () => (JT.R() < 0.5 ? 'f' : 'm');
+  // old saves: every mantis (tanks + holding cup) gets a sex; egg cases are checked
+  if (JT.Game && JT.Game.migrate) {
+    const mig0 = JT.Game.migrate;
+    JT.Game.migrate = function (d) {
+      d = mig0.call(this, d) || d;
+      const fix = (s) => { if (s && s.sex !== 'f' && s.sex !== 'm') s.sex = rndSex(); };
+      for (const h of d.habitats || []) { for (const s of h.spiders || []) fix(s); if (h.ooth && !Array.isArray(h.ooth)) h.ooth = []; if (Array.isArray(h.ooth)) h.ooth = h.ooth.filter(o => o && JT.SPECIES_BY_ID[o.species] && M.finite3(o.pos)); }
+      for (const s of d.cup || []) fix(s);
+      return d;
+    };
+  }
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Mantis Terrarium pack — unlock order (after game state is defined). v1.2: eight more species, roughly by difficulty. */
+(function (root) { const JT = root.JT; JT.UNLOCK_ORDER = ['carolina', 'chinese', 'european', 'ghost', 'spiny', 'orchid', 'boxer', 'budwing', 'bark', 'stick', 'deadleaf', 'violin', 'giantasian', 'devilsflower']; })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
 <script>
@@ -6831,7 +7616,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 (function (root) {
   const JT = root.JT, Bm = JT.Biomes, H = Bm && Bm.HOME; if (!H) return;
   for (const k of Object.keys(H)) delete H[k];
-  Object.assign(H, { carolina: ['oldbark', 'dryleaf'], chinese: ['prairie', 'oldbark'], european: ['prairie', 'dryleaf'], ghost: ['dryleaf', 'rainforest'], spiny: ['orchidgarden', 'heath'], orchid: ['orchidgarden', 'rainforest'] });
+  Object.assign(H, { carolina: ['oldbark', 'dryleaf'], chinese: ['prairie', 'oldbark'], european: ['prairie', 'dryleaf'], ghost: ['dryleaf', 'rainforest'], spiny: ['orchidgarden', 'heath'], orchid: ['orchidgarden', 'rainforest'],
+    boxer: ['rainforest', 'oldbark'], budwing: ['heath', 'prairie'], bark: ['oldbark', 'rainforest'], stick: ['prairie', 'dryleaf'], deadleaf: ['dryleaf', 'rainforest'], violin: ['desert', 'heath'], giantasian: ['rainforest', 'prairie'], devilsflower: ['orchidgarden', 'heath'] });
   const extra = {
     orchidgarden: { icon: '🌸', tint: [1.02, 1, 1.02], light: 'Dappled bloom', prey: ['housefly', 'fruitfly', 'moth', 'hydei'], events: ['rain', 'mist'] },
     dryleaf: { icon: '🍂', tint: [1.04, 1, 0.92], light: 'Autumn shade', prey: ['cricket', 'housefly', 'mealmoth', 'fruitfly'], events: ['wind', 'rain'] },
@@ -6843,6 +7629,16 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     Object.assign(d, { id, icon: e.icon, tint: e.tint, light: e.light, blurb: d.desc, events: e.events.slice(), dusk: 0 });
     d.prey = e.prey.filter(x => JT.PREY_BY_ID && JT.PREY_BY_ID[x]);
   }
+})(typeof window !== 'undefined' ? window : globalThis);
+/* v1.2: decor with an explicit mantis tag list (def.mtags) uses exactly those biome tags (Spanish moss is not "wet",
+   the bark slab is not "urban"); water/lamps stay essential. */
+(function (root) {
+  const JT = root.JT; if (!JT || !JT.Biomes || !JT.Biomes.tags) return;
+  const B = JT.Biomes, t0 = B.tags, cache = new Map();
+  B.tags = function (def) {
+    if (!def || !def.mtags) return t0.apply(this, arguments);
+    let t = cache.get(def.id); if (t) return t; t = {}; for (const k of def.mtags) t[k] = true; if (def.flowers) t.flower = true; cache.set(def.id, t); return t;
+  };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -9168,13 +9964,13 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 
   /** Flat leaf / petal / wing outline: pointed at both ends (or rounded: k=1), filled, inked, with an optional midrib. */
   function leafShape(ctx, V, c, ax, ay, fill, edge, o) {
-    o = o || {}; const N = o.lod === 0 ? 8 : 18, round = o.round || 0, P = [];
-    for (let i = 0; i <= N; i++) { const th = i / N * Math.PI; const u = -Math.cos(th); const w = Math.pow(Math.sin(th), round ? 0.55 : 0.9) * (o.taper ? (1 - 0.45 * (u + 1) / 2) : 1); P.push(add(c, add(mul(ax, u), mul(ay, w)))); }
-    for (let i = N - 1; i > 0; i--) { const th = i / N * Math.PI; const u = -Math.cos(th); const w = Math.pow(Math.sin(th), round ? 0.55 : 0.9) * (o.taper ? (1 - 0.45 * (u + 1) / 2) : 1); P.push(add(c, add(mul(ax, u), mul(ay, -w * (o.asym || 1))))); }
+    o = o || {}; const N = o.lod === 0 ? 8 : o.ragged ? 26 : 18, round = o.round || 0, P = []; const rg = o.ragged ? (i) => 1 - o.ragged * (0.5 + 0.5 * Math.sin(i * 2.7 + 1.3)) * (i % 3 === 0 ? 1 : 0.35) : null;
+    for (let i = 0; i <= N; i++) { const th = i / N * Math.PI; const u = -Math.cos(th); const w = Math.pow(Math.sin(th), round ? 0.55 : 0.9) * (o.taper ? (1 - 0.45 * (u + 1) / 2) : 1) * (rg ? rg(i) : 1); P.push(add(c, add(mul(ax, u), mul(ay, w)))); }
+    for (let i = N - 1; i > 0; i--) { const th = i / N * Math.PI; const u = -Math.cos(th); const w = Math.pow(Math.sin(th), round ? 0.55 : 0.9) * (o.taper ? (1 - 0.45 * (u + 1) / 2) : 1) * (rg ? rg(i + 7) : 1); P.push(add(c, add(mul(ax, u), mul(ay, -w * (o.asym || 1))))); }
     const S = P.map(q => V.P(q)); ctx.beginPath(); S.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath();
     ctx.fillStyle = fill; ctx.fill();
     const R = projEll(V, ax, ay, null).r1; if (o.lod > 0 && R > 2) { ctx.lineWidth = Math.max(0.45, Math.min(1.3, R * 0.05)); ctx.strokeStyle = edge; ctx.stroke(); }
-    if (o.rib && o.lod > 0 && R > 5) { const a = V.P(sub(c, ax)), b = V.P(add(c, mul(ax, 0.85))); ctx.strokeStyle = edge; ctx.globalAlpha *= 0.6; ctx.lineWidth = Math.max(0.4, R * 0.025); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
+    if (o.rib && o.lod > 0 && R > 5) { const a = V.P(sub(c, ax)), b = V.P(add(c, mul(ax, 0.85))); ctx.strokeStyle = o.vein || edge; ctx.globalAlpha *= 0.6; ctx.lineWidth = Math.max(0.4, R * 0.025); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
       if (R > 9) for (let k = -2; k <= 2; k++) { if (!k) continue; const m = V.P(add(c, mul(ax, k * 0.3))), e = V.P(add(add(c, mul(ax, k * 0.3 + 0.25)), mul(ay, 0.7 * Math.sign(k + 0.01)))); const e2 = V.P(add(add(c, mul(ax, k * 0.3 + 0.25)), mul(ay, -0.7))); ctx.moveTo(m[0], m[1]); ctx.lineTo(e[0], e[1]); ctx.moveTo(m[0], m[1]); ctx.lineTo(e2[0], e2[1]); }
       ctx.stroke(); ctx.globalAlpha /= 0.6; }
     return S;
@@ -9186,8 +9982,28 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   const ALERT = new Set(['notice', 'assess', 'track', 'peek', 'watch', 'curious', 'fingerWatch', 'lookout', 'scan']);
   const HUNTPOSE = new Set(['stalk', 'creep', 'crouch']);
 
+  /** v1.2 individual colouring: a molt colour morph (toward green or brown), cold-dark before warming up, elderly fade.
+      Only applies when the individual carries those fields (fresh/lineup mantises draw with the plain species palette). */
+  const MORPH = { green: '#6f9e44', brown: '#8a6a44' };
+  function toneOf(S, sp) {
+    const mo = sp.morph, cold = M.clamp(sp._mCold || 0, 0, 1), age = M.clamp(sp._mAge || 0, 0, 1);
+    if (!(mo && mo.a > 0.02) && cold < 0.02 && age < 0.02) return null;
+    const key = (mo ? mo.k + (Math.round(mo.a * 20)) : '') + '|' + Math.round(cold * 20) + '|' + Math.round(age * 20);
+    if (sp._mToneK === key && sp._mTone && sp._mToneS === S.id) return sp._mTone;
+    const out = {}; for (const k in S.pal) { let c = S.pal[k]; if (!c || typeof c !== 'string' || c[0] !== '#') { out[k] = c; continue; } c = hex6(c);
+      if (mo && mo.a > 0.02 && MORPH[mo.k] && /^(body|body2|wing|wingEdge|leg|belly|ceph|abd|chel|hair)$/.test(k)) c = mix(c, k === 'body2' || k === 'wingEdge' ? sh(MORPH[mo.k], -0.25) : MORPH[mo.k], M.clamp(mo.a, 0, 1) * 0.6);
+      if (cold > 0.02 && k !== 'eye') c = sh(c, -0.16 * cold);
+      if (age > 0.02 && k !== 'eye') c = mix(c, '#a49c8a', 0.22 * age);
+      out[k] = c; }
+    sp._mToneK = key; sp._mTone = out; sp._mToneS = S.id; return out;
+  }
+  D.mantisTone = toneOf;
   D.mantis = function (ctx, V, sp, fr, o) {
     const S = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0]; const LK = S.mlook || {}; const L = o.len; const t = o.time || 0;
+    const male = sp.sex === 'm' && !o.ghost; const thin = LK.thin || 1; const legL = LK.legL || 1; const FLG = S.mflags || {};
+    const dead = o.ghost ? 0 : M.clamp(sp._mDead || 0, 0, 1), flatK = o.ghost ? 0 : Math.max(dead, M.clamp(sp._mFlatK || 0, 0, 1));
+    const buzz = o.ghost ? 0 : M.clamp(sp._mBuzz || 0, 0, 1), box = o.ghost ? 0 : M.clamp(sp._mBox || 0, 0, 1), sip = o.ghost ? 0 : M.clamp(sp._mSip || 0, 0, 1);
+    const eyeW = o.ghost ? 0 : M.clamp(sp._mEyeW || 0, 0, 1), lay = o.ghost ? 0 : M.clamp(sp._mLay || 0, 0, 1);
     let { f, s, n } = fr; let p0 = fr.p; const st = sp.state || 'idle';
     const stage = sp.stage != null ? sp.stage : 5; const adult = stage >= 4; const seed = sp.seed || 1;
     // hanging head-down to molt: the hind feet stay on the twig, the body swings down beneath them
@@ -9198,17 +10014,20 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       if (o.hangPiv) { piv = o.hangPiv; nh = o.hangNh || nh; f = nh; n = [0, 1, 0]; } // a shed skin left hanging where it was molted
       else if (!o.ghost && hk > 0.9 && !sp._mPiv) { sp._mPiv = piv.slice(); sp._mNh = nh.slice(); }
       else if (!o.ghost && sp._mPiv && (st === 'molting' || st === 'postMolt')) { piv = sp._mPiv; nh = sp._mNh || nh; }
-      const f2 = nrm(lerp3(f, [0, -1, 0], hk)); let n2 = nrm(lerp3(n, nh, hk)); n2 = nrm(sub(n2, mul(f2, M.dot(n2, f2))));
+      let f2 = nrm(lerp3(f, [0, -1, 0], hk)); let n2 = nrm(lerp3(n, nh, hk));
+      if (!o.ghost && sp._mHangSway) { const sw0 = nrm(M.cross([0, 1, 0], nh)); f2 = nrm(add(f2, add(mul(sw0, Math.sin(t * 1.25 + seed) * 0.2 * sp._mHangSway * hk), mul(nh, Math.sin(t * 0.8 + seed * 0.3) * 0.08 * sp._mHangSway * hk)))); } n2 = nrm(sub(n2, mul(f2, M.dot(n2, f2))));
       f = f2; n = n2; s = nrm(M.cross(n2, f2));
       p0 = add(piv, mul(f, o.len * (0.24 + 0.06 * hk)));
       // molting: the new body slides out of the back of the old skin, head first, and hangs below it
       if (!o.ghost && (sp._mSlide || 0) > 0.001) p0 = add(p0, mul(f, o.len * 0.3 * sp._mSlide));
     }
+    if (!o.ghost && sp._mMount) p0 = add(p0, mul(n, sp._mMount)); // a male riding on the female's back
+    const s0 = s, n0 = n; if (dead > 0.001) { const rr = 1.05 * dead * (seed % 2 ? 1 : -1); const s2 = rot(s, n, rr), n2 = rot(n, mul(s, -1), rr); s = s2; n = n2; } // playing dead: lies flat, tipped onto its side
     if (!o.ghost && hk > 0.3 && st === 'molting') { const fr0 = fr; D.mantis(ctx, V, sp, fr0, Object.assign({}, o, { ghost: true, hangK: sp._mHangK, hangPiv: sp._mPiv, hangNh: sp._mNh, meal: null, noShadow: true, alpha: (o.alpha != null ? o.alpha : 1) * 0.8 })); }
     const molt = !o.ghost && (st === 'molting' || st === 'postMolt') ? 0.55 : 0;
     const paleK = o.ghost ? 0.72 : Math.max(molt, sp.soft > 0 ? Math.min(0.65, sp.soft / 120 * 0.7) : 0);
     const C = (c) => paleK > 0 ? mix(c, '#f1ead8', paleK) : hex6(c);
-    const pal0 = o.palette || S.pal; const pal = {}; for (const k in pal0) if (pal0[k]) pal[k] = C(pal0[k]);
+    const pal0 = o.palette || (!o.ghost && toneOf(S, sp)) || S.pal; const pal = {}; for (const k in pal0) if (pal0[k]) pal[k] = C(pal0[k]);
     const bodyC = pal.body || '#8a9a5a', body2 = pal.body2 || sh(bodyC, -0.2), legC = pal.leg || bodyC;
     const px = L * V.s * 0.62; const lod = lodFor(px, o);
     const alpha = (o.alpha != null ? o.alpha : 1) * (o.ghost ? 0.85 : 1); ctx.globalAlpha = alpha;
@@ -9223,25 +10042,27 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const groom = st === 'groom' || st === 'clean' || (sp._wipe || 0) > 0.2 ? 1 : 0;
     const hunt = HUNTPOSE.has(st) ? 1 : 0, alert = ALERT.has(st) ? 1 : 0;
     // rocking: a slow side-to-side sway while stalking / walking / watching (feet stay put, the body sways over them)
-    const swayK = o.thumb || o.airborne || o.curled || sleep || hk > 0.2 ? 0 : hunt ? 1 : moving ? 0.55 : alert ? 0.4 : 0.18;
-    const sw = swayK * (Math.sin(t * 2.2 + seed * 0.7) * 0.75 + Math.sin(t * 3.7 + seed) * 0.25);
-    const h0 = L * (0.115 - 0.035 * crouch - 0.02 * sleep + 0.01 * threat);
+    let swayK = o.thumb || o.airborne || o.curled || sleep || hk > 0.2 ? 0 : hunt ? 1 : moving ? 0.55 : alert ? 0.4 : 0.18;
+    if (swayK > 0 && (LK.leafRock || (FLG.rockWalk && moving))) swayK = Math.max(swayK, LK.leafRock ? 0.5 : 0.9);
+    if (dead > 0.3) swayK = 0;
+    const sw = swayK * (Math.sin(t * 2.2 + seed * 0.7) * 0.75 + Math.sin(t * 3.7 + seed) * 0.25) + (o.thumb || o.ghost ? 0 : (sp._mPeer || 0) * 1.7 * Math.sin(t * 6.5 + seed) + (sp._mRock || 0) * 2);
+    const h0 = L * (0.115 - 0.035 * crouch - 0.02 * sleep + 0.01 * threat) * (LK.flat ? 0.72 : 1) * (1 - 0.6 * flatK);
     const Wf = (u, v, w) => [p0[0] + f[0] * u + s[0] * v + n[0] * w, p0[1] + f[1] * u + s[1] * v + n[1] * w, p0[2] + f[2] * u + s[2] * v + n[2] * w]; // fixed (feet)
     const lat = L * 0.035 * sw; const p = add(p0, mul(s, lat));
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w]; // swaying body
-    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s, n, L * 0.85, h0 + L * 0.06, alpha * 0.85);
+    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s0, n0, L * 0.85, h0 + L * 0.06, alpha * 0.85);
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb;
     const parts = []; const push = (pt, fn, bias) => parts.push({ d: V.depth(pt) + (bias || 0), f: fn });
     const fat = M.clamp(0.88 + (sp.sat != null ? sp.sat : 0.7) * 0.25, 0.88, 1.15);
 
     // ---------- thorax + abdomen ----------
     const T = W(0.02 * L, 0, h0);                                    // thorax (walking legs attach here)
-    const abW = L * 0.062 * (LK.abdW || 1) * fat * (adult ? 1 : 0.85);
+    const abW = L * 0.062 * (LK.abdW || 1) * fat * (adult ? 1 : 0.85) * thin * (male ? 0.84 : 1);
     const curl = adult ? 0 : 0.42 * (LK.curl || 1) * (o.curled ? 1.5 : 1);
-    const segs = 6, aLen = L * 0.47; let ap = add(T, mul(f, -L * 0.035)); let ang = adult ? -0.06 : 0.05;
+    const segs = 6, aLen = L * 0.47 * (LK.aLen || 1); let ap = add(T, mul(f, -L * 0.035)); let ang = adult ? -0.06 : 0.05;
     const abSeg = [];
     for (let i = 0; i < segs; i++) {
-      ang += curl * (0.18 + 0.2 * i) + (adult ? -0.012 : 0);
+      ang += curl * (0.18 + 0.2 * i) + (adult ? -0.012 : 0) - lay * 0.09 * i;
       const dir = nrm(rot(mul(f, -1), n, ang)); const up = nrm(sub(n, mul(dir, M.dot(n, dir))));
       const sl = aLen / segs; const c = add(ap, mul(dir, sl * 0.5)); const taper = [0.82, 0.98, 1.05, 1, 0.84, 0.55][i];
       abSeg.push({ c, dir, up, w: abW * taper, sl }); ap = add(ap, mul(dir, sl * 0.95));
@@ -9251,13 +10072,22 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       blob(ctx, V, g.c, mul(g.dir, g.sl * 0.78), mul(s, g.w), mul(g.up, g.w * 0.82), under ? mix(bodyC, pal.belly || bodyC, 0.6) : (i % 2 ? sh(bodyC, -0.04) : bodyC), { lod, gloss: 0.25, hatch: lod === 2 });
       if (lod > 0 && g.w * V.s > 2.5 && !adult) { const a = V.P(add(add(g.c, mul(g.dir, -g.sl * 0.45)), mul(g.up, g.w * 0.8))); const b = V.P(add(add(g.c, mul(g.dir, -g.sl * 0.45)), mul(s, g.w * 0.95))); ctx.strokeStyle = sh(bodyC, -0.35); ctx.globalAlpha = alpha * 0.5; ctx.lineWidth = Math.max(0.4, g.w * V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.globalAlpha = alpha; }
       if (LK.spines && lod > 0 && i > 0 && i < 5) for (const sd of [-1, 1]) { const a = add(add(g.c, mul(s, sd * g.w * 0.8)), mul(g.up, g.w * 0.5)); const b = add(a, add(mul(s, sd * g.w * 0.5), mul(g.up, g.w * 0.9))); limb(ctx, V, [a, b], [L * 0.012], sh(pal.accent || bodyC, 0.1), lod, null); }
+      if (LK.lichen && lod > 0 && g.w * V.s > 1.6) { const q = seed % 7; for (const [a2, b2, c2] of [[0.3, 0.5, 0], [-0.4, 0.2, 1], [0.1, -0.5, 2]]) dot2(ctx, V.P(sum(g.c, mul(s, g.w * a2 * ((i + q) % 2 ? 1 : -1)), mul(g.up, g.w * 0.85), mul(g.dir, g.sl * b2 * 0.4))), g.w * V.s * (0.18 + 0.06 * ((i + c2) % 3)), c2 === 1 ? sh(bodyC, -0.32) : c2 === 2 ? '#b6bea2' : sh(bodyC, 0.22)); }
       if (LK.leafy && lod > 0 && i > 0 && i < 5 && i % 2) for (const sd of [-1, 1]) leafShape(ctx, V, add(add(g.c, mul(s, sd * g.w * 1.25)), mul(g.dir, g.sl * 0.1)), mul(g.dir, g.sl * 0.55), mul(s, sd * g.w * 0.75), sh(bodyC, -0.06 + 0.05 * i), ink(bodyC), { lod, rib: true });
     }, 0));
-    push(T, () => blob(ctx, V, T, mul(f, L * 0.07), mul(s, L * 0.05), mul(n, L * 0.045), under ? mix(bodyC, pal.belly || bodyC, 0.5) : bodyC, { lod, gloss: 0.3 }), 0);
+    push(T, () => blob(ctx, V, T, mul(f, L * 0.07), mul(s, L * 0.05 * (thin < 1 ? 0.5 + 0.5 * thin : 1)), mul(n, L * 0.045), under ? mix(bodyC, pal.belly || bodyC, 0.5) : bodyC, { lod, gloss: 0.3 }), 0);
 
     // ---------- wings: folded over the abdomen (adults), buds (sub-adult), or fanned up in the threat display ----------
-    const wl = (LK.wingLen || 1);
-    if (adult) {
+    const wl = male && LK.stub ? 0.85 : male && (LK.wingLen || 1) < 0.95 ? Math.min(1, (LK.wingLen || 1) + 0.18) : (LK.wingLen || 1); const wW = LK.wideWing || 1;
+    if (adult && buzz > 0.01 && !fly) { // wing buzz: the (stubby) wings lift a little and flicker fast, flashing the bright hind wings
+      const w0 = add(T, mul(n, L * 0.045));
+      for (const sd of [-1, 1]) { const fl = 0.55 + 0.45 * Math.abs(Math.sin(t * 52 + sd * 1.3 + seed)); const up = nrm(sum(mul(n, 0.45 + 0.6 * fl * buzz), mul(s, sd * 0.6 * fl), mul(f, -0.55)));
+        const bw = L * 0.17 * Math.max(0.75, wl); const base = add(w0, mul(f, -L * 0.03)); const hc = add(base, mul(up, bw));
+        push(add(hc, mul(V.toCam, -L * 0.04)), () => { ctx.globalAlpha = alpha * (0.7 + 0.3 * fl);
+          leafShape(ctx, V, hc, mul(up, bw), mul(nrm(sum(mul(s, sd), mul(n, 0.3), mul(f, -0.3))), L * 0.1 * wW), pal.hind || '#e8642a', ink(pal.hind || '#e8642a'), { lod, round: 1, rib: true });
+          const fc = add(base, mul(nrm(sum(up, mul(n, -0.2))), bw * 0.8)); leafShape(ctx, V, fc, mul(up, bw * 0.8), mul(s, sd * L * 0.04 * wW), pal.wing, pal.wingEdge || ink(pal.wing), { lod, rib: true });
+          ctx.globalAlpha = alpha; }, -L * 0.02); }
+    } else if (adult) {
       const w0 = add(T, mul(n, L * 0.045));
       const tipA = wl >= 0.95 ? lerp3(abSeg[5].c, abTip, 0.6) : abSeg[Math.min(5, Math.round(wl * 5.6))].c; const wc = lerp3(w0, add(tipA, mul(n, abW * 0.7)), 0.5);
       const wax = mul(sub(add(tipA, mul(n, abW * 0.7)), w0), 0.55);
@@ -9278,7 +10108,9 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       } else {
         const wd = under ? Math.max(...abSeg.map(g => V.depth(g.c))) + L * 0.02 : Math.min(...abSeg.map(g => V.depth(g.c))) - L * 0.02;
         parts.push({ d: wd, f: () => {
-          for (const sd of [1, -1]) { const c = add(wc, mul(s, sd * abW * 0.18)); leafShape(ctx, V, c, wax, mul(s, sd * abW * 1.05), sd > 0 ? pal.wing : sh(pal.wing, -0.06), pal.wingEdge || ink(pal.wing), { lod, rib: lod === 2, asym: 0.35 }); }
+          for (const sd of [1, -1]) { const c = add(wc, mul(s, sd * abW * 0.18)); leafShape(ctx, V, c, wax, mul(s, sd * abW * 1.05 * wW), sd > 0 ? pal.wing : sh(pal.wing, -0.06), pal.wingEdge || ink(pal.wing), LK.ragged || LK.veins ? { lod, rib: lod > 0, asym: 0.35, ragged: LK.ragged ? 0.22 : 0, vein: LK.veins ? sh(pal.wing, -0.45) : null } : { lod, rib: lod === 2, asym: 0.35 }); }
+          if (LK.stigma && lod > 0) for (const sd of [-1, 1]) dot2(ctx, V.P(add(add(wc, mul(wax, 0.15)), mul(s, sd * abW * 0.75 * wW))), L * V.s * 0.008, LK.stigma);
+          if (LK.lichen && lod > 0) for (let k = 0; k < 5; k++) { const sd = k % 2 ? 1 : -1; dot2(ctx, V.P(add(add(wc, mul(wax, -0.6 + k * 0.3)), mul(s, sd * abW * (0.3 + 0.12 * (k % 3))))), L * V.s * (0.009 + 0.004 * (k % 2)), k % 3 === 0 ? '#c0c8aa' : sh(pal.wing, -0.3)); }
           if (LK.stripe && lod > 0) for (const sd of [-1, 1]) { const a = V.P(add(add(w0, mul(s, sd * abW * 0.95)), mul(n, -abW * 0.1))), b = V.P(add(add(wc, mul(wax, 0.9)), mul(s, sd * abW * 0.6))); ctx.strokeStyle = pal.accent || '#5c9a3a'; ctx.lineWidth = Math.max(0.5, abW * V.s * 0.25); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
           if (LK.wingSpot && lod > 0) for (const sd of [-1, 1]) dot2(ctx, V.P(add(add(wc, mul(wax, -0.2)), mul(s, sd * abW * 0.5))), L * V.s * 0.009, '#2a2016');
           if (LK.spiral && lod > 0) for (const sd of [-1, 1]) spiral(ctx, V.P(add(add(wc, mul(wax, -0.25)), mul(s, sd * abW * 0.55))), L * V.s * 0.022, ['#1a1a12', '#e9d24a', '#3f9a3a']);
@@ -9289,14 +10121,20 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     }
 
     // ---------- prothorax (the long raised "neck") ----------
-    const proA = M.clamp(0.42 + 0.1 * alert + 0.05 * hunt - 0.22 * moving + 0.45 * threat - 0.3 * sleep - 0.25 * reach + 0.15 * holdK - 0.12 * crouch, 0.05, 1.1);
+    let proA = M.clamp(0.42 + 0.1 * alert + 0.05 * hunt - 0.22 * moving + 0.45 * threat - 0.3 * sleep - 0.25 * reach + 0.15 * holdK - 0.12 * crouch, 0.05, 1.1);
+    if (sip > 0.001) proA = M.lerp(proA, 0.06, sip); if (flatK > 0.001) proA = M.lerp(proA, 0.02, flatK); if (box > 0.001) proA = M.lerp(proA, 0.62, box);
     const dirP = nrm(rot(f, n, proA)); const upP = nrm(rot(n, mul(f, -1), proA));
     const Lp = L * 0.3 * (LK.pro || 1); const P0 = W(0.08 * L, 0, h0 + L * 0.01); const N = add(P0, mul(dirP, Lp));
     const pc = lerp3(P0, N, 0.5);
+    const thP = thin < 1 ? 0.45 + 0.55 * thin : 1;
     push(pc, () => {
+      if (LK.shield === 'leaf') leafShape(ctx, V, add(lerp3(P0, N, 0.5), mul(upP, L * 0.014)), mul(dirP, Lp * 0.62), mul(s, L * 0.05 * (LK.shieldW || 1)), sh(bodyC, 0.05), ink(bodyC), { lod, rib: true, round: 1, ragged: LK.ragged ? 0.12 : 0, vein: sh(bodyC, -0.35) });
       if (LK.leafy) leafShape(ctx, V, add(pc, mul(upP, L * 0.012)), mul(dirP, Lp * 0.55), mul(s, L * 0.06), sh(bodyC, 0.04), ink(bodyC), { lod, rib: true });
-      blob(ctx, V, lerp3(P0, N, 0.3), mul(dirP, Lp * 0.33), mul(s, L * 0.028), mul(upP, L * 0.026), bodyC, { lod, gloss: 0.35 });
-      blob(ctx, V, lerp3(P0, N, 0.78), mul(dirP, Lp * 0.25), mul(s, L * 0.034), mul(upP, L * 0.028), bodyC, { lod, gloss: 0.35 });
+      blob(ctx, V, lerp3(P0, N, 0.3), mul(dirP, Lp * 0.33), mul(s, L * 0.028 * thP), mul(upP, L * 0.026 * thP), bodyC, { lod, gloss: 0.35 });
+      blob(ctx, V, lerp3(P0, N, 0.78), mul(dirP, Lp * 0.25), mul(s, L * 0.034 * thP), mul(upP, L * 0.028 * thP), bodyC, { lod, gloss: 0.35 });
+      if (LK.shield === 'diamond') { leafShape(ctx, V, add(lerp3(P0, N, 0.3), mul(upP, L * 0.01)), mul(dirP, Lp * 0.2), mul(s, L * 0.04 * (LK.shieldW || 1)), sh(bodyC, 0.06), ink(bodyC), { lod, rib: true }); }
+      if (LK.shield === 'flare') { const fc = add(lerp3(P0, N, 0.72), mul(upP, L * 0.012)); leafShape(ctx, V, fc, mul(dirP, Lp * 0.3), mul(s, L * 0.062 * (LK.shieldW || 1)), sh(bodyC, 0.08), ink(bodyC), { lod, round: 1, rib: true, taper: true });
+        if (lod > 0) leafShape(ctx, V, add(fc, mul(upP, L * 0.004)), mul(dirP, Lp * 0.16), mul(s, L * 0.026 * (LK.shieldW || 1)), '#eef0e2', sh('#eef0e2', -0.3), { lod, round: 1 }); }
       if (lod === 2 && LK.pro > 1.05) { const a = V.P(add(lerp3(P0, N, 0.1), mul(upP, L * 0.026))), b = V.P(add(lerp3(P0, N, 0.9), mul(upP, L * 0.03))); ctx.strokeStyle = sh(bodyC, -0.3); ctx.globalAlpha = alpha * 0.4; ctx.lineWidth = Math.max(0.4, L * V.s * 0.006); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.globalAlpha = alpha; }
     }, 0);
 
@@ -9305,7 +10143,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     if (o.lookCam) { const cf = sub(V.toCam, mul(n, M.dot(V.toCam, n))); if (M.len(cf) > 0.2) { const c2 = nrm(cf); const a = Math.atan2(M.dot(c2, s), M.dot(c2, f)); if (Math.abs(a) < 2.2) gz = M.lerp(gz, M.clamp(a, -1.2, 1.2), o.lookCam); } }
     if (o.lookAt && M.finite3(o.lookAt)) { const d = sub(o.lookAt, N); const a = Math.atan2(M.dot(d, s), M.dot(d, f)); gz = M.clamp(a, -1.3, 1.3); }
     const hf0 = nrm(rot(f, s, gz)); const hs = nrm(M.cross(n, hf0));
-    const hDown = sleep ? 0.9 : holdK > 0.3 ? 0.75 : 0.35 + 0.1 * hunt; // face tips down (feeding: head bowed onto the meal)
+    let hDown = sleep ? 0.9 : holdK > 0.3 ? 0.75 : 0.35 + 0.1 * hunt; // face tips down (feeding: head bowed onto the meal)
+    if (sip > 0.001) hDown = M.lerp(hDown, 1.2, sip); if (dead > 0.001) hDown = M.lerp(hDown, 0.9, dead);
     const hf = nrm(rot(hf0, mul(n, -1), hDown)); const hu = nrm(M.cross(hf, hs));
     const hw = L * 0.07 * (LK.head || 1);
     const chew = holdK > 0.3 ? Math.sin(t * 11 + seed) : 0; const bite = holdK > 0.3 ? Math.max(0, Math.sin(t * 2.3 + seed)) : 0; // munch + a tug with each bite
@@ -9313,6 +10152,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const mouth = add(Hc, add(mul(hf, L * 0.03), mul(hu, -L * 0.035)));
     push(Hc, () => {
       if (LK.leafy && lod > 0) leafShape(ctx, V, sum(Hc, mul(hu, L * 0.07), mul(hf, -L * 0.015)), mul(hu, L * 0.055), mul(hs, L * 0.02), sh(bodyC, -0.08), ink(bodyC), { lod, taper: true });
+      if (LK.crown && lod > 0) { const cr = LK.crown; leafShape(ctx, V, sum(Hc, mul(hu, L * 0.05 * cr + L * 0.02), mul(hf, -L * 0.02)), mul(hu, L * 0.05 * cr), mul(hs, L * 0.014), sh(bodyC, -0.04), ink(bodyC), { lod, taper: true, rib: cr > 1.3 }); }
       // compound eyes at the upper corners, with the dark pseudopupil pointing at the viewer
       const eye = (sd) => {
         const ec = sum(Hc, mul(hs, sd * hw * 0.92), mul(hu, L * 0.014), mul(hf, -L * 0.002)); const er = L * 0.032 * (LK.head || 1);
@@ -9331,10 +10171,11 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     // antennae: thin, long, swaying; drooped back when asleep; one drawn through the arms while grooming
     for (const sd of [-1, 1]) {
       const a = sum(Hc, mul(hu, L * 0.03), mul(hs, sd * L * 0.012), mul(hf, L * 0.008));
-      const al = L * 0.36 * (LK.antL || 1) * (adult ? 1 : 0.8);
+      const al = L * 0.36 * (LK.antL || 1) * (adult ? 1 : 0.8) * (male ? 1.2 : 1);
       const wv = Math.sin(t * (1.6 + 0.3 * sd) + seed + sd) * 0.18;
       let dir = nrm(sum(mul(hf0, 0.75), mul(n, sleep ? -0.4 : 0.55), mul(hs, sd * (0.32 + wv))));
-      if (sleep) dir = nrm(sum(mul(hf0, -0.2), mul(n, -0.3), mul(hs, sd * 0.6)));
+      if (sleep || dead > 0.5) dir = nrm(sum(mul(hf0, -0.2), mul(n, -0.3), mul(hs, sd * 0.6)));
+      else if (flatK > 0.3) dir = nrm(sum(mul(hf0, 1), mul(n, 0.08), mul(hs, sd * 0.12)));
       const b = add(a, mul(dir, al * 0.5)), c = add(add(a, mul(dir, al)), mul(n, -al * 0.12));
       push(b, () => CR.curve(ctx, V, a, b, c, L * 0.006, sh(body2, -0.2)), 0);
     }
@@ -9367,6 +10208,16 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       // threat: arms raised and spread wide, the inner face (and any eyespot) shown
       if (threat > 0.01) { const c = add(Sh, mul(nrm(sum(mul(f, 0.4), mul(n, 0.35), mul(s, sd * 0.85))), Lc)); const k = add(c, mul(nrm(sum(mul(f, 0.3), mul(n, 0.9), mul(s, sd * 0.3))), Lf));
         const tb = add(k, mul(nrm(sum(mul(f, 0.7), mul(n, 0.1), mul(s, sd * 0.2))), Lt)); poses.push([threat, c, k, tb, add(tb, mul(f, L * 0.04))]); }
+      // v1.2: forelegs stretched out ahead along the twig (stick mantis lying flat, bark mantis frozen, playing dead)
+      if (flatK > 0.01) { const c = sum(Sh, mul(nrm(sum(mul(f, 1), mul(n, -0.12))), Lc), mul(s, sd * L * 0.008)); const k = sum(c, mul(nrm(sum(mul(f, 1), mul(n, -0.05))), Lf), mul(s, sd * L * 0.006));
+        const tb = sum(k, mul(nrm(sub(c, k)), Lt * 0.9), mul(n, -L * 0.006)); poses.push([flatK * (dead > 0.5 ? 0.6 : 1), c, k, tb, add(tb, mul(f, -L * 0.03))]); }
+      // boxing: folded forelegs held up in front of the face, pumped up and down (left and right out of step)
+      if (box > 0.01) { const pump = L * 0.05 * Math.sin(t * 10.5 + (sd > 0 ? 0 : 2.2) + seed); const c = sum(Sh, mul(nrm(sum(mul(f, 0.6), mul(n, 0.15))), Lc), mul(s, sd * L * 0.03));
+        const k = sum(c, mul(nrm(sum(mul(f, 0.25), mul(n, 1))), Lf), mul(n, pump), mul(s, sd * L * 0.01)); const tb = sum(k, mul(nrm(sub(c, k)), Lt * 0.85), mul(f, L * 0.015)); poses.push([box, c, k, tb, add(tb, mul(nrm(sum(mul(f, 0.4), mul(n, -1))), L * 0.04))]); }
+      // eye wipe: one foreleg at a time drawn over the big compound eye on its side
+      if (eyeW > 0.01 && holdK < 0.3) { const on = (Math.sin(t * 1.1 + seed) > 0 ? 1 : -1) === sd ? 1 : 0; if (on) { const ec = sum(Hc, mul(hs, sd * hw * 0.9), mul(hu, L * 0.012)); const sweep = Math.sin(t * 5.5);
+        const c = sum(Sh, mul(nrm(sum(mul(f, 0.55), mul(n, -0.35))), Lc * 0.9), mul(s, sd * L * 0.025)); const k = sum(ec, mul(hf0, L * 0.07), mul(n, -L * 0.03), mul(s, sd * L * 0.03));
+        const tb = sum(ec, mul(hu, L * 0.012 * sweep), mul(hf0, L * 0.012), mul(hs, sd * L * 0.008)); poses.push([eyeW, c, k, tb, add(tb, mul(hu, L * 0.03))]); } }
       // blend
       let tot = 0; const out = [Sh, [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
       for (const q of poses) { const wq = q === poses[0] ? Math.max(0.0001, 1 - Math.min(1, poses.slice(1).reduce((a, b) => a + b[0], 0))) : q[0]; tot += wq; for (let j = 1; j < 5; j++) out[j] = add(out[j], mul(q[j], wq)); }
@@ -9380,7 +10231,13 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         if (LK.coxaSpot && lod > 0) { const cp = V.P(lerp3(Sh, c, 0.6)); const r = L * V.s * 0.014; dot2(ctx, cp, r * 1.25, '#f4f1e6'); dot2(ctx, cp, r, '#141210'); }
         const Sx = limb(ctx, V, [c, k], [L * 0.034 * arm], legC, lod, null); // femur (thick, spined on its inner edge)
         if (lod > 0 && Sx && L * V.s > 40) { const nn = 5; ctx.strokeStyle = sh(legC, -0.45); ctx.lineWidth = Math.max(0.4, L * V.s * 0.003); ctx.beginPath(); for (let i = 1; i < nn; i++) { const q = lerp3(c, k, i / nn); const a = V.P(add(q, mul(n, -L * 0.014))), b = V.P(add(q, mul(sub(mul(n, -1), mul(f, 0.4)), L * 0.026))); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
+        if (LK.bands && lod > 0) for (let b = 0; b < 4; b++) { const a0 = lerp3(c, k, 0.12 + b * 0.22), a1 = lerp3(c, k, 0.22 + b * 0.22); limb(ctx, V, [a0, a1], [L * 0.036 * arm], b % 2 ? '#1c1814' : '#efe9da', lod, null); }
         limb(ctx, V, [k, tb, ta], [L * 0.022 * arm, L * 0.01], sh(legC, -0.03), lod, null); // tibia (hook at the end) + tarsus
+        if (LK.bands && lod > 0) { const a0 = lerp3(k, tb, 0.3), a1 = lerp3(k, tb, 0.6); limb(ctx, V, [a0, a1], [L * 0.024 * arm], '#efe9da', lod, null); }
+        if (LK.armLobe && lod > 0) { const AL = LK.armLobe; const wv = nrm(sum(mul(s, sd), mul(n, -0.25))); const fc = lerp3(c, k, 0.55); const inner = threat > 0.3;
+          leafShape(ctx, V, fc, mul(sub(k, c), 0.5), mul(wv, L * (inner ? 0.085 : 0.055)), inner ? AL.inner[0] : AL.out, AL.edge || ink(AL.out), { lod, round: 1, rib: !inner });
+          if (inner) AL.inner.slice(1).forEach((col, q) => leafShape(ctx, V, add(fc, mul(wv, L * 0.008 * (q + 1))), mul(sub(k, c), 0.44 - q * 0.1), mul(wv, L * (0.07 - q * 0.017)), col, sh(col, -0.3), { lod, round: 1 }));
+          leafShape(ctx, V, lerp3(Sh, c, 0.5), mul(sub(c, Sh), 0.45), mul(wv, L * 0.03), inner ? AL.inner[1] : AL.out, AL.edge || ink(AL.out), { lod, round: 1 }); }
         if (LK.lobes && lod > 0) leafShape(ctx, V, lerp3(c, k, 0.5), mul(sub(k, c), 0.32), mul(nrm(sum(mul(s, sd), mul(n, -0.4))), L * 0.026), pal.body2 || '#e6b4c8', ink(pal.body2 || '#e6b4c8'), { lod, round: 1 });
       }, near ? -L * 0.012 : L * 0.012);
     }
@@ -9391,18 +10248,21 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const mid = i === 0; const lk = i * 2 + (sd > 0 ? 1 : 0);
       const ph = gaitPh + ((i === 0) === (sd > 0) ? 0 : Math.PI); // mid-left + hind-right swing together
       const hip = W(mid ? 0.05 * L : -0.005 * L, sd * L * 0.03, h0 - L * 0.01);
-      let fu = (mid ? 0.2 : -0.24) * L, fv = sd * L * (mid ? 0.27 : 0.29) * (1 + 0.15 * crouch), fw = 0;
+      let fu = (mid ? 0.2 : -0.24) * L * legL, fv = sd * L * (mid ? 0.27 : 0.29) * (1 + 0.15 * crouch) * legL * (LK.flat ? 1.18 : 1), fw = 0;
+      if (flatK > 0.01) { fu = M.lerp(fu, (mid ? 0.3 : -0.44) * L * legL, flatK); fv = M.lerp(fv, sd * L * 0.07, flatK); }
+      if (dead > 0.01) { fu *= 1 - 0.45 * dead; fv *= 1 - 0.4 * dead; }
       fu += Math.sin(ph) * L * 0.075 * moving; fw += Math.max(0, Math.cos(ph)) * L * 0.05 * moving;
       if (threat) { fv *= 1.15; } if (sleep) fv *= 0.92;
       if (air) { fu = (mid ? 0.12 : -0.3) * L; fv *= 0.75; fw = h0 * 0.5; }
       if (o.curled) { fu *= 0.6; fv *= 0.6; fw = h0 * 0.6; }
       let foot = air || o.curled ? W(fu, fv, fw) : Wf(fu, fv, fw);
       if (piv) foot = lerp3(foot, sum(piv, mul(s, sd * L * (mid ? 0.1 : 0.05)), mul(f, mid ? L * 0.05 : 0)), hk); // hanging: all four feet grip the twig
-      const knee = sum(lerp3(hip, foot, 0.42), mul(n, L * (mid ? 0.12 : 0.14) * (1 - 0.3 * crouch)), mul(s, sd * L * 0.02));
+      const knee = sum(lerp3(hip, foot, 0.42), mul(n, L * (mid ? 0.12 : 0.14) * (1 - 0.3 * crouch) * (legL > 1 ? 1 + (legL - 1) * 0.6 : 1) * (LK.flat ? 0.7 : 1) * (1 - 0.7 * flatK)), mul(s, sd * L * 0.02));
       const ank = add(lerp3(knee, foot, 0.88), mul(n, L * 0.012));
       push(knee, () => {
-        limb(ctx, V, [hip, knee], [L * 0.016], legC, lod, null);
-        limb(ctx, V, [knee, ank, foot], [L * 0.012, L * 0.008], sh(legC, -0.05), lod, null);
+        limb(ctx, V, [hip, knee], [L * 0.016 * (thin < 1 ? 0.75 + 0.25 * thin : 1)], legC, lod, null);
+        limb(ctx, V, [knee, ank, foot], [L * 0.012 * (thin < 1 ? 0.75 + 0.25 * thin : 1), L * 0.008], sh(legC, -0.05), lod, null);
+        if (LK.legLobes && lod > 0) leafShape(ctx, V, lerp3(hip, knee, 0.6), mul(sub(knee, hip), 0.3), mul(nrm(sum(mul(n, 0.7), mul(f, mid ? 0.4 : -0.4))), L * 0.026), sh(bodyC, -0.04), ink(bodyC), { lod, round: 1 });
         if (LK.lobes === 'petal' && lod > 0) leafShape(ctx, V, lerp3(hip, knee, 0.55), mul(sub(knee, hip), 0.42), mul(nrm(sum(mul(n, 0.6), mul(f, mid ? 0.5 : -0.5))), L * 0.05), pal.body2 || '#e6b4c8', ink(pal.body2 || '#e6b4c8'), { lod, round: 1 });
       }, L * 0.01 * (sd * M.dot(s, V.toCam) > 0 ? -1 : 1));
       void lk;
@@ -10808,6 +11668,107 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   B.tick=function(h,dt){oldTick.call(B,h,dt);if(B.id(h)==='classic'||!(dt>0))return;h._bmExtra=(h._bmExtra||0)+dt;if(h._bmExtra<2)return;h._bmExtra=0;const w=wx(h);if(w==='wind'){for(const inst of h.decor){const d=JT.DECOR_BY_ID[inst.type];if(d&&(d.arche==='grass'||d.arche==='flower')){const sw=inst._sw||(inst._sw={x:0,z:0,vx:0,vz:0});sw.vx+=0.8;sw.vz+=0.25;}}if(B.id(h)==='prairie')for(const p of h.prey){if(p.state==='idle'&&JT.R()<0.4){p.st=0;p.dur=0;p._goal=null;}}}for(const sp of h.spiders)if(sp.sup&&sp.sup.k==='face'&&B.id(h)==='oldbark'&&B.homeOf(sp.species)==='oldbark'&&JT.R()<0.035&&!sp.target)sp.thought='Blending into the old bark, waiting for movement.';};
  }
 })(typeof window!=='undefined'?window:globalThis);
+</script>
+<script>
+/* Mantis Terrarium pack v1.2 — drawing for egg cases (oothecae), hatching nymphs on their threads and
+   drifting autumn leaves. Added as extra sprite items to the renderer's scene list. */
+(function (root) {
+  'use strict';
+  const JT = root.JT, M = JT.M; if (!JT.Renderer) return;
+  const LIFE = () => JT.SpiderAI.LIFE || { HARD_DAYS: 0.5 };
+  const hex = (c) => { c = c.replace('#', ''); if (c.length === 3) c = c.split('').map(x => x + x).join(''); return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)]; };
+  const mixA = (a, b, k) => { const A = hex(a), B = hex(b); return A.map((v, i) => Math.round(v + (B[i] - v) * k)); };
+  const toHex = (A) => '#' + A.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, k) => toHex(mixA(a, b, k));
+  // per-shape: [length, thickness] in units of the mother's body length, ridge count
+  const SHAPE = { long: [0.62, 0.2, 9], round: [0.36, 0.3, 6], elong: [0.48, 0.22, 7], thin: [0.5, 0.12, 8], flat: [0.42, 0.16, 6], tiny: [0.22, 0.12, 4], ribbon: [0.7, 0.1, 12] };
+
+  function drawOoth(ctx, V, o, night) {
+    const sh = SHAPE[o.k] || SHAPE.elong; const Lb = Math.max(4, o.size || 8);
+    const len = Lb * sh[0] * 1.25, th = Lb * sh[1] * 1.25;
+    const up = o.up || [0, 1, 0]; const dir = o.dir || [1, 0, 0];
+    const c = M.add(o.pos, M.mul(up, -th * 0.35));
+    const a = V.P(M.add(c, M.mul(dir, -len / 2))), b = V.P(M.add(c, M.mul(dir, len / 2))), P = V.P(c);
+    const ang = Math.atan2(b[1] - a[1], b[0] - a[0]); const sl = Math.max(2, Math.hypot(b[0] - a[0], b[1] - a[1]));
+    const sth = Math.max(1.5, th * V.s);
+    const hard = M.clamp((o.age || 0) / LIFE().HARD_DAYS, 0, 1);
+    let col = mix('#f7f1df', o.k === 'ribbon' ? '#7a5a3a' : '#9b7b52', hard * 0.92); if (o.state === 'empty') col = mix('#c9b48e', '#e2d6b8', 0.4);
+    ctx.save(); ctx.translate(P[0], P[1]); ctx.rotate(ang);
+    const hw = sl / 2, hh = sth / 2 * (o.k === 'flat' ? 0.7 : 1);
+    const hy = o.k === 'round' ? Math.max(hh, hw * 0.75) : hh;
+    ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(0, hy * 0.5, hw * 1.02, hy * 0.9, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath();
+    if (o.k === 'ribbon') { ctx.moveTo(-hw, 0); for (let i = 0; i <= 10; i++) { const x = -hw + i * sl / 10; ctx.lineTo(x, -hh + Math.sin(i * 1.3) * hh * 0.3); } for (let i = 10; i >= 0; i--) { const x = -hw + i * sl / 10; ctx.lineTo(x, hh * 0.8 + Math.sin(i * 1.3) * hh * 0.3); } ctx.closePath(); }
+    else ctx.ellipse(0, 0, hw, hy, 0, 0, 6.283);
+    ctx.fill();
+    // foam ridges across the case
+    ctx.strokeStyle = mix('#ffffff', '#4a3420', 0.25 + hard * 0.5); ctx.globalAlpha = 0.55; ctx.lineWidth = Math.max(0.5, sth * 0.08);
+    const n = sh[2];
+    for (let i = 1; i < n; i++) { const x = -hw + i * sl / n; const e = Math.sqrt(Math.max(0, 1 - (x / hw) * (x / hw))); ctx.beginPath(); ctx.moveTo(x - hy * 0.12, -hy * e * 0.92); ctx.quadraticCurveTo(x + hy * 0.25, 0, x - hy * 0.12, hy * e * 0.92); ctx.stroke(); }
+    // the emergence strip along the top; little exit holes once hatched
+    ctx.globalAlpha = 0.8; ctx.strokeStyle = mix(col, '#ffffff', 0.3); ctx.lineWidth = Math.max(0.6, sth * 0.12);
+    ctx.beginPath(); ctx.moveTo(-hw * 0.8, -hy * 0.55); ctx.quadraticCurveTo(0, -hy * 0.85, hw * 0.8, -hy * 0.55); ctx.stroke();
+    if (o.state === 'empty' || o.state === 'hatching') { ctx.fillStyle = 'rgba(60,40,25,0.7)'; for (let i = 0; i < 6; i++) { const x = -hw * 0.7 + i * hw * 0.28; ctx.beginPath(); ctx.arc(x, -hy * 0.62, Math.max(0.4, sth * 0.07), 0, 6.283); ctx.fill(); } }
+    ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(255,255,255,' + (0.35 * (1 - hard) + 0.1).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(-hw * 0.2, -hy * 0.35, hw * 0.45, hy * 0.18, 0, 0, 6.283); ctx.fill();
+    if (night > 0.4) { ctx.fillStyle = 'rgba(10,15,40,' + ((night - 0.4) * 0.5).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(0, 0, hw, hy, 0, 0, 6.283); ctx.fill(); }
+    ctx.restore();
+  }
+  JT.Draw.mantisOoth = drawOoth;
+
+  function nymphAt(hv, n, t) {
+    const o = hv.o; const sh = SHAPE[o.k] || SHAPE.elong; const Lb = Math.max(4, o.size || 8);
+    const up = o.up || [0, 1, 0]; const base = M.add(o.pos, M.mul(up, -Lb * sh[1] * 0.6));
+    const tt = t - n.dl; if (tt < 0) return null;
+    const sw = Math.sin(tt * 3 + n.ph) * 0.6;
+    if (tt < n.hang) { const k = Math.min(1, tt / 0.6); return { pos: [base[0] + sw, base[1] - n.th * k, base[2] + Math.cos(tt * 2.2 + n.ph) * 0.4], top: base, a: 1, dir: [0, -1, 0.01] }; }
+    const t2 = tt - n.hang; const hang = [base[0] + sw, base[1] - n.th, base[2]];
+    if (t2 < 0.45) { const k = t2 / 0.45; return { pos: [hang[0], M.lerp(hang[1], hv.floor[1] + 0.2, k * k), hang[2]], a: 1, dir: [0, -1, 0.01] }; }
+    const t3 = t2 - 0.45; const k = M.clamp(t3 / n.run, 0, 1); const ek = 1 - (1 - k) * (1 - k);
+    const from = [hang[0], hv.floor[1] + 0.2, hang[2]]; const to = [n.to[0], hv.floor[1] + 0.2, n.to[2]];
+    const a = t3 > n.run ? M.clamp(1 - (t3 - n.run) / 1.5, 0, 1) : 1; if (a <= 0) return null;
+    const dv = M.sub(to, from); return { pos: M.lerp3(from, to, ek), a, dir: M.len(dv) > 1e-3 ? M.norm(dv) : [1, 0, 0], walk: t3 };
+  }
+  function drawNymph(ctx, V, q, col) {
+    const P = V.P(q.pos); const s = Math.max(1.1, 1.9 * V.s);
+    if (q.top) { const T = V.P(q.top); ctx.strokeStyle = 'rgba(245,245,250,0.6)'; ctx.lineWidth = Math.max(0.4, V.s * 0.06); ctx.beginPath(); ctx.moveTo(T[0], T[1]); ctx.lineTo(P[0], P[1] - s * 0.6); ctx.stroke(); }
+    const D2 = V.P(M.add(q.pos, q.dir)); let ang = Math.atan2(D2[1] - P[1], D2[0] - P[0]); if (!isFinite(ang)) ang = 0;
+    ctx.save(); ctx.globalAlpha = q.a; ctx.translate(P[0], P[1]); ctx.rotate(ang);
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(0.5, s * 0.22); ctx.lineCap = 'round';
+    const wv = q.walk != null ? Math.sin(q.walk * 22) * 0.35 : 0;
+    ctx.beginPath(); ctx.moveTo(-s * 0.9, 0); ctx.lineTo(s * 0.9, 0); ctx.stroke();
+    ctx.lineWidth = Math.max(0.35, s * 0.1);
+    for (const [x, l] of [[0.25, 1], [-0.1, 1.1], [-0.4, 1.2]]) for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x * s, 0); ctx.lineTo((x + 0.25 * sd * wv) * s - s * 0.2, sd * s * 0.7 * l); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(s * 0.7, 0); ctx.lineTo(s * 1.25, -s * 0.35); ctx.stroke();
+    ctx.restore();
+  }
+  const AUT = ['#c8632a', '#b8452a', '#d89a32', '#8a5a2e', '#a8742c', '#c9a040'];
+  function drawLeaf(ctx, V, l) {
+    const P = V.P(l.pos); const r = Math.max(1.4, l.size * V.s);
+    const a = l.falling ? 0.95 : 0.95 * M.clamp(1 - (l.rest - 26) / 6, 0, 1); if (a <= 0) return;
+    const col = AUT[Math.floor(l.hue * AUT.length) % AUT.length];
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(P[0], P[1]); ctx.rotate(l.ang);
+    const fy = l.falling ? 0.15 + 0.85 * Math.abs(Math.cos(l.flip)) : Math.max(0.3, V.sp || 0.5); ctx.scale(1, fy);
+    ctx.fillStyle = l.falling && Math.cos(l.flip) < 0 ? mix(col, '#e8d0a0', 0.25) : col;
+    ctx.beginPath(); ctx.moveTo(-r, 0); ctx.bezierCurveTo(-r * 0.4, -r * 0.75, r * 0.5, -r * 0.6, r, 0); ctx.bezierCurveTo(r * 0.5, r * 0.6, -r * 0.4, r * 0.75, -r, 0); ctx.fill();
+    ctx.strokeStyle = mix(col, '#2a1a0a', 0.45); ctx.lineWidth = Math.max(0.4, r * 0.08);
+    ctx.beginPath(); ctx.moveTo(-r * 1.3, 0); ctx.lineTo(r * 0.9, 0); for (const x of [-0.4, 0, 0.4]) { ctx.moveTo(x * r, 0); ctx.lineTo((x + 0.3) * r, -r * 0.35); ctx.moveTo(x * r, 0); ctx.lineTo((x + 0.3) * r, r * 0.35); } ctx.stroke();
+    ctx.restore();
+  }
+  JT.Draw.mantisLeaf = drawLeaf;
+
+  const RP = JT.Renderer.prototype, cs0 = RP.collectScene;
+  RP.collectScene = function (V, hab, night) {
+    const sc = cs0.apply(this, arguments); const items = sc.items;
+    for (const o of hab.data.ooth || []) { if (!M.finite3(o.pos)) continue; items.push({ d: V.depth(o.pos) - 0.03, mf: (c, v) => drawOoth(c, v, o, night), p: o.pos, r: (o.size || 8) * 0.75 + 1 }); }
+    for (const hv of hab._mHatch || []) {
+      const S = JT.SPECIES_BY_ID[hv.o.species]; const col = (S && S.pal && (S.pal.body || S.pal.abd)) || '#8a9a5a';
+      for (const n of hv.nym) { const q = nymphAt(hv, n, hv.t); if (!q) continue; items.push({ d: V.depth(q.pos) - 0.04, mf: (c, v) => drawNymph(c, v, q, col), p: q.pos, r: 3 + (q.top ? n.th : 0) }); }
+    }
+    for (const l of hab._mLeaves || []) { if (!M.finite3(l.pos)) continue; items.push({ d: V.depth(l.pos) - 0.02, mf: (c, v) => drawLeaf(c, v, l), p: l.pos, r: l.size * 1.4 + 1 }); }
+    const run0 = sc.run; sc.run = (it, c2, v2) => (it.mf ? it.mf(c2, v2) : run0(it, c2, v2));
+    return sc;
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
 /* Jumper Terrarium — procedural WebAudio: calm generative music, sparse creature ambience, effects.
@@ -12821,8 +13782,8 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   };
   function mealStart(hab, sp, p) {
     const g = sp.sup && sp.sup.d != null ? hab.geoms[sp.sup.d] : null; const def = g && g.def;
-    if ((sp.species === 'orchid' || sp.species === 'spiny') && def && (def.flowers || def.arche === 'flower' || /orchid|flower/.test(def.id))) hab.event('journal', { id: 'flowerLure', sp });
-    const bid = JT.Biomes.id(hab); if ((sp.species === 'ghost' || sp.species === 'carolina') && (bid === 'dryleaf' || bid === 'oldbark')) hab.event('journal', { id: 'camoHunt', sp });
+    if ((sp.species === 'orchid' || sp.species === 'spiny' || sp.species === 'devilsflower') && def && (def.flowers || def.arche === 'flower' || /orchid|flower/.test(def.id))) hab.event('journal', { id: 'flowerLure', sp });
+    const bid = JT.Biomes.id(hab); if (['ghost', 'carolina', 'deadleaf', 'bark', 'stick'].includes(sp.species) && (bid === 'dryleaf' || bid === 'oldbark')) hab.event('journal', { id: 'camoHunt', sp });
   }
   const nm = (p) => p.type === 'jumperMeal' ? 'mantis' : AI.preyName ? AI.preyName(JT.PREY_BY_ID[p.type] || { name: 'prey' }) : ((JT.PREY_BY_ID[p.type] || {}).name || 'prey').toLowerCase();
   const groom0 = H.groom;
@@ -12855,6 +13816,23 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   };
   const start = () => { walk(document.body); new MutationObserver((ms) => { for (const m of ms) { if (m.type === 'characterData') walk(m.target); else for (const n of m.addedNodes) walk(n); if (m.type === 'attributes') walk(m.target); } }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['title', 'aria-label', 'placeholder'] }); document.title = root.JT_COMBINED ? 'Terrarium' : 'Mantis Terrarium'; };
   if (document.body) start(); else addEventListener('DOMContentLoaded', start);
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Mantis Terrarium pack v1.2 — profile shows female / male (and carrying eggs, elderly). */
+(function (root) {
+  'use strict';
+  const JT = root.JT;
+  // ---- profile: female / male ----
+  if (JT.UI && JT.UI.profileModal) {
+    const pm0 = JT.UI.profileModal;
+    JT.UI.profileModal = function (sp) {
+      const r = pm0.apply(this, arguments);
+      try { const e = typeof document !== 'undefined' && document.querySelector('.pf-st'); if (e && sp && (sp.sex === 'f' || sp.sex === 'm') && !e.dataset.msex) { e.dataset.msex = 1; e.textContent += ' \u00b7 ' + (sp.sex === 'f' ? 'Female' : 'Male') + (sp.gravid ? ' (carrying eggs)' : '') + (sp.elderNoted ? ' \u00b7 elderly' : ''); } } catch (e) { /* ignore */ }
+      return r;
+    };
+  }
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
