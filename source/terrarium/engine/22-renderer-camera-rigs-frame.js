@@ -366,11 +366,11 @@
       // dust motes drifting through the light — a tiny bit of air between you and the scene
       const day = this.game.daylight(); if (day < 0.15 || this.quality === 'low') return;
       const dm = hab.dims; if (!this.motes || this.motes.hab !== hab.data.id) { const rng = JT.makeRng(7); this.motes = { hab: hab.data.id, p: [] }; for (let i = 0; i < 34; i++) this.motes.p.push([rng() * dm.w, 6 + rng() * dm.h * 0.9, rng() * dm.d, rng() * 6.28, 0.25 + rng() * 0.5]); }
-      const t = this.time; ctx.fillStyle = '#fff3c8';
-      for (const m of this.motes.p) {
+      const t = this.time; ctx.fillStyle = '#fff3c8'; const hdM = document.body.classList.contains('hd2d') || document.body.classList.contains('cuphead');
+      for (let mi = 0; mi < this.motes.p.length; mi++) { if (hdM && mi % 3) continue; const m = this.motes.p[mi];
         const x = m[0] + Math.sin(t * 0.13 + m[3]) * 6, y = m[1] + Math.sin(t * 0.09 + m[3] * 2) * 4, z = m[2] + Math.cos(t * 0.11 + m[3]) * 5;
         const q = V.P([x, y, z]); const tw = 0.5 + 0.5 * Math.sin(t * 1.3 + m[3] * 3);
-        ctx.globalAlpha = day * (0.18 + 0.4 * tw) * m[4]; const r = Math.max(0.6 * this.k, m[4] * 0.45 * V.s);
+        ctx.globalAlpha = day * (0.18 + 0.4 * tw) * m[4] * (hdM ? 0.6 : 1); const r = Math.max(0.6 * this.k, m[4] * 0.45 * V.s);
         ctx.fillRect(q[0] - r, q[1] - r, r * 2, r * 2);
       }
       ctx.globalAlpha = 1;

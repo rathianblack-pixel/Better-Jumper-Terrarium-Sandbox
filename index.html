@@ -37,6 +37,14 @@
   .card em { display: block; color: var(--leaf); font-size: 13.5px; margin-top: 7px; font-style: normal; letter-spacing: .03em; }
   .link { font: inherit; background: none; border: 0; color: var(--muted); font-style: italic; cursor: pointer; font-size: 16px; }
   .foot { position: fixed; left: 0; right: 0; text-align: center; bottom: max(10px, env(safe-area-inset-bottom)); color: rgba(201, 192, 166, .55); font-size: 12px; font-style: italic; }
+
+  /* HD-2D title: gilt menu windows, square pixel motes */
+  .btn { color: #f6e7bf; background: linear-gradient(180deg, rgba(20,26,50,.92), rgba(8,10,24,.92)); border: 1px solid rgba(206,176,108,.85); border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.7), inset 0 0 0 2px rgba(240,220,160,.16), 0 6px 22px rgba(0,0,0,.5); text-shadow: 0 1px 0 #000; }
+  .btn:hover, .btn:focus-visible { color: #e8c675; outline: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.7), inset 0 0 0 2px rgba(232,198,117,.4), 0 0 18px rgba(232,198,117,.25), 0 6px 22px rgba(0,0,0,.5); }
+  .card { background: linear-gradient(180deg, rgba(20,26,50,.86), rgba(8,10,24,.86)); border: 1px solid rgba(206,176,108,.7); border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.65), inset 0 0 0 2px rgba(240,220,160,.12), 0 6px 20px rgba(0,0,0,.45); }
+  .card:hover, .card:focus-visible { background: linear-gradient(180deg, rgba(30,38,70,.9), rgba(12,14,32,.9)); border-color: #e8c675; }
+  .card img { border-radius: 3px; image-rendering: pixelated; }
+  .mote { border-radius: 0; filter: none; box-shadow: 0 0 6px rgba(255,230,160,.7); background: rgba(255,236,180,.85); }
 </style>
 </head>
 <body>

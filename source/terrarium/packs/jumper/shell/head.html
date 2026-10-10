@@ -739,6 +739,62 @@ body.tv #app>:not(canvas):not(#tvVeil):not(#tvCatch),body.tv #tip{opacity:0!impo
 #wxVeil{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 35%,#6c7684,#3b4350);mix-blend-mode:multiply;opacity:0}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button:focus:not(:focus-visible){outline:none}
+
+/* ---------- HD-2D theme (Octopath-style): deep navy menu windows with a thin gilt frame, cream text, gold highlights ---------- */
+body.story.hd2d{--ink:#f3ead2;--dim:rgba(243,234,210,.84);--faint:rgba(243,234,210,.58);--rule:rgba(214,186,120,.32);--accent:#e8c675;--warm:#f1b45e;--ok:#a9d68c;--bad:#f39a86;
+ --scrim:rgba(6,8,18,.82);--scrim2:rgba(6,8,18,.6);--shadow:0 1px 0 #000,0 0 3px rgba(0,0,0,.85);background:#0d0f16;
+ --pill:rgba(10,13,28,.84);--pillLine:rgba(214,186,120,.6);--pillSh:0 4px 16px rgba(0,0,0,.5);
+ --gA:rgba(20,26,50,.86);--gB:rgba(8,10,24,.86);--gF:rgba(16,20,40,.92);--gF2:rgba(8,10,22,.9);--gBlur:blur(2px);--gFBlur:blur(3px);
+ --gRim:rgba(240,220,160,.14);--gEdge:rgba(206,176,108,.78);--gShade:0 5px 18px rgba(0,0,0,.5);--gTxt:0 1px 0 #000,0 0 3px rgba(0,0,0,.85);--gLens:rgba(232,198,117,.22)}
+body.story.hd2d #top,body.story.hd2d #toolbar,body.story.hd2d #drawer,body.story.hd2d #dock,body.story.hd2d #toasts,body.story.hd2d #modeBar,body.story.hd2d #obsHud{background-image:none}
+body.hd2d #app .tb-left,body.hd2d #app .clock,body.hd2d #app .tb-right,body.hd2d #app .toast,body.hd2d #app #obsHud,body.hd2d #app #modeBar,body.hd2d #app #dock,body.hd2d #app #toolbar .gl-bar,body.hd2d #app #camCtl button,
+body.hd2d #app #spiderPanel,body.hd2d #app #modal,body.hd2d #app #topMenu,body.hd2d #app #drawer,body.hd2d #app #popover{
+ background:linear-gradient(180deg,var(--gA),var(--gB));border:1px solid var(--gEdge);border-radius:3px;
+ box-shadow:inset 0 0 0 1px rgba(0,0,0,.65),inset 0 0 0 2px var(--gRim),inset 0 14px 18px -12px rgba(120,150,255,.16),var(--gShade);text-shadow:var(--gTxt);color:var(--ink)}
+body.hd2d #app #spiderPanel,body.hd2d #app #modal,body.hd2d #app #topMenu,body.hd2d #app #drawer,body.hd2d #app #popover{background:linear-gradient(180deg,var(--gF),var(--gF2))}
+body.hd2d #app #camCtl button{border-radius:3px}
+body.hd2d #app .lens{border-radius:2px;background:linear-gradient(90deg,rgba(232,198,117,0),rgba(232,198,117,.26) 25%,rgba(232,198,117,.26) 75%,rgba(232,198,117,0));box-shadow:inset 0 1px 0 rgba(232,198,117,.55),inset 0 -1px 0 rgba(232,198,117,.55)}
+body.hd2d #app #modalWrap{background:rgba(3,5,12,.55)}
+body.hd2d button{text-shadow:var(--shadow)}
+body.hd2d #app #top .seg button.on,body.hd2d #app .tabs button.on,body.hd2d #app #toolbar button.on,body.hd2d #app #dock button.on{color:var(--accent)}
+body.hd2d #app #top .seg button.on::before,body.hd2d #app .tabs button.on::before{content:"";position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-3px;background:var(--accent);transform:rotate(45deg);box-shadow:0 0 6px rgba(232,198,117,.8)}
+body.hd2d #app #spiderPanel h3,body.hd2d #app #modal h2,body.hd2d #app #modal h4{color:#f6e7bf;letter-spacing:.06em}
+body.hd2d #app #modal h4{border-bottom:1px solid var(--rule);padding-bottom:3px}
+body.hd2d .menu .mseg .seg button.on,body.hd2d #app .seg button.on{background:linear-gradient(180deg,rgba(232,198,117,.32),rgba(232,198,117,.12));color:#fff4d6;box-shadow:inset 0 0 0 1px rgba(232,198,117,.7);border-radius:2px}
+body.hd2d #tip{background:linear-gradient(180deg,rgba(20,26,50,.95),rgba(8,10,24,.95));border:1px solid rgba(206,176,108,.78);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.65),inset 0 0 0 2px rgba(240,220,160,.14),0 5px 18px rgba(0,0,0,.5)}
+body.hd2d #tip button.ok{background:linear-gradient(180deg,#e8c675,#b8913f);color:#1a1408;border-radius:2px}
+body.hd2d .card canvas{image-rendering:pixelated}
+body.hd2d .menu .msect{border-radius:2px;background:linear-gradient(180deg,rgba(40,50,90,.35),rgba(10,12,28,.35));box-shadow:inset 0 0 0 1px rgba(206,176,108,.35)}
+body.hd2d .menu .msect h4{color:#d9bd7a!important;letter-spacing:.1em}
+body.hd2d #app #camToggle,body.hd2d #app #camRecentre,body.hd2d #app #camList,body.hd2d #app #camList button{border-radius:3px!important;background:linear-gradient(180deg,rgba(20,26,50,.88),rgba(8,10,24,.88));border:1px solid rgba(206,176,108,.78);box-shadow:inset 0 0 0 1px rgba(0,0,0,.65),inset 0 0 0 2px rgba(240,220,160,.14),0 4px 14px rgba(0,0,0,.45);color:var(--ink)}
+
+/* ---------- Cuphead theme (1930s cartoon title cards): cream card stock, thick ink outlines, hard drop shadows, cartoon red ---------- */
+body.story.cuphead{--ink:#1d1510;--dim:rgba(29,21,16,.86);--faint:rgba(29,21,16,.6);--rule:rgba(29,21,16,.35);--accent:#c8281e;--warm:#d9822b;--ok:#3f7a2a;--bad:#c8281e;
+ --scrim:rgba(243,230,198,.9);--scrim2:rgba(243,230,198,.65);--shadow:none;background:#e9dcbc;--cupF:"Trebuchet MS","Gill Sans","Futura",Arial,sans-serif;
+ --pill:#f3e6c6;--pillLine:#1d1510;--pillSh:3px 4px 0 rgba(29,21,16,.85);
+ --gA:#f6ead0;--gB:#efe0bd;--gF:#f6ead0;--gF2:#ecdcb6;--gBlur:none;--gFBlur:none;--gRim:rgba(255,255,255,.5);--gEdge:#1d1510;--gShade:3px 4px 0 rgba(29,21,16,.85);--gTxt:none;--gLens:rgba(200,40,30,.16)}
+body.story.cuphead #top,body.story.cuphead #toolbar,body.story.cuphead #drawer,body.story.cuphead #dock,body.story.cuphead #toasts,body.story.cuphead #modeBar,body.story.cuphead #obsHud{background-image:none}
+body.cuphead #app .tb-left,body.cuphead #app .clock,body.cuphead #app .tb-right,body.cuphead #app .toast,body.cuphead #app #obsHud,body.cuphead #app #modeBar,body.cuphead #app #dock,body.cuphead #app #toolbar .gl-bar,body.cuphead #app #camCtl button,body.cuphead #app #spiderPanel,body.cuphead #app #modal,body.cuphead #app #topMenu,body.cuphead #app #drawer,body.cuphead #app #popover{
+ background:linear-gradient(180deg,var(--gA),var(--gB));border:2.5px solid #1d1510;border-radius:12px;backdrop-filter:none;-webkit-backdrop-filter:none;
+ box-shadow:inset 0 0 0 2px rgba(255,250,236,.7),inset 0 -6px 10px -6px rgba(120,80,40,.25),3px 4px 0 rgba(29,21,16,.85);text-shadow:none;color:var(--ink)}
+body.cuphead #app #modalWrap{background:rgba(40,26,14,.45)}
+body.cuphead button{text-shadow:none;font-family:var(--cupF);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:13.5px;color:var(--dim)}
+body.cuphead button:hover{color:var(--accent)}
+body.cuphead .bgs button{color:#fff6e2!important;text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.6)!important;font-size:11.5px;border:2px solid #1d1510;border-radius:8px}
+body.cuphead .bgs button.on{box-shadow:0 0 0 3px var(--accent)}
+body.cuphead #app #top .seg button.on,body.cuphead #app .tabs button.on,body.cuphead #app #toolbar button.on,body.cuphead #app #dock button.on{color:var(--accent);background:none;box-shadow:none}
+body.cuphead #app #top .seg button.on::before,body.cuphead #app .tabs button.on::before{content:"";position:absolute;left:22%;right:22%;bottom:6px;height:3px;border-radius:2px;background:var(--accent)}
+body.cuphead #app .lens{border-radius:9px;background:rgba(200,40,30,.12);box-shadow:inset 0 0 0 2px rgba(29,21,16,.8)}
+body.cuphead #app #spiderPanel h3,body.cuphead #app #modal h2,body.cuphead #app #modal h4{font-family:var(--cupF);font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#1d1510}
+body.cuphead #app #modal h2{color:var(--accent);-webkit-text-stroke:.6px #1d1510;text-shadow:2px 2px 0 rgba(29,21,16,.85)}
+body.cuphead #app #modal h4{border-bottom:2px solid #1d1510;padding-bottom:3px}
+body.cuphead .menu .mseg .seg button.on,body.cuphead #app .seg button.on{background:var(--accent);color:#fff4dc;box-shadow:inset 0 0 0 2px #1d1510;border-radius:8px}
+body.cuphead #tip{background:#f6ead0;color:#1d1510;border:2.5px solid #1d1510;border-radius:12px;box-shadow:3px 4px 0 rgba(29,21,16,.85);text-shadow:none}
+body.cuphead #tip button.ok{background:var(--accent);color:#fff4dc;border:2px solid #1d1510;border-radius:8px}
+body.cuphead .menu .msect{border-radius:10px;background:rgba(255,250,236,.45);box-shadow:inset 0 0 0 2px rgba(29,21,16,.55)}
+body.cuphead .menu .msect h4{color:var(--accent)!important;font-family:var(--cupF);font-weight:800;text-transform:uppercase;letter-spacing:.1em}
+body.cuphead #app #camToggle,body.cuphead #app #camRecentre,body.cuphead #app #camList,body.cuphead #app #camList button{border-radius:12px!important;background:#f6ead0;border:2.5px solid #1d1510;box-shadow:3px 4px 0 rgba(29,21,16,.85);color:#1d1510}
+body.cuphead #app .clock{font-family:var(--cupF);font-weight:800;text-transform:uppercase}
 </style>
 </head>
 <body>
