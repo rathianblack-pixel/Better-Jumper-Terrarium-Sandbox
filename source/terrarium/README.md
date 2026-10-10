@@ -132,3 +132,10 @@ Same look and same simulation, cheaper frames.
   screen won't dim or lock. Uses the Screen Wake Lock API (re-taken after every return to the app); on older
   iOS/Android without it, a tiny muted looping invisible video started from the first tap. Released when the
   setting is off or the app is in the background.
+
+## v1.3.1 — mantis hunting realism
+
+- **No more jumper-style leaps.** Mantis strike range used to be inherited from the jumping spider's jump distance (plus a downhill bonus and a "lunge across" fallback on stems), so mantises sailed up to ~1.4 body lengths onto prey. Strikes are now arm-reach only (`AI.mReach` ≈ half a body length + raptorial reach, no downhill bonus): the body leans at most ~0.6 L on the ground and ~0.2 L on stems, and a strike whose prey has moved out of reach is called off and the mantis goes back to assessing. Measured travel per strike: v1.3 up to 1.43 L → now ≤ 0.14 L, with nearly every strike landing a meal.
+- **Stalking moves are slow reach-and-steps** (low, slow transfers between stems instead of hops) while a target is set.
+- **Camouflage.** Prey notice a stalking mantis far less (`AI.noticeK`: ×0.3 while stalking, lower still when moving slowly or very close, scaled by species stealth; `AI.feltK` for close-range "feel"), and the alarm a strike raises in nearby prey is smaller and shorter-range. A still, leaf-like mantis also no longer keeps a nervous group of prey winding each other up (`AI.groupK`). Applies on plants and on the ground. Measured over 6 species × 2 tanks × 200 s: real flights (flee/hop/fly) from a mantis dropped 35 → 7, and during stalking 14 → 0; meals steady (24 → 26). Crickets right under a mantis still often freeze, which is what they do.
+- Engine hooks (`AI.reachFor`, `noticeK`, `feltK`) are only defined by the mantis pack, so Jumper behaviour is unchanged (legacy suite matches the v1.3 baseline).

@@ -43,12 +43,13 @@
       const cone = d.fly ? 0.85 : (M.dot(p.fwd || [1, 0, 0], to) > 0.3 ? 1 : 0.35);
       const hgt = !d.fly && s.pos[1] - p.pos[1] > 10 ? 0.5 : 1;
       const cov = 1 - Nav.coverAt(hab, s.pos) * 0.6;
-      a += vis * cone * hgt * cov * (1 - dist / range);
+      const nk = JT.SpiderAI.noticeK ? JT.SpiderAI.noticeK(hab, s, p, dist, range) : 1; // packs: how readily this hunter is picked out at all (mantis camouflage)
+      a += vis * cone * hgt * cov * (1 - dist / range) * nk;
       // a big shape this close is felt even when it keeps still (compound eyes, air currents, vibration)
-      const near = range * (glass ? 0.22 : 0.42); if (dist < near) a += (1 - dist / near) * (sneaking ? 0.3 : 0.9) * (d.fly ? 1.3 : 1) * cov * (1 - s.traits.stealth * 0.3) * (camo < 1 ? 0.8 : 1);
+      const near = range * (glass ? 0.22 : 0.42); if (dist < near) a += (1 - dist / near) * (sneaking ? 0.3 : 0.9) * (d.fly ? 1.3 : 1) * cov * (1 - s.traits.stealth * 0.3) * (camo < 1 ? 0.8 : 1) * (JT.SpiderAI.feltK ? JT.SpiderAI.feltK(hab, s, p, dist) : 1);
     }
     // nervous neighbours make a group jumpy
-    if (nearest) { let nv = 0; for (const q of hab.data.prey) if (q !== p && !q.owner && (q.alert || 0) > 0.6 && M.dist(q.pos, p.pos) < 10) nv++; a += Math.min(3, nv) * 0.12; }
+    if (nearest) { let nv = 0; for (const q of hab.data.prey) if (q !== p && !q.owner && (q.alert || 0) > 0.6 && M.dist(q.pos, p.pos) < 10) nv++; a += Math.min(3, nv) * 0.12 * (JT.SpiderAI.groupK ? JT.SpiderAI.groupK(hab, nearest, p) : 1); }
     const spooked = p._spook && hab.time < p._spook.until;
     p.alert = M.clamp((p.alert || 0) + a * dt * 2.2 * (spooked ? 1.35 : 1) * (1 - 0.5 * wk) - dt * 0.12, spooked ? 0.3 : 0, 1.5);
     if (p.alert > 1 && nearest && p.state !== 'flee' && p.state !== 'hop' && p.state !== 'twitch') PA.escape(hab, p, nearest, false);

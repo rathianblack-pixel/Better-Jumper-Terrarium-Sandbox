@@ -612,7 +612,7 @@
     return { pos: [x, e.pos[1], z], sup: JT.deepClone(e.sup) };
   }
   /** Reach of a leap from a height difference: leaping down carries much farther (gravity helps), up much shorter. */
-  function reachFor(J, dh) { return dh >= 0 ? J + Math.min(J * 1.3, dh * 0.85) : J - Math.min(J * 0.6, -dh * 0.8); }
+  function reachFor(J, dh) { if (AI.reachFor) return AI.reachFor(J, dh); return dh >= 0 ? J + Math.min(J * 1.3, dh * 0.85) : J - Math.min(J * 0.6, -dh * 0.8); } // packs may replace it (a mantis's reach doesn't grow downhill)
   function effJump(sp, tpos) { return reachFor(AI.jump(sp), sp.pos[1] - tpos[1]); }
   AI.effJump = effJump;
 

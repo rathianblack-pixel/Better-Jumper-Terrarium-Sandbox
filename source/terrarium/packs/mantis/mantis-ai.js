@@ -21,7 +21,28 @@
   const preyNm = (p) => p && p.type === 'jumperMeal' ? 'mantis' : ((JT.PREY_BY_ID[p && p.type] || {}).name || 'prey').toLowerCase();
 
   // a mantis lunges a short way (about one body length) — never a spider's leap
-  AI.jump = (sp) => (5 + AI.len(sp) * 1.05) * (0.85 + sp.traits.jump * 0.3) * (sp.soft > 0 ? 0.7 : 1);
+  // v1.3: hunting range = what the forelegs can reach from where it stands (plus a lean). A mantis never leaps onto prey,
+  // and higher ground doesn't stretch its reach. Walking routes keep the old short hop between stems (AI.mJump).
+  AI.mJump = (sp) => (5 + AI.len(sp) * 1.05) * (0.85 + sp.traits.jump * 0.3) * (sp.soft > 0 ? 0.7 : 1);
+  AI.mReach = (sp) => (AI.len(sp) * 0.5 + 2.2) * (sp.soft > 0 ? 0.8 : 1);
+  AI.jump = (sp) => AI.mReach(sp);
+  AI.reachFor = (J) => J;
+
+  // ---- v1.3: camouflage. A mantis is a leaf or a twig to its prey: on plants, trees and the bare ground alike it is rarely
+  // picked out while it creeps or rocks in place; a big fast walk still gets noticed. Close in (strike range) the "felt"
+  // presence of a jumper barely applies — a mantis holds still and waits. Its strike also scatters far less than a leap.
+  const STALKING = new Set(['stalk', 'creep', 'crouch', 'track', 'assess', 'notice', 'ambush', 'wait']);
+  AI.noticeK = (hab, s, p, dist) => {
+    const spd = s._speedNow || 0; let k = STALKING.has(s.state) ? 0.3 : (spd > 6 ? 0.75 : 0.5);
+    if (STALKING.has(s.state) && spd < 2.5) k *= 0.6; // the slow, rocking leaf-gait
+    if (dist < AI.mReach(s) * 2.2) k *= 0.7; // a still shape right there is taken for part of the plant
+    return k * (1 - (s.traits.stealth || 0) * 0.3);
+  };
+  AI.feltK = (hab, s) => (STALKING.has(s.state) ? 0.25 : 0.5);
+  // a group's jitters only feed on themselves when the hunter actually moves like one: a still, leaf-like mantis doesn't keep the swarm wound up
+  AI.groupK = (hab, s) => (s.state === 'pounce' ? 1 : STALKING.has(s.state) ? 0.1 : 0.4);
+  if (JT.PreyAI && JT.PreyAI.alarm) { const alarm0 = JT.PreyAI.alarm;
+    JT.PreyAI.alarm = function (hab, pos, radius, amt, except, hunter) { if (hunter && hunter.species && hunter.state === 'pounce') { radius *= 0.55; amt *= 0.6; } return alarm0.call(this, hab, pos, radius, amt, except, hunter); }; }
 
   // ---- personality: mantises are opportunists, a smaller tank-mate is food when hungry ----
   const create0 = AI.create;
@@ -31,6 +52,8 @@
   const caps0 = AI.caps;
   AI.caps = function (sp, carry, hunt) {
     const c = caps0(sp, carry, hunt); const hab = AI._mHab;
+    // stepping across to a neighbouring stem: the old short hop when wandering, barely a stride while stalking prey
+    c.jump = hunt ? Math.max(c.jump, Math.min(AI.mJump(sp), AI.len(sp) * 0.7 + 2)) : AI.mJump(sp) * (carry ? 0.85 : 1);
     if (hab && adultOf(sp) && !carry && !hunt && !(sp.soft > 0) && hab.time < (sp._mFlyUntil || 0)) {
       const W = hab.dims && hab.dims.w ? hab.dims.w / 3 : 50; c.jump = Math.max(c.jump, Math.min(W, AI.len(sp) * 2.2 + 20)); c.fly = true;
     }
@@ -132,6 +155,7 @@
     // a strike that has just been launched: shorten it to a lunge that stops at arm's reach, on its own perch
     const A0 = sp._air;
     if (sp.state === 'pounce' && A0 && A0.straight && !A0._m) mantisStrike(hab, sp, A0);
+    if (A0 && A0.mode === 'jump' && !A0._m && sp.target) { A0._m = 1; const d = M.dist(A0.from, A0.to); A0.apex = Math.min(A0.apex || 0, 0.3 + d * 0.02); A0.dur = Math.max(A0.dur || 0, 0.45 + d / 30); } // stalking: a slow reach-and-step across to the next stem, never a hop
     if (A0 && A0.mode === 'jump' && !A0._m) { A0._m = 1; const d = M.dist(A0.from, A0.to); if (adultOf(sp) && d > AI.len(sp) * 0.5) { A0.fly = true; A0.dur = 0.4 + d / 75; A0.apex = 1 + d * 0.08; hab.event('journal', { id: 'mantisFlight', sp, soft: true }); } }
     const s0 = sp.state; const fd0 = s0 === 'feed' ? { st: sp.st, dur: sp._feedDur, nut: sp._feedNut, hold: sp.hold } : null;
     update0.call(this, hab, sp, dt);
@@ -189,17 +213,20 @@
   /** Two-phase strike: the body lunges only as far as it must, the forelegs cover the last 45% of a body length. */
   function mantisStrike(hab, sp, A) {
     A._m = 1; const L = AI.len(sp); const reachL = L * 0.45;
-    const dir = M.sub(A.to, A.from); const d = M.len(dir); A.reachD = d;
-    let lunge = Math.min(Math.max(0, d - reachL), L * 1.1);
-    let to = lunge < L * 0.08 || d < 1e-3 ? A.from.slice() : M.add(A.from, M.mul(dir, lunge / d));
-    const base = sp._mSup;
+    const dir = M.sub(A.to, A.from); const d = M.len(dir); A.reachD = d; const base = sp._mSup;
+    // out of reach (the prey moved, or the plan was off): no leap — the strike is called off and it edges closer instead
+    if (d > AI.mReach(sp) * 1.35 + L * 0.2) {
+      sp._air = null; sp.pos = A.from.slice(); sp._anchor = null; sp._reach = 0;
+      if (base && Nav.validSup(hab, base)) { sp.sup = JT.deepClone(base); sp.pos = Nav.supPos(hab, base, A.from); } else { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; }
+      AI.setState(sp, 'assess', 'Too far to reach — edging closer.'); sp._mNoLeap = (sp._mNoLeap || 0) + 1; return;
+    }
+    // the forelegs do the reaching; the body only leans in (a short step on open ground, a lean on a stem)
+    let flat = false; if (base && Nav.validSup(hab, base)) { if (base.k === 'floor') flat = true; else if (base.k === 'top') flat = !!(hab.geoms[base.d] && hab.geoms[base.d].tops[base.i]); }
+    const lunge = Math.min(Math.max(0, d - reachL), L * (flat ? 0.6 : 0.2));
+    let to = lunge < L * 0.05 || d < 1e-3 ? A.from.slice() : M.add(A.from, M.mul(dir, lunge / d));
     if (base && Nav.validSup(hab, base)) {
-      let ok = false;
-      if (base.k === 'floor') ok = Nav.inside(hab, to[0], to[2], 1);
-      else if (base.k === 'top') { const tp = hab.geoms[base.d] && hab.geoms[base.d].tops[base.i]; ok = !!tp && JT.G.pointInPoly(to[0], to[2], tp.poly); }
-      // on a stem or twig it stays gripping and strikes from where it is
-      if (!ok && lunge > L * 0.25) { A.dur = Math.max(A.dur, 0.12); return; } // too far to reach from here: the full lunge across
-      to = ok ? Nav.supPos(hab, base, to) : A.from.slice(); A.land = JT.deepClone(base);
+      if (flat) { const ok = base.k === 'floor' ? Nav.inside(hab, to[0], to[2], 1) : JT.G.pointInPoly(to[0], to[2], hab.geoms[base.d].tops[base.i].poly); if (ok) to = Nav.supPos(hab, base, to); else to = A.from.slice(); }
+      A.land = JT.deepClone(base);
     }
     A.to = to; A.dur = Math.max(A.dur, 0.12);
   }
