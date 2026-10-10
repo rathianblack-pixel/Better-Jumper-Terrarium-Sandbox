@@ -25,6 +25,8 @@
   SEG.locust = SEG.kicker; SEG.beetle = SEG.roach;
   const famOf = (p) => p.type === 'jumperMeal' ? 'jumper' : JT.preyFamily(JT.PREY_BY_ID[p.type]);
   const isWorm = (fam) => fam === 'worm' || fam === 'cat';
+  const LONG = new Set(['kicker', 'locust', 'moth', 'roach', 'beetle', 'worm', 'cat', 'jumper']); // held across the arms
+  const handOf = (p) => { const k = String(p.id != null ? p.id : p.seed || 0); let h = 7; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0; return (h & 1) ? 1 : -1; };
   function partsOf(fam, p) {
     const P = []; const legs = (n, at) => { for (let i = 0; i < n; i++) P.push({ id: 'L' + i, k: 'leg', i, sd: i % 2 ? 1 : -1, at: at[i] }); };
     const pair = (k, a0, a1, extra) => { P.push(Object.assign({ id: k + '0', k, sd: -1, at: a0 }, extra)); P.push(Object.assign({ id: k + '1', k, sd: 1, at: a1 }, extra)); };
@@ -95,10 +97,14 @@
     const mouth = add(add(mp, mul(n, L * 0.035)), mul(fg, -L * 0.045));
     // body axis: out from the jaws, forward and down; thrashing twists it
     const w1 = Math.sin(T * 13 + 0.5) * 0.35 * fl, w2 = Math.sin(T * 9.3 + 2) * 0.3 * fl;
-    const dn = 0.8 - 0.9 * M.clamp(Lp / L - 0.25, 0, 0.5); let ax = nrm(add(mul(fg, 0.6), mul(n, -dn))); // big prey is held more forward, clear of the ground ax = nrm(add(ax, add(mul(sg, w1), mul(n, w2 * 0.6))));
+    const dn = 0.8 - 0.9 * M.clamp(Lp / L - 0.25, 0, 0.5); let ax = nrm(add(mul(fg, 0.6), mul(n, -dn)));
+    // v1.4: long prey (crickets, locusts, moths, roaches, worms, caterpillars, another mantis) is held across the arms like a
+    // cob, its body running out to one side under the jaws (side picked per prey); long insects are eaten head first
+    const side = LONG.has(fam); const hand = side ? handOf(p) : 0;
+    if (side) ax = nrm(add(add(mul(sg, hand), mul(fg, 0.22)), mul(n, -0.22))); // big prey is held more forward, clear of the ground ax = nrm(add(ax, add(mul(sg, w1), mul(n, w2 * 0.6))));
     let sdv = nrm(sub(sg, mul(ax, M.dot(sg, ax)))); const roll = Math.sin(T * 7 + 1) * 0.5 * fl; let up = nrm(M.cross(sdv, ax)); if (M.dot(up, n) < 0) up = mul(up, -1);
     const sv = add(mul(sdv, Math.cos(roll)), mul(up, Math.sin(roll))); up = nrm(M.cross(sv, ax)); if (M.dot(up, n) < 0) up = mul(up, -1); sdv = sv;
-    const B = add(add(mouth, mul(ax, Lp * 0.06 - Lp * 0.04 * bite)), mul(fg, L * 0.012)); // just below the jaws, clear of the face // each bite pulls the meal into the jaws
+    const B = side ? add(add(add(mouth, mul(ax, -Lp * 0.15 - Lp * 0.03 * bite)), mul(fg, L * 0.02)), mul(n, -L * 0.012)) : add(add(mouth, mul(ax, Lp * 0.06 - Lp * 0.04 * bite)), mul(fg, L * 0.012)); // just below the jaws, clear of the face // each bite pulls the meal into the jaws
     const lod = lodFor(Lp * V.s * 0.6, {}); const cs = [];
     const P = (uu, v, w) => add(B, add(mul(ax, uu * Lp), add(mul(sdv, v * Lp), mul(up, w * Lp))));
     if (isWorm(fam)) { // segment by segment: one goes, then a pause, then the next
@@ -111,11 +117,13 @@
       }
     } else {
       const segs = SEG[fam] || SEG.feeble; const hd = segs[segs.length - 1];
-      const e = M.clamp((u - 0.08) / 0.82, 0, 1) * hd[1]; // eaten so far, from the bitten end up to the head
-      const hs = 1 - M.smooth(M.clamp((u - 0.9) / 0.1, 0, 1)); // the head goes last
-      const Ps = (uu, v, w) => P(uu - e, v, w);
+      const e = side ? 0 : M.clamp((u - 0.08) / 0.82, 0, 1) * hd[1]; // eaten so far, from the bitten end up to the head
+      const hs = side ? 1 : 1 - M.smooth(M.clamp((u - 0.9) / 0.1, 0, 1)); // the head goes last
+      const cut = side ? 1 - M.smooth(M.clamp((u - 0.04) / 0.88, 0, 1)) : 1; // held across: eaten from the head end back (what is left: 0..cut)
+      const Ps = side ? (uu, v, w) => P(cut - uu, v, w) : (uu, v, w) => P(uu - e, v, w);
       for (const s of segs) {
-        let u0 = Math.max(s[1], e), u1 = s[2]; if (u1 - u0 < 0.015) continue; const head = s[0] === 'head'; if (head && hs < 0.04) continue;
+        let u0 = Math.max(s[1], e), u1 = Math.min(s[2], cut); if (u1 - u0 < 0.015) continue; const head = s[0] === 'head'; if (head && hs < 0.04) continue;
+        if (head && side && (u1 - u0) < (s[2] - s[1]) * 0.5) continue; // the head is the first bite
         const k = head ? hs : 1; const c0 = Ps((u0 + u1) / 2, 0, 0); const cc = head ? lerp3(B, c0, hs) : c0;
         const col = head ? sh(C.body, -0.12) : s[0] === 'abd' ? sh(C.body, 0.05) : C.body;
         cs.push({ d: V.depth(cc), f: () => { blob(ctx, V, cc, mul(ax, (u1 - u0) * Lp * 0.55 * k), mul(sdv, s[3] * Lp * 0.5 * k), mul(up, s[4] * Lp * 0.5 * k), col, { lod, gloss: 0.4 });
@@ -124,6 +132,7 @@
       const gone = p._mGone || {}; const seen = p._mSeen || (p._mSeen = {}); const pp = p._mPP || (p._mPP = {});
       for (const q of partsOf(fam, p)) {
         const an = partAnchor(fam, q, segs); const wp = Ps(an[0], an[1], an[2]); pp[q.id] = wp;
+        if (side && Math.min(an[0], segs[segs.length - 1][1] + 0.02) > cut + 0.02 && !gone[q.id]) continue; // that end is already eaten
         if (gone[q.id]) { if (!seen[q.id]) { seen[q.id] = 1; if (fam === 'moth' && q.k === 'wing' && R0.particles.length < 380) for (let i = 0; i < 14; i++) R0.particles.push({ pos: wp.slice(), v: [(R() - 0.5) * 7, R() * 3, (R() - 0.5) * 7], t: 0, life: 1.2 + R(), col: 'rgba(225,205,165,0.8)', r: 0.12 + R() * 0.14 }); } continue; }
         cs.push({ d: V.depth(wp) + (q.k === 'wing' ? -0.01 : 0), f: () => drawPart(ctx, V, fam, q, Ps, Lp, C, fl, T, lod, segs) });
       }

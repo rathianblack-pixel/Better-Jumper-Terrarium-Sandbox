@@ -4736,7 +4736,7 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     const e = targetEnt(hab, sp);
     if (e && t > 0.35) {
       const def = targetDef(hab, sp, e);
-      const catchR = AI.len(sp) * 0.55 + def.len * 0.45 + 2.2;
+      const catchR = AI.catchR ? AI.catchR(sp, def) : AI.len(sp) * 0.55 + def.len * 0.45 + 2.2; // packs may judge the catch their own way (mantis: from the arm reach)
       if (M.dist(sp.pos, AI.surfPt(hab, e, 0)) < catchR) { doCatch(hab, sp, e, A); return; }
     }
     if (A.t >= 1) {
@@ -5835,8 +5835,18 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
   // v1.3: hunting range = what the forelegs can reach from where it stands (plus a lean). A mantis never leaps onto prey,
   // and higher ground doesn't stretch its reach. Walking routes keep the old short hop between stems (AI.mJump).
   AI.mJump = (sp) => (5 + AI.len(sp) * 1.05) * (0.85 + sp.traits.jump * 0.3) * (sp.soft > 0 ? 0.7 : 1);
-  AI.mReach = (sp) => (AI.len(sp) * 0.5 + 2.2) * (sp.soft > 0 ? 0.8 : 1);
+  // v1.4: raptorial arm proportions (fractions of body length; coxa, femur, tibia) and thickness, shared with the drawing
+  JT.MANTIS_ARM = { c: 0.18, f: 0.225, t: 0.135, w: 1.3 };
+  // v1.4: hunting range = the real reach of the drawn forelegs: from the contact point to the shoulder (front of the
+  // prothorax, which is longer in some species) plus the arm at full stretch, plus a small lean. No step, no lunge.
+  // Soft (fresh-molted) mantises hold back a little.
+  AI.mArmReach = (sp) => { const S = JT.SPECIES_BY_ID[sp.species] || {}; const LK = S.mlook || {}; const AK = JT.MANTIS_ARM;
+    return AI.len(sp) * (AI.mShoulder(LK) + (AK.c + AK.f + AK.t) * (LK.arm || 1) * 0.9); };
+  AI.mShoulder = (LK) => 0.085 + 0.241 * (LK.pro || 1); // forward distance of the shoulder (measured on the drawing)
+  AI.mLean = (sp) => AI.len(sp) * 0.1;
+  AI.mReach = (sp) => (AI.mArmReach(sp) + AI.mLean(sp)) * (sp.soft > 0 ? 0.85 : 1);
   AI.jump = (sp) => AI.mReach(sp);
+  AI.catchR = (sp, def) => AI.mArmReach(sp) * 1.04 + (def && def.len || 2) * 0.4 + AI.len(sp) * 0.03; // the hooks close on it (judged from the body, at full stretch)
   AI.reachFor = (J) => J;
 
   // ---- v1.3: camouflage. A mantis is a leaf or a twig to its prey: on plants, trees and the bare ground alike it is rarely
@@ -6007,6 +6017,10 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     // ---- animation drivers for the drawing ----
     const A = sp._air;
     sp._sweep = st === 'pounce' && A ? M.clamp((A.t - 0.45) / 0.45, 0, 1) : M.lerp(sp._sweep || 0, 0, Math.min(1, dt * 8));
+    // v1.4: where the forelegs aim during a strike: the prey (or tank-mate) itself
+    { let aim = null; const tg = sp.target; if (st === 'pounce' && tg) { const e = tg.kind === 'prey' ? hab.preyById(tg.id) : hab.spider ? hab.spider(tg.id) : null; if (e && e.pos && M.finite3(e.pos)) aim = e.pos.slice(); }
+      if (aim) { const tp = hab.data.prey && hab.data.prey.find(q => q.id === (tg && tg.id)); if (tp) { const pl = (JT.PREY_BY_ID[tp.type] || {}).len || 2; aim[1] += pl * 0.12; } }
+      sp._mAim = aim; }
     sp._mFly = !!(A && A.fly);
     const hangT = sp._mHangOK && (MOLTH.has(st) || st === 'mHang') ? 1 : 0;
     sp._mHangK = M.lerp(sp._mHangK || 0, hangT, Math.min(1, dt * (hangT ? 0.7 : 1.2))); if (sp._mHangK < 0.002) sp._mHangK = 0;
@@ -6026,14 +6040,14 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     A._m = 1; const L = AI.len(sp); const reachL = L * 0.45;
     const dir = M.sub(A.to, A.from); const d = M.len(dir); A.reachD = d; const base = sp._mSup;
     // out of reach (the prey moved, or the plan was off): no leap — the strike is called off and it edges closer instead
-    if (d > AI.mReach(sp) * 1.35 + L * 0.2) {
+    if (d > AI.mReach(sp) * 1.08) {
       sp._air = null; sp.pos = A.from.slice(); sp._anchor = null; sp._reach = 0;
       if (base && Nav.validSup(hab, base)) { sp.sup = JT.deepClone(base); sp.pos = Nav.supPos(hab, base, A.from); } else { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; }
       AI.setState(sp, 'assess', 'Too far to reach — edging closer.'); sp._mNoLeap = (sp._mNoLeap || 0) + 1; return;
     }
     // the forelegs do the reaching; the body only leans in (a short step on open ground, a lean on a stem)
     let flat = false; if (base && Nav.validSup(hab, base)) { if (base.k === 'floor') flat = true; else if (base.k === 'top') flat = !!(hab.geoms[base.d] && hab.geoms[base.d].tops[base.i]); }
-    const lunge = Math.min(Math.max(0, d - reachL), L * (flat ? 0.6 : 0.2));
+    const lunge = Math.min(Math.max(0, d - AI.mArmReach(sp)), AI.mLean(sp) * (flat ? 1.2 : 1)); void reachL; // only a lean: the arms do the reaching
     let to = lunge < L * 0.05 || d < 1e-3 ? A.from.slice() : M.add(A.from, M.mul(dir, lunge / d));
     if (base && Nav.validSup(hab, base)) {
       if (flat) { const ok = base.k === 'floor' ? Nav.inside(hab, to[0], to[2], 1) : JT.G.pointInPoly(to[0], to[2], hab.geoms[base.d].tops[base.i].poly); if (ok) to = Nav.supPos(hab, base, to); else to = A.from.slice(); }
@@ -6126,7 +6140,7 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
   function rollMiss(hab, sp, A) {
     A._mm = 1; const e = AI.targetEnt(hab, sp); if (!e || !sp.target || sp.target.kind !== 'prey') return;
     const d = preyDef(e) || {}; const L = AI.len(sp); const v = e._vel ? M.len(e._vel) : 0;
-    let p = 0.07 + (d.fly ? 0.12 : 0) + (e.sup && e.sup.k === 'air' ? 0.12 : 0) + M.clamp((v - 3) * 0.02, 0, 0.12) + ((sp.stage | 0) <= 2 ? 0.1 : 0) + (M.dist(A.from, e.pos) > L * 0.9 ? 0.07 : 0) - (sp.traits.patience - 0.5) * 0.08 + (sp._mAge || 0) * 0.1;
+    let p = 0.07 + (d.fly ? 0.12 : 0) + (e.sup && e.sup.k === 'air' ? 0.12 : 0) + M.clamp((v - 3) * 0.02, 0, 0.12) + ((sp.stage | 0) <= 2 ? 0.1 : 0) + (M.dist(A.from, e.pos) > AI.mReach(sp) * 0.85 ? 0.07 : 0) - (sp.traits.patience - 0.5) * 0.08 + (sp._mAge || 0) * 0.1;
     if (sp._mForceMiss) { p = sp._mForceMiss; sp._mForceMiss = 0; }
     if (sp._mAge) A.dur *= 1 + 0.4 * sp._mAge;
     if (R() < p) { A._miss = e.id; JT.PreyAI.escape(hab, e, sp, true); }
@@ -10292,7 +10306,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     }
 
     // ---------- raptorial forelegs ----------
-    const arm = LK.arm || 1; const Lc = L * 0.15 * arm, Lf = L * 0.18 * arm, Lt = L * 0.11 * arm;
+    const arm = LK.arm || 1; const AK = JT.MANTIS_ARM; const Lc = L * AK.c * arm, Lf = L * AK.f * arm, Lt = L * AK.t * arm; const AW = AK.w; // v1.4: longer, thicker raptorial arms
     const holdC = sum(mouth, mul(hf0, L * 0.05), mul(n, -L * 0.035)); // where a meal sits: between the arms, under the jaws
     const pr = hug ? M.clamp(hug.pl * 0.22, L * 0.03, L * 0.09) : L * 0.05;
     const armPose = (sd) => {
@@ -10308,7 +10322,17 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         const c = sum(Sh, mul(nrm(sum(mul(hf0, 0.92), mul(n, -0.22))), Lc), mul(s, sd * L * 0.018));
         let k = add(c, mul(nrm(sum(mul(hf0, 1), mul(n, 0.12 - 0.55 * w))), Lf)); k = lerp3(k, sum(holdC, mul(hf0, L * 0.09), mul(s, sd * L * 0.03)), w * 0.45);
         const tdir = nrm(lerp3(nrm(sum(mul(hf0, 1), mul(n, -0.12))), nrm(sum(mul(hf0, -0.55), mul(n, -0.85))), w));
-        const tb = add(k, mul(tdir, Lt)); const ta = add(tb, mul(nrm(lerp3(nrm(sum(mul(hf0, 0.9), mul(n, -0.4))), nrm(sum(mul(hf0, -0.8), mul(n, 0.3))), w)), L * 0.05)); poses.push([reach, c, k, tb, ta]); }
+        const tb = add(k, mul(tdir, Lt)); const ta = add(tb, mul(nrm(lerp3(nrm(sum(mul(hf0, 0.9), mul(n, -0.4))), nrm(sum(mul(hf0, -0.8), mul(n, 0.3))), w)), L * 0.05));
+        // v1.4: the forelegs shoot out at the prey itself, so the hooks close where it is (2-bone reach from the coxa tip, knee up)
+        const aim = sp._mAim; if (aim && M.finite3(aim) && w < 0.999 && !o.ghost) { const T = add(aim, mul(s, sd * L * 0.022)); const u0 = nrm(sub(T, Sh));
+          const ca = sum(Sh, mul(nrm(lerp3(nrm(sum(mul(hf0, 0.92), mul(n, -0.22))), u0, 0.65)), Lc), mul(s, sd * L * 0.018));
+          const dv = sub(T, ca); const d = M.clamp(M.len(dv), Math.abs(Lf - Lt) + L * 0.01, (Lf + Lt) * 0.999); const ud = nrm(dv);
+          let pole = sub(n, mul(ud, M.dot(n, ud))); if (M.len(pole) < 1e-3) pole = hf0; pole = nrm(pole);
+          const cosA = M.clamp((Lf * Lf + d * d - Lt * Lt) / (2 * Lf * d), -1, 1), sinA = Math.sqrt(1 - cosA * cosA);
+          const ka = add(ca, add(mul(ud, Lf * cosA), mul(pole, Lf * sinA))); const tba = add(ka, mul(nrm(sub(add(ca, mul(ud, d)), ka)), Lt));
+          const taa = add(tba, mul(nrm(sum(mul(ud, 0.7), mul(n, -0.6))), L * 0.05)); const q = 1 - w;
+          poses.push([reach, lerp3(c, ca, q), lerp3(k, ka, q), lerp3(tb, tba, q), lerp3(ta, taa, q)]); }
+        else poses.push([reach, c, k, tb, ta]); }
       // holding a meal: femurs either side of it, tibias clamped over it, a slow re-grip
       if (holdK > 0.01) { const sq = 1 - 0.1 * (0.5 + 0.5 * Math.sin(t * 3.1 + sd * 1.7));
         const c = sum(Sh, mul(nrm(sum(mul(f, 0.4), mul(n, -0.85))), Lc), mul(s, sd * L * 0.03)); const k = sum(holdC, mul(hf0, pr * 0.9 + L * 0.02), mul(s, sd * (pr * sq + L * 0.022)), mul(n, -pr * 0.3));
@@ -10335,16 +10359,16 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       for (let j = 1; j < 5; j++) out[j] = mul(out[j], 1 / tot); return out;
     };
     for (const sd of [-1, 1]) {
-      const [Sh, c, k, tb, ta] = armPose(sd);
+      const [Sh, c, k, tb, ta] = armPose(sd); if (sd > 0 && !o.ghost) { sp._mSh = Sh; sp._mTip = tb; } // exposed for tests / reach checks
       const near = sd * M.dot(s, V.toCam) > 0;
       push(lerp3(Sh, k, 0.5), () => {
-        limb(ctx, V, [Sh, c], [L * 0.03 * arm], sh(legC, 0.03), lod, null); // coxa
+        limb(ctx, V, [Sh, c], [L * 0.03 * AW * arm], sh(legC, 0.03), lod, null); // coxa
         if (LK.coxaSpot && lod > 0) { const cp = V.P(lerp3(Sh, c, 0.6)); const r = L * V.s * 0.014; dot2(ctx, cp, r * 1.25, '#f4f1e6'); dot2(ctx, cp, r, '#141210'); }
-        const Sx = limb(ctx, V, [c, k], [L * 0.034 * arm], legC, lod, null); // femur (thick, spined on its inner edge)
-        if (lod > 0 && Sx && L * V.s > 40) { const nn = 5; ctx.strokeStyle = sh(legC, -0.45); ctx.lineWidth = Math.max(0.4, L * V.s * 0.003); ctx.beginPath(); for (let i = 1; i < nn; i++) { const q = lerp3(c, k, i / nn); const a = V.P(add(q, mul(n, -L * 0.014))), b = V.P(add(q, mul(sub(mul(n, -1), mul(f, 0.4)), L * 0.026))); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
-        if (LK.bands && lod > 0) for (let b = 0; b < 4; b++) { const a0 = lerp3(c, k, 0.12 + b * 0.22), a1 = lerp3(c, k, 0.22 + b * 0.22); limb(ctx, V, [a0, a1], [L * 0.036 * arm], b % 2 ? '#1c1814' : '#efe9da', lod, null); }
-        limb(ctx, V, [k, tb, ta], [L * 0.022 * arm, L * 0.01], sh(legC, -0.03), lod, null); // tibia (hook at the end) + tarsus
-        if (LK.bands && lod > 0) { const a0 = lerp3(k, tb, 0.3), a1 = lerp3(k, tb, 0.6); limb(ctx, V, [a0, a1], [L * 0.024 * arm], '#efe9da', lod, null); }
+        const Sx = limb(ctx, V, [c, k], [L * 0.034 * AW * arm], legC, lod, null); // femur (thick, spined on its inner edge)
+        if (lod > 0 && Sx && L * V.s > 40) { const nn = 5; ctx.strokeStyle = sh(legC, -0.45); ctx.lineWidth = Math.max(0.4, L * V.s * 0.003); ctx.beginPath(); for (let i = 1; i < nn; i++) { const q = lerp3(c, k, i / nn); const a = V.P(add(q, mul(n, -L * 0.014 * AW))), b = V.P(add(q, mul(sub(mul(n, -1), mul(f, 0.4)), L * 0.03 * AW))); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
+        if (LK.bands && lod > 0) for (let b = 0; b < 4; b++) { const a0 = lerp3(c, k, 0.12 + b * 0.22), a1 = lerp3(c, k, 0.22 + b * 0.22); limb(ctx, V, [a0, a1], [L * 0.036 * AW * arm], b % 2 ? '#1c1814' : '#efe9da', lod, null); }
+        limb(ctx, V, [k, tb, ta], [L * 0.022 * AW * arm, L * 0.011], sh(legC, -0.03), lod, null); // tibia (hook at the end) + tarsus
+        if (LK.bands && lod > 0) { const a0 = lerp3(k, tb, 0.3), a1 = lerp3(k, tb, 0.6); limb(ctx, V, [a0, a1], [L * 0.024 * AW * arm], '#efe9da', lod, null); }
         if (LK.armLobe && lod > 0) { const AL = LK.armLobe; const wv = nrm(sum(mul(s, sd), mul(n, -0.25))); const fc = lerp3(c, k, 0.55); const inner = threat > 0.3;
           leafShape(ctx, V, fc, mul(sub(k, c), 0.5), mul(wv, L * (inner ? 0.085 : 0.055)), inner ? AL.inner[0] : AL.out, AL.edge || ink(AL.out), { lod, round: 1, rib: !inner });
           if (inner) AL.inner.slice(1).forEach((col, q) => leafShape(ctx, V, add(fc, mul(wv, L * 0.008 * (q + 1))), mul(sub(k, c), 0.44 - q * 0.1), mul(wv, L * (0.07 - q * 0.017)), col, sh(col, -0.3), { lod, round: 1 }));
@@ -14135,6 +14159,8 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   SEG.locust = SEG.kicker; SEG.beetle = SEG.roach;
   const famOf = (p) => p.type === 'jumperMeal' ? 'jumper' : JT.preyFamily(JT.PREY_BY_ID[p.type]);
   const isWorm = (fam) => fam === 'worm' || fam === 'cat';
+  const LONG = new Set(['kicker', 'locust', 'moth', 'roach', 'beetle', 'worm', 'cat', 'jumper']); // held across the arms
+  const handOf = (p) => { const k = String(p.id != null ? p.id : p.seed || 0); let h = 7; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0; return (h & 1) ? 1 : -1; };
   function partsOf(fam, p) {
     const P = []; const legs = (n, at) => { for (let i = 0; i < n; i++) P.push({ id: 'L' + i, k: 'leg', i, sd: i % 2 ? 1 : -1, at: at[i] }); };
     const pair = (k, a0, a1, extra) => { P.push(Object.assign({ id: k + '0', k, sd: -1, at: a0 }, extra)); P.push(Object.assign({ id: k + '1', k, sd: 1, at: a1 }, extra)); };
@@ -14205,10 +14231,14 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
     const mouth = add(add(mp, mul(n, L * 0.035)), mul(fg, -L * 0.045));
     // body axis: out from the jaws, forward and down; thrashing twists it
     const w1 = Math.sin(T * 13 + 0.5) * 0.35 * fl, w2 = Math.sin(T * 9.3 + 2) * 0.3 * fl;
-    const dn = 0.8 - 0.9 * M.clamp(Lp / L - 0.25, 0, 0.5); let ax = nrm(add(mul(fg, 0.6), mul(n, -dn))); // big prey is held more forward, clear of the ground ax = nrm(add(ax, add(mul(sg, w1), mul(n, w2 * 0.6))));
+    const dn = 0.8 - 0.9 * M.clamp(Lp / L - 0.25, 0, 0.5); let ax = nrm(add(mul(fg, 0.6), mul(n, -dn)));
+    // v1.4: long prey (crickets, locusts, moths, roaches, worms, caterpillars, another mantis) is held across the arms like a
+    // cob, its body running out to one side under the jaws (side picked per prey); long insects are eaten head first
+    const side = LONG.has(fam); const hand = side ? handOf(p) : 0;
+    if (side) ax = nrm(add(add(mul(sg, hand), mul(fg, 0.22)), mul(n, -0.22))); // big prey is held more forward, clear of the ground ax = nrm(add(ax, add(mul(sg, w1), mul(n, w2 * 0.6))));
     let sdv = nrm(sub(sg, mul(ax, M.dot(sg, ax)))); const roll = Math.sin(T * 7 + 1) * 0.5 * fl; let up = nrm(M.cross(sdv, ax)); if (M.dot(up, n) < 0) up = mul(up, -1);
     const sv = add(mul(sdv, Math.cos(roll)), mul(up, Math.sin(roll))); up = nrm(M.cross(sv, ax)); if (M.dot(up, n) < 0) up = mul(up, -1); sdv = sv;
-    const B = add(add(mouth, mul(ax, Lp * 0.06 - Lp * 0.04 * bite)), mul(fg, L * 0.012)); // just below the jaws, clear of the face // each bite pulls the meal into the jaws
+    const B = side ? add(add(add(mouth, mul(ax, -Lp * 0.15 - Lp * 0.03 * bite)), mul(fg, L * 0.02)), mul(n, -L * 0.012)) : add(add(mouth, mul(ax, Lp * 0.06 - Lp * 0.04 * bite)), mul(fg, L * 0.012)); // just below the jaws, clear of the face // each bite pulls the meal into the jaws
     const lod = lodFor(Lp * V.s * 0.6, {}); const cs = [];
     const P = (uu, v, w) => add(B, add(mul(ax, uu * Lp), add(mul(sdv, v * Lp), mul(up, w * Lp))));
     if (isWorm(fam)) { // segment by segment: one goes, then a pause, then the next
@@ -14221,11 +14251,13 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
       }
     } else {
       const segs = SEG[fam] || SEG.feeble; const hd = segs[segs.length - 1];
-      const e = M.clamp((u - 0.08) / 0.82, 0, 1) * hd[1]; // eaten so far, from the bitten end up to the head
-      const hs = 1 - M.smooth(M.clamp((u - 0.9) / 0.1, 0, 1)); // the head goes last
-      const Ps = (uu, v, w) => P(uu - e, v, w);
+      const e = side ? 0 : M.clamp((u - 0.08) / 0.82, 0, 1) * hd[1]; // eaten so far, from the bitten end up to the head
+      const hs = side ? 1 : 1 - M.smooth(M.clamp((u - 0.9) / 0.1, 0, 1)); // the head goes last
+      const cut = side ? 1 - M.smooth(M.clamp((u - 0.04) / 0.88, 0, 1)) : 1; // held across: eaten from the head end back (what is left: 0..cut)
+      const Ps = side ? (uu, v, w) => P(cut - uu, v, w) : (uu, v, w) => P(uu - e, v, w);
       for (const s of segs) {
-        let u0 = Math.max(s[1], e), u1 = s[2]; if (u1 - u0 < 0.015) continue; const head = s[0] === 'head'; if (head && hs < 0.04) continue;
+        let u0 = Math.max(s[1], e), u1 = Math.min(s[2], cut); if (u1 - u0 < 0.015) continue; const head = s[0] === 'head'; if (head && hs < 0.04) continue;
+        if (head && side && (u1 - u0) < (s[2] - s[1]) * 0.5) continue; // the head is the first bite
         const k = head ? hs : 1; const c0 = Ps((u0 + u1) / 2, 0, 0); const cc = head ? lerp3(B, c0, hs) : c0;
         const col = head ? sh(C.body, -0.12) : s[0] === 'abd' ? sh(C.body, 0.05) : C.body;
         cs.push({ d: V.depth(cc), f: () => { blob(ctx, V, cc, mul(ax, (u1 - u0) * Lp * 0.55 * k), mul(sdv, s[3] * Lp * 0.5 * k), mul(up, s[4] * Lp * 0.5 * k), col, { lod, gloss: 0.4 });
@@ -14234,6 +14266,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
       const gone = p._mGone || {}; const seen = p._mSeen || (p._mSeen = {}); const pp = p._mPP || (p._mPP = {});
       for (const q of partsOf(fam, p)) {
         const an = partAnchor(fam, q, segs); const wp = Ps(an[0], an[1], an[2]); pp[q.id] = wp;
+        if (side && Math.min(an[0], segs[segs.length - 1][1] + 0.02) > cut + 0.02 && !gone[q.id]) continue; // that end is already eaten
         if (gone[q.id]) { if (!seen[q.id]) { seen[q.id] = 1; if (fam === 'moth' && q.k === 'wing' && R0.particles.length < 380) for (let i = 0; i < 14; i++) R0.particles.push({ pos: wp.slice(), v: [(R() - 0.5) * 7, R() * 3, (R() - 0.5) * 7], t: 0, life: 1.2 + R(), col: 'rgba(225,205,165,0.8)', r: 0.12 + R() * 0.14 }); } continue; }
         cs.push({ d: V.depth(wp) + (q.k === 'wing' ? -0.01 : 0), f: () => drawPart(ctx, V, fam, q, Ps, Lp, C, fl, T, lod, segs) });
       }

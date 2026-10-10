@@ -980,7 +980,7 @@
     const e = targetEnt(hab, sp);
     if (e && t > 0.35) {
       const def = targetDef(hab, sp, e);
-      const catchR = AI.len(sp) * 0.55 + def.len * 0.45 + 2.2;
+      const catchR = AI.catchR ? AI.catchR(sp, def) : AI.len(sp) * 0.55 + def.len * 0.45 + 2.2; // packs may judge the catch their own way (mantis: from the arm reach)
       if (M.dist(sp.pos, AI.surfPt(hab, e, 0)) < catchR) { doCatch(hab, sp, e, A); return; }
     }
     if (A.t >= 1) {

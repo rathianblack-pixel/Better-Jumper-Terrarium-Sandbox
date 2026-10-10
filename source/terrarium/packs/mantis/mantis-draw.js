@@ -235,7 +235,7 @@
     }
 
     // ---------- raptorial forelegs ----------
-    const arm = LK.arm || 1; const Lc = L * 0.15 * arm, Lf = L * 0.18 * arm, Lt = L * 0.11 * arm;
+    const arm = LK.arm || 1; const AK = JT.MANTIS_ARM; const Lc = L * AK.c * arm, Lf = L * AK.f * arm, Lt = L * AK.t * arm; const AW = AK.w; // v1.4: longer, thicker raptorial arms
     const holdC = sum(mouth, mul(hf0, L * 0.05), mul(n, -L * 0.035)); // where a meal sits: between the arms, under the jaws
     const pr = hug ? M.clamp(hug.pl * 0.22, L * 0.03, L * 0.09) : L * 0.05;
     const armPose = (sd) => {
@@ -251,7 +251,17 @@
         const c = sum(Sh, mul(nrm(sum(mul(hf0, 0.92), mul(n, -0.22))), Lc), mul(s, sd * L * 0.018));
         let k = add(c, mul(nrm(sum(mul(hf0, 1), mul(n, 0.12 - 0.55 * w))), Lf)); k = lerp3(k, sum(holdC, mul(hf0, L * 0.09), mul(s, sd * L * 0.03)), w * 0.45);
         const tdir = nrm(lerp3(nrm(sum(mul(hf0, 1), mul(n, -0.12))), nrm(sum(mul(hf0, -0.55), mul(n, -0.85))), w));
-        const tb = add(k, mul(tdir, Lt)); const ta = add(tb, mul(nrm(lerp3(nrm(sum(mul(hf0, 0.9), mul(n, -0.4))), nrm(sum(mul(hf0, -0.8), mul(n, 0.3))), w)), L * 0.05)); poses.push([reach, c, k, tb, ta]); }
+        const tb = add(k, mul(tdir, Lt)); const ta = add(tb, mul(nrm(lerp3(nrm(sum(mul(hf0, 0.9), mul(n, -0.4))), nrm(sum(mul(hf0, -0.8), mul(n, 0.3))), w)), L * 0.05));
+        // v1.4: the forelegs shoot out at the prey itself, so the hooks close where it is (2-bone reach from the coxa tip, knee up)
+        const aim = sp._mAim; if (aim && M.finite3(aim) && w < 0.999 && !o.ghost) { const T = add(aim, mul(s, sd * L * 0.022)); const u0 = nrm(sub(T, Sh));
+          const ca = sum(Sh, mul(nrm(lerp3(nrm(sum(mul(hf0, 0.92), mul(n, -0.22))), u0, 0.65)), Lc), mul(s, sd * L * 0.018));
+          const dv = sub(T, ca); const d = M.clamp(M.len(dv), Math.abs(Lf - Lt) + L * 0.01, (Lf + Lt) * 0.999); const ud = nrm(dv);
+          let pole = sub(n, mul(ud, M.dot(n, ud))); if (M.len(pole) < 1e-3) pole = hf0; pole = nrm(pole);
+          const cosA = M.clamp((Lf * Lf + d * d - Lt * Lt) / (2 * Lf * d), -1, 1), sinA = Math.sqrt(1 - cosA * cosA);
+          const ka = add(ca, add(mul(ud, Lf * cosA), mul(pole, Lf * sinA))); const tba = add(ka, mul(nrm(sub(add(ca, mul(ud, d)), ka)), Lt));
+          const taa = add(tba, mul(nrm(sum(mul(ud, 0.7), mul(n, -0.6))), L * 0.05)); const q = 1 - w;
+          poses.push([reach, lerp3(c, ca, q), lerp3(k, ka, q), lerp3(tb, tba, q), lerp3(ta, taa, q)]); }
+        else poses.push([reach, c, k, tb, ta]); }
       // holding a meal: femurs either side of it, tibias clamped over it, a slow re-grip
       if (holdK > 0.01) { const sq = 1 - 0.1 * (0.5 + 0.5 * Math.sin(t * 3.1 + sd * 1.7));
         const c = sum(Sh, mul(nrm(sum(mul(f, 0.4), mul(n, -0.85))), Lc), mul(s, sd * L * 0.03)); const k = sum(holdC, mul(hf0, pr * 0.9 + L * 0.02), mul(s, sd * (pr * sq + L * 0.022)), mul(n, -pr * 0.3));
@@ -278,16 +288,16 @@
       for (let j = 1; j < 5; j++) out[j] = mul(out[j], 1 / tot); return out;
     };
     for (const sd of [-1, 1]) {
-      const [Sh, c, k, tb, ta] = armPose(sd);
+      const [Sh, c, k, tb, ta] = armPose(sd); if (sd > 0 && !o.ghost) { sp._mSh = Sh; sp._mTip = tb; } // exposed for tests / reach checks
       const near = sd * M.dot(s, V.toCam) > 0;
       push(lerp3(Sh, k, 0.5), () => {
-        limb(ctx, V, [Sh, c], [L * 0.03 * arm], sh(legC, 0.03), lod, null); // coxa
+        limb(ctx, V, [Sh, c], [L * 0.03 * AW * arm], sh(legC, 0.03), lod, null); // coxa
         if (LK.coxaSpot && lod > 0) { const cp = V.P(lerp3(Sh, c, 0.6)); const r = L * V.s * 0.014; dot2(ctx, cp, r * 1.25, '#f4f1e6'); dot2(ctx, cp, r, '#141210'); }
-        const Sx = limb(ctx, V, [c, k], [L * 0.034 * arm], legC, lod, null); // femur (thick, spined on its inner edge)
-        if (lod > 0 && Sx && L * V.s > 40) { const nn = 5; ctx.strokeStyle = sh(legC, -0.45); ctx.lineWidth = Math.max(0.4, L * V.s * 0.003); ctx.beginPath(); for (let i = 1; i < nn; i++) { const q = lerp3(c, k, i / nn); const a = V.P(add(q, mul(n, -L * 0.014))), b = V.P(add(q, mul(sub(mul(n, -1), mul(f, 0.4)), L * 0.026))); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
-        if (LK.bands && lod > 0) for (let b = 0; b < 4; b++) { const a0 = lerp3(c, k, 0.12 + b * 0.22), a1 = lerp3(c, k, 0.22 + b * 0.22); limb(ctx, V, [a0, a1], [L * 0.036 * arm], b % 2 ? '#1c1814' : '#efe9da', lod, null); }
-        limb(ctx, V, [k, tb, ta], [L * 0.022 * arm, L * 0.01], sh(legC, -0.03), lod, null); // tibia (hook at the end) + tarsus
-        if (LK.bands && lod > 0) { const a0 = lerp3(k, tb, 0.3), a1 = lerp3(k, tb, 0.6); limb(ctx, V, [a0, a1], [L * 0.024 * arm], '#efe9da', lod, null); }
+        const Sx = limb(ctx, V, [c, k], [L * 0.034 * AW * arm], legC, lod, null); // femur (thick, spined on its inner edge)
+        if (lod > 0 && Sx && L * V.s > 40) { const nn = 5; ctx.strokeStyle = sh(legC, -0.45); ctx.lineWidth = Math.max(0.4, L * V.s * 0.003); ctx.beginPath(); for (let i = 1; i < nn; i++) { const q = lerp3(c, k, i / nn); const a = V.P(add(q, mul(n, -L * 0.014 * AW))), b = V.P(add(q, mul(sub(mul(n, -1), mul(f, 0.4)), L * 0.03 * AW))); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
+        if (LK.bands && lod > 0) for (let b = 0; b < 4; b++) { const a0 = lerp3(c, k, 0.12 + b * 0.22), a1 = lerp3(c, k, 0.22 + b * 0.22); limb(ctx, V, [a0, a1], [L * 0.036 * AW * arm], b % 2 ? '#1c1814' : '#efe9da', lod, null); }
+        limb(ctx, V, [k, tb, ta], [L * 0.022 * AW * arm, L * 0.011], sh(legC, -0.03), lod, null); // tibia (hook at the end) + tarsus
+        if (LK.bands && lod > 0) { const a0 = lerp3(k, tb, 0.3), a1 = lerp3(k, tb, 0.6); limb(ctx, V, [a0, a1], [L * 0.024 * AW * arm], '#efe9da', lod, null); }
         if (LK.armLobe && lod > 0) { const AL = LK.armLobe; const wv = nrm(sum(mul(s, sd), mul(n, -0.25))); const fc = lerp3(c, k, 0.55); const inner = threat > 0.3;
           leafShape(ctx, V, fc, mul(sub(k, c), 0.5), mul(wv, L * (inner ? 0.085 : 0.055)), inner ? AL.inner[0] : AL.out, AL.edge || ink(AL.out), { lod, round: 1, rib: !inner });
           if (inner) AL.inner.slice(1).forEach((col, q) => leafShape(ctx, V, add(fc, mul(wv, L * 0.008 * (q + 1))), mul(sub(k, c), 0.44 - q * 0.1), mul(wv, L * (0.07 - q * 0.017)), col, sh(col, -0.3), { lod, round: 1 }));

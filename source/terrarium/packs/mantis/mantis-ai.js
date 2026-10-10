@@ -24,8 +24,18 @@
   // v1.3: hunting range = what the forelegs can reach from where it stands (plus a lean). A mantis never leaps onto prey,
   // and higher ground doesn't stretch its reach. Walking routes keep the old short hop between stems (AI.mJump).
   AI.mJump = (sp) => (5 + AI.len(sp) * 1.05) * (0.85 + sp.traits.jump * 0.3) * (sp.soft > 0 ? 0.7 : 1);
-  AI.mReach = (sp) => (AI.len(sp) * 0.5 + 2.2) * (sp.soft > 0 ? 0.8 : 1);
+  // v1.4: raptorial arm proportions (fractions of body length; coxa, femur, tibia) and thickness, shared with the drawing
+  JT.MANTIS_ARM = { c: 0.18, f: 0.225, t: 0.135, w: 1.3 };
+  // v1.4: hunting range = the real reach of the drawn forelegs: from the contact point to the shoulder (front of the
+  // prothorax, which is longer in some species) plus the arm at full stretch, plus a small lean. No step, no lunge.
+  // Soft (fresh-molted) mantises hold back a little.
+  AI.mArmReach = (sp) => { const S = JT.SPECIES_BY_ID[sp.species] || {}; const LK = S.mlook || {}; const AK = JT.MANTIS_ARM;
+    return AI.len(sp) * (AI.mShoulder(LK) + (AK.c + AK.f + AK.t) * (LK.arm || 1) * 0.9); };
+  AI.mShoulder = (LK) => 0.085 + 0.241 * (LK.pro || 1); // forward distance of the shoulder (measured on the drawing)
+  AI.mLean = (sp) => AI.len(sp) * 0.1;
+  AI.mReach = (sp) => (AI.mArmReach(sp) + AI.mLean(sp)) * (sp.soft > 0 ? 0.85 : 1);
   AI.jump = (sp) => AI.mReach(sp);
+  AI.catchR = (sp, def) => AI.mArmReach(sp) * 1.04 + (def && def.len || 2) * 0.4 + AI.len(sp) * 0.03; // the hooks close on it (judged from the body, at full stretch)
   AI.reachFor = (J) => J;
 
   // ---- v1.3: camouflage. A mantis is a leaf or a twig to its prey: on plants, trees and the bare ground alike it is rarely
@@ -196,6 +206,10 @@
     // ---- animation drivers for the drawing ----
     const A = sp._air;
     sp._sweep = st === 'pounce' && A ? M.clamp((A.t - 0.45) / 0.45, 0, 1) : M.lerp(sp._sweep || 0, 0, Math.min(1, dt * 8));
+    // v1.4: where the forelegs aim during a strike: the prey (or tank-mate) itself
+    { let aim = null; const tg = sp.target; if (st === 'pounce' && tg) { const e = tg.kind === 'prey' ? hab.preyById(tg.id) : hab.spider ? hab.spider(tg.id) : null; if (e && e.pos && M.finite3(e.pos)) aim = e.pos.slice(); }
+      if (aim) { const tp = hab.data.prey && hab.data.prey.find(q => q.id === (tg && tg.id)); if (tp) { const pl = (JT.PREY_BY_ID[tp.type] || {}).len || 2; aim[1] += pl * 0.12; } }
+      sp._mAim = aim; }
     sp._mFly = !!(A && A.fly);
     const hangT = sp._mHangOK && (MOLTH.has(st) || st === 'mHang') ? 1 : 0;
     sp._mHangK = M.lerp(sp._mHangK || 0, hangT, Math.min(1, dt * (hangT ? 0.7 : 1.2))); if (sp._mHangK < 0.002) sp._mHangK = 0;
@@ -215,14 +229,14 @@
     A._m = 1; const L = AI.len(sp); const reachL = L * 0.45;
     const dir = M.sub(A.to, A.from); const d = M.len(dir); A.reachD = d; const base = sp._mSup;
     // out of reach (the prey moved, or the plan was off): no leap — the strike is called off and it edges closer instead
-    if (d > AI.mReach(sp) * 1.35 + L * 0.2) {
+    if (d > AI.mReach(sp) * 1.08) {
       sp._air = null; sp.pos = A.from.slice(); sp._anchor = null; sp._reach = 0;
       if (base && Nav.validSup(hab, base)) { sp.sup = JT.deepClone(base); sp.pos = Nav.supPos(hab, base, A.from); } else { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; }
       AI.setState(sp, 'assess', 'Too far to reach — edging closer.'); sp._mNoLeap = (sp._mNoLeap || 0) + 1; return;
     }
     // the forelegs do the reaching; the body only leans in (a short step on open ground, a lean on a stem)
     let flat = false; if (base && Nav.validSup(hab, base)) { if (base.k === 'floor') flat = true; else if (base.k === 'top') flat = !!(hab.geoms[base.d] && hab.geoms[base.d].tops[base.i]); }
-    const lunge = Math.min(Math.max(0, d - reachL), L * (flat ? 0.6 : 0.2));
+    const lunge = Math.min(Math.max(0, d - AI.mArmReach(sp)), AI.mLean(sp) * (flat ? 1.2 : 1)); void reachL; // only a lean: the arms do the reaching
     let to = lunge < L * 0.05 || d < 1e-3 ? A.from.slice() : M.add(A.from, M.mul(dir, lunge / d));
     if (base && Nav.validSup(hab, base)) {
       if (flat) { const ok = base.k === 'floor' ? Nav.inside(hab, to[0], to[2], 1) : JT.G.pointInPoly(to[0], to[2], hab.geoms[base.d].tops[base.i].poly); if (ok) to = Nav.supPos(hab, base, to); else to = A.from.slice(); }

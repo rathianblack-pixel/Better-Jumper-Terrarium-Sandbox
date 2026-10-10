@@ -79,7 +79,7 @@
   function rollMiss(hab, sp, A) {
     A._mm = 1; const e = AI.targetEnt(hab, sp); if (!e || !sp.target || sp.target.kind !== 'prey') return;
     const d = preyDef(e) || {}; const L = AI.len(sp); const v = e._vel ? M.len(e._vel) : 0;
-    let p = 0.07 + (d.fly ? 0.12 : 0) + (e.sup && e.sup.k === 'air' ? 0.12 : 0) + M.clamp((v - 3) * 0.02, 0, 0.12) + ((sp.stage | 0) <= 2 ? 0.1 : 0) + (M.dist(A.from, e.pos) > L * 0.9 ? 0.07 : 0) - (sp.traits.patience - 0.5) * 0.08 + (sp._mAge || 0) * 0.1;
+    let p = 0.07 + (d.fly ? 0.12 : 0) + (e.sup && e.sup.k === 'air' ? 0.12 : 0) + M.clamp((v - 3) * 0.02, 0, 0.12) + ((sp.stage | 0) <= 2 ? 0.1 : 0) + (M.dist(A.from, e.pos) > AI.mReach(sp) * 0.85 ? 0.07 : 0) - (sp.traits.patience - 0.5) * 0.08 + (sp._mAge || 0) * 0.1;
     if (sp._mForceMiss) { p = sp._mForceMiss; sp._mForceMiss = 0; }
     if (sp._mAge) A.dur *= 1 + 0.4 * sp._mAge;
     if (R() < p) { A._miss = e.id; JT.PreyAI.escape(hab, e, sp, true); }

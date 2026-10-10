@@ -35,3 +35,17 @@ One title screen for both games, built on the real tank and matched to your art 
 - `packs/terrarium/switch.js`: removes the in-game splash, fades the veil out, saves the tank pictures.
 - `packs/terrarium/static/icons/hero-<game>-<art>.webp`: six built-in tank renders (356 KB total), added to the offline cache.
 - `tests/combined.js`: updated for the new title screen.
+
+# v27.1 — Mantis: bigger arms, real reach, long prey held across
+
+**Arms**: the raptorial forelegs are about 25% longer (coxa 0.18, femur 0.225, tibia 0.135 of body length; was 0.15 / 0.18 / 0.11) and about 30% thicker, including bands, spines and arm lobes. Species differences are kept (giant Asian 1.3×, devil's flower 1.2×, stick 0.88×). `JT.MANTIS_ARM` holds the proportions; the drawing and the AI both use it.
+
+**Reach = arm reach**
+- `AI.mArmReach(sp)`: from where the mantis stands to the shoulder (measured on the drawing; longer for long-necked species), plus the arm at full stretch. Hunting range = that + a small lean (10% of body length). The old fixed +2.2 that let small nymphs reach too far is gone.
+- The strike is only a lean now: the body moves at most ~0.12–0.18 body lengths (was a lunge of up to 0.6). Out of range → it creeps closer instead.
+- The forelegs aim at the prey itself (2-bone reach, knee up), so the hooks close where the prey is: within ~3% of body length at full reach, and high or low targets too.
+- The catch is judged from the arm reach (`AI.catchR` hook in the engine; Jumper is unaffected). Catch rate in `tests/strike_probe.js`: 83% (was 82%). The median strike distance is now 0.74 body lengths (was 0.49, which the old lunge made up for).
+
+**Long prey held from the side**: crickets, locusts, moths, roaches/dubia, beetles, mealworms, caterpillars and mantis tank-mates are held across the arms, like a cob under the jaws, with the body running out to one side (left or right per prey). Long insects are eaten head first, then back along the body. Parts on the eaten end disappear with it; legs, wings and the rest still drop off as before. Small prey (flies, gnats, aphids) is unchanged.
+
+Tests: `mantis_core` 65/65, `behave.js` no errors, `strike_probe` above, `combined.js` passes.
