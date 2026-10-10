@@ -39,7 +39,7 @@ function combine(id, P) {
   const C = P.combine, dist = path.join(__dirname, 'dist', P.out); fs.rmSync(dist, { recursive: true, force: true });
   for (const st of P.static || []) copyDir(path.join(__dirname, st), dist);
   fs.copyFileSync(path.join(__dirname, 'packs', id, C.index), path.join(dist, 'index.html'));
-  let total = 0; for (const [file, game] of Object.entries(C.pages)) { const { html } = page(game, { end: (C.end || []).map(f => 'packs/' + id + '/' + f), title: C.title, combined: true }); fs.writeFileSync(path.join(dist, file), html); total += html.length; }
+  let total = 0; for (const [file, game] of Object.entries(C.pages)) { let { html } = page(game, { end: (C.end || []).map(f => 'packs/' + id + '/' + f), title: C.title, combined: true }); if (C.early) { if (!html.includes('<body>')) throw new Error(id + ': <body> not found'); html = html.replace('<body>', () => '<body>\n' + R('packs/' + id + '/' + C.early)); } fs.writeFileSync(path.join(dist, file), html); total += html.length; }
   const sw = path.join(dist, 'sw.js'); if (fs.existsSync(sw)) fs.writeFileSync(sw, fs.readFileSync(sw, 'utf8').replace(/const CACHE = 'tr-[^']*'/, "const CACHE = 'tr-" + Date.now().toString(36) + "'"));
   console.log('built', id, '->', 'dist/' + P.out, '(title screen + ' + Object.keys(C.pages).join(', ') + ')', (total / 1e6).toFixed(2) + ' MB');
 }

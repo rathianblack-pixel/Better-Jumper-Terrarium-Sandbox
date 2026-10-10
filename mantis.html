@@ -798,6 +798,31 @@ body.cuphead #app .clock{font-family:var(--cupF);font-weight:800;text-transform:
 </style>
 </head>
 <body>
+<style>
+html { background: #0b120a; }
+#trVeil { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; background: #0b120a center / cover no-repeat; transition: opacity .85s ease, transform 1.2s cubic-bezier(.2,.7,.2,1); }
+#trVeil.out { opacity: 0; transform: scale(1.03); }
+#trVeil::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 85% 75% at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,.45)); }
+#trVeil .ld { position: absolute; z-index: 1; left: 50%; bottom: calc(9vh + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 14px; border-radius: 999px; background: rgba(10,14,9,.55); color: #f4ecd8; font: italic 14px/1 Georgia, 'Times New Roman', serif; letter-spacing: .04em; opacity: 0; animation: trIn .5s ease .35s forwards; }
+#trVeil .ld i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(244,236,216,.25); border-top-color: #f4ecd8; animation: trSpin .9s linear infinite; }
+@keyframes trSpin { to { transform: rotate(360deg); } }
+@keyframes trIn { to { opacity: 1; } }
+#splash { display: none !important; }
+</style>
+<div id="trVeil"><div class="ld"><i></i><span>Opening the tank&hellip;</span></div></div>
+<script>
+/* Terrarium (combined app): the page opens on the same tank picture the title screen zoomed into, then fades to the live game. */
+(function () {
+  var v = document.getElementById('trVeil'), g = /mantis/.test(location.pathname) ? 'mantis' : 'jumper', src = '';
+  try { var e = JSON.parse(sessionStorage.getItem('terrarium.enter') || 'null'); var s = JSON.parse(localStorage.getItem('terrarium.shot.' + g) || 'null');
+    if (e && e.g === g && e.hero) src = e.hero; else if (s && s.u) src = s.u; else { var a = (JSON.parse(localStorage.getItem(g === 'mantis' ? 'mantisTerrarium.settings' : 'jumperTerrarium.settings') || '{}') || {}).art; src = 'icons/hero-' + g + '-' + (a === 'cuphead' || a === 'storybook' ? a : 'hd2d') + '.webp'; }
+    sessionStorage.removeItem('terrarium.enter'); } catch (x) { src = 'icons/hero-' + g + '-hd2d.webp'; }
+  if (src) v.style.backgroundImage = 'url("' + src + '")';
+  var done = false; window.TR_VEIL = { out: function () { if (done) return; done = true; v.classList.add('out'); setTimeout(function () { v.remove(); }, 1300); } };
+  setTimeout(window.TR_VEIL.out, 15000); // never stuck
+})();
+</script>
+
 <div id="splash" role="dialog" aria-label="Jumper Terrarium">
   <div class="sp-still"><svg class="sp-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
 <defs><radialGradient id="ms_fadeG" cx="50%" cy="55%" r="55%"><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="ms_fade"><rect width="512" height="512" fill="url(#ms_fadeG)"/></mask></defs>
@@ -14627,13 +14652,37 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
 
 </script>
 <script>
-/* Terrarium (combined app): the ⋯ menu gets "Switch to …" and "Title screen". Each game keeps its own save. */
+/* Terrarium (combined app):
+   - the ⋯ menu gets "Switch to …" and "Title screen". Each game keeps its own save.
+   - there is one title screen (index.html): the game's own start screen and its live showcase are skipped, so the game
+     opens straight into your tank (faster: no second throwaway game is built and simulated).
+   - now and then (and when you leave) a small picture of your tank is kept for the title screen's background and card. */
 (function (root) {
   'use strict';
   const JT = root.JT; if (!JT || !JT.UI || typeof document === 'undefined') return;
-  const mantis = !!(root.JT_PACK && root.JT_PACK.id === 'mantis');
+  const mantis = !!(root.JT_PACK && root.JT_PACK.id === 'mantis'), id = mantis ? 'mantis' : 'jumper';
   const other = mantis ? { url: 'jumper.html', name: 'Jumping Spiders' } : { url: 'mantis.html', name: 'Mantises' };
-  const go = (url) => { try { JT.app && JT.app.game && JT.app.game.save(); } catch (e) {} try { localStorage.setItem('terrarium.last', url === 'index.html' ? (mantis ? 'mantis.html' : 'jumper.html') : url); } catch (e) {} location.href = url; };
+  { const sp = document.getElementById('splash'); if (sp) sp.remove(); } // before boot: the game starts without its own splash
+
+  /* ---- tank picture for the title screen ---- */
+  const SHOT_KEY = 'terrarium.shot.' + id;
+  const snap = (cb) => {
+    const A = JT.app, R = A && A.R; const fin = () => { if (cb) { const f = cb; cb = null; f(); } };
+    if (!R || R.attract || JT.UI.photo || R._cap || document.hidden) { fin(); return; }
+    let done = false; const to = setTimeout(() => { if (!done) { done = true; if (R._cap === cap) R._cap = null; fin(); } }, 450);
+    const cap = (glc, cv) => { done = true; clearTimeout(to);
+      try { const W0 = (glc || cv).width, H0 = (glc || cv).height, sc = Math.min(1, 1100 / Math.max(W0, H0)), W = Math.round(W0 * sc), H = Math.round(H0 * sc);
+        if (W > 64 && H > 64) { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = '#0b120a'; x.fillRect(0, 0, W, H);
+          if (glc) x.drawImage(glc, 0, 0, W, H); if (cv) x.drawImage(cv, 0, 0, W, H);
+          const u = c.toDataURL('image/jpeg', 0.72); const art = (JT.HD2D && JT.HD2D.art) || 'hd2d';
+          try { localStorage.setItem(SHOT_KEY, JSON.stringify({ u, art, t: Date.now() })); } catch (e) { try { localStorage.removeItem(SHOT_KEY); } catch (e2) { void e2; } } } } catch (e) { void e; }
+      fin(); };
+    R._cap = cap;
+  };
+  JT.TitleShot = snap; // for tests
+
+  const go = (url) => { try { JT.app && JT.app.game && JT.app.game.save(); } catch (e) {} try { localStorage.setItem('terrarium.last', mantis ? 'mantis.html' : 'jumper.html'); if (url !== 'index.html') localStorage.setItem('terrarium.last', url); } catch (e) {}
+    document.body.style.transition = 'opacity .3s'; snap(() => { document.body.style.opacity = '0'; setTimeout(() => { location.href = url; }, 280); }); };
   const more0 = JT.UI.moreSheet;
   JT.UI.moreSheet = function () {
     const r = more0.apply(this, arguments);
@@ -14646,6 +14695,16 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
     menu.insertBefore(sec, menu.firstChild);
     return r;
   };
+
+  /* ---- after boot (this listener runs after the engine's): fade from the title picture into the live tank ---- */
+  const after = () => {
+    let n = 0; const t0 = performance.now();
+    const tick = () => { n++; if (n < 6 || performance.now() - t0 < 300) { requestAnimationFrame(tick); return; } if (root.TR_VEIL) root.TR_VEIL.out(); };
+    requestAnimationFrame(tick);
+    setTimeout(() => snap(), 7000);
+    setInterval(() => { if (!document.hidden) snap(); }, 120000);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', after); else setTimeout(after, 0);
   root.JT_COMBINED = true;
 })(typeof window !== 'undefined' ? window : globalThis);
 

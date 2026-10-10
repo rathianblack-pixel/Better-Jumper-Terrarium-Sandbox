@@ -2,5 +2,5 @@
  "name": "Terrarium",
  "out": "terrarium",
  "static": ["packs/terrarium/static"],
- "combine": { "index": "launcher.html", "pages": { "jumper.html": "jumper", "mantis.html": "mantis" }, "end": ["switch.js"], "title": "Terrarium" }
+ "combine": { "index": "launcher.html", "pages": { "jumper.html": "jumper", "mantis.html": "mantis" }, "end": ["switch.js"], "early": "early.html", "title": "Terrarium" }
 }
