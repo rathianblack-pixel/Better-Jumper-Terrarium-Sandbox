@@ -1439,6 +1439,7 @@
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       w.appendChild(el('h4', '', 'Feel & help'));
       { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }
+      { const c = tog('keepAwake', 'Keep screen awake', 'The screen won\'t dim or lock while the game is open.'); c.checked = s.keepAwake !== false; c.addEventListener('change', () => { if (JT.Wake) JT.Wake.sync(); }); }
       { const c = tog('tips', 'Show tips', 'Short hints the first time you do something. Replay them any time from Menu → Help & tips.'); c.checked = s.tips !== false; }
       { const pr = this._probe; const cs = getComputedStyle(document.documentElement); const sab = cs.getPropertyValue('--sab'); const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:1px;visibility:hidden'; document.body.appendChild(tmp); const sb = Math.round(tmp.getBoundingClientRect().height); tmp.remove(); void sab;
         const sa = document.documentElement.classList.contains('sa'); const app = $('app').getBoundingClientRect();

@@ -1,5 +1,5 @@
 // Terrarium service worker: keeps the title screen and both games playable offline. Version changes with every build.
-const CACHE = 'tr-mv11gyhk', FILES = ["./", "index.html", "jumper.html", "mantis.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/card-jumper.png", "icons/card-mantis.png", "icons/dome.png"];
+const CACHE = 'tr-mv2aa3b4', FILES = ["./", "index.html", "jumper.html", "mantis.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/card-jumper.png", "icons/card-mantis.png", "icons/dome.png"];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('tr-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

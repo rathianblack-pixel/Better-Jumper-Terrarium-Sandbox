@@ -128,3 +128,7 @@ Same look and same simulation, cheaper frames.
   resolution by itself. *Battery saver* (always 30) and *Smooth* (always 60) are unchanged.
 - Measured with headless Chromium + software GPU at a 390×844 @2× phone viewport (only ratios are meaningful):
   see the v1.3 hand-off notes. Jumper legacy suite: outputs identical to v1.2 (apart from wall-clock `ms`).
+- **Keep screen awake** (both games, Settings → Feel & help, on by default): while a game is open and visible the
+  screen won't dim or lock. Uses the Screen Wake Lock API (re-taken after every return to the app); on older
+  iOS/Android without it, a tiny muted looping invisible video started from the first tap. Released when the
+  setting is off or the app is in the background.

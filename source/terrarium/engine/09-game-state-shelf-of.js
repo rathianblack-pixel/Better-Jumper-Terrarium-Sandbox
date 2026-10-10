@@ -237,7 +237,7 @@
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, haptics: true, tips: true, tipsSeen: {} },
+    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, haptics: true, tips: true, tipsSeen: {}, keepAwake: true },
     load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k] && s[k] !== null) out[k] = s[k]; out.tipsSeen = Object.assign({}, out.tipsSeen); return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
