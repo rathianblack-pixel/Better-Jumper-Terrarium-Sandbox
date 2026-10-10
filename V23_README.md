@@ -58,3 +58,9 @@ After Studio MDHR's Cuphead: 1930s rubber-hose cartoons (Fleischer, Disney, Iwer
   dust and hairs, exposure flicker, heavy burnt-edge vignette.
 - Watercolour backdrop (HD2D.cupCanvas): cream paper, washes with pooled darker edges, layered rolling hills, puffy outlined cartoon clouds, paper tooth.
 - UI theme body.cuphead: cream card-stock panels, 2.5px ink outlines, rounded corners, hard offset drop shadows, cartoon-red active state, bold uppercase sans labels.
+
+## v24.1 — critters follow the art style
+- New sprite shader (engine/21 SPR_FS) styles every critter, prey, cleaner, drop and nest sprite on the GPU (no extra CPU cost):
+  - HD-2D: resampled onto the scene's pixel grid (1 block = 1 scene pixel, per-sprite scale passed in the tint alpha), painted light banded into 6 Bayer-dithered steps, +22% saturation, 1-pixel dark outline ("volumetric pixel sprite").
+  - Cuphead: flat cel colour in 3 hard tones with richer hue, ink lines inside where parts overlap (luminance edges), thick black 8-direction contour (~2.2 CSS px).
+- Cuphead pie-cut eyes: jumping spiders' big front eyes and the mantis pseudopupils become solid black with a white wedge (HD2D.pie).

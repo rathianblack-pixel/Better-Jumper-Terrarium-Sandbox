@@ -211,7 +211,7 @@
       const eye = (sd) => {
         const ec = sum(Hc, mul(hs, sd * hw * 0.92), mul(hu, L * 0.014), mul(hf, -L * 0.002)); const er = L * 0.032 * (LK.head || 1);
         const e = blob(ctx, V, ec, mul(hs, er * 0.9), mul(hu, er * 1.15), mul(hf, er * 0.95), pal.eye || '#c8c890', { lod, gloss: 0.9 });
-        if (lod > 0 && e && e.r1 > 1.2) { const fc = M.dot(nrm(sub(V.toCam, mul(n, 0))), nrm(sum(mul(hs, sd), mul(hf, 0.6)))); if (fc > -0.3) { const pp = V.P(add(ec, mul(V.toCam, er * 0.9))); dot2(ctx, pp, Math.max(0.5, e.r1 * (sleep ? 0.2 : 0.32)), 'rgba(18,14,8,0.85)'); } }
+        if (lod > 0 && e && e.r1 > 1.2) { const fc = M.dot(nrm(sub(V.toCam, mul(n, 0))), nrm(sum(mul(hs, sd), mul(hf, 0.6)))); if (fc > -0.3) { const pp = V.P(add(ec, mul(V.toCam, er * 0.9))); const CUPm = JT.HD2D && JT.HD2D.on && JT.HD2D.cup && e.r1 > 2.2 && !sleep; dot2(ctx, pp, Math.max(0.5, e.r1 * (sleep ? 0.2 : CUPm ? 0.55 : 0.32)), CUPm ? '#070504' : 'rgba(18,14,8,0.85)'); if (CUPm) JT.HD2D.pie(ctx, pp[0], pp[1], e.r1 * 0.55, -2.3); } }
       };
       const nearE = M.dot(hs, V.toCam) > 0 ? 1 : -1;
       eye(-nearE);

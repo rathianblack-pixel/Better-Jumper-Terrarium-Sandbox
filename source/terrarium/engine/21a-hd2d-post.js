@@ -115,6 +115,8 @@ void main(){
     /** Pixel size in CSS px: ~2 px on a laptop, a little finer on phones. */
     pxSize(R) { const s = R.set || {}; if (this.cup) return Math.max(1 / (R.k || 1), 0.5); const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
     blurK(R) { if (this.cup) return 1; const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
+    /** Cuphead "pie-cut" eye shine: a white wedge cut out of a black eye, pointing toward the light. */
+    pie(ctx, x, y, r, ang) { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); const cx = x + Math.cos(ang) * r * 0.12, cy = y + Math.sin(ang) * r * 0.12; ctx.moveTo(cx, cy); ctx.arc(cx, cy, r * 0.66, ang - 0.62, ang + 0.62); ctx.closePath(); ctx.fill(); },
     filmK(R) { const f = (R.set || {}).film; return f === 'off' ? 0 : f === 'full' ? 1 : 0.55; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
       const key = on ? (this.cup ? 'cup' : 'hd') : 'off'; if (this._was === key) return; this._was = key; gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg = null;

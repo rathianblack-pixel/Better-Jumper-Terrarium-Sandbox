@@ -281,6 +281,7 @@
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P[0], P[1], rr, 0, 6.283); ctx.fill();
         if (big && rr > 2.5) { ctx.strokeStyle = LK.eyeCol ? 'rgba(190,130,60,0.55)' : 'rgba(120,90,60,0.35)'; ctx.lineWidth = Math.max(0.5, rr * 0.12); ctx.beginPath(); ctx.arc(P[0], P[1], rr * 0.62, 0, 6.283); ctx.stroke(); }
         const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * 0.55)); const shine = big ? 0.92 : 0.7;
+        if (big && rr > 2 && JT.HD2D && JT.HD2D.on && JT.HD2D.cup) { ctx.fillStyle = '#070504'; ctx.beginPath(); ctx.arc(P[0], P[1], rr, 0, 6.283); ctx.fill(); JT.HD2D.pie(ctx, P[0], P[1], rr, Math.atan2(gp[1], gp[0]) || -2.3); continue; }
         ctx.fillStyle = 'rgba(255,255,255,' + shine + ')'; ctx.beginPath(); ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(0.5, rr * (big ? 0.32 : 0.35)), 0, 6.283); ctx.fill();
         if (big && rr > 2) { ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(P[0] - gp[0] * 0.7, P[1] - gp[1] * 0.7 + rr * 0.15, Math.max(0.4, rr * 0.13), 0, 6.283); ctx.fill(); }
       }

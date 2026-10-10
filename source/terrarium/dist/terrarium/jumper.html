@@ -8385,6 +8385,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P[0], P[1], rr, 0, 6.283); ctx.fill();
         if (big && rr > 2.5) { ctx.strokeStyle = LK.eyeCol ? 'rgba(190,130,60,0.55)' : 'rgba(120,90,60,0.35)'; ctx.lineWidth = Math.max(0.5, rr * 0.12); ctx.beginPath(); ctx.arc(P[0], P[1], rr * 0.62, 0, 6.283); ctx.stroke(); }
         const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * 0.55)); const shine = big ? 0.92 : 0.7;
+        if (big && rr > 2 && JT.HD2D && JT.HD2D.on && JT.HD2D.cup) { ctx.fillStyle = '#070504'; ctx.beginPath(); ctx.arc(P[0], P[1], rr, 0, 6.283); ctx.fill(); JT.HD2D.pie(ctx, P[0], P[1], rr, Math.atan2(gp[1], gp[0]) || -2.3); continue; }
         ctx.fillStyle = 'rgba(255,255,255,' + shine + ')'; ctx.beginPath(); ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(0.5, rr * (big ? 0.32 : 0.35)), 0, 6.283); ctx.fill();
         if (big && rr > 2) { ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(P[0] - gp[0] * 0.7, P[1] - gp[1] * 0.7 + rr * 0.15, Math.max(0.4, rr * 0.13), 0, 6.283); ctx.fill(); }
       }
@@ -9190,14 +9191,39 @@ void main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*
   float m=(0.9+0.1*g)*(0.95+0.05*g2)*vig; gl_FragColor=vec4(vec3(m)*uCol.rgb,1.0); }`;
   const SPR_VS = `attribute vec2 aXY; attribute float aZ; attribute vec2 aUV; attribute vec4 aT; uniform vec2 uRes; varying vec2 vUV; varying vec4 vT;
 void main(){ vUV=aUV; vT=aT; gl_Position=vec4(aXY.x/uRes.x*2.0-1.0, 1.0-aXY.y/uRes.y*2.0, clamp(aZ*0.0011,-0.999,0.999), 1.0); }`;
-  const SPR_FS = `precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm; uniform float uHD; uniform sampler2D uDepT; uniform vec2 uOut; uniform float uOcc;
+  const SPR_FS = `precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm; uniform float uHD; uniform sampler2D uDepT; uniform vec2 uOut; uniform float uOcc; uniform float uPx;
+float b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }
+float bay4(vec2 p){ p=mod(floor(p),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }
+vec4 S(vec2 uv){ vec4 c=texture2D(uTex,uv); if(uPm>0.5) c.rgb*=c.a; return c; }
+float lm(vec3 c){ return dot(c, vec3(0.3,0.59,0.11)); }
 void main(){ if(uOcc>0.5){ float sd=texture2D(uDepT, gl_FragCoord.xy/uOut).r; bool hid = gl_FragCoord.z > sd + 0.0004; if(uOcc<1.5 ? hid : !hid) discard; }
-  vec4 c=texture2D(uTex,vUV); if(uPm>0.5) c.rgb*=c.a; vec2 d=uTexel*(uHD<-0.5 ? 2.1 : mix(1.3,1.0,uHD));
-  if(uHD>0.5){ if(c.a>0.4){ c.rgb/=max(c.a,0.001); c.a=1.0; } else c=vec4(0.0); }
-  float an=max(max(texture2D(uTex,vUV+vec2(d.x,0.0)).a, texture2D(uTex,vUV-vec2(d.x,0.0)).a), max(texture2D(uTex,vUV+vec2(0.0,d.y)).a, texture2D(uTex,vUV-vec2(0.0,d.y)).a));
-  float ink=(uHD>0.5 ? step(0.4,an)*(1.0-c.a) : smoothstep(0.3,0.75,an)*(1.0-smoothstep(0.05,0.6,c.a)))*uInkAmt;
-  vec3 rgb=c.rgb*vT.rgb + uInk*ink*(1.0-c.a); float a=c.a+ink*(1.0-c.a);
-  gl_FragColor=vec4(rgb,a)*vT.a*uAlpha; }`;
+  float sc=vT.a; vec3 rgb; float a;
+  if(uHD>0.5){
+    // HD-2D: the critter is resampled onto the scene's own pixel grid (one block per scene pixel), its soft painted light
+    // banded into dithered steps with a little extra colour, and given a 1-pixel dark outline
+    vec2 cell=floor(gl_FragCoord.xy/uPx); vec2 off=((cell+0.5)*uPx-gl_FragCoord.xy)*sc; vec2 uv=vUV+vec2(off.x,-off.y)*uTexel;
+    vec4 c=S(uv); if(c.a>0.4){ c.rgb/=max(c.a,0.001); c.a=1.0; } else c=vec4(0.0);
+    if(c.a>0.5){ float l=lm(c.rgb); float q=clamp(floor(l*6.0+bay4(cell))/6.0, 0.05, 1.0); vec3 sat=clamp(mix(vec3(l),c.rgb,1.22),0.0,1.0); c.rgb=clamp(sat*(q+0.08)/(l+0.08),0.0,1.0); }
+    vec2 d=uTexel*uPx*sc;
+    float an=max(max(S(uv+vec2(d.x,0.0)).a, S(uv-vec2(d.x,0.0)).a), max(S(uv+vec2(0.0,d.y)).a, S(uv-vec2(0.0,d.y)).a));
+    float ink=step(0.4,an)*(1.0-c.a)*uInkAmt; rgb=c.rgb*vT.rgb+uInk*ink; a=c.a+ink*(1.0-c.a);
+  } else if(uHD<-0.5){
+    // Cuphead: flat cel colour (three hard tones, richer hue), ink lines inside where parts overlap, a thick black contour
+    vec4 c=S(vUV); vec3 u=c.rgb/max(c.a,0.001); float l=lm(u);
+    float q = l<0.17 ? 0.1 : l<0.42 ? 0.32 : l<0.72 ? 0.6 : 0.9; u=clamp(clamp(mix(vec3(l),u,1.35),0.0,1.0)*(q+0.06)/(l+0.06),0.0,1.0);
+    vec2 d=uTexel*max(1.2, uPx*sc); vec2 e=d*0.5;
+    float l1=lm(S(vUV+vec2(e.x,0.0)).rgb), l2=lm(S(vUV-vec2(e.x,0.0)).rgb), l3=lm(S(vUV+vec2(0.0,e.y)).rgb), l4=lm(S(vUV-vec2(0.0,e.y)).rgb);
+    float inner=smoothstep(0.2,0.36,abs(l1-l2)+abs(l3-l4))*step(0.6,c.a); u=mix(u,uInk,inner*0.9);
+    a=smoothstep(0.3,0.55,c.a);
+    float an=0.0; for(int i=0;i<8;i++){ float t=float(i)*0.7854; an=max(an, S(vUV+vec2(cos(t),sin(t))*d).a); }
+    float ink=smoothstep(0.3,0.6,an)*(1.0-a)*uInkAmt; rgb=u*a*vT.rgb+uInk*ink; a=a+ink*(1.0-a);
+  } else {
+    vec4 c=S(vUV); vec2 d=uTexel*1.3;
+    float an=max(max(texture2D(uTex,vUV+vec2(d.x,0.0)).a, texture2D(uTex,vUV-vec2(d.x,0.0)).a), max(texture2D(uTex,vUV+vec2(0.0,d.y)).a, texture2D(uTex,vUV-vec2(0.0,d.y)).a));
+    float ink=smoothstep(0.3,0.75,an)*(1.0-smoothstep(0.05,0.6,c.a))*uInkAmt;
+    rgb=c.rgb*vT.rgb + uInk*ink*(1.0-c.a); a=c.a+ink*(1.0-c.a);
+  }
+  gl_FragColor=vec4(rgb,a)*uAlpha; }`;
   const LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;
 uniform vec3 uSway; uniform float uLW; uniform float uMinW; ${PROJ}
 varying vec4 vC; varying vec3 vWP;
@@ -9472,7 +9498,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     frame(V, hab, night, lamps, scene) {
       const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
-      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.cup); this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
+      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.cup); this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
       const CLR = HDT ? (CUP ? JT.HD2D.clearCup : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
       const SK = JT.SKY; const grade = SK.grade.slice();
       const lampU = new Float32Array(16); const LL = []; lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
@@ -9715,9 +9741,9 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       // quads, far to near
       list.sort((a, b) => b.dep - a.dep); const AH = ATH; const v = []; const xr = [];
       const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp * V.s / s.ps; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
-        const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], 1); };
+        const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], s.sc || 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
-      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); gl.uniform1f(P.u.uHD, this._hdF ? 1 : this._hd === 2 ? -1 : 0); if (this._hd === 2) { gl.uniform3f(P.u.uInk, 0.05, 0.04, 0.035); gl.uniform1f(P.u.uInkAmt, 1); }
+      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); const HPp = this._hdPost; gl.uniform1f(P.u.uHD, HPp ? 1 : this._hd === 2 ? -1 : 0); gl.uniform1f(P.u.uPx, HPp ? Math.max(1, 1 / HPp.f) : this._hd === 2 ? 2.2 * k * (this._cupF || 1) : 1); if (this._hd === 2) { gl.uniform3f(P.u.uInk, 0.05, 0.04, 0.035); gl.uniform1f(P.u.uInkAmt, 1); }
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       const HP = this._hdPost; if (HP) { gl.disable(gl.DEPTH_TEST); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, HP.dt2); gl.uniform1i(P.u.uDepT, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform2f(P.u.uOut, W, H); }
       gl.uniform1f(P.u.uOcc, HP ? 1 : 0);
@@ -9860,6 +9886,8 @@ void main(){
     /** Pixel size in CSS px: ~2 px on a laptop, a little finer on phones. */
     pxSize(R) { const s = R.set || {}; if (this.cup) return Math.max(1 / (R.k || 1), 0.5); const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
     blurK(R) { if (this.cup) return 1; const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
+    /** Cuphead "pie-cut" eye shine: a white wedge cut out of a black eye, pointing toward the light. */
+    pie(ctx, x, y, r, ang) { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); const cx = x + Math.cos(ang) * r * 0.12, cy = y + Math.sin(ang) * r * 0.12; ctx.moveTo(cx, cy); ctx.arc(cx, cy, r * 0.66, ang - 0.62, ang + 0.62); ctx.closePath(); ctx.fill(); },
     filmK(R) { const f = (R.set || {}).film; return f === 'off' ? 0 : f === 'full' ? 1 : 0.55; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
       const key = on ? (this.cup ? 'cup' : 'hd') : 'off'; if (this._was === key) return; this._was = key; gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg = null;
