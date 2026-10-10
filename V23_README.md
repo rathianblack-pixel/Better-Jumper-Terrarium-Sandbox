@@ -64,3 +64,20 @@ After Studio MDHR's Cuphead: 1930s rubber-hose cartoons (Fleischer, Disney, Iwer
   - HD-2D: resampled onto the scene's pixel grid (1 block = 1 scene pixel, per-sprite scale passed in the tint alpha), painted light banded into 6 Bayer-dithered steps, +22% saturation, 1-pixel dark outline ("volumetric pixel sprite").
   - Cuphead: flat cel colour in 3 hard tones with richer hue, ink lines inside where parts overlap (luminance edges), thick black 8-direction contour (~2.2 CSS px).
 - Cuphead pie-cut eyes: jumping spiders' big front eyes and the mantis pseudopupils become solid black with a white wedge (HD2D.pie).
+
+## v25 — Sketchbook and Ukiyo-e art styles
+Settings → Graphics → Art style now offers HD-2D / Cuphead / Sketchbook / Ukiyo-e / Storybook.
+- Cuphead, Sketchbook and Ukiyo-e share the screen-resolution "toon" path (HD2D.toon / toonSty(): clear colour, ink colour, outline weight, sprite contour, line boil).
+- Sketchbook (SKETCH_FS): pale watercolour wash of the real colours on cream paper, screen-space hatching that builds with shadow
+  (diagonal → cross-hatch → third direction, re-drawn on twos), sepia contours from depth edges, paper tooth. Backdrop: grid notebook page with foxing and a coffee ring.
+  Menus: grid-paper panels, sepia pencil frames, italic labels, circled selections.
+- Ukiyo-e (UKIYO_FS): smoothed scene snapped to an 18-colour woodblock palette, indigo key-block contours, wood grain, paper fibre; the painted sky keeps its bokashi gradient.
+  Backdrop: indigo sky, red sun, cloud bands, outlined hills. Menus: cream panels with indigo double frames, vermilion seal accents.
+- Both: cel-shaded decor, inked critters (sepia / indigo), no dust motes. Night darkens/blues the print.
+
+## v26 — Orbit camera, art styles trimmed
+- Removed the Sketchbook and Ukiyo-e styles (shaders, backdrops, UI themes). Saves that had them fall back to HD-2D. Styles now: HD-2D, Cuphead, Storybook.
+- One overview camera, straight on to the front glass (yaw 0, slight downward tilt). Drag on the tank to orbit: sideways swings round the tank, up/down raises/lowers the camera (≈3°–80°). Pinch / scroll zoom unchanged; two-finger drag still pans.
+- Tanks with a back wall ("Walls" decor) stop the orbit at ±75° so you can't go behind the wall; open tanks orbit a full 360°.
+- Iso / Back / Left / Right buttons replaced by one "Front" button (desktop header, phone camera button, ⋯ menu, keys 1/2/0) that snaps back to the straight front view. Observe / follow mode unchanged.
+- API: Renderer.orbitBy(dx,dy), cam.oy / cam.op, Renderer.straightFront, UI.frontView().

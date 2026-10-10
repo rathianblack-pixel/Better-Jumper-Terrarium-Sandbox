@@ -897,7 +897,7 @@ body.cuphead #app .clock{font-family:var(--cupF);font-weight:800;text-transform:
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
     <div class="tb-right desktop-only">
     <div id="cams" class="seg desktop-only" aria-label="Camera">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Front (2)">Front</button><button data-cam="reverse" title="Back (3)">Back</button><button data-cam="left" title="Left side (3)">Left</button><button data-cam="right" title="Right side (4)">Right</button>
+      <button data-cam="observer" title="Straight front view (1) · drag the tank to orbit">Front</button>
     </div>
     <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
     <button id="btnMore" class="txt" title="More" aria-label="More" aria-expanded="false">⋯</button>
@@ -929,8 +929,8 @@ body.cuphead #app .clock{font-family:var(--cupF);font-weight:800;text-transform:
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="camCtl" aria-label="Camera">
-    <div id="camList"><button data-cam="iso">Iso</button><button data-cam="observer">Front</button><button data-cam="reverse">Back</button><button data-cam="left">Left</button><button data-cam="right">Right</button><button id="camRecentre">Re-centre</button></div>
-    <button id="camToggle" aria-expanded="false" aria-label="Camera view" title="Camera view"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2L8 6h8l1.8 2.5H21V19H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span id="camLbl">Iso</span></button>
+    <div id="camList"><button id="camRecentre">Re-centre</button></div>
+    <button id="camToggle" aria-expanded="false" aria-label="Front view" title="Straight front view · drag the tank to orbit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2L8 6h8l1.8 2.5H21V19H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span id="camLbl">Front</span></button>
   </div>
 
   <div id="modeBar" class="hidden">
@@ -9237,7 +9237,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   const NEUTRAL = { kd: 1, key: [1, 1, 1], amb: [1, 1, 1] };
   const hexRGB = (h) => GM.rgb(h);
   const toHex = (c) => '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join('');
-  const towardPaper = (h, t) => { if (JT.HD2D && JT.HD2D.on) t *= JT.HD2D.cup ? 0.85 : 0.3; const c = hexRGB(h); return toHex([c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t]); };
+  const towardPaper = (h, t) => { if (JT.HD2D && JT.HD2D.on) t *= JT.HD2D.toon ? 0.85 : 0.3; const c = hexRGB(h); return toHex([c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t]); };
 
   // v1.3 still-camera cache: copy colour + depth of the cached static layer onto the screen (WebGL2)
   const BLIT_VS = `#version 300 es
@@ -9497,15 +9497,15 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     frame(V, hab, night, lamps, scene) {
       const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
-      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.cup); this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
-      const CLR = HDT ? (CUP ? JT.HD2D.clearCup : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
+      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.toon); const TS = CUP ? JT.HD2D.toonSty() : null; this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
+      const CLR = HDT ? (CUP ? TS.clear : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
       const SK = JT.SKY; const grade = SK.grade.slice();
       const lampU = new Float32Array(16); const LL = []; lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
       this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, VW, VH); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
       const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT;
-      let outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; let lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k; if (CUP) { outPx = Math.max(outPx * 1.55, 1.6 / PXF); lw = Math.max(lw * 1.15, 1.0 / PXF); } else if (HDT) { outPx = Math.max(outPx * 0.8, 1.05 / PXF); lw = Math.max(lw, 1.0 / PXF); }
+      let outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; let lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k; if (CUP) { outPx = Math.max(outPx * TS.out, 1.3 / PXF); lw = Math.max(lw * 1.15, 1.0 / PXF); } else if (HDT) { outPx = Math.max(outPx * 0.8, 1.05 / PXF); lw = Math.max(lw, 1.0 / PXF); }
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
       const drawList = hg.meshes.filter(o => visible(o.g)); for (const o of drawList) o._dz = V.depth(o.g._sb.c); drawList.sort((a, b) => a._dz - b._dz); // near first: early depth rejection
@@ -9514,7 +9514,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       const decorPass = (list) => {
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
         let P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
-        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); if (CUP) gl.uniform3f(P.u.uInk, 0.05, 0.04, 0.035); else gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uBoil, CUP && !JT.HD2D.still ? 1 + Math.floor(performance.now() / 83) % 64 : 0); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uHD, this._hd);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); if (CUP) gl.uniform3f(P.u.uInk, TS.ink[0], TS.ink[1], TS.ink[2]); else gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uBoil, CUP && TS.boil ? 1 + Math.floor(performance.now() / 83) % 64 : 0); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uHD, this._hd);
         for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
           gl.uniform1f(P.u.uPass, pass ? 0 : 1);
           for (const o of list) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
@@ -9742,7 +9742,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp * V.s / s.ps; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
         const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], s.sc || 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
-      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); const HPp = this._hdPost; gl.uniform1f(P.u.uHD, HPp ? 1 : this._hd === 2 ? -1 : 0); gl.uniform1f(P.u.uPx, HPp ? Math.max(1, 1 / HPp.f) : this._hd === 2 ? 2.2 * k * (this._cupF || 1) : 1); if (this._hd === 2) { gl.uniform3f(P.u.uInk, 0.05, 0.04, 0.035); gl.uniform1f(P.u.uInkAmt, 1); }
+      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); const HPp = this._hdPost; gl.uniform1f(P.u.uHD, HPp ? 1 : this._hd === 2 ? -1 : 0); gl.uniform1f(P.u.uPx, HPp ? Math.max(1, 1 / HPp.f) : this._hd === 2 ? JT.HD2D.toonSty().spr * k * (this._cupF || 1) : 1); if (this._hd === 2) { const ti = JT.HD2D.toonSty().ink; gl.uniform3f(P.u.uInk, ti[0], ti[1], ti[2]); gl.uniform1f(P.u.uInkAmt, 1); }
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       const HP = this._hdPost; if (HP) { gl.disable(gl.DEPTH_TEST); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, HP.dt2); gl.uniform1i(P.u.uDepT, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform2f(P.u.uOut, W, H); }
       gl.uniform1f(P.u.uOcc, HP ? 1 : 0);
@@ -9875,6 +9875,11 @@ void main(){
 
   const HD = {
     clear: [0.12, 0.13, 0.15], clearCup: [0.93, 0.87, 0.74],
+    /** Styles drawn at screen resolution with cel shading and ink: Cuphead. */
+    get art() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); const t = s && s.art; return t === 'cuphead' || t === 'storybook' ? t : 'hd2d'; },
+    get toon() { return this.art === 'cuphead'; },
+    TOON: { cuphead: { clear: [0.93, 0.87, 0.74], ink: [0.05, 0.04, 0.035], out: 1.55, spr: 2.2, boil: true } },
+    toonSty() { return this.TOON[this.art] || this.TOON.cuphead; },
     get cup() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); return !!s && s.art === 'cuphead'; },
     get on() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); return !s || s.art !== 'storybook'; },
     _P: null,
@@ -9883,14 +9888,14 @@ void main(){
     fbo(gl, ct, dt) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ct, 0); if (dt) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dt, 0); const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return ok ? f : null; },
     free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD']) if (T[k]) gl.deleteTexture(T[k]); },
     /** Pixel size in CSS px: ~2 px on a laptop, a little finer on phones. */
-    pxSize(R) { const s = R.set || {}; if (this.cup) return Math.max(1 / (R.k || 1), 0.5); const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
-    blurK(R) { if (this.cup) return 1; const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
+    pxSize(R) { const s = R.set || {}; if (this.toon) return Math.max(1 / (R.k || 1), 0.5); const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
+    blurK(R) { if (this.toon) return 1; const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
     /** Cuphead "pie-cut" eye shine: a white wedge cut out of a black eye, pointing toward the light. */
     pie(ctx, x, y, r, ang) { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); const cx = x + Math.cos(ang) * r * 0.12, cy = y + Math.sin(ang) * r * 0.12; ctx.moveTo(cx, cy); ctx.arc(cx, cy, r * 0.66, ang - 0.62, ang + 0.62); ctx.closePath(); ctx.fill(); },
     filmK(R) { const f = (R.set || {}).film; return f === 'off' ? 0 : f === 'full' ? 1 : 0.55; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
-      const key = on ? (this.cup ? 'cup' : 'hd') : 'off'; if (this._was === key) return; this._was = key; gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg = null;
-      const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.toggle('cuphead', key === 'cup'); } },
+      const key = on ? (this.toon ? this.art : 'hd') : 'off'; if (this._was === key) return; this._was = key; gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg = null;
+      const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.toggle('cuphead', key === 'cuphead'); b.classList.remove('art-sketch', 'art-ukiyo'); } },
     begin(gp, W, H) {
       const gl = gp.gl; const on = gp.gl2 && this.on && !gp._hdBroken; this.sync(gp, on); if (!on) return null;
       const f = M.clamp(1 / (this.pxSize(gp.R) * (gp.R.k || 1)), 0.08, 1); const w = Math.max(16, Math.round(W * f)), h = Math.max(16, Math.round(H * f));
@@ -9915,7 +9920,7 @@ void main(){
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.BLEND);
       // depth-of-field source: half-res, blurred twice (wide, soft bokeh)
       this.pass(gp, P.down, T.fA, T.hw, T.hh, T.ct, (p) => gl.uniform2f(p.u.uTexel, 1 / T.w, 1 / T.h));
-      const cup = this.cup; const bk = this.blurK(gp.R); for (const st of (bk === 0 ? [] : cup || bk < 0.5 ? [1.0] : [1.0, 2.2])) {
+      const cup = this.toon; const bk = this.blurK(gp.R); for (const st of (bk === 0 ? [] : cup || bk < 0.5 ? [1.0] : [1.0, 2.2])) {
         this.pass(gp, P.blur, T.fB, T.hw, T.hh, T.tA, (p) => gl.uniform2f(p.u.uDir, st / T.hw, 0));
         this.pass(gp, P.blur, T.fA, T.hw, T.hh, T.tB, (p) => gl.uniform2f(p.u.uDir, 0, st / T.hh)); }
       // bloom: bright parts at quarter res, blurred wide
@@ -10002,7 +10007,7 @@ void main(){
   const JT = root.JT, M = JT.M, G = JT.G, D = JT.Draw, sh = JT.shade;
   const CAMS = {
     iso: { yaw: 0.52, pitch: 0.66, label: 'Isometric' },
-    observer: { yaw: 0.26, pitch: 0.44, label: 'Front' }, // id kept for saves: the front of the tank, turned a little for depth
+    observer: { yaw: 0, pitch: 0.4, label: 'Front' }, // the one overview camera: straight on to the front glass; drag orbits it (cam.oy / cam.op)
     follow: { yaw: 0.45, pitch: 0.5, label: 'Follow' },
     reverse: { yaw: Math.PI + 0.26, pitch: 0.5, label: 'Back' }, // the back of the tank, turned a little
     left: { yaw: 1.22, pitch: 0.44, label: 'Left' },   // 70° round from the front: the back wall still reads as a backdrop
@@ -10014,7 +10019,7 @@ void main(){
   class Renderer {
     constructor(canvas, game, settings) {
       this.cv = canvas; this.ctx = canvas.getContext('2d'); this.game = game; this.set = settings;
-      this.cam = { mode: 'iso', zoom: 1, pan: [0, 0] };
+      this.cam = { mode: 'observer', zoom: 1, pan: [0, 0], oy: 0, op: 0 };
       this.cur = null; // smoothed {yaw,pitch,scale,c}
       this.fx = []; this.particles = []; this.ghost = null; this.hover = null;
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
@@ -10053,7 +10058,7 @@ void main(){
       const doc = root.document; if (doc && doc.body) { doc.body.classList.add('story'); if (this._glFail && !doc.getElementById('noGL')) { const d = doc.createElement('div'); d.id = 'noGL'; d.textContent = 'Jumper Terrarium needs WebGL to draw the terrarium. Try another browser, or turn on hardware acceleration.'; doc.body.appendChild(d); } }
     }
     get storybook() { return !!this.gp; }
-    setMode(m) { if (!CAMS[m]) return; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
+    setMode(m) { if (m !== 'follow') m = 'observer'; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
     zoomBy(f, sx, sy) {
       if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.zoom(f); return; }
       const z0 = this.cam.zoom; const z = M.clamp(z0 * f, 0.6, 5); if (z === z0) return;
@@ -10064,20 +10069,27 @@ void main(){
       if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.orbit(dx * 0.0065, dy * 0.004); return; }
       this.cam.pan[0] += dx; this.cam.pan[1] += dy; this.clampPan(); }
     clampPan() { const lim = (0.35 + this.cam.zoom * 0.45); this.cam.pan[0] = M.clamp(this.cam.pan[0], -this.cssW * lim, this.cssW * lim); this.cam.pan[1] = M.clamp(this.cam.pan[1], -this.cssH * lim, this.cssH * lim); }
-    resetView() { this.cam.zoom = 1; this.cam.pan = [0, 0]; }
+    resetView() { this.cam.zoom = 1; this.cam.pan = [0, 0]; this.cam.oy = 0; this.cam.op = 0; }
+    /** Drag on the tank: swing the camera round it (sideways) and up / down over it. A back wall stops it at ±75°. */
+    orbitBy(dx, dy) {
+      if (this.cam.mode === 'follow') { this.panBy(dx, dy); return; }
+      const c = this.cam; c.oy = M.wrapAngle((c.oy || 0) + dx * 0.0065); c.op = (c.op || 0) + dy * 0.004; this.clampOrbit(this.game && this.game.hab); }
+    clampOrbit(hab) {
+      const c = this.cam, P0 = CAMS.observer.pitch; c.op = M.clamp(c.op || 0, 0.06 - P0, 1.4 - P0);
+      if (hab && hab.decor && hab.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall')) c.oy = M.clamp(c.oy || 0, -1.3, 1.3); }
+    /** Looking straight at the front (no orbit, no zoom, no pan). */
+    get straightFront() { const c = this.cam; return c.mode === 'observer' && Math.abs(c.oy || 0) < 0.01 && Math.abs(c.op || 0) < 0.01; }
 
     // ---------------- camera ----------------
     targetView(hab) {
-      const dm = hab.dims; const C = CAMS[this.cam.mode] || CAMS.iso;
+      const dm = hab.dims; const C = CAMS[this.cam.mode] || CAMS.observer; const ob = this.cam.mode !== 'follow'; if (ob) this.clampOrbit(hab);
       let top = dm.h * 0.55; for (const id in hab.geoms) top = Math.max(top, hab.geoms[id].height + hab.geoms[id].baseY);
       top = Math.min(top, dm.h * 1.1);
       const pts = []; for (const x of [0, dm.w]) for (const z of [0, dm.d]) for (const y of [-12, top]) pts.push([x, y, z]);
       const c = [dm.w / 2, top * 0.38, dm.d / 2];
       const W = this.cssW, H = this.cssH; const portrait = H > W * 1.1;
       // tall screens: swing the camera round so the tank's long side runs up the screen ("tall setup")
-      const tall = portrait && dm.w > dm.d * 1.3 && this.cam.mode === 'iso'; // front / back stay square on to their side
-      const isoP = portrait && this.cam.mode === 'iso'; // portrait iso: a lower, more eye-level angle so tall tanks read as tall
-      const yaw = C.yaw + (tall ? 0.73 : 0), pitch = C.pitch + (isoP ? (tall ? -0.12 : -0.14) : 0);
+      const yaw = C.yaw + (ob ? this.cam.oy || 0 : 0), pitch = C.pitch + (ob ? this.cam.op || 0 : 0);
       const tmp = new JT.View(yaw, pitch, 1, 0, 0, c);
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
       const availH = H * (portrait ? 0.62 : 0.78), availW = (W - (this.insetL || 0)) * (portrait ? 0.94 : 0.88);
@@ -10096,9 +10108,9 @@ void main(){
     updateView(hab, dt) {
       const T = this.targetView(hab);
       if (!this.cur || this.cur.hab !== hab.id) this.cur = Object.assign({ hab: hab.id }, T, { c: T.c.slice() });
-      const k = Math.min(1, dt * 5), kc = Math.min(1, dt * (this.cam.mode === 'follow' ? 3 : 6));
+      const k = Math.min(1, dt * 5), kr = this.cam.mode === 'follow' ? k : Math.min(1, dt * 14), kc = Math.min(1, dt * (this.cam.mode === 'follow' ? 3 : 6));
       const cu = this.cur; let dy = M.wrapAngle(T.yaw - cu.yaw);
-      cu.yaw += dy * k; cu.pitch += (T.pitch - cu.pitch) * k; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
+      cu.yaw += dy * kr; cu.pitch += (T.pitch - cu.pitch) * kr; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
       cu.c = M.lerp3(cu.c, T.c, kc);
       if (this.cam.mode === 'follow') {
         const sp = hab.spider(this.game.selectedId) || hab.spiders[0];
@@ -10363,7 +10375,7 @@ void main(){
       // dust motes drifting through the light — a tiny bit of air between you and the scene
       const day = this.game.daylight(); if (day < 0.15 || this.quality === 'low') return;
       const dm = hab.dims; if (!this.motes || this.motes.hab !== hab.data.id) { const rng = JT.makeRng(7); this.motes = { hab: hab.data.id, p: [] }; for (let i = 0; i < 34; i++) this.motes.p.push([rng() * dm.w, 6 + rng() * dm.h * 0.9, rng() * dm.d, rng() * 6.28, 0.25 + rng() * 0.5]); }
-      const t = this.time; ctx.fillStyle = '#fff3c8'; const hdM = document.body.classList.contains('hd2d') || document.body.classList.contains('cuphead');
+      const t = this.time; ctx.fillStyle = '#fff3c8'; const hdM = !!(JT.HD2D && JT.HD2D._was && JT.HD2D._was !== 'off'); if (hdM && JT.HD2D.toon && !JT.HD2D.cup) return;
       for (let mi = 0; mi < this.motes.p.length; mi++) { if (hdM && mi % 3) continue; const m = this.motes.p[mi];
         const x = m[0] + Math.sin(t * 0.13 + m[3]) * 6, y = m[1] + Math.sin(t * 0.09 + m[3] * 2) * 4, z = m[2] + Math.cos(t * 0.11 + m[3]) * 5;
         const q = V.P([x, y, z]); const tw = 0.5 + 0.5 * Math.sin(t * 1.3 + m[3] * 3);
@@ -10964,7 +10976,7 @@ void main(){
 
     // ------------------------------------------------ binding
     bind() {
-      document.querySelectorAll('#cams button').forEach(b => b.onclick = () => this.setCam(b.dataset.cam));
+      document.querySelectorAll('#cams button').forEach(b => b.onclick = () => { A().sfx('click'); this.frontView(); });
       document.querySelectorAll('#timeMode button').forEach(b => b.onclick = () => this.setTimeMode(b.dataset.tm));
       document.querySelectorAll('#toolbar button').forEach(b => b.onclick = () => this.tool(b.dataset.tool));
       document.querySelectorAll('#dock button').forEach(b => b.onclick = () => this.dock(b.dataset.dock));
@@ -10985,7 +10997,7 @@ void main(){
       // phone camera buttons: 1 iso, 2 front, 3 back; tapping the current camera again re-centres the view
       // phone camera: one button shows the current view; tapping it opens the list of views (+ re-centre)
       { const cc = $('camCtl'), tg = $('camToggle'); const open = (on) => { cc.classList.toggle('open', on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); };
-        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(!cc.classList.contains('open')); };
+        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(false); this.frontView(); };
         document.querySelectorAll('#camList button[data-cam]').forEach(b => b.onclick = () => { open(false); if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
         $('camRecentre').onclick = () => { open(false); this.R.resetView(); A().sfx('click'); };
         document.addEventListener('pointerdown', (e) => { if (cc.classList.contains('open') && !cc.contains(e.target)) open(false); }, true); }
@@ -11065,7 +11077,7 @@ void main(){
         if (drag) {
           const tol = e.pointerType === 'mouse' ? 5 : 16; // fingers wobble; a short wobble is still a tap
           if (!drag.moved && Math.hypot(p[0] - drag.s[0], p[1] - drag.s[1]) > tol) drag.moved = true;
-          if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.panBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
+          if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.orbitBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
           drag.l = p;
           if (e.pointerType === 'mouse' && !drag.moved) this.hoverAt(p);
         }
@@ -11157,7 +11169,7 @@ void main(){
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
       if ((k === 'l' || k === 'L') && this.mode === 'place') { this.toggleLeaves(); return; }
-      if (k >= '1' && k <= '4') { const cm = this.camModes()[+k - 1]; if (cm) this.setCam(cm); } else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
+      if (k === '1' || k === '2') this.frontView(); else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
       else if (k === 'b' || k === 'B') this.tool('build'); else if (k === 'c' || k === 'C') this.tool('care'); else if (k === 'j' || k === 'J') this.tool('jumpers');
@@ -11181,14 +11193,16 @@ void main(){
     updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
     /** Views on offer: a back wall closes off the back, so wall tanks get the two sides instead. */
     hasWall(h) { h = h || this.hab; return !!h && h.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall'); },
-    camModes() { return this.hasWall() ? ['iso', 'observer', 'left', 'right'] : ['iso', 'observer', 'reverse']; },
+    camModes() { return ['observer']; }, // one overview camera now: drag to orbit it, Front snaps back to straight on
     /** Show only the views that make sense for this tank; slide to Front if the current one stopped making sense. */
     syncCams() {
       const ms = this.camModes(), cur = this.R.cam.mode; this._camKey = ms.join();
       { const lb = $('camLbl'); if (lb) lb.textContent = (JT.CAMS[cur] && JT.CAMS[cur].label || 'View').replace(/^Isometric$/, 'Iso'); }
-      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur); });
+      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur && this.R.straightFront); }); this._camFront = this.R.straightFront;
       if (!this.obs && cur !== 'follow' && !ms.includes(cur)) { this.R.setMode('observer'); document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => b.classList.toggle('on', b.dataset.cam === 'observer')); }
     },
+    /** Back to the straight-on front view (leaves Observe / follow too). */
+    frontView() { if (this.obs) this.toggleObserve(false); else if (this.R.cam.mode === 'follow') this.setCam('observer'); this.R.resetView(); this.syncCams(); },
     setCam(m) {
       if (m !== 'follow' && !this.camModes().includes(m)) m = 'observer';
       if (m === 'follow' && this.R.cam.mode !== 'follow') this._prevCam = this.R.cam.mode;
@@ -12188,7 +12202,7 @@ void main(){
       row(hs, 'All tanks…', () => this.sub(back, () => this.tanksModal()), false, g.habs.length + ' of ' + JT.MAX_HABS + ((g.state.cup || []).length ? ' · ' + g.state.cup.length + ' in the holding cup' : ''));
       // view
       const vs = sect('View');
-      segRow(vs, 'Camera', this.camModes().map(m => [m, JT.CAMS[m].label.replace(/^Isometric$/, 'Iso')]), this.R.cam.mode, (m) => { this.setCam(m); this.moreSheet(); });
+      row(vs, 'Front view', () => { this.closeModal(); this.frontView(); }, false, 'Drag the tank to orbit · this snaps back to straight on');
       segRow(vs, 'Time', [['auto', 'Natural'], ['day', 'Day'], ['night', 'Night']], g.state.timeMode, (m) => { this.setTimeMode(m); this.moreSheet(); });
       row(vs, this.obs ? 'Stop observing' : 'Observe a jumper', () => { this.closeModal(); this.toggleObserve(!this.obs); });
       if (this.hab.spiders.length) row(vs, 'Ambient TV', () => { this.closeModal(); this.tvMode(true); }, false, 'Hands-free watching: the camera picks the moments. Tap to come back.');
@@ -12265,12 +12279,12 @@ void main(){
       const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
       q.appendChild(seg); w.appendChild(q);
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Art style')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['hd2d', 'HD-2D'], ['cuphead', 'Cuphead'], ['storybook', 'Storybook']]) { const b = el('button', (s.art || 'hd2d') === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
+        for (const [v, l] of [['hd2d', 'HD-2D'], ['cuphead', 'Cuphead'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Cuphead: 1930s cartoon on old film. Storybook: ink and watercolour.')); w.appendChild(fr); }
-      if ((s.art || 'hd2d') === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel size')); const sg = el('div', 'seg small');
+      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel size')); const sg = el('div', 'seg small');
         for (const [v, l] of [['fine', 'Fine'], ['classic', 'Classic'], ['chunky', 'Chunky']]) { const b = el('button', (s.pixel || 'classic') === v ? 'on' : '', l); b.onclick = () => { s.pixel = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); w.appendChild(fr); }
-      if ((s.art || 'hd2d') === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
+      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
         for (const [v, l] of [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']]) { const b = el('button', (s.blur || 'light') === v ? 'on' : '', l); b.onclick = () => { s.blur = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Depth-of-field and tilt-shift blur around the edges of the view')); w.appendChild(fr); }
       if (s.art === 'cuphead') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Old film')); const sg = el('div', 'seg small');
@@ -12339,7 +12353,7 @@ void main(){
     // ------------------------------------------------ per-frame
     update(dt) {
       this._t += dt; this._panelT += dt; this._hudT = (this._hudT || 0) + dt;
-      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join()) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
+      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join() || this._camFront !== this.R.straightFront) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
       const g = this.game; const h = g.hab;
       if (this.obs) this.updateObs(dt);
       if (this.photo && this.R.fcam && performance.now() - this.photo.t0 > 1600) this.R.fcam.pause = Math.max(this.R.fcam.pause || 0, 1.5); // photo mode: after the close-up settles, the camera stays where you put it

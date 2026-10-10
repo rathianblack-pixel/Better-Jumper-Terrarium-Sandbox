@@ -5,7 +5,7 @@
   const JT = root.JT, M = JT.M, G = JT.G, D = JT.Draw, sh = JT.shade;
   const CAMS = {
     iso: { yaw: 0.52, pitch: 0.66, label: 'Isometric' },
-    observer: { yaw: 0.26, pitch: 0.44, label: 'Front' }, // id kept for saves: the front of the tank, turned a little for depth
+    observer: { yaw: 0, pitch: 0.4, label: 'Front' }, // the one overview camera: straight on to the front glass; drag orbits it (cam.oy / cam.op)
     follow: { yaw: 0.45, pitch: 0.5, label: 'Follow' },
     reverse: { yaw: Math.PI + 0.26, pitch: 0.5, label: 'Back' }, // the back of the tank, turned a little
     left: { yaw: 1.22, pitch: 0.44, label: 'Left' },   // 70° round from the front: the back wall still reads as a backdrop
@@ -17,7 +17,7 @@
   class Renderer {
     constructor(canvas, game, settings) {
       this.cv = canvas; this.ctx = canvas.getContext('2d'); this.game = game; this.set = settings;
-      this.cam = { mode: 'iso', zoom: 1, pan: [0, 0] };
+      this.cam = { mode: 'observer', zoom: 1, pan: [0, 0], oy: 0, op: 0 };
       this.cur = null; // smoothed {yaw,pitch,scale,c}
       this.fx = []; this.particles = []; this.ghost = null; this.hover = null;
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
@@ -56,7 +56,7 @@
       const doc = root.document; if (doc && doc.body) { doc.body.classList.add('story'); if (this._glFail && !doc.getElementById('noGL')) { const d = doc.createElement('div'); d.id = 'noGL'; d.textContent = 'Jumper Terrarium needs WebGL to draw the terrarium. Try another browser, or turn on hardware acceleration.'; doc.body.appendChild(d); } }
     }
     get storybook() { return !!this.gp; }
-    setMode(m) { if (!CAMS[m]) return; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
+    setMode(m) { if (m !== 'follow') m = 'observer'; this.cam.mode = m; this.cam.zoom = 1; this.cam.pan = [0, 0]; }
     zoomBy(f, sx, sy) {
       if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.zoom(f); return; }
       const z0 = this.cam.zoom; const z = M.clamp(z0 * f, 0.6, 5); if (z === z0) return;
@@ -67,20 +67,27 @@
       if (this.cam.mode === 'follow' && this.fcam && this.fcam.st) { this.fcam.orbit(dx * 0.0065, dy * 0.004); return; }
       this.cam.pan[0] += dx; this.cam.pan[1] += dy; this.clampPan(); }
     clampPan() { const lim = (0.35 + this.cam.zoom * 0.45); this.cam.pan[0] = M.clamp(this.cam.pan[0], -this.cssW * lim, this.cssW * lim); this.cam.pan[1] = M.clamp(this.cam.pan[1], -this.cssH * lim, this.cssH * lim); }
-    resetView() { this.cam.zoom = 1; this.cam.pan = [0, 0]; }
+    resetView() { this.cam.zoom = 1; this.cam.pan = [0, 0]; this.cam.oy = 0; this.cam.op = 0; }
+    /** Drag on the tank: swing the camera round it (sideways) and up / down over it. A back wall stops it at ±75°. */
+    orbitBy(dx, dy) {
+      if (this.cam.mode === 'follow') { this.panBy(dx, dy); return; }
+      const c = this.cam; c.oy = M.wrapAngle((c.oy || 0) + dx * 0.0065); c.op = (c.op || 0) + dy * 0.004; this.clampOrbit(this.game && this.game.hab); }
+    clampOrbit(hab) {
+      const c = this.cam, P0 = CAMS.observer.pitch; c.op = M.clamp(c.op || 0, 0.06 - P0, 1.4 - P0);
+      if (hab && hab.decor && hab.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall')) c.oy = M.clamp(c.oy || 0, -1.3, 1.3); }
+    /** Looking straight at the front (no orbit, no zoom, no pan). */
+    get straightFront() { const c = this.cam; return c.mode === 'observer' && Math.abs(c.oy || 0) < 0.01 && Math.abs(c.op || 0) < 0.01; }
 
     // ---------------- camera ----------------
     targetView(hab) {
-      const dm = hab.dims; const C = CAMS[this.cam.mode] || CAMS.iso;
+      const dm = hab.dims; const C = CAMS[this.cam.mode] || CAMS.observer; const ob = this.cam.mode !== 'follow'; if (ob) this.clampOrbit(hab);
       let top = dm.h * 0.55; for (const id in hab.geoms) top = Math.max(top, hab.geoms[id].height + hab.geoms[id].baseY);
       top = Math.min(top, dm.h * 1.1);
       const pts = []; for (const x of [0, dm.w]) for (const z of [0, dm.d]) for (const y of [-12, top]) pts.push([x, y, z]);
       const c = [dm.w / 2, top * 0.38, dm.d / 2];
       const W = this.cssW, H = this.cssH; const portrait = H > W * 1.1;
       // tall screens: swing the camera round so the tank's long side runs up the screen ("tall setup")
-      const tall = portrait && dm.w > dm.d * 1.3 && this.cam.mode === 'iso'; // front / back stay square on to their side
-      const isoP = portrait && this.cam.mode === 'iso'; // portrait iso: a lower, more eye-level angle so tall tanks read as tall
-      const yaw = C.yaw + (tall ? 0.73 : 0), pitch = C.pitch + (isoP ? (tall ? -0.12 : -0.14) : 0);
+      const yaw = C.yaw + (ob ? this.cam.oy || 0 : 0), pitch = C.pitch + (ob ? this.cam.op || 0 : 0);
       const tmp = new JT.View(yaw, pitch, 1, 0, 0, c);
       let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { const q = tmp.P(p); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
       const availH = H * (portrait ? 0.62 : 0.78), availW = (W - (this.insetL || 0)) * (portrait ? 0.94 : 0.88);
@@ -99,9 +106,9 @@
     updateView(hab, dt) {
       const T = this.targetView(hab);
       if (!this.cur || this.cur.hab !== hab.id) this.cur = Object.assign({ hab: hab.id }, T, { c: T.c.slice() });
-      const k = Math.min(1, dt * 5), kc = Math.min(1, dt * (this.cam.mode === 'follow' ? 3 : 6));
+      const k = Math.min(1, dt * 5), kr = this.cam.mode === 'follow' ? k : Math.min(1, dt * 14), kc = Math.min(1, dt * (this.cam.mode === 'follow' ? 3 : 6));
       const cu = this.cur; let dy = M.wrapAngle(T.yaw - cu.yaw);
-      cu.yaw += dy * k; cu.pitch += (T.pitch - cu.pitch) * k; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
+      cu.yaw += dy * kr; cu.pitch += (T.pitch - cu.pitch) * kr; cu.s += (T.s - cu.s) * k; cu.offY += (T.offY - cu.offY) * k;
       cu.c = M.lerp3(cu.c, T.c, kc);
       if (this.cam.mode === 'follow') {
         const sp = hab.spider(this.game.selectedId) || hab.spiders[0];
@@ -366,7 +373,7 @@
       // dust motes drifting through the light — a tiny bit of air between you and the scene
       const day = this.game.daylight(); if (day < 0.15 || this.quality === 'low') return;
       const dm = hab.dims; if (!this.motes || this.motes.hab !== hab.data.id) { const rng = JT.makeRng(7); this.motes = { hab: hab.data.id, p: [] }; for (let i = 0; i < 34; i++) this.motes.p.push([rng() * dm.w, 6 + rng() * dm.h * 0.9, rng() * dm.d, rng() * 6.28, 0.25 + rng() * 0.5]); }
-      const t = this.time; ctx.fillStyle = '#fff3c8'; const hdM = document.body.classList.contains('hd2d') || document.body.classList.contains('cuphead');
+      const t = this.time; ctx.fillStyle = '#fff3c8'; const hdM = !!(JT.HD2D && JT.HD2D._was && JT.HD2D._was !== 'off'); if (hdM && JT.HD2D.toon && !JT.HD2D.cup) return;
       for (let mi = 0; mi < this.motes.p.length; mi++) { if (hdM && mi % 3) continue; const m = this.motes.p[mi];
         const x = m[0] + Math.sin(t * 0.13 + m[3]) * 6, y = m[1] + Math.sin(t * 0.09 + m[3] * 2) * 4, z = m[2] + Math.cos(t * 0.11 + m[3]) * 5;
         const q = V.P([x, y, z]); const tw = 0.5 + 0.5 * Math.sin(t * 1.3 + m[3] * 3);

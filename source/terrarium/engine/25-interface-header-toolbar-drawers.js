@@ -133,7 +133,7 @@
 
     // ------------------------------------------------ binding
     bind() {
-      document.querySelectorAll('#cams button').forEach(b => b.onclick = () => this.setCam(b.dataset.cam));
+      document.querySelectorAll('#cams button').forEach(b => b.onclick = () => { A().sfx('click'); this.frontView(); });
       document.querySelectorAll('#timeMode button').forEach(b => b.onclick = () => this.setTimeMode(b.dataset.tm));
       document.querySelectorAll('#toolbar button').forEach(b => b.onclick = () => this.tool(b.dataset.tool));
       document.querySelectorAll('#dock button').forEach(b => b.onclick = () => this.dock(b.dataset.dock));
@@ -154,7 +154,7 @@
       // phone camera buttons: 1 iso, 2 front, 3 back; tapping the current camera again re-centres the view
       // phone camera: one button shows the current view; tapping it opens the list of views (+ re-centre)
       { const cc = $('camCtl'), tg = $('camToggle'); const open = (on) => { cc.classList.toggle('open', on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); };
-        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(!cc.classList.contains('open')); };
+        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(false); this.frontView(); };
         document.querySelectorAll('#camList button[data-cam]').forEach(b => b.onclick = () => { open(false); if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
         $('camRecentre').onclick = () => { open(false); this.R.resetView(); A().sfx('click'); };
         document.addEventListener('pointerdown', (e) => { if (cc.classList.contains('open') && !cc.contains(e.target)) open(false); }, true); }
@@ -234,7 +234,7 @@
         if (drag) {
           const tol = e.pointerType === 'mouse' ? 5 : 16; // fingers wobble; a short wobble is still a tap
           if (!drag.moved && Math.hypot(p[0] - drag.s[0], p[1] - drag.s[1]) > tol) drag.moved = true;
-          if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.panBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
+          if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.orbitBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
           drag.l = p;
           if (e.pointerType === 'mouse' && !drag.moved) this.hoverAt(p);
         }
@@ -326,7 +326,7 @@
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
       if ((k === 'l' || k === 'L') && this.mode === 'place') { this.toggleLeaves(); return; }
-      if (k >= '1' && k <= '4') { const cm = this.camModes()[+k - 1]; if (cm) this.setCam(cm); } else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
+      if (k === '1' || k === '2') this.frontView(); else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
       else if (k === 'b' || k === 'B') this.tool('build'); else if (k === 'c' || k === 'C') this.tool('care'); else if (k === 'j' || k === 'J') this.tool('jumpers');
@@ -350,14 +350,16 @@
     updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
     /** Views on offer: a back wall closes off the back, so wall tanks get the two sides instead. */
     hasWall(h) { h = h || this.hab; return !!h && h.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall'); },
-    camModes() { return this.hasWall() ? ['iso', 'observer', 'left', 'right'] : ['iso', 'observer', 'reverse']; },
+    camModes() { return ['observer']; }, // one overview camera now: drag to orbit it, Front snaps back to straight on
     /** Show only the views that make sense for this tank; slide to Front if the current one stopped making sense. */
     syncCams() {
       const ms = this.camModes(), cur = this.R.cam.mode; this._camKey = ms.join();
       { const lb = $('camLbl'); if (lb) lb.textContent = (JT.CAMS[cur] && JT.CAMS[cur].label || 'View').replace(/^Isometric$/, 'Iso'); }
-      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur); });
+      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur && this.R.straightFront); }); this._camFront = this.R.straightFront;
       if (!this.obs && cur !== 'follow' && !ms.includes(cur)) { this.R.setMode('observer'); document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => b.classList.toggle('on', b.dataset.cam === 'observer')); }
     },
+    /** Back to the straight-on front view (leaves Observe / follow too). */
+    frontView() { if (this.obs) this.toggleObserve(false); else if (this.R.cam.mode === 'follow') this.setCam('observer'); this.R.resetView(); this.syncCams(); },
     setCam(m) {
       if (m !== 'follow' && !this.camModes().includes(m)) m = 'observer';
       if (m === 'follow' && this.R.cam.mode !== 'follow') this._prevCam = this.R.cam.mode;
@@ -1357,7 +1359,7 @@
       row(hs, 'All tanks…', () => this.sub(back, () => this.tanksModal()), false, g.habs.length + ' of ' + JT.MAX_HABS + ((g.state.cup || []).length ? ' · ' + g.state.cup.length + ' in the holding cup' : ''));
       // view
       const vs = sect('View');
-      segRow(vs, 'Camera', this.camModes().map(m => [m, JT.CAMS[m].label.replace(/^Isometric$/, 'Iso')]), this.R.cam.mode, (m) => { this.setCam(m); this.moreSheet(); });
+      row(vs, 'Front view', () => { this.closeModal(); this.frontView(); }, false, 'Drag the tank to orbit · this snaps back to straight on');
       segRow(vs, 'Time', [['auto', 'Natural'], ['day', 'Day'], ['night', 'Night']], g.state.timeMode, (m) => { this.setTimeMode(m); this.moreSheet(); });
       row(vs, this.obs ? 'Stop observing' : 'Observe a jumper', () => { this.closeModal(); this.toggleObserve(!this.obs); });
       if (this.hab.spiders.length) row(vs, 'Ambient TV', () => { this.closeModal(); this.tvMode(true); }, false, 'Hands-free watching: the camera picks the moments. Tap to come back.');
@@ -1434,12 +1436,12 @@
       const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
       q.appendChild(seg); w.appendChild(q);
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Art style')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['hd2d', 'HD-2D'], ['cuphead', 'Cuphead'], ['storybook', 'Storybook']]) { const b = el('button', (s.art || 'hd2d') === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
+        for (const [v, l] of [['hd2d', 'HD-2D'], ['cuphead', 'Cuphead'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Cuphead: 1930s cartoon on old film. Storybook: ink and watercolour.')); w.appendChild(fr); }
-      if ((s.art || 'hd2d') === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel size')); const sg = el('div', 'seg small');
+      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel size')); const sg = el('div', 'seg small');
         for (const [v, l] of [['fine', 'Fine'], ['classic', 'Classic'], ['chunky', 'Chunky']]) { const b = el('button', (s.pixel || 'classic') === v ? 'on' : '', l); b.onclick = () => { s.pixel = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); w.appendChild(fr); }
-      if ((s.art || 'hd2d') === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
+      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
         for (const [v, l] of [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']]) { const b = el('button', (s.blur || 'light') === v ? 'on' : '', l); b.onclick = () => { s.blur = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Depth-of-field and tilt-shift blur around the edges of the view')); w.appendChild(fr); }
       if (s.art === 'cuphead') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Old film')); const sg = el('div', 'seg small');
@@ -1508,7 +1510,7 @@
     // ------------------------------------------------ per-frame
     update(dt) {
       this._t += dt; this._panelT += dt; this._hudT = (this._hudT || 0) + dt;
-      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join()) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
+      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join() || this._camFront !== this.R.straightFront) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
       const g = this.game; const h = g.hab;
       if (this.obs) this.updateObs(dt);
       if (this.photo && this.R.fcam && performance.now() - this.photo.t0 > 1600) this.R.fcam.pause = Math.max(this.R.fcam.pause || 0, 1.5); // photo mode: after the close-up settles, the camera stays where you put it

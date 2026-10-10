@@ -897,7 +897,7 @@ body.cuphead #app .clock{font-family:var(--cupF);font-weight:800;text-transform:
     <div class="clock"><span id="dayLbl">Day 1</span><span id="timeLbl">8:00</span></div>
     <div class="tb-right desktop-only">
     <div id="cams" class="seg desktop-only" aria-label="Camera">
-      <button data-cam="iso" title="Isometric (1)">Iso</button><button data-cam="observer" title="Front (2)">Front</button><button data-cam="reverse" title="Back (3)">Back</button><button data-cam="left" title="Left side (3)">Left</button><button data-cam="right" title="Right side (4)">Right</button>
+      <button data-cam="observer" title="Straight front view (1) · drag the tank to orbit">Front</button>
     </div>
     <button id="btnObserve" class="txt desktop-only" title="Observation Mode (O)">Observe</button>
     <button id="btnMore" class="txt" title="More" aria-label="More" aria-expanded="false">⋯</button>
@@ -929,8 +929,8 @@ body.cuphead #app .clock{font-family:var(--cupF);font-weight:800;text-transform:
   <aside id="spiderPanel" class="hidden"></aside>
 
   <div id="camCtl" aria-label="Camera">
-    <div id="camList"><button data-cam="iso">Iso</button><button data-cam="observer">Front</button><button data-cam="reverse">Back</button><button data-cam="left">Left</button><button data-cam="right">Right</button><button id="camRecentre">Re-centre</button></div>
-    <button id="camToggle" aria-expanded="false" aria-label="Camera view" title="Camera view"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2L8 6h8l1.8 2.5H21V19H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span id="camLbl">Iso</span></button>
+    <div id="camList"><button id="camRecentre">Re-centre</button></div>
+    <button id="camToggle" aria-expanded="false" aria-label="Front view" title="Straight front view · drag the tank to orbit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5h3.2L8 6h8l1.8 2.5H21V19H3z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span id="camLbl">Front</span></button>
   </div>
 
   <div id="modeBar" class="hidden">

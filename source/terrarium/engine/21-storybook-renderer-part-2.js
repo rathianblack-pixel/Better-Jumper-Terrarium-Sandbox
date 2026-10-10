@@ -130,7 +130,7 @@ void main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,u
   const NEUTRAL = { kd: 1, key: [1, 1, 1], amb: [1, 1, 1] };
   const hexRGB = (h) => GM.rgb(h);
   const toHex = (c) => '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join('');
-  const towardPaper = (h, t) => { if (JT.HD2D && JT.HD2D.on) t *= JT.HD2D.cup ? 0.85 : 0.3; const c = hexRGB(h); return toHex([c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t]); };
+  const towardPaper = (h, t) => { if (JT.HD2D && JT.HD2D.on) t *= JT.HD2D.toon ? 0.85 : 0.3; const c = hexRGB(h); return toHex([c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t]); };
 
   // v1.3 still-camera cache: copy colour + depth of the cached static layer onto the screen (WebGL2)
   const BLIT_VS = `#version 300 es
@@ -390,15 +390,15 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     frame(V, hab, night, lamps, scene) {
       const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
-      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.cup); this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
-      const CLR = HDT ? (CUP ? JT.HD2D.clearCup : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
+      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.toon); const TS = CUP ? JT.HD2D.toonSty() : null; this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
+      const CLR = HDT ? (CUP ? TS.clear : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
       const SK = JT.SKY; const grade = SK.grade.slice();
       const lampU = new Float32Array(16); const LL = []; lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
       this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, VW, VH); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
       const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT;
-      let outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; let lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k; if (CUP) { outPx = Math.max(outPx * 1.55, 1.6 / PXF); lw = Math.max(lw * 1.15, 1.0 / PXF); } else if (HDT) { outPx = Math.max(outPx * 0.8, 1.05 / PXF); lw = Math.max(lw, 1.0 / PXF); }
+      let outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; let lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k; if (CUP) { outPx = Math.max(outPx * TS.out, 1.3 / PXF); lw = Math.max(lw * 1.15, 1.0 / PXF); } else if (HDT) { outPx = Math.max(outPx * 0.8, 1.05 / PXF); lw = Math.max(lw, 1.0 / PXF); }
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
       const drawList = hg.meshes.filter(o => visible(o.g)); for (const o of drawList) o._dz = V.depth(o.g._sb.c); drawList.sort((a, b) => a._dz - b._dz); // near first: early depth rejection
@@ -407,7 +407,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       const decorPass = (list) => {
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
         let P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
-        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); if (CUP) gl.uniform3f(P.u.uInk, 0.05, 0.04, 0.035); else gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uBoil, CUP && !JT.HD2D.still ? 1 + Math.floor(performance.now() / 83) % 64 : 0); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uHD, this._hd);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); if (CUP) gl.uniform3f(P.u.uInk, TS.ink[0], TS.ink[1], TS.ink[2]); else gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uBoil, CUP && TS.boil ? 1 + Math.floor(performance.now() / 83) % 64 : 0); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uHD, this._hd);
         for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
           gl.uniform1f(P.u.uPass, pass ? 0 : 1);
           for (const o of list) { const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); gl.uniform2f(P.u.uGnd, o.g.def.cat === 'ground' || o.g.def.arche === 'wallmount' ? 0 : 1, o.g.baseY); this.drawMesh(P, o.m); }
@@ -635,7 +635,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       const quad = (s, out) => { const t = this.gradeAt(s.it.p); const big = s.rp * V.s / s.ps; const x0 = s.q[0] - big, x1 = s.q[0] + big, y0 = s.q[1] - big, y1 = s.q[1] + big; const u0 = s.ax / AW, u1 = (s.ax + s.rp * 2) / AW, v0 = s.ay / AH, v1 = (s.ay + s.rp * 2) / AH;
         const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], s.sc || 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
-      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); const HPp = this._hdPost; gl.uniform1f(P.u.uHD, HPp ? 1 : this._hd === 2 ? -1 : 0); gl.uniform1f(P.u.uPx, HPp ? Math.max(1, 1 / HPp.f) : this._hd === 2 ? 2.2 * k * (this._cupF || 1) : 1); if (this._hd === 2) { gl.uniform3f(P.u.uInk, 0.05, 0.04, 0.035); gl.uniform1f(P.u.uInkAmt, 1); }
+      const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); const HPp = this._hdPost; gl.uniform1f(P.u.uHD, HPp ? 1 : this._hd === 2 ? -1 : 0); gl.uniform1f(P.u.uPx, HPp ? Math.max(1, 1 / HPp.f) : this._hd === 2 ? JT.HD2D.toonSty().spr * k * (this._cupF || 1) : 1); if (this._hd === 2) { const ti = JT.HD2D.toonSty().ink; gl.uniform3f(P.u.uInk, ti[0], ti[1], ti[2]); gl.uniform1f(P.u.uInkAmt, 1); }
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       const HP = this._hdPost; if (HP) { gl.disable(gl.DEPTH_TEST); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, HP.dt2); gl.uniform1i(P.u.uDepT, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform2f(P.u.uOut, W, H); }
       gl.uniform1f(P.u.uOcc, HP ? 1 : 0);

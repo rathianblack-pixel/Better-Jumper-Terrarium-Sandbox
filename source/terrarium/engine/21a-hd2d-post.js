@@ -105,6 +105,11 @@ void main(){
 
   const HD = {
     clear: [0.12, 0.13, 0.15], clearCup: [0.93, 0.87, 0.74],
+    /** Styles drawn at screen resolution with cel shading and ink: Cuphead. */
+    get art() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); const t = s && s.art; return t === 'cuphead' || t === 'storybook' ? t : 'hd2d'; },
+    get toon() { return this.art === 'cuphead'; },
+    TOON: { cuphead: { clear: [0.93, 0.87, 0.74], ink: [0.05, 0.04, 0.035], out: 1.55, spr: 2.2, boil: true } },
+    toonSty() { return this.TOON[this.art] || this.TOON.cuphead; },
     get cup() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); return !!s && s.art === 'cuphead'; },
     get on() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); return !s || s.art !== 'storybook'; },
     _P: null,
@@ -113,14 +118,14 @@ void main(){
     fbo(gl, ct, dt) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ct, 0); if (dt) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dt, 0); const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return ok ? f : null; },
     free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD']) if (T[k]) gl.deleteTexture(T[k]); },
     /** Pixel size in CSS px: ~2 px on a laptop, a little finer on phones. */
-    pxSize(R) { const s = R.set || {}; if (this.cup) return Math.max(1 / (R.k || 1), 0.5); const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
-    blurK(R) { if (this.cup) return 1; const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
+    pxSize(R) { const s = R.set || {}; if (this.toon) return Math.max(1 / (R.k || 1), 0.5); const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
+    blurK(R) { if (this.toon) return 1; const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
     /** Cuphead "pie-cut" eye shine: a white wedge cut out of a black eye, pointing toward the light. */
     pie(ctx, x, y, r, ang) { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); const cx = x + Math.cos(ang) * r * 0.12, cy = y + Math.sin(ang) * r * 0.12; ctx.moveTo(cx, cy); ctx.arc(cx, cy, r * 0.66, ang - 0.62, ang + 0.62); ctx.closePath(); ctx.fill(); },
     filmK(R) { const f = (R.set || {}).film; return f === 'off' ? 0 : f === 'full' ? 1 : 0.55; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
-      const key = on ? (this.cup ? 'cup' : 'hd') : 'off'; if (this._was === key) return; this._was = key; gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg = null;
-      const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.toggle('cuphead', key === 'cup'); } },
+      const key = on ? (this.toon ? this.art : 'hd') : 'off'; if (this._was === key) return; this._was = key; gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg = null;
+      const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.toggle('cuphead', key === 'cuphead'); b.classList.remove('art-sketch', 'art-ukiyo'); } },
     begin(gp, W, H) {
       const gl = gp.gl; const on = gp.gl2 && this.on && !gp._hdBroken; this.sync(gp, on); if (!on) return null;
       const f = M.clamp(1 / (this.pxSize(gp.R) * (gp.R.k || 1)), 0.08, 1); const w = Math.max(16, Math.round(W * f)), h = Math.max(16, Math.round(H * f));
@@ -145,7 +150,7 @@ void main(){
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.BLEND);
       // depth-of-field source: half-res, blurred twice (wide, soft bokeh)
       this.pass(gp, P.down, T.fA, T.hw, T.hh, T.ct, (p) => gl.uniform2f(p.u.uTexel, 1 / T.w, 1 / T.h));
-      const cup = this.cup; const bk = this.blurK(gp.R); for (const st of (bk === 0 ? [] : cup || bk < 0.5 ? [1.0] : [1.0, 2.2])) {
+      const cup = this.toon; const bk = this.blurK(gp.R); for (const st of (bk === 0 ? [] : cup || bk < 0.5 ? [1.0] : [1.0, 2.2])) {
         this.pass(gp, P.blur, T.fB, T.hw, T.hh, T.tA, (p) => gl.uniform2f(p.u.uDir, st / T.hw, 0));
         this.pass(gp, P.blur, T.fA, T.hw, T.hh, T.tB, (p) => gl.uniform2f(p.u.uDir, 0, st / T.hh)); }
       // bloom: bright parts at quarter res, blurred wide
