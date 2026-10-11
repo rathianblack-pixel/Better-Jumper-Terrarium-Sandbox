@@ -329,7 +329,7 @@
       if (dead > 0.01) { fu *= 1 - 0.45 * dead; fv *= 1 - 0.4 * dead; }
       const mvS = RG ? 0 : moving; fu += Math.sin(ph) * L * 0.075 * mvS; fw += Math.max(0, Math.cos(ph)) * L * 0.05 * mvS;
       const tapK = RG && mid ? JT.Gait.tapOf(RG, lk) : 0; if (tapK > 0.001) { fu += L * 0.05 * tapK; fw += L * 0.08 * tapK; }
-      if (RG && RG.land > 0 && RG.bob < 0) fv *= 1 + Math.max(0, -RG.bob) / L * 2.5 * RG.land; // landing: legs splay to take the weight
+      if (RG && RG.bob < 0) fv *= 1 + Math.max(0, -RG.bob) / L * 2.5; // landing: legs splay to take the weight
       if (threat) { fv *= 1.15; } if (sleep) fv *= 0.92;
       if (air) { fu = (mid ? 0.12 : -0.3) * L; fv *= 0.75; fw = h0 * 0.5; }
       if (o.curled) { fu *= 0.6; fv *= 0.6; fw = h0 * 0.6; }

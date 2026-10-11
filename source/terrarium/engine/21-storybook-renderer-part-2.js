@@ -296,8 +296,14 @@ void main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=textu
       const F = this.F, SK = F.sky || NEUTRAL, L = JT.LIGHT;
       const TR = JT.Terrain; const tm = hg.ter && !PT.ptNoTer ? this.terrainMesh(hab, hg) : null; const gm = TR ? this.groundMarks(hab, night) : null;
       const wet = TR ? (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1) : 0; const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0;
-      const key = vk + '|' + hg.key + '|' + hab.data.bg + '|' + gt.key + '|' + F.lamps.length + '|' + (tm ? tm.lk + ':' + tm.n : '-') + '|' + Math.round(wet * 100) + ',' + Math.round(rw * 100)
-        + '|' + (gm && gm.n ? gm.t + ':' + gm.sig + ':' + gm.n : '-') + '|' + (hg.csKey || '') + '|' + (PT.ptNoInk ? 1 : 0) + '|' + live.map(o => o.inst.id).join(',');
+      // v32.2: footprints / mounds / rain pools: every new print used to change the key (prey scattering in a shower = a full
+      // repaint of the ground layer several times a second). New marks are now folded in at most every 0.8 s.
+      const gmT = gm && gm.n ? gm.sig + ':' + gm.n + ':' + Math.floor(gm.t / 1.5) : '-';
+      if (gmT !== this._gmRaw && (this._gmRaw === undefined || now - (this._gmTokT || 0) > 800 || (gmT === '-') !== (this._gmRaw === '-'))) { this._gmRaw = gmT; this._gmTok = gmT; this._gmTokT = now; }
+      const gmTok = this._gmTok || '-';
+      // v32.2: wetness is quantised (5% steps) - rain soaking/drying changed it every frame and forced a full ground repaint
+      const key = vk + '|' + hg.key + '|' + hab.data.bg + '|' + gt.key + '|' + F.lamps.length + '|' + (tm ? tm.lk + ':' + tm.n : '-') + '|' + Math.round(wet * 20) + ',' + Math.round(rw * 20)
+        + '|' + gmTok + '|' + (hg.csKey || '') + '|' + (PT.ptNoInk ? 1 : 0) + '|' + live.map(o => o.inst.id).join(',');
       const soft = [F.grade[0], F.grade[1], F.grade[2], night, SK.kd, SK.key[0], SK.key[1], SK.key[2], SK.amb[0], SK.amb[1], SK.amb[2], L[0], L[1], L[2]]; for (let i = 0; i < F.lampU.length; i++) soft.push(F.lampU[i]);
       let C = this._cache;
       if (C && C.key === key && C.W === W && C.H === H && C.soft && C.soft.length === soft.length) { let d = 0; for (let i = 0; i < soft.length; i++) d = Math.max(d, Math.abs(soft[i] - C.soft[i]));
@@ -831,7 +837,7 @@ void main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=textu
       for (const s of order) {
         if (direct ? s.ay - 1 + s.rp * 2 + 2 > ATH : s.ay + s.rp * 2 > ATH) { s.skip = true; continue; }
         const k = s.it.key, pv = k ? SC.get(k) : null; s.ps = V.s * s.sc;
-        if (reuse && pv && !s.it.xr && !s.it.hot && pv.sig === sig && pv.ax === s.ax && pv.ay === s.ay && pv.rp === s.rp && sf - pv.f < 2 && ((sf + pv.h) & 1)) { s.ps = pv.ps; s.keep = true; continue; }
+        if (reuse && pv && !s.it.xr && !s.it.hot && pv.sig === sig && pv.ax === s.ax && pv.ay === s.ay && pv.rp === s.rp && (s.it.still ? sf - pv.f < 24 : sf - pv.f < 2 && ((sf + pv.h) & 1))) { s.ps = pv.ps; s.keep = true; continue; }
         if (k) SC.set(k, { ax: s.ax, ay: s.ay, rp: s.rp, ps: s.ps, f: sf, sig, h: k.charCodeAt(k.length - 1) & 1 }); // id parity: half the critters refresh on odd frames, half on even
         let g = g0, ox = 0, oy = 0, sc0 = null; const S = s.rp * 2 + 2;
         if (direct) { sc0 = pool.get(S); if (!sc0) { const c = mkCanvas(S, S); sc0 = { c, g: c.getContext('2d', { willReadFrequently: true }) }; pool.set(S, sc0); } sc0.f = sf; g = sc0.g; ox = 1 - s.ax; oy = 1 - s.ay;

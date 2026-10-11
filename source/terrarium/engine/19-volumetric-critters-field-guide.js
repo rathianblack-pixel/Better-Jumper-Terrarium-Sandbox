@@ -171,28 +171,42 @@
   /** Art style of the shadows: 0 storybook (soft), 1 HD-2D (two hard pixel levels), 2 Cuphead (flat hard shape). */
   function shArt() { const H = JT.HD2D; const w = H && H._was; return w === 'hd' ? 1 : w === 'cuphead' ? 2 : 0; }
   /** Fill a set of screen ellipses [x, y, r1, r2, ang] + strokes [[pts], w] as one shadow. soft 0..1 widens the penumbra. */
-  // v32.1: a shadow is ONE path (ellipses + legs turned into capsules, all wound the same way) filled once, so overlapping
-  // pieces never stack into dark blotches. No scratch canvas: drawing a canvas into the CPU-side sprite sheet forced a
-  // GPU read-back per shadow, which made v32 lag badly. Storybook gets its soft edge from a second, grown pass.
-  function capsule(g, a, b, r) {
-    const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy); if (d < 0.01) { g.moveTo(a[0] + r, a[1]); g.arc(a[0], a[1], r, 0, 6.283); return; }
-    const ang = Math.atan2(dy, dx); g.moveTo(a[0] + r * Math.cos(ang + 1.5708), a[1] + r * Math.sin(ang + 1.5708));
-    g.arc(a[0], a[1], r, ang + 1.5708, ang + 4.7124); g.arc(b[0], b[1], r, ang - 1.5708, ang + 1.5708); g.closePath();
+  // v32: a shadow is painted as ONE union shape (opaque into a small scratch canvas, then composited once at the shadow's
+  // opacity), so overlapping body / leg pieces never stack up into dark blotches. The scratch is drawn at reduced
+  // resolution and smoothed back up: a cheap soft penumbra that widens with height (Storybook); HD-2D keeps hard pixels,
+  // Cuphead a flat crisp shape.
+  const SHB = { c: null, g: null };
+  function shBuf(w, h) {
+    if (typeof document === 'undefined') return null;
+    if (!SHB.c) { SHB.c = document.createElement('canvas'); SHB.c.width = 64; SHB.c.height = 64; SHB.g = SHB.c.getContext('2d'); }
+    if (SHB.c.width < w || SHB.c.height < h) { SHB.c.width = Math.max(SHB.c.width, Math.ceil(w / 32) * 32); SHB.c.height = Math.max(SHB.c.height, Math.ceil(h / 32) * 32); SHB.g = SHB.c.getContext('2d'); }
+    return SHB;
   }
-  function shapePath(g, ells, strokes, grow) {
-    g.beginPath();
-    for (const e of ells) { const r1 = Math.max(0.3, e[2] * grow), r2 = Math.max(0.3, e[3] * grow + (grow - 1) * e[2] * 0.25); g.moveTo(e[0] + r1 * Math.cos(e[4]), e[1] + r1 * Math.sin(e[4])); g.ellipse(e[0], e[1], r1, r2, e[4], 0, 6.283); }
-    for (const [pts, w] of strokes) { const r = Math.max(0.25, w * (1 + (grow - 1) * 2)) / 2; for (let i = 1; i < pts.length; i++) capsule(g, pts[i - 1], pts[i], r); }
-    g.fill('nonzero');
+  function shapePath(g, ells, strokes, k, grow) {
+    g.beginPath(); for (const e of ells) { const r1 = Math.max(0.3, e[2] * grow), r2 = Math.max(0.3, e[3] * grow + (grow - 1) * e[2] * 0.25); g.moveTo(e[0] + r1 * Math.cos(e[4]), e[1] + r1 * Math.sin(e[4])); g.ellipse(e[0], e[1], r1, r2, e[4], 0, 6.283); } g.fill();
+    if (strokes.length) { g.lineCap = 'round'; g.lineJoin = 'round'; for (const [pts, w] of strokes) { g.lineWidth = Math.max(0.5, w * (1 + (grow - 1) * 2)); g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); } }
   }
   /** Fill a set of screen ellipses [x, y, r1, r2, ang] + strokes [[pts], w] as one shadow at opacity a. soft 0..1 widens the penumbra. */
   function paintShadow(ctx, ells, strokes, a, soft, blurPx) {
-    if (a < 0.004 || (!ells.length && !strokes.length)) return; const art = shArt(); const ga = ctx.globalAlpha; ctx.globalAlpha = 1;
-    const col = art === 2 ? 'rgba(26,14,24,' : 'rgba(12,8,4,';
-    const one = (grow, al) => { if (al < 0.003) return; ctx.fillStyle = col + al.toFixed(3) + ')'; shapePath(ctx, ells, strokes, grow); };
+    if (a < 0.004 || (!ells.length && !strokes.length)) return; const art = shArt(); const ga = ctx.globalAlpha;
+    const col = art === 2 ? 'rgb(26,14,24)' : 'rgb(12,8,4)';
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const e of ells) { const r = Math.max(e[2], e[3]) * 1.35 + 1; x0 = Math.min(x0, e[0] - r); x1 = Math.max(x1, e[0] + r); y0 = Math.min(y0, e[1] - r); y1 = Math.max(y1, e[1] + r); }
+    for (const [pts, w] of strokes) for (const q of pts) { const r = w * 1.5 + 1; x0 = Math.min(x0, q[0] - r); x1 = Math.max(x1, q[0] + r); y0 = Math.min(y0, q[1] - r); y1 = Math.max(y1, q[1] + r); }
+    const W0 = x1 - x0, H0 = y1 - y0; if (!(W0 > 0 && H0 > 0) || W0 > 4000 || H0 > 4000) return;
+    // blur radius in screen px -> scratch scale (1 / blur)
+    const size = Math.max(W0, H0); const blur = art === 2 ? 0 : art === 1 ? 2 : Math.max(1, blurPx != null ? blurPx : size * (0.03 + 0.06 * soft));
+    const k = art === 2 ? 1 : art === 1 ? 0.5 : M.clamp(1 / blur, 0.12, 0.8);
+    const pad = art === 0 ? Math.ceil(blur * 1.5) + 2 : 2; const bx = x0 - pad, by = y0 - pad, bw = W0 + pad * 2, bh = H0 + pad * 2;
+    const sw = Math.ceil(bw * k) + 2, shh = Math.ceil(bh * k) + 2; const B = shBuf(sw, shh);
+    const one = (grow, al) => { if (al < 0.003) return;
+      if (!B) { ctx.globalAlpha = 1; ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',' + al.toFixed(3) + ')'); ctx.strokeStyle = ctx.fillStyle; shapePath(ctx, ells, strokes, 1, grow); return; }
+      const g = B.g; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, sw + 1, shh + 1);
+      g.setTransform(k, 0, 0, k, -bx * k + 1, -by * k + 1); g.fillStyle = col; g.strokeStyle = col; shapePath(g, ells, strokes, k, grow);
+      ctx.save(); ctx.globalAlpha = al; ctx.imageSmoothingEnabled = art !== 1; ctx.drawImage(B.c, 0, 0, sw, shh, bx - 1 / k, by - 1 / k, sw / k, shh / k); ctx.restore(); };
     if (art === 2) one(1, Math.min(0.42, a * 1.1));
     else if (art === 1) { one(1.15 + soft * 0.25, a * 0.42); one(0.9, a * 0.5); }
-    else { one(1.18 + soft * 0.45, a * 0.4); one(0.96, a * 0.62); }
+    else one(1 + soft * 0.25, a);
     ctx.globalAlpha = ga;
   }
   /** Body plan of a shadow in body units (×L): ellipses [u, halfLen, halfW], legs [angle, reach, kneeLift], arm strokes. */
@@ -450,7 +464,7 @@
       const ph = gait === 'choppy' ? (sp._walk || 0) * Math.PI * (1 + 0.17 * lk) + lk * 1.37 : (sp._walk || 0) * Math.PI + (i % 2) * Math.PI + (sd > 0 ? Math.PI : 0);
       const sw = gait === 'glide' ? 0.7 : 1;
       const mvS = RG ? 0 : moving; // with a rig the feet are planted and step on their own (no sliding sine wobble)
-      let fu = FU[i] * L * lg + Math.sin(ph) * L * 0.12 * mvS * lg * sw, fv = FV[i] * L * sd * (1 + crouch * 0.12 + (RG && RG.land > 0 ? Math.max(0, -RG.bob) / L * 3 * RG.land : 0)) * (1 + (lg - 1) * 0.6), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * mvS * sw;
+      let fu = FU[i] * L * lg + Math.sin(ph) * L * 0.12 * mvS * lg * sw, fv = FV[i] * L * sd * (1 + crouch * 0.12 + (RG ? Math.max(0, -RG.bob) / L * 3 : 0)) * (1 + (lg - 1) * 0.6), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * mvS * sw;
       const tapK = RG ? JT.Gait.tapOf(RG, lk) : 0; if (tapK > 0.001) { fu += L * 0.05 * tapK; fw += L * 0.11 * tapK; }
       // pre-jump: the hind legs gather in under the body, loading up
       const load = (sp._prepT > 0 || (sp.state === 'lunge' && sp.st < 0.3)) && !o.airborne ? 1 : 0; if (load && i >= 2) { fu += L * 0.07; fv *= 0.92; }
