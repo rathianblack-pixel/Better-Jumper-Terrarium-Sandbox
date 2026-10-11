@@ -32,8 +32,8 @@
       this.cur = null; // smoothed {yaw,pitch,scale,c}
       this.fx = []; this.particles = []; this.ghost = null; this.hover = null;
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
-      this.fps = 60; this._autoLow = false; this._autoLvl = 0; this.targetFps = 60; this.time = 0;
-      { const t = JT.Device.tier; if (t === 'low') { this._autoLvl = 2; this._closeK = 1.4; } else if (t === 'mid') { this._autoLvl = 1; this._closeK = 1.6; } } // v29: weaker Android phones start one or two steps lower (Auto can still step back up)
+      this.fps = 60; this.softS = 1; this._sMiss = 0; this._sGood = 0; this._sHold = 0; this._sUpWait = 3; this._sUpT = -1e9; this._sDownT = -1e9; this._autoLow = false; this._autoLvl = 0; this.targetFps = 60; this.time = 0;
+      { const t = JT.Device.tier; if (t === 'low') { this._autoLvl = 1; this._closeK = 1.4; this.softS = 0.7; } else if (t === 'mid') { this._autoLvl = 0; this._closeK = 1.6; this.softS = 0.8; } } // v29: weaker Android phones start lower; v31: the soft layer takes the cut first, so lines stay sharp // v29: weaker Android phones start one or two steps lower (Auto can still step back up)
       this.V = new JT.View(0.5, 0.6, 1, 0, 0, [0, 0, 0]);
       this.glc = root.document && root.document.getElementById('glview'); this.gp = null; this.initGL();
       this.resize();
@@ -147,22 +147,40 @@
       return [[0, 0], [dm.w, 0], [dm.w, dm.d], [0, dm.d]];
     }
 
+    /** v31 dynamic resolution of the soft layer only (backdrop, ground, shadows, decor colour): small steps every few frames to hold
+        the target rate, while ink lines, critters and text stay at full resolution. Changing it costs nothing (no buffers are
+        rebuilt), so it reacts within a fraction of a second; only once it sits at its floor does the whole canvas step down. */
+    softOK() { const gp = this.gp; return !!(gp && gp.gl2 && !gp._splitBroken && !(this.set.perf && this.set.ptNoSplit) && !(JT.HD2D && JT.HD2D.on && !JT.HD2D.toon)); }
+    softAtFloor() { return !this.softOK() || (this.softS || 1) <= this.softMin() + 1e-3; }
+    softMin() { return JT.Device.tier === 'low' ? 0.5 : 0.55; }
+    softCtl(dt) {
+      const st = this.set; if (st.perf && st.ptSoft) { this.softS = M.clamp(+st.ptSoft || 1, 0.5, 1); return; }
+      if (!this.softOK() || !this.gp._direct || dt <= 0 || dt > 0.25) return; // only frames that really paint the soft layer count
+      const now = this.time, tgt = this.targetFps || 60, slow = dt > 1 / (tgt * 0.88);
+      this._sMiss = this._sMiss * 0.9 + (slow ? 0.1 : 0); this._sHold = Math.max(0, this._sHold - dt);
+      if (this._sMiss > 0.3 && !this._sHold && this.softS > this.softMin() + 1e-3) {
+        this.softS = Math.max(this.softMin(), +(this.softS - 0.08).toFixed(3)); this._sHold = 0.35; this._sGood = 0; this._sMiss = 0.15;
+        if (now - this._sUpT < 3) this._sUpWait = Math.min(60, this._sUpWait * 2); this._sDownT = now; return; }
+      if (now - this._sDownT > 15) this._sUpWait = 3;
+      this._sGood = this._sMiss < 0.04 ? this._sGood + dt : 0;
+      if (this._sGood > this._sUpWait && this.softS < 1) { this.softS = Math.min(1, +(this.softS + 0.04).toFixed(3)); this._sGood = 0; this._sUpT = now; }
+    }
     // ---------------- main render ----------------
     render(dt) {
       // the canvas must always match its on-screen box (after a rotation it can lag a frame or two behind)
       { const c = this.cv, cw = c.clientWidth, ch = c.clientHeight; if (cw !== this._cw || ch !== this._ch || (cw > 0 && (Math.abs(c.width - cw * this.k) > 2 || Math.abs(c.height - ch * this.k) > 2))) this.resize(); }
       this.time += dt; const game = this.game; const hab = game.hab; if (!hab) return;
-      if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05;
+      if (dt > 0) { this.fps = this.fps * 0.95 + (1 / Math.max(1e-3, dt)) * 0.05; this.softCtl(dt); const sf = this.softAtFloor();
         // GPU-bound phones: settle once on a lighter resolution if the frame rate stays low
         // GPU-bound phones: step the resolution down (2x -> 1.6x -> 1.25x) if frames keep missing the current target rate
         const close = this.cam.mode === 'follow'; if (close !== !!this.closeCam) { this.closeCam = close; this._cSlow = 0; this._cFast = 0; this.fps = 60; this.resize(); }
         if (this.set.quality === 'auto' && close) { // close-up: 1.6x -> 1.4x -> 1.25x if frames keep missing; never steps back up
           // (every resolution change rebuilds the canvas = a visible hitch, so it moves rarely and only one way)
           const ck = this._closeK || 1.6; this._cHold = Math.max(0, (this._cHold || 0) - dt);
-          this._cSlow = this.fps < this.targetFps * 0.8 ? (this._cSlow || 0) + dt : Math.max(0, (this._cSlow || 0) - dt * 0.5);
+          this._cSlow = sf && this.fps < this.targetFps * 0.8 ? (this._cSlow || 0) + dt : Math.max(0, (this._cSlow || 0) - dt * 0.5);
           if (this._cSlow > 2 && ck > 1.25 && !this._cHold) { this._closeK = Math.max(1.25, +(ck - 0.18).toFixed(2)); this._cSlow = 0; this._cHold = 3; this.fps = this.targetFps; this.resize(); }
         } else
-        if (this.set.quality === 'auto') { this._slowT = this.fps < this.targetFps * 0.75 && this.time > 5 ? (this._slowT || 0) + dt : 0;
+        if (this.set.quality === 'auto') { this._slowT = sf && this.fps < this.targetFps * 0.75 && this.time > 5 ? (this._slowT || 0) + dt : 0;
           if (this._slowT > 3 && (this._autoLvl || 0) < 3) { this._autoLvl = (this._autoLvl || 0) + 1; this._autoLow = this._autoLvl >= 3; this._slowT = -4; this._fastT = 0; this.fps = this.targetFps; this.resize(); }
           // v12: step back up (max twice per session) when a slowdown was only temporary
           this._fastT = this.fps >= this.targetFps * 0.97 && this._slowT >= 0 ? (this._fastT || 0) + dt : 0;

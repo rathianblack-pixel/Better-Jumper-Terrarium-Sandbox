@@ -222,7 +222,7 @@ body.lite .rays i:nth-child(n+3), body.lite .scratch { display: none; }
 body.lite .grain, body.lite h1 { animation: none !important; }
 body.lite .card .shot img { animation: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } #bg { transition: none; } }
-/* intro film + menu loop (pre-rendered video, falls back to the still picture) */
+/* intro film (pre-rendered video, one per orientation; the menu shows the still picture) */
 #vbg { position: fixed; inset: 0; pointer-events: none; background: transparent; }
 #vbg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
 #vbg video.on { opacity: 1; }
@@ -424,25 +424,19 @@ body.intro #ibar { display: flex; animation: ibar .6s ease .8s both; }
   }
   addEventListener('pageshow', function (e) { if (e.persisted) { if (Vid) Vid.update(); leaving = false; document.body.classList.remove('leaving'); $('zoom').style.display = 'none'; $('zoom').classList.remove('full'); renderMenu(); renderCards(); } });
 
-  /* ---------- intro film (plays once per visit, with music) then a seamless menu loop ---------- */
+  /* ---------- intro film (plays once per visit, with music; its shots alternate between the three art styles), then the still menu art ---------- */
   Vid = (function () {
     var vi = $('vI'), L = [$('vL1'), $('vL2')], lc = 0, started = false, onPick = false;
     var ok = !rm && !(nav.connection && nav.connection.saveData) && !!vi.canPlayType && vi.canPlayType('video/mp4') !== '';
     var orient = function () { return innerHeight > innerWidth ? 'portrait' : 'landscape'; };
-    var src = function (kind) { return 'intro/' + kind + '-' + art + '-' + orient() + '.mp4'; };
+    var src = function () { return 'intro/intro-' + orient() + '.mp4'; };
     var quiet = function (p) { if (p && p.catch) p.catch(function () {}); return p; };
     var drop = function (v) { v.pause(); v.removeAttribute('src'); try { v.load(); } catch (e) {} };
-    function loop() {
-      if (!ok || introOn || onPick || document.hidden) return;
-      var want = src('loop'), cur = L[lc];
-      if (cur.getAttribute('src') === want) { if (cur.paused) quiet(cur.play()); return; }
-      var nx = L[1 - lc], old = cur;
-      if (nx.getAttribute('src') !== want) nx.src = want;
-      var go = function () { nx.removeEventListener('playing', go); if (nx.getAttribute('src') !== want) return; nx.classList.add('on'); old.classList.remove('on'); lc = L.indexOf(nx); document.body.classList.add('vid');
-        setTimeout(function () { if (!old.classList.contains('on')) drop(old); if (!introOn) { vi.classList.remove('on'); setTimeout(function () { if (!introOn) drop(vi); }, 600); } }, 850); };
-      nx.addEventListener('playing', go); quiet(nx.play());
+    function loop() { // v31: no menu video; fade the film out and let the still art (with its own light and motes) take over
+      if (introOn) return; L.forEach(function (v) { if (v.getAttribute('src')) drop(v); });
+      if (vi.classList.contains('on')) { vi.classList.remove('on'); setTimeout(function () { if (!introOn) { drop(vi); document.body.classList.remove('vid'); } }, 600); }
+      else { if (vi.getAttribute('src')) drop(vi); document.body.classList.remove('vid'); }
     }
-    function preload() { var nx = L[1 - lc], want = src('loop'); if (nx.getAttribute('src') !== want) { nx.src = want; nx.load(); } }
     function fadeAudio() { var v = vi.volume, iv = setInterval(function () { v -= .08; if (v <= 0 || vi.paused) { clearInterval(iv); vi.muted = true; return; } vi.volume = v; }, 40); }
     function end(skip) {
       if (!introOn) return; introOn = false;
@@ -456,12 +450,11 @@ body.intro #ibar { display: flex; animation: ibar .6s ease .8s both; }
     function intro() {
       var seen = false; try { seen = sessionStorage.getItem('terrarium.introSeen') === '1'; } catch (e) {}
       if (!ok || seen || location.hash === '#pick') return false;
-      introOn = true; document.body.classList.add('intro', 'introfx', 'vid'); vi.src = src('intro');
+      introOn = true; document.body.classList.add('intro', 'introfx', 'vid'); vi.src = src();
       var shown = false, fail = setTimeout(function () { if (!shown) end(true); }, 5000); // slow network: never hold the menu hostage
       vi.addEventListener('playing', function () { if (shown) return; shown = true; clearTimeout(fail); vi.classList.add('on'); });
       vi.addEventListener('ended', function () { end(false); });
       vi.addEventListener('error', function () { if (introOn) end(true); });
-      vi.addEventListener('timeupdate', function tu() { if (vi.currentTime > 11) { vi.removeEventListener('timeupdate', tu); preload(); } });
       var muted = function () { vi.muted = true; $('isnd').style.display = ''; return quiet(vi.play()); };
       if (wantSound) { vi.muted = false; var p = vi.play(); if (p && p.catch) p.catch(muted); } else muted();
       $('iskip').onclick = function (e) { e.stopPropagation(); end(true); };
@@ -474,7 +467,7 @@ body.intro #ibar { display: flex; animation: ibar .6s ease .8s both; }
     }
     var rt = null;
     addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () {
-      if (introOn && vi._o !== orient()) { var t = vi.currentTime, m = vi.muted; vi._o = orient(); vi.src = src('intro'); vi.muted = m; vi.addEventListener('loadedmetadata', function lm() { vi.removeEventListener('loadedmetadata', lm); try { vi.currentTime = t; } catch (e) {} quiet(vi.play()); }); }
+      if (introOn && vi._o !== orient()) { var t = vi.currentTime, m = vi.muted; vi._o = orient(); vi.src = src(); vi.muted = m; vi.addEventListener('loadedmetadata', function lm() { vi.removeEventListener('loadedmetadata', lm); try { vi.currentTime = t; } catch (e) {} quiet(vi.play()); }); }
       else if (started) loop(); }, 250); });
     document.addEventListener('visibilitychange', function () { if (document.hidden) { L.forEach(function (v) { v.pause(); }); if (introOn) vi.pause(); } else if (introOn) quiet(vi.play()); else loop(); });
     return {

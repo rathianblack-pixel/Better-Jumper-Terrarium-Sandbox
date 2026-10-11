@@ -157,7 +157,7 @@
       // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
       if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
         if (lock30 && (now > lock30 || R._unlock30)) { lock30 = 0; R.fps = 60; lowT = 0; } R._unlock30 = false;
-        const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 3;
+        const floor = (R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 3) && R.softAtFloor();
         if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
         if (lock30) { lively = false; lockEnd = now; } }
       R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30; if (lively && idleUp) R.targetFps = 47; // idle 60 is a bonus: it never pushes the resolution down by itself
@@ -167,7 +167,7 @@
       lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
-          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + (R.gp && R.gp.splitS < 1 ? '  soft ' + R.gp.splitS.toFixed(2) : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }

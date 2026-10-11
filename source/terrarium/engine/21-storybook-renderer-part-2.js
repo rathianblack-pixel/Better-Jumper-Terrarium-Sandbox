@@ -230,6 +230,11 @@ in vec2 aXY; void main(){ gl_Position=vec4(aXY,0.5,1.0); }`;
   const BLIT_FS = `#version 300 es
 precision highp float; uniform sampler2D uCol; uniform highp sampler2D uDep; out vec4 oC;
 void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDepth=texelFetch(uDep,p,0).r; }`;
+  // v31 split resolution: the soft ground layer (backdrop, slab, floor, uneven ground, wet, shadows, lamp pools — many full-screen
+  // blended layers, no depth) was painted smaller; stretch it over the screen, filtered. Decor, ink and critters are drawn on top at full res.
+  const UPS_FS = `#version 300 es
+precision highp float; uniform sampler2D uCol; uniform vec4 uS; out vec4 oC;
+void main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=texture(uCol, q/vec2(textureSize(uCol,0))); }`;
 
   class GLPaint {
     constructor(canvas, R) {
@@ -243,7 +248,11 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       this.P = {
         mesh: this.prog(MESH_VS, MESH_FS), meshS: this.prog(MESH_VS, MESH_SIMPLE), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
       };
-      { const pend = this._defer; this._defer = null; for (const P of pend) this.finishProg(P); }
+      // v31: programs that used to be compiled on first use (a hitch the first time the camera rests, the light moves or the
+      // soft layer scales) are compiled up front in the same parallel batch; a failure here only disables that feature
+      const extra = { smask: [SMASK_VS, SMASK_FS], sblur: [SBLUR_VS, SBLUR_FS], smix: [SBLUR_VS, SMIX_FS], shd: [TEX_VS, SHD_FS] }; if (this.gl2) { extra.blit = [BLIT_VS, BLIT_FS]; extra.ups = [BLIT_VS, UPS_FS]; }
+      for (const k in extra) try { this.P[k] = this.prog(extra[k][0], extra[k][1]); } catch (e) { /* compiled lazily as before */ }
+      { const pend = this._defer; this._defer = null; for (const P of pend) { try { this.finishProg(P); } catch (e) { let n = null; for (const k in this.P) if (this.P[k] === P) n = k; if (!n || !(n in extra)) throw e; this.P[n] = n === 'ups' ? false : null; } } }
       this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false), cell: this.texFrom(this.cellCanvas(), true) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
       this.V2 = new JT.View(0, 0, 1, 0, 0, [0, 0, 0]); this.dyn = {}; this.lost = false;
@@ -264,7 +273,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
         C.ms = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, C.ms); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, C.crb); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, C.drb);
         const ok1 = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
         const tx = (ifmt, fmt, type) => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, W, H, 0, fmt, type, null); return t; };
-        C.ct = tx(gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE); C.dt = tx(gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT);
+        C.ct = tx(gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); C.dt = tx(gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT);
         C.rs = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, C.rs); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, C.ct, 0); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, C.dt, 0);
         const ok2 = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this._tgtFB || null); gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -272,6 +281,8 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
         return C;
       } catch (e) { if (JT.DEV) console.warn('cache', e); try { gl.bindFramebuffer(gl.FRAMEBUFFER, null); } catch (e2) { /* ignore */ } this._cache = C; this.cacheFree(true); return null; }
     }
+    /** v31: scale of the soft layer this frame (0 = full resolution). Driven by Renderer.softS (dynamic, see engine/22). */
+    splitScale(HDT, CUP, PT) { const s = this.R.softS || 1; if (!this.gl2 || this._splitBroken || s > 0.97 || (HDT && !CUP) || PT.ptNoSplit || (this._cache && this._cache.dead)) return 0; return Math.max(0.5, s); }
     /** 'direct' (draw everything), 'build' (repaint the cached static layer, then use it) or 'blit' (reuse it as is). */
     cacheMode(V, hab, hg, gt, PT, live, night, W, H) {
       const gl = this.gl; const R = this.R;
@@ -574,12 +585,12 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
 
     // ---------- per-frame ----------
     frame(V, hab, night, lamps, scene) {
-      const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
+      const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.P.ups = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
       const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.toon); const TS = CUP ? JT.HD2D.toonSty() : null; this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
       const CLR = HDT ? (CUP ? TS.clear : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
       const SK = JT.SKY; const grade = SK.grade.slice();
-      const lampU = new Float32Array(16); const LL = []; lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
+      const lampU = this._lampU || (this._lampU = new Float32Array(16)); lampU.fill(0); const LL = []; // v31: reused (no garbage per frame) lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
       this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, VW, VH); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
@@ -604,7 +615,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
         for (const o of list) { if (!o.m.lb || PT.ptNoInk) continue; const sw = o.inst._sw; gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0); this.drawLines(P, o.m.lb, o.m.lib, o.m.nl); }
       };
       // everything that only changes when the camera, light, decor or ground changes
-      const statics = (list) => {
+      const statics = (list, part) => {
         // background
         let P = this.use(this.P.scr); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(P, [['aXY', 2], ['aUV', 2]], 4);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.bgTexture(hab.data.bg)); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uMode, 0); gl.uniform4f(P.u.uCol, grade[0] * 0.98, grade[1] * 0.98, grade[2], 1); gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -636,14 +647,35 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
           gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
         // warm pools under lamps (added light)
         if (LL.length) this.lampPools(V, hab, LL, night);
-        decorPass(list);
+        if (part !== 'ground') decorPass(list);
       };
       // v1.3 still-camera cache: while the camera rests, the static layer (backdrop, slab, ground, shadows, decor + its ink) is
       // painted once into an offscreen buffer (colour + depth) and each frame starts from a copy of it. Only swaying plants,
       // soil mounds, critters, silk and the paper grain are drawn live. WebGL2 only; anything unusual falls back to drawing it all.
       const live = []; for (const o of drawList) if (o.inst._sw) live.push(o);
       const mode = this.cacheMode(V, hab, hg, gt, PT, live, night, VW, VH);
-      if (mode === 'direct') statics(drawList);
+      this._direct = mode === 'direct'; const SS = this._direct ? this.splitScale(HDT, CUP, PT) : 0; this.splitS = 1;
+      if (mode === 'direct' && SS) {
+        // v31 split resolution (camera moving): the soft, fill-heavy ground layer is painted at SS x the resolution into the (shared)
+        // still-camera buffers and stretched over the screen; decor, outlines, ink strokes, critters and the paper grain stay full-res
+        let C = this._cache; if (!C || C.W !== VW || C.H !== VH) C = this.cacheAlloc(VW, VH);
+        if (!C || C.dead) statics(drawList);
+        else { const sw = Math.max(16, Math.round(VW * SS)), sh = Math.max(16, Math.round(VH * SS)); C.key = null; C.used = performance.now(); this.splitS = SS;
+          gl.bindFramebuffer(gl.FRAMEBUFFER, C.ms); gl.viewport(0, 0, sw, sh); gl.enable(gl.SCISSOR_TEST); gl.scissor(0, 0, sw, sh); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.disable(gl.SCISSOR_TEST);
+          gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+          statics(drawList, 'ground');
+          gl.bindFramebuffer(gl.READ_FRAMEBUFFER, C.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, C.rs); gl.blitFramebuffer(0, 0, sw, sh, 0, 0, sw, sh, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, this._tgtFB || null); gl.viewport(0, 0, VW, VH);
+          if (this.P.ups === undefined || this.P.ups === null) { try { this.P.ups = this.prog(BLIT_VS, UPS_FS); } catch (e) { if (JT.DEV) console.warn('ups', e); this.P.ups = false; } }
+          const U = this.P.ups; let bad = !U || !U.p; if (!C.checked) { C.checked = true; if (gl.getError() !== gl.NO_ERROR) bad = true; }
+          if (bad) { this._splitBroken = true; this.splitS = 1; gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.enable(gl.BLEND); statics(drawList); }
+          else { this.use(U); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(U, [['aXY', 2]], 4);
+            gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, C.ct); gl.uniform1i(U.u.uCol, 0); gl.uniform4f(U.u.uS, sw / VW, sh / VH, sw, sh);
+            gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.drawArrays(gl.TRIANGLES, 0, 6);
+            decorPass(drawList);
+            gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); } }
+      }
+      else if (mode === 'direct') statics(drawList);
       else {
         const C = this._cache;
         if (mode === 'build') { gl.bindFramebuffer(gl.FRAMEBUFFER, C.ms); gl.viewport(0, 0, VW, VH); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
