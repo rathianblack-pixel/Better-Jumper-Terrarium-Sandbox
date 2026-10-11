@@ -222,10 +222,28 @@ body.lite .rays i:nth-child(n+3), body.lite .scratch { display: none; }
 body.lite .grain, body.lite h1 { animation: none !important; }
 body.lite .card .shot img { animation: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } #bg { transition: none; } }
+/* intro film + menu loop (pre-rendered video, falls back to the still picture) */
+#vbg { position: fixed; inset: 0; pointer-events: none; background: transparent; }
+#vbg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
+#vbg video.on { opacity: 1; }
+#vbg #vI { transition-duration: .5s; }
+body.pick #vbg video { opacity: 0 !important; }
+body.vid .rays, body.vid .motes, body.vid .sunburst, body.vid .grain, body.vid .scratch { display: none !important; }
+body.vid #bg .kb { animation-play-state: paused; }
+body.vid:not(.pick) .vig { opacity: .55; }
+body.introfx .screen, body.introfx .top, body.introfx .foot, body.introfx #back { transition: opacity .7s ease; }
+body.intro .screen, body.intro .top, body.intro .foot, body.intro #hint, body.intro #back { opacity: 0 !important; pointer-events: none !important; }
+body.intro .vig { opacity: 0; }
+#ibar { position: fixed; z-index: 6; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: none; gap: 10px; }
+body.intro #ibar { display: flex; animation: ibar .6s ease .8s both; }
+#ibar .pill { opacity: .82; }
+@keyframes ibar { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body class="art-hd2d">
 <div id="bg"><div class="kb"><img id="bgA" alt="" decoding="async"><img id="bgB" alt="" decoding="async"></div></div>
+<div id="vbg" aria-hidden="true"><video id="vI" muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video><video id="vL1" muted playsinline loop preload="auto" disablepictureinpicture disableremoteplayback></video><video id="vL2" muted playsinline loop preload="auto" disablepictureinpicture disableremoteplayback></video></div>
+<div id="ibar"><button class="pill" id="isnd" style="display:none">&#9834;&nbsp; Tap for sound</button><button class="pill" id="iskip">Skip &#8250;</button></div>
 <div class="sunburst"></div>
 <div class="rays" aria-hidden="true"><i style="--l:18%;--d:11s;--a:.10"></i><i style="--l:40%;--d:8s;--a:.14"></i><i style="--l:63%;--d:13s;--a:.08"></i></div>
 <div class="motes" id="motes" aria-hidden="true"></div>
@@ -266,6 +284,7 @@ body.lite .card .shot img { animation: none; }
     mantis: { url: 'mantis.html', save: 'mantisTerrarium.v1.save', set: 'mantisTerrarium.settings', name: 'Mantises', latin: 'Mantodea', who: 'mantis', desc: 'Patient ambushers that sway, strike and molt hanging head-down.' }
   };
   var ARTS = ['hd2d', 'cuphead', 'storybook'];
+  var introOn = false, Vid = null;
   var rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var nav = navigator, lite = (nav.deviceMemory && nav.deviceMemory <= 4) || (nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) || !!(nav.connection && nav.connection.saveData);
   if (lite) document.body.classList.add('lite');
@@ -311,8 +330,8 @@ body.lite .card .shot img { animation: none; }
     note: function (f, v, len) { var c = this.ctx; if (!c || !this.on) return; var a = c.createOscillator(), g = c.createGain(), t = c.currentTime; a.type = 'sine'; a.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + len); a.connect(g); g.connect(this.out); a.start(t); a.stop(t + len + .05); },
     tick: function (hi) { this.note(hi ? 1318.5 : 987.77, hi ? .06 : .025, hi ? .5 : .18); },
     set: function (on, nosave) { this.on = on; if (!nosave) LS.set('terrarium.sound', on ? '1' : '0'); $('snd').setAttribute('aria-pressed', on ? 'true' : 'false'); $('snd').querySelector('.x').style.display = on ? 'none' : ''; $('snd').querySelector('.w1').style.display = on ? '' : 'none'; $('snd').querySelector('.lbl').textContent = on ? 'Sound on' : 'Sound';
-      if (on) { this.init(); if (!this.ctx) return; var c = this.ctx; if (c.state !== 'running') c.resume(); this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(1, c.currentTime, .6); }
-      else if (this.ctx) this.out.gain.setTargetAtTime(0, this.ctx.currentTime, .2); },
+      if (on) { this.init(); if (!this.ctx) return; var c = this.ctx; if (c.state !== 'running') c.resume(); this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(introOn ? 0 : 1, c.currentTime, .6); if (Vid) Vid.sound(true); }
+      else { if (this.ctx) this.out.gain.setTargetAtTime(0, this.ctx.currentTime, .2); if (Vid) Vid.sound(false); } },
     fadeOut: function () { if (this.ctx && this.on) this.out.gain.setTargetAtTime(0, this.ctx.currentTime, .15); } };
   $('snd').onclick = function () { Snd.set(!Snd.on); $('hint').classList.add('off'); if (Snd.on) Snd.tick(true); };
   var wantSound = Snd.on; Snd.set(false, true); // shown off until a gesture (browsers need one); turned back on below
@@ -326,7 +345,7 @@ body.lite .card .shot img { animation: none; }
     [].forEach.call(document.querySelectorAll('#look button'), function (b) { b.classList.toggle('on', b.getAttribute('data-art') === a); });
     var tc = { hd2d: '#0b0f1e', cuphead: '#2a1b0f', storybook: '#efe4cc' }[a]; document.querySelector('meta[name=theme-color]').setAttribute('content', tc);
     if (save) for (var g in GAMES) { var s = settingsOf(g); s.art = a; LS.set(GAMES[g].set, JSON.stringify(s)); }
-    setBg(pic(document.body.classList.contains('pick') ? (hot || heroGame) : heroGame)); renderCards();
+    setBg(pic(document.body.classList.contains('pick') ? (hot || heroGame) : heroGame)); renderCards(); if (Vid) Vid.update();
   }
   [].forEach.call(document.querySelectorAll('#look button'), function (b) { b.onclick = function () { applyArt(b.getAttribute('data-art'), true); Snd.tick(true); }; });
 
@@ -376,7 +395,7 @@ body.lite .card .shot img { animation: none; }
     if (screen === id || busy) return; var from = screen && $(screen), to = $(id); screen = id;
     var open = function () { if (from) { from.classList.remove('on', 'in', 'out'); from.setAttribute('aria-hidden', 'true'); }
       document.body.classList.toggle('pick', id === 'pick'); $('back').style.display = id === 'pick' ? '' : 'none';
-      if (id === 'title') { hot = null; setBg(pic(heroGame)); }
+      if (id === 'title') { hot = null; setBg(pic(heroGame)); } if (Vid) Vid.screen(id);
       to.classList.add('on'); to.removeAttribute('aria-hidden'); void to.offsetWidth; requestAnimationFrame(function () { to.classList.add('in'); busy = false;
         var f = to.querySelector(id === 'pick' ? '.card .go' : '.btn.primary'); if (f && fine) f.focus({ preventScroll: true }); }); };
     if (!from || instant) { open(); return; }
@@ -403,15 +422,77 @@ body.lite .card .shot img { animation: none; }
     requestAnimationFrame(function () { z.style.transition = ''; z.style.left = '0px'; z.style.top = '0px'; z.style.width = innerWidth + 'px'; z.style.height = innerHeight + 'px'; z.style.borderRadius = '0'; z.style.opacity = '1'; z.classList.add('full'); });
     setTimeout(function () { location.href = G.url; }, card ? 720 : 520);
   }
-  addEventListener('pageshow', function (e) { if (e.persisted) { leaving = false; document.body.classList.remove('leaving'); $('zoom').style.display = 'none'; $('zoom').classList.remove('full'); renderMenu(); renderCards(); } });
+  addEventListener('pageshow', function (e) { if (e.persisted) { if (Vid) Vid.update(); leaving = false; document.body.classList.remove('leaving'); $('zoom').style.display = 'none'; $('zoom').classList.remove('full'); renderMenu(); renderCards(); } });
+
+  /* ---------- intro film (plays once per visit, with music) then a seamless menu loop ---------- */
+  Vid = (function () {
+    var vi = $('vI'), L = [$('vL1'), $('vL2')], lc = 0, started = false, onPick = false;
+    var ok = !rm && !(nav.connection && nav.connection.saveData) && !!vi.canPlayType && vi.canPlayType('video/mp4') !== '';
+    var orient = function () { return innerHeight > innerWidth ? 'portrait' : 'landscape'; };
+    var src = function (kind) { return 'intro/' + kind + '-' + art + '-' + orient() + '.mp4'; };
+    var quiet = function (p) { if (p && p.catch) p.catch(function () {}); return p; };
+    var drop = function (v) { v.pause(); v.removeAttribute('src'); try { v.load(); } catch (e) {} };
+    function loop() {
+      if (!ok || introOn || onPick || document.hidden) return;
+      var want = src('loop'), cur = L[lc];
+      if (cur.getAttribute('src') === want) { if (cur.paused) quiet(cur.play()); return; }
+      var nx = L[1 - lc], old = cur;
+      if (nx.getAttribute('src') !== want) nx.src = want;
+      var go = function () { nx.removeEventListener('playing', go); if (nx.getAttribute('src') !== want) return; nx.classList.add('on'); old.classList.remove('on'); lc = L.indexOf(nx); document.body.classList.add('vid');
+        setTimeout(function () { if (!old.classList.contains('on')) drop(old); if (!introOn) { vi.classList.remove('on'); setTimeout(function () { if (!introOn) drop(vi); }, 600); } }, 850); };
+      nx.addEventListener('playing', go); quiet(nx.play());
+    }
+    function preload() { var nx = L[1 - lc], want = src('loop'); if (nx.getAttribute('src') !== want) { nx.src = want; nx.load(); } }
+    function fadeAudio() { var v = vi.volume, iv = setInterval(function () { v -= .08; if (v <= 0 || vi.paused) { clearInterval(iv); vi.muted = true; return; } vi.volume = v; }, 40); }
+    function end(skip) {
+      if (!introOn) return; introOn = false;
+      try { sessionStorage.setItem('terrarium.introSeen', '1'); } catch (e) {}
+      document.body.classList.remove('intro'); setTimeout(function () { document.body.classList.remove('introfx'); }, 900);
+      if (skip) fadeAudio();
+      if (Snd.on && Snd.ctx) Snd.out.gain.setTargetAtTime(1, Snd.ctx.currentTime, 1.2);
+      if (vi.classList.contains('on')) loop(); else { drop(vi); loop(); }
+      var f = document.querySelector('#title .btn.primary'); if (f && fine) f.focus({ preventScroll: true });
+    }
+    function intro() {
+      var seen = false; try { seen = sessionStorage.getItem('terrarium.introSeen') === '1'; } catch (e) {}
+      if (!ok || seen || location.hash === '#pick') return false;
+      introOn = true; document.body.classList.add('intro', 'introfx', 'vid'); vi.src = src('intro');
+      var shown = false, fail = setTimeout(function () { if (!shown) end(true); }, 5000); // slow network: never hold the menu hostage
+      vi.addEventListener('playing', function () { if (shown) return; shown = true; clearTimeout(fail); vi.classList.add('on'); });
+      vi.addEventListener('ended', function () { end(false); });
+      vi.addEventListener('error', function () { if (introOn) end(true); });
+      vi.addEventListener('timeupdate', function tu() { if (vi.currentTime > 11) { vi.removeEventListener('timeupdate', tu); preload(); } });
+      var muted = function () { vi.muted = true; $('isnd').style.display = ''; return quiet(vi.play()); };
+      if (wantSound) { vi.muted = false; var p = vi.play(); if (p && p.catch) p.catch(muted); } else muted();
+      $('iskip').onclick = function (e) { e.stopPropagation(); end(true); };
+      // tap anywhere (except Skip) = sound on; Esc / Enter / Space = skip
+      addEventListener('pointerdown', function tap(e) { if (!introOn) { removeEventListener('pointerdown', tap, true); return; } if (e.target.closest && e.target.closest('#iskip')) return; if (vi.muted) { vi.muted = false; vi.volume = 1; if (!Snd.on) Snd.set(true); $('isnd').style.display = 'none'; } }, true);
+      addEventListener('keydown', function key(e) { if (!introOn) { removeEventListener('keydown', key); return; } if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); end(true); } });
+      // rotate mid-film: same moment, other framing
+      vi._o = orient();
+      return true;
+    }
+    var rt = null;
+    addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () {
+      if (introOn && vi._o !== orient()) { var t = vi.currentTime, m = vi.muted; vi._o = orient(); vi.src = src('intro'); vi.muted = m; vi.addEventListener('loadedmetadata', function lm() { vi.removeEventListener('loadedmetadata', lm); try { vi.currentTime = t; } catch (e) {} quiet(vi.play()); }); }
+      else if (started) loop(); }, 250); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) { L.forEach(function (v) { v.pause(); }); if (introOn) vi.pause(); } else if (introOn) quiet(vi.play()); else loop(); });
+    return {
+      start: function () { started = true; if (!intro()) loop(); },
+      update: function () { if (started && !introOn) loop(); },
+      screen: function (id) { onPick = id === 'pick'; if (onPick) L.forEach(function (v) { v.pause(); }); else if (started && !introOn) loop(); },
+      sound: function (on) { if (introOn) { vi.muted = !on; if (on) vi.volume = 1; $('isnd').style.display = on ? 'none' : ''; } }
+    };
+  })();
 
   /* ---------- start ---------- */
   applyArt(art, false); setBg(pic(heroGame), true); renderMenu();
   show(location.hash === '#pick' ? 'pick' : 'title', true);
+  Vid.start();
   var ready = function () { document.body.classList.add('ready'); }; var img0 = layers[cur]; if (img0.complete) ready(); else { img0.addEventListener('load', ready); setTimeout(ready, 700); } requestAnimationFrame(function () { setTimeout(ready, 60); });
   // warm the next page while you look at the title (network idle time; the service worker keeps it offline)
   var pre = function () { ['jumper', 'mantis'].sort(function (a) { return a === last ? -1 : 1; }).forEach(function (g) { var l = document.createElement('link'); l.rel = 'prefetch'; l.href = GAMES[g].url; document.head.appendChild(l); }); };
-  if (/^https?:$/.test(location.protocol)) (window.requestIdleCallback || setTimeout)(pre, 1200);
+  if (/^https?:$/.test(location.protocol)) (window.requestIdleCallback ? requestIdleCallback(pre, { timeout: 2500 }) : setTimeout(pre, 1200));
 })();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 </script>
