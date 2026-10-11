@@ -2006,6 +2006,17 @@ html { background: #0b120a; }
     });
     // plain face: the texture comes from the material; dressing is the player's (free wall decorations)
     const p0 = B.prims.length;
+    // v28: a little life spilling over the crest — moss tufts along the top edge, strands of moss, roots or ivy hanging down the face
+    const SPILL = { mosswall: ['#5f7f3a', 'moss'], rootwall: ['#5a4232', 'root'], barkwall: ['#4f7a34', 'ivy'], trunkwall: ['#4f7a34', 'ivy'], leafwall: ['#6a7a3a', 'moss'], driftwall: ['#7a8a5a', 'moss'] }[S];
+    if (SPILL) { const [sc2, kind] = SPILL;
+      if (kind !== 'root') { const nt = Math.round((x1 - x0) / 5.5); for (let k = 0; k < nt; k++) { const x = x0 + 3 + (x1 - x0 - 6) * (k + rng() * 0.8) / nt; B.prim({ t: 'tuft', o: [x, h - 0.4, zAt(x) * 0.85], r: 2.6 + rng() * 2.2, col: shade(sc2, (rng() - 0.5) * 0.25), nv: [0, 1, 0], seed: (rng() * 1e6) | 0 }); } }
+      const ns = Math.max(4, Math.round(w / (kind === 'root' ? 14 : 11)));
+      for (let k = 0; k < ns; k++) { const xc = x0 + 6 + (x1 - x0 - 12) * (k + 0.2 + rng() * 0.6) / ns; const nst = kind === 'root' ? 1 : 2 + ((rng() * 2) | 0);
+        for (let m = 0; m < nst; m++) { const x = xc + (rng() - 0.5) * 4; const zf = zAt(x); const len = (kind === 'root' ? 20 : 6) + rng() * Math.min(kind === 'root' ? 60 : 28, h * (kind === 'root' ? 0.45 : 0.2)); const col = shade(sc2, (rng() - 0.5) * 0.25);
+          const st = []; const NQ = kind === 'root' ? 12 : 8; const sway = kind === 'root' ? 5 + rng() * 6 : 1.2; for (let q = 0; q <= NQ; q++) { const u = q / NQ; st.push([x + Math.sin(u * (kind === 'root' ? 3 : 4) + k + m) * sway * u, h + 0.3 - u * len, zf + (kind === 'root' ? 0.35 : -0.4 - Math.sin(u * Math.PI) * 0.7)]); }
+          B.prim({ t: 'tube', pts: [[x, h + 0.5, zf * 0.6]].concat(st), r0: kind === 'root' ? 1.5 + rng() * 0.6 : 0.4, r1: kind === 'root' ? 0.35 : 0.14, col, style: kind === 'root' ? 'bark' : 'vine' });
+          if (kind === 'root') { if (rng() < 0.6) { const j0 = 4 + ((rng() * 5) | 0); const s0 = st[j0]; const br = []; for (let q = 0; q <= 5; q++) { const u = q / 5; br.push([s0[0] + (rng() < 0.5 ? -1 : 1) * u * 6, s0[1] - u * 10, zf + 0.35]); } B.prim({ t: 'tube', pts: br, r0: 0.7, r1: 0.2, col, style: 'bark' }); } continue; }
+          for (let q = 1; q <= NQ; q++) { const nl = kind === 'ivy' ? (rng() < 0.85 ? 1 : 0) : 2; for (let l = 0; l < nl; l++) leaf(B, st[q], rng() * 6.28, kind === 'ivy' ? 3.4 + rng() : 2.4 + rng() * 1.2, kind === 'ivy' ? 2.6 : 0.55, shade(sc2, (rng() - 0.5) * 0.25), null, kind === 'ivy' ? 'ivy' : 'lance', kind === 'ivy' ? 0.2 : -1.35, st[q][1]); } } } }
     // keep every tuft, shelf, leaf and root inside the wall's left / right edges (slide inward along the face)
     const lim = x1 - 0.5;
     for (let i = p0; i < B.prims.length; i++) { const q = B.prims[i]; let lo, hi;
@@ -2229,12 +2240,15 @@ html { background: #0b120a; }
     for (let i = 0; i < p.n; i++) {
       const a = i / p.n * Math.PI * 2 + rng() * 0.5; const L = p.L * (0.75 + rng() * 0.35), H = p.h * sc * (0.75 + rng() * 0.4);
       const pts = []; for (let s = 0; s <= 7; s++) { const t = s / 7; const hz = L * t; pts.push([Math.cos(a) * hz, 0.4 + Math.sin(t * Math.PI * 0.82) * H, Math.sin(a) * hz * 0.85]); }
-      B.prim({ t: 'tube', pts, r0: 0.7, r1: 0.25, col: shade(p.leaf, -0.25), style: 'stem' });
+      B.prim({ t: 'tube', pts, r0: 0.5, r1: 0.14, col: shade(p.leaf, -0.25), style: 'stem' });
       B.path(pts, 0.6, 'frond', { flex: 0.9 });
-      for (let s = 1; s <= 7; s++) {
-        const q = pts[s]; const t = s / 7; const lw = (p.fine ? 2.2 : 3.4) * (1.1 - t * 0.6);
-        const dir = Math.atan2(pts[s][2] - pts[s - 1][2], pts[s][0] - pts[s - 1][0]);
-        for (const sd of [-1, 1]) leaf(B, q, dir + sd * 1.25, lw * (p.fine ? 1.1 : 1.7), lw * (p.fine ? 0.7 : 0.38), shade(p.leaf, (rng() - 0.5) * 0.2), null, p.fine ? 'round' : 'lance', 0.15 - t * 0.6, q[1]);
+      // v28: a real frond: many leaflets (pinnae) on both sides, small at the base, longest a third of the way out, tiny at the tip
+      const fc = shade(p.leaf, (rng() - 0.5) * 0.16); const NS = p.fine ? 9 : 12;
+      for (let s = 1; s <= NS; s++) {
+        const t = s / NS; const x = t * 7, i0 = Math.min(6, Math.floor(x)), fr = x - i0; const q = M.lerp3(pts[i0], pts[i0 + 1], fr);
+        const prof = Math.sin(Math.PI * Math.min(1, 0.18 + t * 0.9)); const lw = (p.fine ? 2.3 : 3.5) * (0.3 + 0.8 * prof);
+        const dir = Math.atan2(pts[i0 + 1][2] - pts[i0][2], pts[i0 + 1][0] - pts[i0][0]);
+        for (const sd of [-1, 1]) leaf(B, q, dir + sd * (p.fine ? 1.2 : 0.95), lw * (p.fine ? 1.1 : 1.6), lw * (p.fine ? 0.7 : 0.4), shade(fc, (rng() - 0.5) * 0.1 + t * 0.06), null, p.fine ? 'round' : 'lance', 0.1 - t * 0.75, q[1]);
       }
     }
     B.height = p.h * sc + 3; B.coverR = p.L * 0.9;
@@ -2300,15 +2314,18 @@ html { background: #0b120a; }
   ARCH.mushroom = function (B, p, sc) {
     const rng = B.rng;
     for (let i = 0; i < p.n; i++) {
-      const a = rng() * 6.28, rr = rng() * 6; const H = p.h * (0.4 + rng() * 0.7);
+      const a = i / p.n * 6.28 + rng() * 1.2, rr = (p.n > 1 ? 2.5 : 0) + rng() * 4.5; const H = p.h * (0.4 + rng() * 0.7) * (i === 0 ? 1.1 : 1);
       const base = [Math.cos(a) * rr, 0, Math.sin(a) * rr];
       const pts = bez(base, [base[0], H * 0.6, base[2]], [base[0] + (rng() - .5) * 2, H, base[2]], 4);
       const capR = p.cap * (0.6 + rng() * 0.6);
       B.prim({ t: 'tube', pts, r0: capR * (p.spots ? 0.22 : 0.32), r1: capR * (p.spots ? 0.18 : 0.24), col: p.stem || '#e8e0c8', style: 'stem' });
-      B.prim({ t: 'cap', o: pts[4], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, cone: !!p.spots, h: H });
+      B.prim({ t: 'cap', o: pts[4], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, dome: !!p.spots, h: H });
       pts.push([pts[4][0], H + capR * 0.5, pts[4][2]]);
       B.path(pts, capR * 0.2, 'stem', { flex: 0.05 });
     }
+    // v28: a couple of young buttons pushing up at the foot of the clump (render only)
+    for (let i = 0; i < 2; i++) { const a = rng() * 6.28, rr = 3 + rng() * 5; const H = p.h * (0.12 + rng() * 0.1); const base = [Math.cos(a) * rr, 0, Math.sin(a) * rr]; const capR = p.cap * (0.3 + rng() * 0.2);
+      B.prim({ t: 'tube', pts: [base, [base[0], H, base[2]]], r0: capR * 0.4, r1: capR * 0.32, col: p.stem || '#e8e0c8', style: 'stem' }); B.prim({ t: 'cap', o: [base[0], H, base[2]], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, dome: true, h: H }); }
     B.height = p.h * 1.2; B.coverR = 8;
   };
   ARCH.vine = function (B, p, sc) {
@@ -2403,6 +2420,13 @@ html { background: #0b120a; }
     }
   };
 
+  // v28: no two copies of a plant alike — a seeded nudge to size, leaf count and colour per instance
+  const VARY = { fern: 1, palm: 1, grass: 1, rosette: 1, broadleaf: 1, mushroom: 1, vine: 1, flower: 1, tree: 0.5, bamboo: 1, leafcluster: 1 };
+  function vary(p0, seed, k) { const r = JT.makeRng(seed * 7919 + 13); const q = Object.assign({}, p0); const j = (a) => 1 + (r() - 0.5) * 2 * a * k;
+    if (q.n > 2) q.n = Math.max(2, Math.round(q.n * j(0.22))); if (q.h) q.h *= j(0.12); for (const f of ['L', 'leafL', 'leafW', 'spread', 'cap']) if (q[f]) q[f] *= j(0.1);
+    const jit = (hex) => { const c = toHsl(hexRgb(hex)); return rgbHex(fromHsl([(c[0] + (r() - 0.5) * 0.05 * k + 1) % 1, M.clamp(c[1] + (r() - 0.5) * 0.12 * k, 0, 1), M.clamp(c[2] + (r() - 0.5) * 0.1 * k, 0.04, 0.96)])); };
+    for (const f of ['leaf', 'petal', 'col']) if (typeof q[f] === 'string' && q[f][0] === '#' && q[f].length === 7) q[f] = jit(q[f]);
+    return q; }
   // ---- world transform ----
   function makeXf(inst, baseY) {
     const a = (inst.rot || 0) * Math.PI / 2, c = Math.round(Math.cos(a)), s = Math.round(Math.sin(a));
@@ -2417,7 +2441,8 @@ html { background: #0b120a; }
     const def = JT.DECOR_BY_ID[inst.type];
     const rng = JT.makeRng(inst.seed || 1);
     const B = new Builder(rng); B.inst = inst;
-    const pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h, arc: inst.arc || null, cols: JT.wallCols(inst.sub) }) : def.p; // back walls span the whole back of their tank
+    let pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h, arc: inst.arc || null, cols: JT.wallCols(inst.sub) }) : def.p; // back walls span the whole back of their tank
+    if (VARY[def.arche] && def.cat === 'plants') pp = vary(pp, inst.seed || 1, VARY[def.arche]);
     const nominal = pp.h || 10;
     const sc = Math.min(1, Math.max(0.35, (maxH - baseY - 6) / nominal));
     ARCH[def.arche](B, pp, sc);
@@ -6461,7 +6486,7 @@ function transform(inst,base){const a=(inst.rot||0)*Math.PI/2,c=Math.round(Math.
 function context(inst,base,g){const X=transform(inst,base);function prim(p){const q=Object.assign({},p,{base});if(p.poly)q.poly=p.poly.map(X.p2);if(p.topPoly)q.topPoly=p.topPoly.map(X.p2);if(p.y0!=null){q.y0=p.y0+base;q.y1=p.y1+base;}if(p.pts)q.pts=p.pts.map(X.p);if(p.o)q.o=X.p(p.o);if(p.t==='leaf'){q.a=X.v(p.a);q.b=X.v(p.b);}g.prims.push(q);const ext=v=>g.extent.push([v[0],v[2]]);if(q.poly)g.extent.push(...q.poly);if(q.pts)q.pts.forEach(ext);if(q.o){ext(q.o);if(q.t==='leaf')for(const k of[-1,1])ext(q.o.map((v,i)=>v+q.a[i]+q.b[i]*k));}return p;}
 function path(pts,r,kind,options){const pa=Object.assign({pts:pts.map(X.p),r,kind,flex:0,side:null,nrm:null,perch:true,flower:false},options);if(options&&options.nrm)pa.nrm=options.nrm.map(n=>n?X.v(n):null);g.paths.push(pa);for(const q of pa.pts){g.extent.push([q[0],q[2]]);if(q[1]-base<1.25)g.contacts.push([q[0],q[2]]);}return g.paths.length-1;}function top(poly,y){g.tops.push({poly:poly.map(X.p2),y:base+y});return g.tops.length-1;}function leaf(o,ang,len,width,col,pitch,shape){return JT.Geo._leaf({prim},o,ang,len,width,col,null,shape||'oval',pitch||0,o[1]);}return{prim,path,top,leaf,X};}
 function empty(inst,base){const def=JT.DECOR_BY_ID[inst.type];return{id:inst.id,type:inst.type,def,baseY:base,height:0,coverR:def.p.r||28,cover:inst.bare?def.cover*.3:def.cover,prims:[],paths:[],tops:[],solids:[],water:[],flowers:[],extent:[],soft:[],contacts:[],foot:[],center:[inst.x,base,inst.z],flexible:false};}
-function column(C,g,x,z,rx,rz,y0,y1,style,cols,topIndex){const poly=G.circlePoly(x,z,rx,rz,16);C.prim({t:'prism',poly,y0,y1,style,cols,round:true});if(y0===0)g.solids.push(poly.map(C.X.p2));const ti=topIndex==null?C.top(poly,y1):topIndex;for(let k=0;k<4;k++){const a=k*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a),pts=[],steps=Math.max(2,Math.ceil((y1-y0)/6));for(let j=0;j<=steps;j++)pts.push([x+dx*(rx+.5),y0+(y1-y0)*j/steps,z+dz*(rz+.5)]);pts.push([x+dx*rx*.7,y1,z+dz*rz*.7]);C.path(pts,.2,'face',{endTop:ti,perch:false,nrm:pts.slice(1).map((_,j)=>j===pts.length-2?[0,1,0]:[dx,0,dz])});}return ti;}
+function column(C,g,x,z,rx,rz,y0,y1,style,cols,topIndex){if(cols===cactusCols)style='cactus';const poly=G.circlePoly(x,z,rx,rz,16);C.prim({t:'prism',poly,y0,y1,style,cols,round:true});if(y0===0)g.solids.push(poly.map(C.X.p2));const ti=topIndex==null?C.top(poly,y1):topIndex;for(let k=0;k<4;k++){const a=k*Math.PI/2,dx=Math.cos(a),dz=Math.sin(a),pts=[],steps=Math.max(2,Math.ceil((y1-y0)/6));for(let j=0;j<=steps;j++)pts.push([x+dx*(rx+.5),y0+(y1-y0)*j/steps,z+dz*(rz+.5)]);pts.push([x+dx*rx*.7,y1,z+dz*rz*.7]);C.path(pts,.2,'face',{endTop:ti,perch:false,nrm:pts.slice(1).map((_,j)=>j===pts.length-2?[0,1,0]:[dx,0,dz])});}return ti;}
 function special(inst,base,maxH){const g=empty(inst,base),C=context(inst,base,g),p=g.def.p,h=Math.min(p.h,Math.max(1,maxH-base-6));if(inst.type==='sandarch'){const bridge=[[-27,-8],[27,-8],[27,8],[-27,8]];C.prim({t:'prism',poly:bridge,y0:h*.78,y1:h,style:'sand',cols:sandCols});const ti=C.top(bridge,h);column(C,g,-19,0,8,8,0,h,'sand',sandCols,ti);column(C,g,19,0,8,8,0,h,'sand',sandCols,ti);g.height=h;g.coverR=29;}else if(inst.type==='saguaro'||inst.type==='barrelcactus'){column(C,g,0,0,p.r,p.r,0,h,'moss',cactusCols);for(let k=0;k<12;k++){const a=k*TAU/12,x=Math.cos(a)*(p.r+.08),z=Math.sin(a)*(p.r+.08);C.prim({t:'tube',pts:[[x,.7,z],[x,h-.5,z]],r0:.16,r1:.13,style:'stem',col:'#b2ba7a'});}if(inst.type==='saguaro')for(const side of[-1,1]){const y=h*(side<0?.4:.54),x=side*17,cap=h*(side<0?.83:.95);const ti=column(C,g,x,0,3.4,3.4,y,cap,'moss',cactusCols);C.prim({t:'tube',pts:[[side*5,y,0],[x,y,0]],r0:3,r1:3.4,style:'stem',col:cactusCols.side});C.path([[side*(p.r+.5),y+3,0],[x,y+3,0],[x+side*3.9,y+3,0],[x+side*3.9,cap,0],[x,cap,0]],.2,'face',{endTop:ti,perch:false});}g.height=h;g.coverR=inst.type==='saguaro'?22:p.r+1;}else{const poly=G.circlePoly(0,0,p.r,p.r,24);C.prim({t:'prism',poly,topPoly:G.scalePoly(poly,.98),y0:0,y1:p.h,style:'dish',cols:bankCols,w0:p.w0,w1:p.w1});g.solids.push(poly.map(C.X.p2));for(let k=0;k<8;k++){const a=k*TAU/8,local=[Math.cos(a)*(p.r+2),0,Math.sin(a)*(p.r+2)];g.water.push({local,pos:C.X.p(local),floor:true,permanent:true});}if(inst.type==='lilypond'){for(let k=0;k<5;k++){const a=k*2.4,r=5+k*1.7;C.leaf([Math.cos(a)*r,p.h+.13,Math.sin(a)*r],a+1,5,3.1,'#608d4a',0,'heart');}for(let k=0;k<6;k++)C.leaf([3,p.h+.4,-4],k*TAU/6,3,1.3,'#edb6c7',.2,'oval');}g.height=p.h+.2;g.noNest=true;}g.foot=G.hull([].concat(...g.solids));return g;}
 const specialIDs=new Set(['saguaro','barrelcactus','sandarch','pond','lilypond']);JT.Geo.build=function(inst,base,maxH,look){if(!own.has(inst.type))return nativeBuild.apply(this,arguments);if(specialIDs.has(inst.type))return special(inst,base,maxH);const g=nativeBuild.apply(this,arguments),C=context(inst,base,g),rng=JT.makeRng((inst.seed||1)^0x51a7),h=Math.min(g.height,Math.max(1,maxH-base-6));if(inst.type==='dripvine'){const pa=g.paths.find(p=>p.kind==='stem');if(pa){const pos=pa.pts[Math.floor(pa.pts.length*.55)].slice();g.water.push({pos,path:g.paths.indexOf(pa),permanent:true});C.prim({t:'cap',o:[0,h*.55,0],r:.7,h:.6,col:'#bce8e3'});}}else if(inst.type==='heliconia'){const pts=[[0,0,0],[0,h*.6,0],[0,h,0]];C.prim({t:'tube',pts,r0:.75,r1:.45,col:'#61954d',style:'stem'});const pi=C.path(pts,.65,'stem',{flex:.15,flower:true});for(let k=0;k<5;k++)C.leaf([0,h*(.48+k*.095),0],k%2?0:Math.PI,7,2,k%2?'#db5834':'#c8343f',.18,'lance');g.flowers.push({pos:C.X.p([0,h,0]),path:pi});}else if(inst.type==='cattails'){for(let k=0;k<5;k++){const a=k*2.4,x=Math.cos(a)*4,z=Math.sin(a)*4,y=h*(.75+rng()*.22),pts=[[x,0,z],[x,y*.5,z],[x,y,z]];C.prim({t:'tube',pts,r0:.5,r1:.32,col:'#698347',style:'stem'});C.path(pts,.5,'stem',{flex:.22});C.prim({t:'tube',pts:[[x,y-5,z],[x,y+.5,z]],r0:1.25,r1:1,col:'#68452e',style:'stem'});}}else if(inst.type==='mudflat'){C.prim({t:'prism',poly:G.circlePoly(0,0,26,18.2,24),y0:-.1,y1:.08,style:'rock',cols:{side:'#514c3f',top:'#726955',mark:'#57513f',hi:'#95876b'}});}else if(inst.type==='glowmoss'){for(let k=0;k<10;k++){const a=rng()*TAU,r=Math.sqrt(rng())*18;C.prim({t:'cap',o:[Math.cos(a)*r,.6,Math.sin(a)*r*.7],r:.6,col:'#a9ebbc',glow:'#7ed9b0',h:.6});}}else if(inst.type==='acacia'){for(let k=0;k<7;k++){const a=k*2.4,y=h*(.2+k*.07);C.prim({t:'tube',pts:[[Math.cos(a)*2,y,Math.sin(a)*2],[Math.cos(a)*4.5,y+2,Math.sin(a)*4.5]],r0:.35,r1:.03,col:'#d4c799',style:'stem'});}}else if(inst.type==='wovenleaf'){for(const lf of g.prims.filter(p=>p.t==='leaf').slice(0,4))for(let k=1;k<5;k++){const q=lf.o.map((v,i)=>v+lf.a[i]*k/5+(i===1?.15:0));g.prims.push({t:'tube',pts:[q.map((v,i)=>v-lf.b[i]*.65),q.map((v,i)=>v+lf.b[i]*.65)],r0:.09,r1:.09,col:'#dedeb9',style:'stem',base});}}return g;};
 JT.Nav.build=function(hab){const nav=nativeNav.apply(this,arguments);for(const inst of hab.decor){const g=hab.geoms[inst.id];if(!g||!own.has(inst.type))continue;for(const w of g.water)if(w.floor&&JT.Nav.inside(hab,w.pos[0],w.pos[2],.25)){if(!nav.water.some(v=>v.decor===inst.id&&v.sup&&v.sup.k==='floor'&&JT.M.dist(v.pos,w.pos)<.01))nav.water.push({pos:w.pos.slice(),sup:{k:'floor'},decor:inst.id,permanent:true,floor:true});}}return nav;};
@@ -8969,6 +8994,93 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 
   // ---------- primitives ----------
   const STYP = (s) => ({ cork: PAT.speck, coconut: PAT.speck, rock: PAT.speck, river: PAT.speck, drift: PAT.grain, driftwall: PAT.grain, slate: PAT.bands, sand: PAT.bands, ruin: PAT.bands, sandwall: PAT.bands, wood: PAT.grain, terracotta: PAT.grain, trunkwall: PAT.grain, barkwall: PAT.speck, mosswall: PAT.moss, moss: PAT.moss, leafwall: PAT.dots, rootwall: PAT.dots, stonewall: PAT.speck, fungus: PAT.bands, coir: PAT.dots, birch: PAT.bands, lichen: PAT.moss, limestone: PAT.bands, mottled: PAT.dots, dish: 0 }[s] || 0);
+  // v28: procedural material per style (shader side: matAt). Packed into the vertex flags above the pattern bits.
+  const MATS = { cork: 1, coconut: 1, coir: 1, barkwall: 1, rock: 2, river: 2, slate: 2, limestone: 2, lichen: 2, stone: 2, drift: 3, driftwall: 3, wood: 3,
+    ruin: 4, mosswall: 5, moss: 5, trunkwall: 6, bark: 6, sand: 7, sandwall: 7, leafwall: 8, soil: 9, rootwall: 10, stonewall: 11 };
+  const MAT = (s) => (MATS[s] || 0) * 32;
+  const FL = (s) => MATS[s] ? MAT(s) : STYP(s);
+  const hh = (a, b, c) => { const x = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return x - Math.floor(x); };
+  // rounded, lumpy solids: rings up the sides that bulge, a soft bevel into the top, chipped edges
+  const LUMP = { rock: 1, river: 0.75, cork: 1, coconut: 0.7, drift: 0.8, limestone: 1, lichen: 1, slate: 0.55, sand: 0.7, wood: 0.6, stone: 1 };
+  function lumpy(mb, pr, g, st, lump, cact) {
+    const base0 = pr.poly, top0 = pr.topPoly || pr.poly; const n0 = base0.length; const H = pr.y1 - pr.y0; const sd = JT.hashStr(String(g.id) + pr.y0 + (pr.style || '')) % 997;
+    const c0 = G.centroid(base0), c1 = G.centroid(top0); const area = Math.abs(G.polyArea(base0)); const amp = cact ? 0 : Math.min(0.9, 0.05 * Math.sqrt(area)) * lump;
+    // subdivide: every edge gets a midpoint (rocks: pushed out a little; cactus: ribs and valleys)
+    const B0 = [], T0 = []; const NR = cact ? Math.max(12, n0) : n0 * 2;
+    if (cact) { const rx = Math.max(...base0.map(q => Math.abs(q[0] - c0[0]))), rz = Math.max(...base0.map(q => Math.abs(q[1] - c0[1]))); const tx = Math.max(...top0.map(q => Math.abs(q[0] - c1[0]))), tz = Math.max(...top0.map(q => Math.abs(q[1] - c1[1])));
+      for (let i = 0; i < NR * 2; i++) { const a = i / (NR * 2) * 6.2832, k = i % 2 ? 0.84 : 1.02; B0.push([c0[0] + Math.cos(a) * rx * k, c0[1] + Math.sin(a) * rz * k]); T0.push([c1[0] + Math.cos(a) * tx * k, c1[1] + Math.sin(a) * tz * k]); } }
+    else for (let i = 0; i < n0; i++) { const j = (i + 1) % n0; B0.push(base0[i], [(base0[i][0] + base0[j][0]) / 2, (base0[i][1] + base0[j][1]) / 2]); T0.push(top0[i], [(top0[i][0] + top0[j][0]) / 2, (top0[i][1] + top0[j][1]) / 2]); }
+    const n = B0.length;
+    const rad = (P, c, i) => { const dx = P[i][0] - c[0], dz = P[i][1] - c[1]; const l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; };
+    const bev = cact ? Math.min(H * 0.25, Math.sqrt(area / Math.PI) * 0.7) : Math.min(H * 0.3, amp * 2.4 + 0.4);
+    const K = Math.max(2, Math.min(9, Math.round((H - bev) / 6)));
+    const rows = []; // [y, frac 0..1 up the side, inset]
+    for (let k = 0; k <= K; k++) rows.push([pr.y0 + (H - bev) * k / K, (H - bev) * k / K / H, 0]);
+    rows.push([pr.y1 - bev * 0.42, 1 - bev * 0.42 / H, bev * 0.28], [pr.y1, 1, bev * (cact ? 0.75 : 0.85)]);
+    const P = rows.map(([y, v, ins], k) => { const row = []; for (let i = 0; i < n; i++) { const b = B0[i], t = T0[i]; const x = M.lerp(b[0], t[0], v), z = M.lerp(b[1], t[1], v); const cc = [M.lerp(c0[0], c1[0], v), M.lerp(c0[1], c1[1], v)]; const r = rad([[x, z]], cc, 0);
+      const mid = i % 2 && !cact ? 0.35 : 0; const bul = amp * (0.55 * Math.sin(Math.PI * Math.min(1, v * 1.15)) + 0.7 * (hh(sd, i, k) - 0.5) + mid) * (k === 0 ? 0.3 : 1);
+      const chip = k === rows.length - 1 && !cact ? amp * 1.2 * Math.max(0, hh(sd, i, 99) - 0.55) : 0; const d = bul - ins - chip;
+      row.push([x + r[0] * d, y - (k === rows.length - 1 ? chip * 0.6 : 0), z + r[1] * d]); } return row; });
+    const R = P.length; const side = rgb(st.side), topC = rgb(st.top), mark = rgb(st.mark), hi = rgb(st.hi); const dark = shade(st.side, -0.18); const f = FL(pr.style);
+    const ids = P.map((row, k) => row.map((q, i) => {
+      const a = row[(i + 1) % n], b = row[(i - 1 + n) % n], u = P[Math.min(R - 1, k + 1)][i], d = P[Math.max(0, k - 1)][i];
+      let nn = M.norm(M.cross(M.sub(u, d), M.sub(a, b))); const out = [q[0] - c0[0], 0, q[2] - c0[1]]; if (M.dot(nn, out) < 0) nn = M.mul(nn, -1); if (!M.finite3(nn)) nn = [0, 1, 0];
+      const v = rows[k][1]; const cc = k >= R - 2 ? mixc(side, mixc(topC, hi, 0.2), k === R - 1 ? 0.7 : 0.35) : mixc(dark, side, Math.min(1, v * 2.2));
+      const o = M.norm([nn[0], 0.15 + Math.max(0, nn[1]) * 0.5, nn[2]]); return mb.vert(q, nn, o, cc, mark, f); }));
+    for (let k = 0; k + 1 < R; k++) for (let i = 0; i < n; i++) { const j = (i + 1) % n; mb.quad(ids[k][i], ids[k][j], ids[k + 1][j], ids[k + 1][i]); }
+    const topR = P[R - 1]; const ct = [0, 0, 0]; for (const q of topR) { ct[0] += q[0] / n; ct[2] += q[2] / n; } ct[1] = pr.y1 + Math.min(cact ? bev * 0.6 : 2.2, H * 0.1);
+    const ci = mb.vert(ct, [0, 1, 0], [0, 1, 0], mixc(mixc(topC, hi, 0.25), hi, 0.2), mark, f); for (let i = 0; i < n; i++) mb.tri(ci, ids[R - 1][i], ids[R - 1][(i + 1) % n]);
+    if (pr.y0 > g.baseY + 0.4) { const cb = mb.vert([c0[0], pr.y0, c0[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, f); const rb = P[0].map(q => mb.vert(q, [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, f)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
+    if (cact) { // areoles: little tufts of pale spines along every rib crest
+      const sp = rgb('#efe6c4'); for (let i = 0; i < n; i += 2) for (let k = 1; k < R - 1; k++) { const q = P[k][i], q2 = P[k + 1][i]; const o = rad([[q[0], q[2]]], c0, 0); const out = [o[0], 0, o[1]];
+        for (let t = 0.2; t < 1; t += 0.5) { const pp = M.add(M.lerp3(q, q2, t), M.mul(out, 0.15)); mb.line(pp, M.add(pp, M.add(M.mul(out, 1.3), [0, 0.5, 0])), 0.35, 0.85, sp); mb.line(pp, M.add(pp, M.add(M.mul(out, 1.0), [o[1] * 0.7, -0.4, -o[0] * 0.7])), 0.3, 0.75, sp); } }
+      return; }
+    // a few ink cracks wandering down the sides
+    if (H > 3 && !st.soft) { const rng = JT.makeRng(sd + 5); for (let c = 0; c < Math.min(5, n / 3); c++) { const i = (rng() * n) | 0; const k0 = 1 + ((rng() * (R - 3)) | 0); const pts = []; for (let k = k0; k < Math.min(R - 1, k0 + 2); k++) { const q = P[k][(i + (k - k0)) % n], o = rad([[q[0], q[2]]], c0, 0); pts.push([q[0] + o[0] * 0.1, q[1], q[2] + o[1] * 0.1]); } if (pts.length > 1) mb.polyline(pts, 0.55, 0.4); } }
+  }
+  // v28: back walls get real relief on their front face: a displaced grid (stones bulge, bark splits into plates,
+  // moss heaps into cushions, roots stand proud), recesses shaded darker. Displacement is mostly inward so climbers stay on the face.
+  function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi; const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    const a = hh(xi, yi, 1), b = hh(xi + 1, yi, 1), c = hh(xi, yi + 1, 1), d = hh(xi + 1, yi + 1, 1); return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy; }
+  function cell2(x, y) { const xi = Math.floor(x), yi = Math.floor(y); let d1 = 9, d2 = 9; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const ox = 0.1 + 0.8 * hh(xi + i, yi + j, 5), oy = 0.1 + 0.8 * hh(xi + i, yi + j, 6); const dx = xi + i + ox - x, dy = yi + j + oy - y; const dd = dx * dx + dy * dy; if (dd < d1) { d2 = d1; d1 = dd; } else if (dd < d2) d2 = dd; } return [Math.sqrt(d1), Math.sqrt(d2) - Math.sqrt(d1)]; }
+  const RELIEF = {
+    stonewall: { amp: 1.6, f: (x, y) => { const c = cell2(x * 0.085, y * 0.11); return Math.min(1, c[1] * 5) * (0.75 + 0.25 * Math.min(1, 1 - c[0])) - 1; } },
+    barkwall: { amp: 1.5, f: (x, y) => { const r = Math.abs(Math.sin(x * 0.16 + vnoise(x * 0.04, y * 0.012) * 5)); return Math.min(1, r * 1.6) * (0.8 + 0.2 * vnoise(x * 0.1, y * 0.04)) - 1; } },
+    trunkwall: { amp: 1.2, f: (x, y) => { const r = Math.abs(Math.sin(x * 0.22 + vnoise(x * 0.05, y * 0.01) * 4)); return Math.min(1, r * 1.8) - 1; } },
+    mosswall: { amp: 1.4, f: (x, y) => { const c = cell2(x * 0.1, y * 0.1); return Math.max(0, 1 - c[0] * 1.3) * 0.8 + vnoise(x * 0.3, y * 0.3) * 0.2 - 1; } },
+    rootwall: { amp: 2.0, f: (x, y) => { const a = Math.abs(Math.sin(x * 0.15 + y * 0.055 + vnoise(x * 0.02, y * 0.02) * 7)), b = Math.abs(Math.sin(x * -0.1 + y * 0.13 + vnoise(x * 0.025 + 3, y * 0.025) * 6)); return Math.max(Math.pow(a, 3), Math.pow(b, 4)) - 1; } },
+    leafwall: { amp: 0.9, f: (x, y) => { const c = cell2(x * 0.16 + y * 0.07, y * 0.3 - x * 0.05); return Math.min(1, c[1] * 6) * 0.5 + vnoise(x * 0.2, y * 0.2) * 0.5 - 1; } },
+    sandwall: { amp: 1.2, f: (x, y) => { const l = Math.sin(y * 0.33 + vnoise(x * 0.03, y * 0.05) * 4); return Math.max(-1, Math.min(0, l * 1.4)) * 0.8 + vnoise(x * 0.2, y * 0.2) * 0.2 - 0.2; } },
+    driftwall: { amp: 1.0, f: (x, y) => { const g = Math.sin(y * 0.5 + vnoise(x * 0.015, y * 0.06) * 8); return Math.min(0, g) * 0.7 + vnoise(x * 0.1, y * 0.3) * 0.3 - 0.3; } },
+  };
+  function reliefFace(mb, a, b, H, en, R, side, dark, mark, f) {
+    const L = Math.hypot(b[0] - a[0], b[2] - a[2]); if (L < 0.01) return; const tx = [(b[0] - a[0]) / L, 0, (b[2] - a[2]) / L]; const nx = Math.max(1, Math.round(L / 2.6)), ny = Math.max(2, Math.min(70, Math.round(H / 2.6)));
+    const hx = (u) => a[0] * tx[0] + a[2] * tx[2] + u * L; // world coordinate along the wall (continuous across faces)
+    const D = (u, y) => R.amp * R.f(hx(u), y); const e = 0.6; const ids = [];
+    for (let j = 0; j <= ny; j++) { const y = a[1] + H * j / ny; const row = []; for (let i = 0; i <= nx; i++) { const u = i / nx; const d = (j === 0 || i === 0 || i === nx) ? Math.min(0, D(u, y)) * 0.3 : D(u, y);
+        const du = (D(u + e / L, y) - D(u - e / L, y)) / (2 * e), dy = (D(u, y + e) - D(u, y - e)) / (2 * e);
+        const nn = M.norm([en[0] - tx[0] * du, -dy, en[2] - tx[2] * du]); const p = [a[0] + tx[0] * u * L + en[0] * d, y, a[2] + tx[2] * u * L + en[2] * d];
+        const rec = Math.max(0, Math.min(1, -d / R.amp)); const cc = mixc(mixc(dark, side, Math.min(1, (y - a[1]) / 6)), M.mul(side, 0.62), rec * 0.55);
+        row.push(mb.vert(p, nn, M.norm([en[0], 0.15, en[2]]), cc, mark, f)); } ids.push(row); }
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) mb.quad(ids[j][i], ids[j][i + 1], ids[j + 1][i + 1], ids[j + 1][i]);
+  }
+  // v28: grounding — a scatter of pebbles, crumbs of substrate and bits of leaf litter round the foot of things standing on the floor
+  const NODRESS = { backwall: 1, wallmount: 1, scatter: 1, lamp: 1, dish: 1 };
+  const STONES = ['#8a8478', '#6f6a60', '#9a9282', '#7a7266', '#5e5a52'], LITTER = ['#8a6a3a', '#a07a40', '#6a5630', '#7a7a3a', '#94683a'];
+  function dress(mb, g) {
+    const d = g.def; if (!d || d.cat === 'ground' || NODRESS[d.arche] || g.baseY > 0.5 || g.type === 'heatlamp' || !g.foot || g.foot.length < 3) return;
+    const poly = g.foot, c = G.centroid(poly); const rng = JT.makeRng(JT.hashStr(String(g.id) + 'dress' + g.type)); const hard = g.solids && g.solids.length > 0;
+    let per = 0; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; per += Math.hypot(b[0] - a[0], b[1] - a[1]); }
+    const N = Math.round(M.clamp(per / (hard ? 6 : 4.5), 4, 18)); const y = g.baseY;
+    for (let k = 0; k < N; k++) {
+      const i = (rng() * poly.length) | 0, a = poly[i], b = poly[(i + 1) % poly.length], t = rng(); const px = M.lerp(a[0], b[0], t), pz = M.lerp(a[1], b[1], t);
+      let ox = px - c[0], oz = pz - c[1]; const ol = Math.hypot(ox, oz) || 1; ox /= ol; oz /= ol; const dd = (hard ? 0.4 : -1.5) + rng() * (hard ? 2.8 : 3.5);
+      const p = [px + ox * dd, y, pz + oz * dd]; const kind = rng(); const ang = rng() * 6.28; const u = [Math.cos(ang), 0, Math.sin(ang)], w = [-Math.sin(ang), 0, Math.cos(ang)];
+      if (kind < 0.42) { const r = 0.35 + rng() * (hard ? 0.9 : 0.6); const col = shade(STONES[(rng() * STONES.length) | 0], (rng() - 0.5) * 0.2); ell(mb, [p[0], y + r * 0.15, p[2]], M.mul(u, r), [0, r * 0.55, 0], M.mul(w, r * (0.6 + rng() * 0.35)), col, shade(hexOf(col), -0.35), MAT('stone'), null, 7, 3, true, r < 0.7 ? 0.4 : 0.6); }
+      else if (kind < 0.7) { const r = 0.45 + rng() * 0.8; const tn = 0.82 + rng() * 0.28; ell(mb, [p[0], y + 0.02, p[2]], M.mul(u, r), [0, r * 0.4, 0], M.mul(w, r * 0.8), [tn, tn, tn], [tn * 0.8, tn * 0.8, tn * 0.8], MAT('soil'), null, 6, 2, true, 0.3); }
+      else { const L = 1.6 + rng() * 2.2; B.leaf(mb, { o: [p[0], y + 0.12, p[2]], a: M.mul(u, L), b: M.mul(w, L * 0.4), col: LITTER[(rng() * LITTER.length) | 0], shape: rng() < 0.3 ? 'oak' : 'oval', h: 0 }, g); }
+    }
+  }
   const B = {};
   B.prism = function (mb, pr, g) {
     const STY = JT.Draw.STY; const st = pr.cols || STY[pr.style] || STY.rock; const base = pr.poly, top = pr.topPoly || pr.poly; const n = base.length; if (n < 3) return;
@@ -8980,15 +9092,20 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const vn = []; for (let i = 0; i < n; i++) vn.push(M.norm(M.add(en[i], en[(i - 1 + n) % n])));
     const tilt = (i) => { const dx = Math.hypot(base[i][0] - c[0], base[i][1] - c[1]) - Math.hypot(top[i][0] - ct[0], top[i][1] - ct[1]); return Math.atan2(dx, Math.max(0.5, H)); };
     const bottomLift = pr.y0 > g.baseY + 0.4 ? 1 : 0; void ccw;
+    const cact = pr.style === 'cactus'; let lmp = LUMP[pr.style] || 0; if (pr.ws || pr.door || (g.def && (g.def.arche === 'backwall' || g.def.arche === 'wallmount')) || n < 3) lmp = 0;
+    if (cact || (lmp && H > 0.8)) { lumpy(mb, pr, g, st, lmp, cact); return; }
+    const pf = FL(pr.style);
+    const wallR = g.def && g.def.arche === 'backwall' && !pr.ws && g.out && RELIEF[pr.style] ? RELIEF[pr.style] : null;
     const dark = shade(st.side, -0.18);
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n; const a = base[i], b = base[j], ta = top[i], tb = top[j];
+      if (wallR && en[i][0] * g.out[0] + en[i][2] * g.out[2] > 0.5) { reliefFace(mb, [a[0], pr.y0, a[1]], [b[0], pr.y0, b[1]], pr.y1 - pr.y0, en[i], wallR, side, dark, mark, pf); continue; }
       const na = smooth ? vn[i] : en[i], nb = smooth ? vn[j] : en[i];
       const ka = Math.sin(tilt(i)) * 0.8, kb = Math.sin(tilt(j)) * 0.8;
       const NA = M.norm([na[0], ka, na[2]]), NB = M.norm([nb[0], kb, nb[2]]);
       const oa = M.norm([vn[i][0], 0.15, vn[i][2]]), ob = M.norm([vn[j][0], 0.15, vn[j][2]]);
-      const A0 = mb.vert([a[0], pr.y0, a[1]], NA, oa, dark, mark, pat), B0 = mb.vert([b[0], pr.y0, b[1]], NB, ob, dark, mark, pat);
-      const B1 = mb.vert([tb[0], pr.y1, tb[1]], NB, ob, side, mark, pat), A1 = mb.vert([ta[0], pr.y1, ta[1]], NA, oa, side, mark, pat);
+      const A0 = mb.vert([a[0], pr.y0, a[1]], NA, oa, dark, mark, pf), B0 = mb.vert([b[0], pr.y0, b[1]], NB, ob, dark, mark, pf);
+      const B1 = mb.vert([tb[0], pr.y1, tb[1]], NB, ob, side, mark, pf), A1 = mb.vert([ta[0], pr.y1, ta[1]], NA, oa, side, mark, pf);
       mb.quad(A0, B0, B1, A1);
     }
     // top cap
@@ -9001,10 +9118,10 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       return;
     }
     const tc = smooth ? mixc(topC, hi, 0.25) : topC;
-    const ci = mb.vert([ct[0], pr.y1 + (smooth ? Math.min(2.5, H * 0.12) : 0), ct[1]], [0, 1, 0], [0, 1, 0], mixc(tc, hi, 0.2), mark, pat);
-    const rim = top.map((q, i) => mb.vert([q[0], pr.y1, q[1]], smooth ? M.norm([vn[i][0] * 0.45, 1, vn[i][2] * 0.45]) : [0, 1, 0], M.norm([vn[i][0], 0.15, vn[i][2]]), tc, mark, pat));
+    const ci = mb.vert([ct[0], pr.y1 + (smooth ? Math.min(2.5, H * 0.12) : 0), ct[1]], [0, 1, 0], [0, 1, 0], mixc(tc, hi, 0.2), mark, pf);
+    const rim = top.map((q, i) => mb.vert([q[0], pr.y1, q[1]], smooth ? M.norm([vn[i][0] * 0.45, 1, vn[i][2] * 0.45]) : [0, 1, 0], M.norm([vn[i][0], 0.15, vn[i][2]]), tc, mark, pf));
     for (let i = 0; i < n; i++) mb.tri(ci, rim[i], rim[(i + 1) % n]);
-    if (bottomLift) { const cb = mb.vert([c[0], pr.y0, c[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, pat); const rb = base.map((q, i) => mb.vert([q[0], pr.y0, q[1]], [0, -1, 0], M.norm([vn[i][0], -0.2, vn[i][2]]), shade(st.side, -0.35), mark, pat)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
+    if (bottomLift) { const cb = mb.vert([c[0], pr.y0, c[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, pf); const rb = base.map((q, i) => mb.vert([q[0], pr.y0, q[1]], [0, -1, 0], M.norm([vn[i][0], -0.2, vn[i][2]]), shade(st.side, -0.35), mark, pf)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
     // ink: crisp top rim for flat-topped blocks, a few marks on the sides
     if (!smooth) mb.polyline(top.concat([top[0]]).map(q => [q[0], pr.y1, q[1]]), 0.8, 0.55);
     const rng = JT.makeRng(JT.hashStr(String(g.id) + pr.y0 + pr.style));
@@ -9046,7 +9163,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     }
     const r0 = pr.r0, r1 = pr.r1; const thick = Math.max(r0, r1);
     const sides = thick > 2.5 ? 10 : thick > 1 ? 7 : 5;
-    const pat = pr.style === 'bark' || pr.style === 'palm' ? PAT.grain : pr.style === 'drift' ? PAT.grain : 0;
+    const pat = pr.style === 'bark' ? MAT('bark') : pr.style === 'palm' ? PAT.grain : pr.style === 'drift' ? MAT('drift') : 0;
     tube(mb, pr.pts, r0, r1, col, shade(hexOf(col), -0.35), pat, sides, thick > 1.4 ? shade(hexOf(col), 0.12) : false, thick < 0.5 ? 0.55 : 1);
     if ((pr.style === 'bark' || pr.style === 'palm') && thick > 1.5) { // a few bark marks
       const rng = JT.makeRng(JT.hashStr(String(g.id) + n + r0));
@@ -9069,22 +9186,34 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   B.leaf = function (mb, pr, g) {
     const A = pr.a, Bv = pr.b; const L = M.len(A); if (L < 0.05) return; const wfn = LW[pr.shape] || LW.oval;
     let nrm = M.cross(A, Bv); if (M.len(nrm) < 1e-6) nrm = [0, 1, 0]; nrm = M.norm(nrm); if (nrm[1] < 0) nrm = M.mul(nrm, -1);
-    const S = L > 6 ? 8 : L > 2.5 ? 6 : 4; const c0 = rgb(pr.col), c1 = pr.col2 ? rgb(pr.col2) : shade(pr.col, 0.08); const vein = pr.vein ? rgb(pr.vein) : shade(pr.col, 0.22);
-    const cup = Math.min(0.35, L * 0.04); const f = TWO + (pr.stripe ? PAT.bands : 0); const mid = [], lft = [], rgt = [];
-    const bend = M.mul(nrm, -L * 0.06); // tip droops a little
-    const ub = M.norm(A), bb = M.len(Bv) > 1e-6 ? M.norm(Bv) : perp(ub);
-    for (let k = 0; k <= S; k++) {
-      const u = k / S; const w = wfn(u); const p = M.add(M.add(pr.o, M.mul(A, u)), M.mul(bend, u * u)); const col = mixc(c0, c1, u * 0.9);
-      const tipO = k === S ? ub : k === 0 ? M.mul(ub, -1) : [0, 0, 0];
-      mid.push(mb.vert(M.add(p, M.mul(nrm, -cup * w)), nrm, tipO, mixc(col, vein, 0.25), vein, f));
-      const pl = M.add(M.add(p, M.mul(Bv, w)), M.mul(nrm, cup * w * 0.6)), prr = M.add(M.add(p, M.mul(Bv, -w)), M.mul(nrm, cup * w * 0.6));
-      const nl = M.norm(M.add(nrm, M.mul(bb, -0.35))), nr = M.norm(M.add(nrm, M.mul(bb, 0.35)));
-      const variegate = pr.variegate && k > S * 0.3 && k < S * 0.7 ? mixc(col, rgb(pr.variegate), 0.35) : col;
-      lft.push(mb.vert(pl, nl, M.norm(M.add(bb, M.mul(tipO, 1))), variegate, vein, f)); rgt.push(mb.vert(prr, nr, M.norm(M.add(M.mul(bb, -1), M.mul(tipO, 1))), col, vein, f));
+    const o0 = pr.o; const h1 = hh(o0[0], o0[1], o0[2]), h2 = hh(o0[2], o0[0], 3.7), h3 = hh(o0[1], o0[2], 9.1);
+    const litter = pr.shape === 'chip' || pr.shape === 'oak' || !(pr.h > 1.2); const split = !!pr.split && L > 6;
+    // v28: every leaf a little different (light, warmth), darker at the base, lighter and warmer toward the tip
+    let c0 = rgb(pr.col); const wm = (h2 - 0.5) * 0.08; c0 = [c0[0] * (0.93 + h1 * 0.14) * (1 + wm), c0[1] * (0.93 + h1 * 0.14), c0[2] * (0.93 + h1 * 0.14) * (1 - wm)];
+    const c1 = pr.col2 ? rgb(pr.col2) : mixc(c0, [0.95, 0.97, 0.7], 0.12); const cb = M.mul(c0, 0.8); const vein = pr.vein ? rgb(pr.vein) : shade(pr.col, 0.22);
+    const old = !litter && !pr.variegate && !pr.stripe && L > 2.5 && h3 < 0.06; const YEL = [0.8, 0.68, 0.26], BRN = [0.48, 0.32, 0.15]; const vg = pr.variegate ? rgb(pr.variegate) : null;
+    const S = split ? 12 : L > 8 ? 9 : L > 5 ? 7 : L > 2.5 ? 5 : 3; const SS = split ? [-1, -0.42, 0, 0.42, 1] : L > 5 ? [-1, -0.5, 0, 0.5, 1] : [-1, 0, 1];
+    const cup = Math.min(0.7, L * 0.05) * (litter ? 0.5 : 1); const f = TWO + (pr.stripe ? PAT.bands : 0);
+    const bend = M.mul(nrm, -L * (litter ? 0.03 : 0.05 + h1 * 0.09)); const ub = M.norm(A), bb = M.len(Bv) > 1e-6 ? M.norm(Bv) : perp(ub); const twist = (h2 - 0.5) * 0.14 * L;
+    const wave = L > 9 && !litter ? 0.035 * L : 0;
+    const at = (u, sd) => { const w = wfn(u); const p = M.add(M.add(o0, M.mul(A, u)), M.add(M.mul(bend, u * u), M.mul(bb, twist * u * u)));
+      const lift = cup * w * (sd * sd - 0.35) + (Math.abs(sd) > 0.9 ? wave * Math.sin(u * 11 + h1 * 6) : 0); return M.add(M.add(p, M.mul(Bv, w * sd)), M.mul(nrm, lift)); };
+    const colAt = (u, sd, k, i) => { let c = mixc(cb, c1, Math.pow(u, 0.8)); if (sd === 0) c = mixc(c, vein, 0.28); else c = mixc(c, M.mul(c, 0.86), Math.abs(sd) * 0.6);
+      if (vg && Math.abs(sd) > 0.3 && hh(k, i, h1 * 50) > 0.45) c = mixc(c, vg, 0.45);
+      if (old) { c = mixc(c, YEL, 0.5 * (0.35 + 0.65 * u)); if (u > 0.7 && Math.abs(sd) > 0.4) c = mixc(c, BRN, 0.55); } return c; };
+    const vtx = (u, sd, k, i) => { const k2 = Math.round(u * S); const tipO = k2 >= S ? ub : k2 <= 0 ? M.mul(ub, -1) : [0, 0, 0];
+      const nn = M.norm(M.add(nrm, M.mul(bb, -sd * 0.45))); const o = Math.abs(sd) > 0.99 ? M.norm(M.add(M.mul(bb, sd), tipO)) : tipO; return mb.vert(at(u, sd), nn, o, colAt(u, sd, k, i), vein, f); };
+    const grid = []; for (let k = 0; k <= S; k++) { const row = []; for (let i = 0; i < SS.length; i++) row.push(vtx(k / S, SS[i], k, i)); grid.push(row); }
+    for (let k = 0; k < S; k++) for (let i = 0; i + 1 < SS.length; i++) {
+      const outer = split && (i === 0 || i === SS.length - 2) && k >= 2 && k <= S - 3 && k % 2 === 1;
+      if (!outer) { if (SS[i] < 0) mb.quad(grid[k][i], grid[k][i + 1], grid[k + 1][i + 1], grid[k + 1][i]); else mb.quad(grid[k][i], grid[k + 1][i], grid[k + 1][i + 1], grid[k][i + 1]); continue; }
+      // monstera: the outer half is cut into fingers by slits running in from the edge
+      const u0 = k / S, u1 = (k + 0.62) / S; const a0 = vtx(u0, SS[i], k, i), a1 = vtx(u0, SS[i + 1], k, i + 1), b1 = vtx(u1, SS[i + 1], k, i + 1), b0 = vtx(u1, SS[i], k, i);
+      if (SS[i] < 0) mb.quad(a0, a1, b1, b0); else mb.quad(a0, b0, b1, a1);
+      const ec = SS[i] < 0 ? SS[i] : SS[i + 1]; mb.line(at(u1, ec * 0.98), at(u1, ec > 0 ? SS[i] : SS[i + 1]), 0.3, 0.35, vein);
     }
-    for (let k = 0; k < S; k++) { mb.quad(mid[k], mid[k + 1], lft[k + 1], lft[k]); mb.quad(mid[k], rgt[k], rgt[k + 1], mid[k + 1]); }
-    if (L > 3) { const pts = []; for (let k = 0; k <= 4; k++) { const u = k / 4 * 0.92; pts.push(M.add(M.add(M.add(pr.o, M.mul(A, u)), M.mul(bend, u * u)), M.mul(nrm, 0.05))); } mb.polyline(pts, 0.5, 0.45, vein); }
-    if (L > 9 && !pr.stripe) for (let k = 1; k <= 3; k++) { const u = k / 4.2; const p = M.add(M.add(pr.o, M.mul(A, u)), M.mul(bend, u * u)); for (const sd of [-1, 1]) mb.line(M.add(p, M.mul(nrm, 0.05)), M.add(M.add(M.add(p, M.mul(A, 0.1)), M.mul(Bv, sd * wfn(u) * 0.7)), M.mul(nrm, 0.05)), 0.35, 0.35, vein); }
+    if (L > 3) { const pts = []; for (let k = 0; k <= 4; k++) pts.push(M.add(at(k / 4 * 0.92, 0), M.mul(nrm, 0.05))); mb.polyline(pts, 0.5, 0.45, vein); }
+    if (L > 9 && !pr.stripe) for (let k = 1; k <= (split ? 5 : 3); k++) { const u = k / (split ? 6.2 : 4.2); for (const sd of [-1, 1]) mb.line(M.add(at(u, 0), M.mul(nrm, 0.05)), M.add(at(Math.min(1, u + 0.1), sd * 0.7), M.mul(nrm, 0.05)), 0.35, 0.35, vein); }
   };
   B.bloom = function (mb, pr, g) {
     const o = pr.o, r = pr.r, k = pr.kind; const col = rgb(pr.col), col2 = pr.col2 ? rgb(pr.col2) : shade(pr.col, 0.3); const up = [0, 1, 0];
@@ -9102,22 +9231,27 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   };
   B.cap = function (mb, pr, g) {
     const o = pr.o, r = pr.r; const col = rgb(pr.col); const top = pr.glow ? rgb(typeof pr.glow === 'string' ? pr.glow : '#c8f0d0') : shade(pr.col, 0.25);
-    const f = pr.glow ? GLOW : 0; const ry = pr.cone ? r * 0.95 : r * 0.42;
+    const f = pr.glow ? GLOW : 0; const ry = pr.cone ? r * 0.95 : pr.dome ? r * 0.62 : r * 0.42;
     if (pr.cone) { // conical cap
       const S = 10, ids = []; const apex = mb.vert([o[0], o[1] + ry, o[2]], [0, 1, 0], [0, 1, 0], top, col, f);
       for (let i = 0; i < S; i++) { const a = i / S * 6.283; const d = [Math.cos(a), 0, Math.sin(a)]; ids.push(mb.vert([o[0] + d[0] * r, o[1], o[2] + d[2] * r], M.norm([d[0], 0.7, d[2]]), d, col, col, f)); }
       for (let i = 0; i < S; i++) mb.tri(apex, ids[(i + 1) % S], ids[i]);
     } else ell(mb, o, [r, 0, 0], [0, ry, 0], [0, 0, r], col, top, f, null, 10, 4, true);
-    disc(mb, [o[0], o[1] - 0.05, o[2]], [r * 0.95, 0, 0], [0, 0, r * 0.95], [0, -1, 0], shade(pr.col, -0.35), 0, 10, 0.3);
+    const gc = pr.glow ? shade(pr.col, -0.2) : mixc(rgb('#e8dcc0'), col, 0.25); disc(mb, [o[0], o[1] - 0.05, o[2]], [r * 0.95, 0, 0], [0, 0, r * 0.95], [0, -1, 0], gc, f, 14, 0.3);
+    if (r > 1.2) { const ng = Math.min(28, Math.round(r * 6)); const gl = shade(hexOf(gc), -0.35); for (let k = 0; k < ng; k++) { const a = k / ng * 6.283; mb.line([o[0] + Math.cos(a) * r * 0.22, o[1] - 0.12, o[2] + Math.sin(a) * r * 0.22], [o[0] + Math.cos(a) * r * 0.9, o[1] - 0.12, o[2] + Math.sin(a) * r * 0.9], 0.22, 0.5, gl); } } // gills
     if (pr.spots) { const sd = (o[0] * 7 + o[2] * 13) | 0; const w = rgb('#fff8e8'); for (let k = 0; k < 7; k++) { const a = ((sd + k * 47) % 100) / 100 * 6.283, b = 0.25 + ((sd * 3 + k * 61) % 100) / 100 * 0.6; const h = pr.cone ? (1 - b) : Math.sqrt(1 - b * b); const p = [o[0] + Math.cos(a) * r * b, o[1] + ry * h + 0.05, o[2] + Math.sin(a) * r * b]; const n = M.norm([Math.cos(a) * b, h, Math.sin(a) * b]); const u = M.norm(M.cross(n, [0, 0, 1])), v = M.cross(n, u); disc(mb, p, M.mul(u, r * 0.12), M.mul(v, r * 0.09), n, w, 0, 6, 0.2); } }
   };
   B.log = function (mb, pr, g) {
     const STY = JT.Draw.STY; const st = STY[pr.style] || STY.wood; const r = pr.r; const col = rgb(st.side);
-    tube(mb, [pr.a, M.lerp3(pr.a, pr.b, 0.5), pr.b], r, r * 0.96, col, rgb(st.mark), STYP(pr.style) || PAT.grain, 12, rgb(st.top), 1);
+    const lf = FL(pr.style) || PAT.grain; tube(mb, [pr.a, M.lerp3(pr.a, pr.b, 0.33), M.lerp3(pr.a, pr.b, 0.66), pr.b], r, r * 0.96, col, rgb(st.mark), lf, 14, rgb(st.top), 1);
     const ax = M.norm(M.sub(pr.b, pr.a)); const s = perp(ax), t = M.cross(ax, s);
     for (const [e, sg] of [[pr.a, -1], [pr.b, 1]]) { const c = M.add(e, M.mul(ax, sg * 0.05)); for (const rr of [0.4, 0.7]) { const pts = []; for (let k = 0; k <= 12; k++) { const a = k / 12 * 6.283; pts.push(M.add(c, M.add(M.mul(s, Math.cos(a) * r * rr), M.mul(t, Math.sin(a) * r * rr)))); } mb.polyline(pts, 0.5, 0.45); }
       if (pr.hollow) disc(mb, M.add(c, M.mul(ax, sg * 0.05)), M.mul(s, r * 0.7), M.mul(t, r * 0.7), M.mul(ax, sg), rgb('#160d06'), 0, 12, 0); }
     const rng = JT.makeRng(JT.hashStr(String(g.id) + 'log')); for (let k = 0; k < 7; k++) { const a = rng() * 6.28; const off = M.add(M.mul(s, Math.cos(a) * r * 1.01), M.mul(t, Math.sin(a) * r * 1.01)); const t0 = rng() * 0.6, t1 = t0 + 0.15 + rng() * 0.3; mb.line(M.add(M.lerp3(pr.a, pr.b, t0), off), M.add(M.lerp3(pr.a, pr.b, t1), off), 0.6, 0.45); }
+    // v28: snapped-off branch stubs on the upper side, with pale broken tips
+    if (!pr.half && r > 1.5) for (let k = 0; k < 2; k++) { const tt = 0.22 + k * 0.4 + rng() * 0.15; let off = M.add(M.mul(s, Math.cos(rng() * 6.28)), M.mul(t, Math.sin(rng() * 6.28))); off = M.norm([off[0], Math.abs(off[1]) + 0.5, off[2]]);
+      const p0 = M.add(M.lerp3(pr.a, pr.b, tt), M.mul(off, r * 0.85)); const d = M.norm(M.add(off, M.mul(ax, rng() < 0.5 ? 0.5 : -0.5))); const L = r * (0.6 + rng() * 0.5);
+      tube(mb, [p0, M.add(p0, M.mul(d, L * 0.6)), M.add(p0, M.mul(d, L))], r * 0.3, r * 0.2, col, rgb(st.mark), lf, 7, rgb(st.top), 1); }
   };
   B.pot = function (mb, pr) {
     const c = pr.o, r = pr.r, h = pr.h; const col = rgb(pr.col);
@@ -9135,8 +9269,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   B.tuft = function (mb, pr) {
     const n = pr.nv || [0, 1, 0]; const t1 = perp(n), t2 = M.cross(n, t1); const R = pr.r; const col = rgb(pr.col);
     const lob = (() => { const r = JT.makeRng(pr.seed || 1); const a = []; for (let k = 0; k < 6; k++) { const t = r() * 6.28, d = r() * 0.6; a.push([Math.cos(t) * d, Math.sin(t) * d * 0.8, 0.35 + r() * 0.35, (r() - 0.5) * 0.2]); } return a; })();
-    ell(mb, pr.o, M.mul(t1, R), M.mul(n, R * 0.55), M.mul(t2, R), shade(pr.col, -0.15), col, PAT.moss, null, 8, 3, true);
-    for (const b of lob) { const c = M.add(M.add(M.add(pr.o, M.mul(t1, b[0] * R)), M.mul(t2, b[1] * R)), M.mul(n, R * 0.25)); const rr = b[2] * R; ell(mb, c, M.mul(t1, rr), M.mul(n, rr * 0.8), M.mul(t2, rr), shade(pr.col, b[3]), shade(pr.col, 0.15 + b[3]), PAT.moss, null, 6, 3, true, 0.7); }
+    ell(mb, pr.o, M.mul(t1, R), M.mul(n, R * 0.55), M.mul(t2, R), shade(pr.col, -0.15), col, MAT('moss'), null, 8, 3, true);
+    for (const b of lob) { const c = M.add(M.add(M.add(pr.o, M.mul(t1, b[0] * R)), M.mul(t2, b[1] * R)), M.mul(n, R * 0.25)); const rr = b[2] * R; ell(mb, c, M.mul(t1, rr), M.mul(n, rr * 0.8), M.mul(t2, rr), shade(pr.col, b[3]), shade(pr.col, 0.15 + b[3]), MAT('moss'), null, 6, 3, true, 0.7); }
   };
   B.shelf = function (mb, pr) {
     const n = pr.nv, t = M.norm(M.cross([0, 1, 0], n)); const r = pr.r; const o = pr.o; const S = 12; const up = [0, 1, 0];
@@ -9151,14 +9285,14 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   };
   B.moss = function (mb, pr, g) {
     const base = pr.kind === 'lichen' ? '#b8c4a0' : pr.kind === 'clover' ? '#4a8a3a' : pr.col;
-    for (const b of pr.blobs) { const r = b[2]; const c = [b[0], g.baseY + 0.05, b[1]]; ell(mb, c, [r, 0, 0], [0, Math.min(1.6, r * 0.32), 0], [0, 0, r], shade(base, -0.2 + b[3]), shade(base, 0.12 + b[3]), PAT.moss, null, 8, 3, true, 0.6);
+    for (const b of pr.blobs) { const r = b[2]; const c = [b[0], g.baseY + 0.05, b[1]]; ell(mb, c, [r, 0, 0], [0, Math.min(1.6, r * 0.32), 0], [0, 0, r], shade(base, -0.2 + b[3]), shade(base, 0.12 + b[3]), pr.kind === 'lichen' ? PAT.moss : MAT('moss'), null, 8, 3, true, 0.6);
       if (pr.kind === 'clover') for (let k = 0; k < 3; k++) { const a = k * 2.09 + b[3] * 5; disc(mb, [b[0] + Math.cos(a) * r * 0.32, g.baseY + Math.min(1.6, r * 0.32) + 0.1, b[1] + Math.sin(a) * r * 0.32], [r * 0.3, 0, 0], [0, 0, r * 0.3], [0, 1, 0], shade(base, 0.1 + b[3]), 0, 7, 0.4); } }
   };
   B.pebble = function (mb, pr) {
     const r = pr.r, a = pr.ang || 0; const u = [Math.cos(a), 0, Math.sin(a)], w = [-Math.sin(a), 0, Math.cos(a)]; const col = rgb(pr.col);
     if (pr.kind === 'cones') { ell(mb, [pr.o[0], pr.o[1] + r * 0.4, pr.o[2]], M.mul(u, r * 1.3), [0, r * 0.6, 0], M.mul(w, r * 0.7), shade(pr.col, -0.15), shade(pr.col, 0.15), PAT.dots, null, 10, 4, false, 0.8); return; }
     const ry = pr.kind === 'pods' ? r * 0.45 : r * 0.55, rz = pr.kind === 'pods' ? r * 0.45 : r * 0.8;
-    ell(mb, [pr.o[0], pr.o[1] + ry * 0.4, pr.o[2]], M.mul(u, r), [0, ry, 0], M.mul(w, rz), shade(pr.col, -0.1), shade(pr.col, 0.15), PAT.speck, null, 8, 4, false, r < 1.5 ? 0.5 : 0.8);
+    ell(mb, [pr.o[0], pr.o[1] + ry * 0.4, pr.o[2]], M.mul(u, r), [0, ry, 0], M.mul(w, rz), shade(pr.col, -0.1), shade(pr.col, -0.4), MAT('stone'), null, 8, 4, false, r < 1.5 ? 0.5 : 0.8);
   };
 
   /** Build (or reuse) the mesh for one decor geometry. */
@@ -9167,6 +9301,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     if (g._mesh && g._mesh.gl && g._mesh.vb) g._mesh.gl.free(g._mesh);
     const mb = new MB(g);
     for (const pr of g.prims) { const f = B[pr.t]; if (!f) continue; try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); } }
+    try { dress(mb, g); } catch (e) { if (JT.DEV) console.warn('dress', e); }
     const verts = new Float32Array(mb.v); const idx = mb.n > 65000 ? new Uint32Array(mb.i) : new Uint16Array(mb.i);
     // ink strokes -> ribbon vertices (a, b, side/end, width, alpha, colour, sway a/b)
     const L = mb.lines; const lv = new Float32Array(L.length * 4 * 15); const li = (L.length * 4 > 65000 ? new Uint32Array(L.length * 6) : new Uint16Array(L.length * 6)); let o = 0;
@@ -9210,16 +9345,83 @@ varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying fl
 uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}
 float b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }
 float bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }
+// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,
+// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.
+float hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }
+float tn(vec2 p){ return texture2D(uNoise,p).r; }
+uniform sampler2D uCell; uniform float uMatQ;
+vec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }
+// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id
+vec4 matAt(float mt, vec2 q, float up, float y){
+  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;
+  if(mt<1.5){ // cork: deep vertical fissures between raised plates
+    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));
+    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));
+    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);
+    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }
+  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops
+    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);
+    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);
+    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;
+    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }
+  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges
+    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));
+    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);
+    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;
+    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }
+  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints
+    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);
+    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);
+    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));
+    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;
+    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }
+  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds
+    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);
+    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;
+    tt=step(0.86,c.z)*0.35; ti=2.0; }
+  else if(mt<6.5){ // bark: narrower interlaced ridges
+    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));
+    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);
+    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }
+  else if(mt<7.5){ // sandstone: wavy layers, eroded pits
+    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);
+    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }
+  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib
+    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);
+    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;
+    tt=step(0.8,c.z)*0.5; ti=3.0; }
+  else if(mt<9.5){ // soil lumps (take the substrate's colour)
+    sh=0.8+0.3*tn(q*0.4); }
+  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between
+    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;
+    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));
+    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);
+    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }
+  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints
+    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);
+    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;
+    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }
+  return vec4(sh,dk,tt,ti); }
+vec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }
 void main(){
   if(vWP.y<-0.05) discard;
   if(uPass>0.5){ float ia=uAlpha; gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }
-  float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=floor(f/16.0);
+  float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);
   vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }
   float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>1.5){ dl=0.42*smoothstep(0.22,0.3,dl)+0.58*smoothstep(0.7,0.76,dl); } else if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);
   vec3 col=vC;
   vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);
   vec4 nz=texture2D(uNoise, uv*0.045);
-  if(pat>0.5){ float m=0.0;
+  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)
+  else if(mt>0.5){ // v28 material
+    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);
+    float bw=smoothstep(0.3,0.7,wa); vec4 A;
+    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);
+    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);
+    if(uHD>1.5){ A.y=step(0.42,A.y)*0.8; A.x=mix(1.0,A.x,0.45); A.z=step(0.5,A.z)*0.7; } // Cuphead: bold, flat marks
+    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;
+    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }
+  else if(pat>0.5){ float m=0.0;
     if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;
     else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;
     else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;
@@ -9236,6 +9438,8 @@ void main(){
   o=mix(o, uGhost.rgb, uGhost.a);
   float A=uAlpha;
   gl_FragColor=vec4(o*A, A); }`;
+  // simple surface detail: the same shader with the procedural materials cut out (one cheap noise speckle instead)
+  const MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf('  else if(mt>0.5){ // v28 material')).replace('mt>0.5 && uMatQ<0.5', 'mt>0.5') + MESH_FS.slice(MESH_FS.indexOf('  else if(pat>0.5){'));
   const TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
   const TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}
@@ -9353,9 +9557,9 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       this.gl = gl; this.cv = canvas; this.R = R; this.gl2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
       this.uintOK = this.gl2 || !!gl.getExtension('OES_element_index_uint');
       this.P = {
-        mesh: this.prog(MESH_VS, MESH_FS), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
+        mesh: this.prog(MESH_VS, MESH_FS), meshS: this.prog(MESH_VS, MESH_SIMPLE), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
       };
-      this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false) };
+      this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false), cell: this.texFrom(this.cellCanvas(), true) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
       this.V2 = new JT.View(0, 0, 1, 0, 0, [0, 0, 0]); this.dyn = {}; this.lost = false;
       canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; });
@@ -9422,9 +9626,19 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     texParams(repeat, mip) { const gl = this.gl; const w = repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE; gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); }
     buf(data, kind) { const gl = this.gl; const b = gl.createBuffer(); const t = kind === 'idx' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER; gl.bindBuffer(t, b); gl.bufferData(t, data, gl.STATIC_DRAW); return b; }
     view(P, V) { const gl = this.gl; gl.uniform3f(P.u.uC, V.c[0], V.c[1], V.c[2]); gl.uniform4f(P.u.uRot, V.cy_, V.sy_, V.cp, V.sp); gl.uniform4f(P.u.uScr, V.s, V.cx, V.cy, 0); const r = this._res; gl.uniform2f(P.u.uRes, r ? r[0] : this.cv.width, r ? r[1] : this.cv.height); }
-    light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); const S = F.sky || NEUTRAL; if (P.u.uKD) gl.uniform1f(P.u.uKD, S.kd); if (P.u.uKeyC) gl.uniform3f(P.u.uKeyC, S.key[0], S.key[1], S.key[2]); if (P.u.uAmbC) gl.uniform3f(P.u.uAmbC, S.amb[0], S.amb[1], S.amb[2]); }
+    /** v28: Rich surface detail uses the full material shader; Simple (or Battery saver) a stripped one. */
+    meshProg() { const st = this.R.set || {}; if (this._swGL == null) { let r = ''; try { const gl = this.gl, x = gl.getExtension('WEBGL_debug_renderer_info'); r = String(gl.getParameter(x ? x.UNMASKED_RENDERER_WEBGL : gl.RENDERER)); } catch (e) {} this._swGL = /swiftshader|llvmpipe|software|basic render/i.test(r); }
+      const simple = st.detail === 'simple' || st.fps === 'saver' || (!st.detail && this._swGL); return simple ? this.P.meshS : this.P.mesh; } // software GL (no GPU): simple unless chosen
+    light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); const S = F.sky || NEUTRAL; if (P.u.uKD) gl.uniform1f(P.u.uKD, S.kd); if (P.u.uKeyC) gl.uniform3f(P.u.uKeyC, S.key[0], S.key[1], S.key[2]); if (P.u.uAmbC) gl.uniform3f(P.u.uAmbC, S.amb[0], S.amb[1], S.amb[2]); if (P.u.uMatQ) gl.uniform1f(P.u.uMatQ, P === this.P.meshS ? 0 : 1); if (P.u.uCell && this.tex.cell) { gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.tex.cell); gl.uniform1i(P.u.uCell, 3); gl.activeTexture(gl.TEXTURE0); } }
 
     // ---------- generated textures ----------
+    /** v28: tileable cellular noise (16x16 cells): r = distance to the nearest feature point, g = distance to the cell border, b = cell id. */
+    cellCanvas() { const N = 512, C = 16, c = mkCanvas(N, N), g = c.getContext('2d'), id = g.createImageData(N, N); const rng = JT.makeRng(4242); const P = []; for (let i = 0; i < C * C; i++) P.push([0.1 + rng() * 0.8, 0.1 + rng() * 0.8, rng()]);
+      const at = (i, j) => P[((j % C + C) % C) * C + ((i % C + C) % C)];
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const u = x / N * C, v = y / N * C; const xi = Math.floor(u), yi = Math.floor(v); let d1 = 9, d2 = 9, cid = 0;
+        for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const q = at(xi + i, yi + j); const dx = xi + i + q[0] - u, dy = yi + j + q[1] - v; const dd = dx * dx + dy * dy; if (dd < d1) { d2 = d1; d1 = dd; cid = q[2]; } else if (dd < d2) d2 = dd; }
+        const k = (y * N + x) * 4; d1 = Math.sqrt(d1); id.data[k] = Math.min(255, d1 * 200); id.data[k + 1] = Math.min(255, (Math.sqrt(d2) - d1) * 255); id.data[k + 2] = cid * 255; id.data[k + 3] = 255; }
+      g.putImageData(id, 0, 0); return c; }
     noiseCanvas() { // tileable value noise, a different octave mix in each channel
       const N = 256, c = mkCanvas(N, N), g = c.getContext('2d'), id = g.createImageData(N, N); const rng = JT.makeRng(99);
       const grid = (s) => { const a = []; for (let i = 0; i < s * s; i++) a.push(rng()); return (x, y) => { const X = x * s, Y = y * s; const x0 = Math.floor(X), y0 = Math.floor(Y), fx = X - x0, fy = Y - y0; const at = (i, j) => a[((j % s + s) % s) * s + ((i % s + s) % s)]; const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy); return M.lerp(M.lerp(at(x0, y0), at(x0 + 1, y0), sx), M.lerp(at(x0, y0 + 1), at(x0 + 1, y0 + 1), sx), sy); }; };
@@ -9690,7 +9904,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       // decor: ink outline pass + wash pass, per object so plants can sway
       const decorPass = (list) => {
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
-        let P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
+        let P = this.use(this.meshProg()); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); if (CUP) gl.uniform3f(P.u.uInk, TS.ink[0], TS.ink[1], TS.ink[2]); else gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uBoil, CUP && TS.boil ? 1 + Math.floor(performance.now() / 83) % 64 : 0); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uHD, this._hd);
         for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
           gl.uniform1f(P.u.uPass, pass ? 0 : 1);
@@ -9802,7 +10016,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
         gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); gl.viewport(0, 0, S, S); gl.clearColor(0, 0, 0, 0); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); m.lb = m.nl ? this.buf(m.lines) : null; m.lib = m.nl ? this.buf(m.lidx, 'idx') : null; }
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
-        const Lg = JT.LIGHT; let P = this.use(this.P.mesh); this.view(P, W2); this.light(P);
+        const Lg = JT.LIGHT; let P = this.use(this.meshProg()); this.view(P, W2); this.light(P);
         gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, W2.toCam[0], W2.toCam[1], W2.toCam[2]); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
         gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, M.clamp(S / 110, 1.4, 3)); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0); gl.uniform3f(P.u.uSoil, 0.5, 0.4, 0.3);
         for (const pass of [1, 0]) { gl.uniform1f(P.u.uPass, pass); this.drawMesh(P, m); }
@@ -9832,7 +10046,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     drawGhost(V, gh) {
       const gl = this.gl; const g = gh.geom; const m = GM.build(g); if (!m.n) return;
       if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); }
-      const P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.enable(gl.BLEND); gl.depthMask(false); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0);
+      const P = this.use(this.meshProg()); this.view(P, V); this.light(P); gl.enable(gl.BLEND); gl.depthMask(false); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0);
       gl.uniform1f(P.u.uAlpha, gh.ok ? 0.8 : 0.5); gl.uniform4f(P.u.uGhost, gh.ok ? 0.45 : 0.9, gh.ok ? 0.85 : 0.3, gh.ok ? 0.45 : 0.25, 0.3); gl.uniform1f(P.u.uPass, 0); this.drawMesh(P, m);
       gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0);
     }
@@ -12480,6 +12694,9 @@ void main(){
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Frame rate')); const sg = el('div', 'seg small');
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: 60 fps while the device keeps up, 30 when it is busy')); w.appendChild(fr); }
+      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Surface detail')); const sg = el('div', 'seg small');
+        for (const [v, l] of [['rich', 'Rich'], ['simple', 'Simple']]) { const b = el('button', (s.detail || (JT.app && JT.app.R && JT.app.R.gp && JT.app.R.gp._swGL ? 'simple' : 'rich')) === v ? 'on' : '', l); b.onclick = () => { s.detail = v; JT.Settings.save(s); try { JT.app.R.resetCaches(); } catch (e) {} this.settingsModal(); }; sg.appendChild(b); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Rich: bark, stone, moss and wood textures on decor. Simple is lighter on older devices (Battery saver uses it too)')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       w.appendChild(el('h4', '', 'Feel & help'));
       { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }

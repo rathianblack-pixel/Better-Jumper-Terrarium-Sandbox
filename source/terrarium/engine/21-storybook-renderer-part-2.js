@@ -27,16 +27,83 @@ varying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying fl
 uniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}
 float b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }
 float bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }
+// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,
+// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.
+float hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }
+float tn(vec2 p){ return texture2D(uNoise,p).r; }
+uniform sampler2D uCell; uniform float uMatQ;
+vec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }
+// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id
+vec4 matAt(float mt, vec2 q, float up, float y){
+  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;
+  if(mt<1.5){ // cork: deep vertical fissures between raised plates
+    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));
+    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));
+    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);
+    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }
+  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops
+    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);
+    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);
+    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;
+    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }
+  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges
+    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));
+    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);
+    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;
+    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }
+  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints
+    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);
+    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);
+    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));
+    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;
+    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }
+  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds
+    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);
+    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;
+    tt=step(0.86,c.z)*0.35; ti=2.0; }
+  else if(mt<6.5){ // bark: narrower interlaced ridges
+    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));
+    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);
+    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }
+  else if(mt<7.5){ // sandstone: wavy layers, eroded pits
+    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);
+    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }
+  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib
+    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);
+    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;
+    tt=step(0.8,c.z)*0.5; ti=3.0; }
+  else if(mt<9.5){ // soil lumps (take the substrate's colour)
+    sh=0.8+0.3*tn(q*0.4); }
+  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between
+    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;
+    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));
+    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);
+    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }
+  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints
+    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);
+    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;
+    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }
+  return vec4(sh,dk,tt,ti); }
+vec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }
 void main(){
   if(vWP.y<-0.05) discard;
   if(uPass>0.5){ float ia=uAlpha; gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }
-  float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=floor(f/16.0);
+  float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);
   vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }
   float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>1.5){ dl=0.42*smoothstep(0.22,0.3,dl)+0.58*smoothstep(0.7,0.76,dl); } else if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);
   vec3 col=vC;
   vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);
   vec4 nz=texture2D(uNoise, uv*0.045);
-  if(pat>0.5){ float m=0.0;
+  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)
+  else if(mt>0.5){ // v28 material
+    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);
+    float bw=smoothstep(0.3,0.7,wa); vec4 A;
+    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);
+    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);
+    if(uHD>1.5){ A.y=step(0.42,A.y)*0.8; A.x=mix(1.0,A.x,0.45); A.z=step(0.5,A.z)*0.7; } // Cuphead: bold, flat marks
+    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;
+    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }
+  else if(pat>0.5){ float m=0.0;
     if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;
     else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;
     else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;
@@ -53,6 +120,8 @@ void main(){
   o=mix(o, uGhost.rgb, uGhost.a);
   float A=uAlpha;
   gl_FragColor=vec4(o*A, A); }`;
+  // simple surface detail: the same shader with the procedural materials cut out (one cheap noise speckle instead)
+  const MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf('  else if(mt>0.5){ // v28 material')).replace('mt>0.5 && uMatQ<0.5', 'mt>0.5') + MESH_FS.slice(MESH_FS.indexOf('  else if(pat>0.5){'));
   const TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
   const TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}
@@ -170,9 +239,9 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       this.gl = gl; this.cv = canvas; this.R = R; this.gl2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
       this.uintOK = this.gl2 || !!gl.getExtension('OES_element_index_uint');
       this.P = {
-        mesh: this.prog(MESH_VS, MESH_FS), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
+        mesh: this.prog(MESH_VS, MESH_FS), meshS: this.prog(MESH_VS, MESH_SIMPLE), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
       };
-      this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false) };
+      this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false), cell: this.texFrom(this.cellCanvas(), true) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
       this.V2 = new JT.View(0, 0, 1, 0, 0, [0, 0, 0]); this.dyn = {}; this.lost = false;
       canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; });
@@ -239,9 +308,19 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     texParams(repeat, mip) { const gl = this.gl; const w = repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE; gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, w); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); }
     buf(data, kind) { const gl = this.gl; const b = gl.createBuffer(); const t = kind === 'idx' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER; gl.bindBuffer(t, b); gl.bufferData(t, data, gl.STATIC_DRAW); return b; }
     view(P, V) { const gl = this.gl; gl.uniform3f(P.u.uC, V.c[0], V.c[1], V.c[2]); gl.uniform4f(P.u.uRot, V.cy_, V.sy_, V.cp, V.sp); gl.uniform4f(P.u.uScr, V.s, V.cx, V.cy, 0); const r = this._res; gl.uniform2f(P.u.uRes, r ? r[0] : this.cv.width, r ? r[1] : this.cv.height); }
-    light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); const S = F.sky || NEUTRAL; if (P.u.uKD) gl.uniform1f(P.u.uKD, S.kd); if (P.u.uKeyC) gl.uniform3f(P.u.uKeyC, S.key[0], S.key[1], S.key[2]); if (P.u.uAmbC) gl.uniform3f(P.u.uAmbC, S.amb[0], S.amb[1], S.amb[2]); }
+    /** v28: Rich surface detail uses the full material shader; Simple (or Battery saver) a stripped one. */
+    meshProg() { const st = this.R.set || {}; if (this._swGL == null) { let r = ''; try { const gl = this.gl, x = gl.getExtension('WEBGL_debug_renderer_info'); r = String(gl.getParameter(x ? x.UNMASKED_RENDERER_WEBGL : gl.RENDERER)); } catch (e) {} this._swGL = /swiftshader|llvmpipe|software|basic render/i.test(r); }
+      const simple = st.detail === 'simple' || st.fps === 'saver' || (!st.detail && this._swGL); return simple ? this.P.meshS : this.P.mesh; } // software GL (no GPU): simple unless chosen
+    light(P) { const gl = this.gl; const F = this.F; if (P.u.uGrade) gl.uniform3f(P.u.uGrade, F.grade[0], F.grade[1], F.grade[2]); if (P.u.uNight) gl.uniform1f(P.u.uNight, F.night); if (P.u.uNL) gl.uniform1f(P.u.uNL, F.lamps.length / 4); if (P.u.uLamp) gl.uniform4fv(P.u.uLamp, F.lampU); const S = F.sky || NEUTRAL; if (P.u.uKD) gl.uniform1f(P.u.uKD, S.kd); if (P.u.uKeyC) gl.uniform3f(P.u.uKeyC, S.key[0], S.key[1], S.key[2]); if (P.u.uAmbC) gl.uniform3f(P.u.uAmbC, S.amb[0], S.amb[1], S.amb[2]); if (P.u.uMatQ) gl.uniform1f(P.u.uMatQ, P === this.P.meshS ? 0 : 1); if (P.u.uCell && this.tex.cell) { gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.tex.cell); gl.uniform1i(P.u.uCell, 3); gl.activeTexture(gl.TEXTURE0); } }
 
     // ---------- generated textures ----------
+    /** v28: tileable cellular noise (16x16 cells): r = distance to the nearest feature point, g = distance to the cell border, b = cell id. */
+    cellCanvas() { const N = 512, C = 16, c = mkCanvas(N, N), g = c.getContext('2d'), id = g.createImageData(N, N); const rng = JT.makeRng(4242); const P = []; for (let i = 0; i < C * C; i++) P.push([0.1 + rng() * 0.8, 0.1 + rng() * 0.8, rng()]);
+      const at = (i, j) => P[((j % C + C) % C) * C + ((i % C + C) % C)];
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const u = x / N * C, v = y / N * C; const xi = Math.floor(u), yi = Math.floor(v); let d1 = 9, d2 = 9, cid = 0;
+        for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const q = at(xi + i, yi + j); const dx = xi + i + q[0] - u, dy = yi + j + q[1] - v; const dd = dx * dx + dy * dy; if (dd < d1) { d2 = d1; d1 = dd; cid = q[2]; } else if (dd < d2) d2 = dd; }
+        const k = (y * N + x) * 4; d1 = Math.sqrt(d1); id.data[k] = Math.min(255, d1 * 200); id.data[k + 1] = Math.min(255, (Math.sqrt(d2) - d1) * 255); id.data[k + 2] = cid * 255; id.data[k + 3] = 255; }
+      g.putImageData(id, 0, 0); return c; }
     noiseCanvas() { // tileable value noise, a different octave mix in each channel
       const N = 256, c = mkCanvas(N, N), g = c.getContext('2d'), id = g.createImageData(N, N); const rng = JT.makeRng(99);
       const grid = (s) => { const a = []; for (let i = 0; i < s * s; i++) a.push(rng()); return (x, y) => { const X = x * s, Y = y * s; const x0 = Math.floor(X), y0 = Math.floor(Y), fx = X - x0, fy = Y - y0; const at = (i, j) => a[((j % s + s) % s) * s + ((i % s + s) % s)]; const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy); return M.lerp(M.lerp(at(x0, y0), at(x0 + 1, y0), sx), M.lerp(at(x0, y0 + 1), at(x0 + 1, y0 + 1), sx), sy); }; };
@@ -507,7 +586,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       // decor: ink outline pass + wash pass, per object so plants can sway
       const decorPass = (list) => {
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
-        let P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
+        let P = this.use(this.meshProg()); this.view(P, V); this.light(P); gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0); if (CUP) gl.uniform3f(P.u.uInk, TS.ink[0], TS.ink[1], TS.ink[2]); else gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uBoil, CUP && TS.boil ? 1 + Math.floor(performance.now() / 83) % 64 : 0); gl.uniform1f(P.u.uOut, outPx); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]); gl.uniform1f(P.u.uHD, this._hd);
         for (const pass of PT.ptNoInk ? [1] : [0, 1]) {
           gl.uniform1f(P.u.uPass, pass ? 0 : 1);
@@ -619,7 +698,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
         gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); gl.viewport(0, 0, S, S); gl.clearColor(0, 0, 0, 0); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); m.lb = m.nl ? this.buf(m.lines) : null; m.lib = m.nl ? this.buf(m.lidx, 'idx') : null; }
         gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
-        const Lg = JT.LIGHT; let P = this.use(this.P.mesh); this.view(P, W2); this.light(P);
+        const Lg = JT.LIGHT; let P = this.use(this.meshProg()); this.view(P, W2); this.light(P);
         gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]); gl.uniform3f(P.u.uToCam, W2.toCam[0], W2.toCam[1], W2.toCam[2]); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
         gl.uniform3f(P.u.uInk, 0.17, 0.13, 0.1); gl.uniform1f(P.u.uOut, M.clamp(S / 110, 1.4, 3)); gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0); gl.uniform3f(P.u.uSoil, 0.5, 0.4, 0.3);
         for (const pass of [1, 0]) { gl.uniform1f(P.u.uPass, pass); this.drawMesh(P, m); }
@@ -649,7 +728,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     drawGhost(V, gh) {
       const gl = this.gl; const g = gh.geom; const m = GM.build(g); if (!m.n) return;
       if (!m.vb || m.gl !== this) { m.gl = this; m.vb = this.buf(m.verts); m.ib = this.buf(m.idx, 'idx'); }
-      const P = this.use(this.P.mesh); this.view(P, V); this.light(P); gl.enable(gl.BLEND); gl.depthMask(false); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0);
+      const P = this.use(this.meshProg()); this.view(P, V); this.light(P); gl.enable(gl.BLEND); gl.depthMask(false); gl.uniform3f(P.u.uSway, 0, 0, 0); gl.uniform2f(P.u.uGnd, 0, 0);
       gl.uniform1f(P.u.uAlpha, gh.ok ? 0.8 : 0.5); gl.uniform4f(P.u.uGhost, gh.ok ? 0.45 : 0.9, gh.ok ? 0.85 : 0.3, gh.ok ? 0.45 : 0.25, 0.3); gl.uniform1f(P.u.uPass, 0); this.drawMesh(P, m);
       gl.uniform1f(P.u.uAlpha, 1); gl.uniform4f(P.u.uGhost, 0, 0, 0, 0);
     }
