@@ -57,6 +57,28 @@ void main(){
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
   const TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}
 void main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`;
+  // v27.2 shape-true shadows. SMASK paints the decor, flattened onto the floor along the light, into a floor-sized mask:
+  // r = cast darkness (fades with the occluder's height), g = contact shade at stems and edges, b = occluder height (for the penumbra).
+  const SMASK_VS = `attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;
+void main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }`;
+  const SMASK_FS = `precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;
+void main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }`;
+  const SBLUR_VS = `attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }`;
+  const SBLUR_FS = `precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;
+void main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }`;
+  // fine (sharp, near the ground) and coarse (wide, for high leaves) blurs mixed by how far up the occluder is
+  const SMIX_FS = `precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;
+void main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }`;
+  // drawn over the floor / uneven ground. uMode: 0 storybook (watercolour edge), 1 HD-2D (two dithered pixel levels), 2 Cuphead (flat, hard-edged)
+  const SHD_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;
+float m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }
+float bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }
+void main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;
+  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;
+    c=smoothstep(0.05,0.8,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }
+  else if(uMode<1.5){ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }
+  else { c=step(0.4,c)*0.85+step(0.78,c)*0.15; o=step(0.42,o); }
+  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }`;
   const MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`;
   const MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}
@@ -372,6 +394,84 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       if (gm.n) { this.gl.bindBuffer(this.gl.ARRAY_BUFFER, gm.b); this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(v), this.gl.DYNAMIC_DRAW); }
       return gm;
     }
+    // ---------- v27.2 shape-true shadows ----------
+    smFree() { const gl = this.gl, S = this._sm; if (!S) return; for (const k of ['fA', 'fT', 'fF', 'fT2', 'fC']) if (S[k]) gl.deleteFramebuffer(S[k]); for (const k of ['tA', 'tT', 'tF', 'tT2', 'tC']) if (S[k]) gl.deleteTexture(S[k]); this._sm = null; }
+    smAlloc(W, H) {
+      const gl = this.gl; const S = { W, H }; const W2 = Math.max(32, W >> 1), H2 = Math.max(32, H >> 1);
+      const mk = (w, h) => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this.texParams(false);
+        const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return [t, f]; };
+      [S.tA, S.fA] = mk(W, H); [S.tT, S.fT] = mk(W, H); [S.tF, S.fF] = mk(W, H); [S.tT2, S.fT2] = mk(W2, H2); [S.tC, S.fC] = mk(W2, H2); S.W2 = W2; S.H2 = H2;
+      S.ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return S;
+    }
+    /** Contact shade: a soft rim round rocks / logs / trunks and a small dab where each stem enters the soil (x, y, z, a). */
+    smContacts(hg) {
+      const v = []; const tri = (a, b, c) => v.push(...a, ...b, ...c);
+      const rim = (poly, w, a0) => { if (!poly || poly.length < 3) return; const c = G.centroid(poly); const n = poly.length;
+        const pts = poly.map((q, i) => { const pv = poly[(i - 1 + n) % n], nx = poly[(i + 1) % n]; let ex = nx[0] - pv[0], ez = nx[1] - pv[1]; const l = Math.hypot(ex, ez) || 1; let ox = ez / l, oz = -ex / l; if (ox * (q[0] - c[0]) + oz * (q[1] - c[1]) < 0) { ox = -ox; oz = -oz; }
+          return [[q[0] - ox * 0.3, 0, q[1] - oz * 0.3, a0], [q[0] + ox * w, 0, q[1] + oz * w, 0]]; });
+        const C = [c[0], 0, c[1], a0];
+        for (let i = 0; i < n; i++) { const j = (i + 1) % n; const A = pts[i], B = pts[j]; tri(C, A[0], B[0]); tri(A[0], B[0], B[1]); tri(A[0], B[1], A[1]); } };
+      const dab = (x, z, r, a0) => { const C = [x, 0, z, a0]; const K = 10; for (let k = 0; k < K; k++) { const t0 = k / K * 6.2832, t1 = (k + 1) / K * 6.2832; tri(C, [x + Math.cos(t0) * r, 0, z + Math.sin(t0) * r, 0], [x + Math.cos(t1) * r, 0, z + Math.sin(t1) * r, 0]); } };
+      for (const { inst, g } of hg.meshes) { if (inst.parent || g.baseY > 0.5 || g.def.cat === 'ground' || g.def.arche === 'wallmount' || g.def.arche === 'scatter' || inst.type === 'heatlamp') continue;
+        const back = g.def.arche === 'backwall';
+        for (const so of g.solids) rim(so, back ? 2.4 : 1.9, 1);
+        for (const so of (g.soft || [])) rim(so, 1.3, 0.85);
+        if (!g.solids.length && !(g.soft && g.soft.length) && g.contacts) for (const q of g.contacts) dab(q[0], q[1], 1.25, 0.8); }
+      return v;
+    }
+    /** v27.2: the decor's real triangles flattened onto the floor along the light into one soft mask (dappled through leaf gaps),
+        plus contact shade. Rebuilt only when the light has moved ~1.5 degrees or the decor / ground changed; null if unsupported. */
+    shadowMap(hab, hg) {
+      if (this._smBroken || (this.R.set && this.R.set.ptNoSm)) return null;
+      const gl = this.gl; const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const key = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
+      if (hg.sm && hg.smKey === key) return hg.sm;
+      const prevFB = gl.getParameter(gl.FRAMEBUFFER_BINDING); const vp = gl.getParameter(gl.VIEWPORT);
+      try {
+        const P = this.P; if (!P.smask) { P.smask = this.prog(SMASK_VS, SMASK_FS); P.sblur = this.prog(SBLUR_VS, SBLUR_FS); P.smix = this.prog(SBLUR_VS, SMIX_FS); P.shd = this.prog(TEX_VS, SHD_FS); }
+        if (this._mx === undefined) this._mx = this.gl2 ? gl.MAX : ((gl.getExtension('EXT_blend_minmax') || {}).MAX_EXT || 0);
+        const dm = hab.dims; const N = this.R.quality === 'low' ? 256 : 512; const asp = dm.d / dm.w;
+        const W = asp <= 1 ? N : Math.max(64, Math.round(N / asp)), H = asp <= 1 ? Math.max(64, Math.round(N * asp)) : N;
+        let S = this._sm; if (!S || S.W !== W || S.H !== H) { this.smFree(); S = this._sm = this.smAlloc(W, H); }
+        if (!S.ok) throw new Error('shadow fbo');
+        if (!hg.ao) { const v = this.smContacts(hg); hg.ao = v.length ? this.buf(new Float32Array(v)) : null; hg.nao = v.length / 4; if (hg.ao) hg.del.push(hg.ao); }
+        gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND);
+        // 1. mask: decor flattened along the light (max-blended, so overlaps never stack), then contact shade straight down
+        gl.bindFramebuffer(gl.FRAMEBUFFER, S.fA); gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+        if (this._mx) { gl.blendEquation(this._mx); gl.blendFunc(gl.ONE, gl.ONE); } else gl.blendFunc(gl.ONE, gl.ONE);
+        let Q = this.use(P.smask); const hz = Math.hypot(L[0], L[2]); const ly = Math.max(L[1], hz / 2.6, 0.05);
+        gl.uniform3f(Q.u.uL, L[0], ly, L[2]); gl.uniform2f(Q.u.uDim, dm.w, dm.d); gl.uniform1f(Q.u.uFade, Math.max(18, (dm.h || 40) * 0.7)); gl.uniform1f(Q.u.uK, 0);
+        for (const { inst, g, m } of hg.meshes) { if (g.def.cat === 'ground' || inst.type === 'heatlamp' || !m.vb) continue; const u32 = m.idx instanceof Uint32Array; if (u32 && !this.uintOK) continue;
+          gl.bindBuffer(gl.ARRAY_BUFFER, m.vb); this.attribs(Q, [['aP', 3]], GM.STRIDE); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ib); gl.drawElements(gl.TRIANGLES, m.idx.length, u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); }
+        if (hg.ao) { gl.uniform3f(Q.u.uL, 0, 1, 0); gl.uniform1f(Q.u.uK, 1); gl.bindBuffer(gl.ARRAY_BUFFER, hg.ao); this.attribs(Q, [['aP', 3], ['aA', 1]], 4); gl.drawArrays(gl.TRIANGLES, 0, hg.nao); }
+        if (this._mx) gl.blendEquation(gl.FUNC_ADD);
+        // 2. blurs: fine at full size, wide at half size; 3. mixed by the occluder height (high leaves blur more) back into A
+        gl.disable(gl.BLEND); Q = this.use(P.sblur); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(Q, [['aXY', 2], ['aUV', 2]], 4); gl.activeTexture(gl.TEXTURE0); gl.uniform1i(Q.u.uTex, 0);
+        const fine = 0.32, wide = 1.15; // world units per kernel step
+        const pass = (src, fb, w, h, dx, dy) => { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.viewport(0, 0, w, h); gl.bindTexture(gl.TEXTURE_2D, src); gl.uniform2f(Q.u.uD, dx / dm.w, dy / dm.d); gl.drawArrays(gl.TRIANGLES, 0, 6); };
+        pass(S.tA, S.fT, W, H, fine, 0); pass(S.tT, S.fF, W, H, 0, fine);
+        pass(S.tA, S.fT2, S.W2, S.H2, wide, 0); pass(S.tT2, S.fC, S.W2, S.H2, 0, wide);
+        Q = this.use(P.smix); this.attribs(Q, [['aXY', 2], ['aUV', 2]], 4); gl.uniform1i(Q.u.uTex, 0); gl.uniform1i(Q.u.uTex2, 1);
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, S.tC); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.tF);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, S.fA); gl.viewport(0, 0, W, H); gl.drawArrays(gl.TRIANGLES, 0, 6);
+        hg.sm = { t: S.tA, S }; hg.smKey = key; hg.csKey = 'sm' + key; S.builds = (S.builds || 0) + 1;
+      } catch (e) { if (JT.DEV) console.warn('shadow map', e); this._smBroken = true; hg.sm = null; }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, prevFB); gl.viewport(vp[0], vp[1], vp[2], vp[3]); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+      return hg.sm;
+    }
+    /** Paint the shadow mask onto the floor and the uneven ground, in the current art style. */
+    drawShadowMap(V, hab, hg, tm, sm, night) {
+      const gl = this.gl; const SK = JT.SKY; const P = this.use(this.P.shd); this.view(P, V); gl.uniform1f(P.u.uZ, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, sm.t); gl.uniform1i(P.u.uTex, 0);
+      const mode = this._hd === 1 ? 1 : this._hd === 2 ? 2 : 0; gl.uniform1f(P.u.uMode, mode);
+      const cup = mode === 2; gl.uniform4f(P.u.uCol, cup ? 0.13 : 0.16 - night * 0.06, cup ? 0.08 : 0.1 - night * 0.02, cup ? 0.12 : 0.05 + night * 0.08, 1);
+      gl.uniform2f(P.u.uAmt, (cup ? 0.4 : mode === 1 ? 0.5 : 0.46) * (1 - night * 0.3) * M.clamp(SK.kd * 1.1, 0, 1), (cup ? 0.32 : 0.36) - night * 0.08);
+      if (tm && tm.n) { gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+        gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, [['aP', 3], ['aUV', 2]], 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
+        gl.depthFunc(gl.LESS); }
+      else gl.disable(gl.DEPTH_TEST);
+      gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
+      gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.disable(gl.DEPTH_TEST);
+    }
     /** Long soft shadows thrown away from the sun/moon. Rebuilt only when the light has moved ~1.5 degrees. */
     castShadows(hg, hab) {
       const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const key = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
@@ -397,7 +497,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, VW, VH); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
-      const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT;
+      const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT; const SM = this.shadowMap(hab, hg);
       let outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; let lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k; if (CUP) { outPx = Math.max(outPx * TS.out, 1.3 / PXF); lw = Math.max(lw * 1.15, 1.0 / PXF); } else if (HDT) { outPx = Math.max(outPx * 0.8, 1.05 / PXF); lw = Math.max(lw, 1.0 / PXF); }
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
@@ -437,15 +537,16 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
             const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0; const am = Math.max(wet * wet * (3 - 2 * wet) * 0.6, rw * rw * (3 - 2 * rw) * 0.5); // v19: rain soaks the ground
             if (am > 0.01) { P = this.use(this.P.wet); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(P.u.uAm, am);
               gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); } }
+          if (SM) this.drawShadowMap(V, hab, hg, tm, SM, night);
           const gm = TR ? this.groundMarks(hab, night) : null;
           if (gm && gm.n) { if (tm && tm.n) gl.enable(gl.DEPTH_TEST); P = this.use(this.P.mark); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
             gl.bindBuffer(gl.ARRAY_BUFFER, gm.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aC', 4], ['aK', 1]], 10); gl.drawArrays(gl.TRIANGLES, 0, gm.n); }
           if (tm && tm.n) { gl.depthMask(true); gl.clear(gl.DEPTH_BUFFER_BIT); }
           gl.disable(gl.DEPTH_TEST); gl.depthMask(false); P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0); }
         // shadows on the ground
-        if (hg.shb) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+        if (hg.shb && !SM) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
           gl.uniform4f(P.u.uCol, 0.16, 0.1, 0.05, 0.42 - night * 0.12); gl.drawArrays(gl.TRIANGLES, 0, hg.nsh); }
-        { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+        if (!SM) { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
           gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
         // warm pools under lamps (added light)
         if (LL.length) this.lampPools(V, hab, LL, night);

@@ -9522,15 +9522,65 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   const CEPH_PAT = { zebra: 1, graywall: 1, paradise: 1, pantropical: 1, saltator: 1 };
 
   function lodFor(px, o) { return o.thumb ? 2 : px < 9 ? 0 : px < 32 ? 1 : 2; }
-  function castShadow(ctx, V, p, f, s, n, L, h, alpha, wk) {
-    wk = wk || 1;
-    // soft contact shadow + a longer shadow cast away from the light along the support surface
-    const Lt = M.sub(LG, M.mul(n, M.dot(LG, n))); const ln = Math.max(0.35, M.dot(LG, n));
-    let off = M.mul(Lt, -h / ln); const ol = M.len(off); if (ol > L * 0.7) off = M.mul(off, L * 0.7 / ol);
-    const sc = M.add(p, off); const e = projEll(V, M.mul(f, L * 0.5 + ol * 0.35), M.mul(s, L * 0.38 * wk), null); const P = V.P(sc);
-    ctx.fillStyle = 'rgba(12,8,4,' + (0.16 * alpha * (0.25 + 0.75 * JT.SKY.kd)).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(P[0], P[1], e.r1, Math.max(0.3, e.r2), e.ang, 0, 6.283); ctx.fill();
-    const e2 = projEll(V, M.mul(f, L * 0.36), M.mul(s, L * 0.26 * wk), null); const P2 = V.P(p);
-    ctx.fillStyle = 'rgba(12,8,4,' + (0.22 * alpha).toFixed(3) + ')'; ctx.beginPath(); ctx.ellipse(P2[0], P2[1], e2.r1, Math.max(0.3, e2.r2), e2.ang, 0, 6.283); ctx.fill();
+  // ---------- v27.2 critter shadows: body-shaped, cast along the light, styled per art ----------
+  /** Art style of the shadows: 0 storybook (soft), 1 HD-2D (two hard pixel levels), 2 Cuphead (flat hard shape). */
+  function shArt() { const H = JT.HD2D; const w = H && H._was; return w === 'hd' ? 1 : w === 'cuphead' ? 2 : 0; }
+  /** Fill a set of screen ellipses [x, y, r1, r2, ang] + strokes [[pts], w] as one shadow. soft 0..1 widens the penumbra. */
+  function paintShadow(ctx, ells, strokes, a, soft) {
+    if (a < 0.004) return; const art = shArt(); const ga = ctx.globalAlpha; ctx.globalAlpha = 1;
+    const one = (k, al) => { if (al < 0.003) return; const col = art === 2 ? 'rgba(26,14,24,' : 'rgba(12,8,4,';
+      ctx.fillStyle = col + al.toFixed(3) + ')'; ctx.beginPath(); for (const e of ells) { ctx.moveTo(e[0] + e[2] * k * Math.cos(e[4]), e[1] + e[2] * k * Math.sin(e[4])); ctx.ellipse(e[0], e[1], Math.max(0.3, e[2] * k), Math.max(0.3, e[3] * k + (k - 1) * e[2] * 0.25), e[4], 0, 6.283); } ctx.fill();
+      if (strokes.length) { ctx.strokeStyle = col + (al * 0.85).toFixed(3) + ')'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const [pts, w] of strokes) { ctx.lineWidth = Math.max(0.5, w * (1 + (k - 1) * 2)); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); } } };
+    if (art === 2) one(1, Math.min(0.5, a * 1.25));
+    else if (art === 1) { one(1.18 + soft * 0.3, a * 0.5); one(0.86, a * 0.55); }
+    else { one(1.3 + soft * 0.7, a * 0.22); one(1.1 + soft * 0.3, a * 0.3); one(0.92, a * 0.5); }
+    ctx.globalAlpha = ga;
+  }
+  /** Body plan of a shadow in body units (×L): ellipses [u, halfLen, halfW], legs [angle, reach, kneeLift], arm strokes. */
+  const SHAPES = {
+    spider: { e: [[-0.3, 0.27, 0.2], [0.13, 0.2, 0.16]], legs: [[0.7, 0.82, 0.3], [1.25, 0.66, 0.28], [1.95, 0.64, 0.26], [2.55, 0.78, 0.3]], at: 0.1 },
+    mantis: { e: [[-0.28, 0.32, 0.085], [0.15, 0.2, 0.045], [0.38, 0.06, 0.075]], legs: [[1.45, 0.52, 0.32], [2.35, 0.66, 0.3]], at: 0.0, arms: [[0.24, 0.47]] },
+    prey: { e: [[0, 0.5, 0.38]], legs: [], at: 0 },
+  };
+  function castShadow(ctx, V, p, f, s, n, L, h, alpha, wk, opt) {
+    wk = wk || 1; opt = opt || {}; const sk = SHAPES[opt.kind || 'prey'] || SHAPES.prey; const art = shArt(); const px = Math.max(0.5, V.s);
+    const ln = Math.max(0.35, M.dot(LG, n)); const Lt = M.sub(LG, M.mul(n, ln)); // light along the surface
+    const cap = L * 0.75; const sh = (u, v, hh) => { let o = M.mul(Lt, -hh / ln); const ol = M.len(o); if (ol > cap * hh / Math.max(h, 1e-3)) o = M.mul(o, cap * hh / Math.max(h, 1e-3) / ol);
+      return V.P([p[0] + f[0] * u + s[0] * v + o[0], p[1] + f[1] * u + s[1] * v + o[1], p[2] + f[2] * u + s[2] * v + o[2]]); };
+    const feet = [];
+    if (opt.kind && opt.kind !== 'prey') { const ph = opt.ph || 0; for (let i = 0; i < sk.legs.length; i++) { const [an, re] = sk.legs[i]; for (const sd of [-1, 1]) { const g = ((i + (sd > 0 ? 1 : 0)) % 2 ? 1 : -1) * Math.sin(ph) * 0.06; const u = sk.at * L + Math.cos(an) * re * L + g * L, v = sd * Math.sin(an) * re * L; feet.push([u, v, an, re, sd]); } } }
+    // perched on a thin stem or leaf edge: only a whisper of contact at the feet (the real shadow drops to the ground)
+    if (!opt.perch) {
+      const ells = [], strokes = []; 
+      for (const [u, hl, hw] of sk.e) { const c = sh(u * L, 0, h); const e = projEll(V, M.mul(f, hl * L * (opt.kind ? 1 : wk > 0.5 ? 1 : 1.1)), M.mul(s, hw * L * wk), null); ells.push([c[0], c[1], e.r1, e.r2, e.ang]); }
+      if (opt.held) { const hl = opt.held; const c = sh(L * (opt.kind === 'mantis' ? 0.42 : 0.5), 0, h * 0.8); const cross = opt.kind === 'mantis' && opt.cross; const e = cross ? projEll(V, M.mul(s, hl * 0.5), M.mul(f, hl * 0.16), null) : projEll(V, M.mul(f, hl * 0.5), M.mul(s, hl * 0.2), null); ells.push([c[0], c[1], e.r1, e.r2, e.ang]); }
+      const lw = Math.max(0.6, L * px * 0.045);
+      for (const [u, v, an, re, sd] of feet) { const kn = sk.legs.find(q => q[0] === an); const ku = sk.at * L + Math.cos(an) * re * L * 0.45, kv = sd * Math.sin(an) * re * L * 0.48;
+        strokes.push([[sh(sk.at * L, sd * L * 0.05, h), sh(ku, kv, h + kn[2] * L), sh(u, v, 0)], lw]); }
+      if (sk.arms) for (const [a0, a1] of sk.arms) for (const sd of [-1, 1]) strokes.push([[sh(a0 * L, sd * L * 0.04, h + L * 0.12), sh(a1 * L, sd * L * 0.05, h + L * 0.04)], lw * 1.3]);
+      const kd = JT.SKY.kd; const a = alpha * (0.2 + 0.24 * kd) * (art === 2 ? 1.05 : 1);
+      paintShadow(ctx, ells, strokes, a, M.clamp(h / L, 0, 1) * 0.5);
+      // contact shade right under the body (much smaller than before)
+      const P2 = V.P(M.add(p, M.mul(f, sk.e.length > 1 ? -L * 0.08 : 0))); const e2 = projEll(V, M.mul(f, L * (opt.kind ? 0.3 : 0.4)), M.mul(s, L * 0.2 * wk), null);
+      paintShadow(ctx, [[P2[0], P2[1], e2.r1, e2.r2, e2.ang]], [], alpha * 0.2, 0.2);
+    }
+    if (feet.length && (opt.perch || art === 0)) { const ells = []; const r = Math.max(0.45, L * px * 0.035); for (const [u, v] of feet) { const q = V.P([p[0] + f[0] * u + s[0] * v, p[1] + f[1] * u + s[1] * v, p[2] + f[2] * u + s[2] * v]); ells.push([q[0], q[1], r, r * 0.7, 0]); }
+      paintShadow(ctx, ells, [], alpha * (opt.perch ? (art === 1 ? 0.16 : 0.26) : 0.12), 0); }
+  }
+  /** Shadow dropped onto the ground (or a rock top) below a critter perched on a plant or in the air: the body flattened along the light,
+      softer and fainter the higher it is. c: body centre, gy: surface height below, f/s: body axes. */
+  function dropAt(hab, c, gy) { const dh = Math.max(0, c[1] - gy); const hz = Math.hypot(LG[0], LG[2]); const ly = Math.max(LG[1], hz / 2.6, 0.05);
+    let gx = c[0] - LG[0] * dh / ly, gz = c[2] - LG[2] * dh / ly; let out = 0; if (JT.Nav && JT.Nav.clampInside) { const q = JT.Nav.clampInside(hab, gx, gz, 1); out = Math.hypot(q[0] - gx, q[1] - gz); gx = q[0]; gz = q[1]; } return [gx, gy, gz, out]; }
+  function dropShadow(ctx, V, hab, c, gy, f, s, L, kind, alpha, held) {
+    const dh = Math.max(0, c[1] - gy); const hz = Math.hypot(LG[0], LG[2]); const ly = Math.max(LG[1], hz / 2.6, 0.05);
+    const sk = SHAPES[kind] || SHAPES.prey; const flat = (v) => [v[0] - LG[0] * v[1] / ly, 0, v[2] - LG[2] * v[1] / ly];
+    const q0 = dropAt(hab, c, gy); const gx = q0[0], gz = q0[2];
+    const capL = (v) => { const l = Math.hypot(v[0], v[2]); return l > 1.6 ? [v[0] * 1.6 / l, 0, v[2] * 1.6 / l] : v; }; const fF = capL(flat(f)), sF = capL(flat(s)); const fadeOut = M.clamp(1 - q0[3] / (L * 0.6), 0, 1); if (fadeOut <= 0.02) return; const soft = M.clamp(dh / 30, 0, 1); const grow = 1 + soft * 0.5; const ells = [];
+    for (const [u, hl, hw] of sk.e) { const q = V.P([gx + fF[0] * u * L, gy + 0.05, gz + fF[2] * u * L]); const e = projEll(V, M.mul(fF, hl * L * grow), M.mul(sF, hw * L * grow * (kind === 'prey' ? 0.8 : 1)), null); ells.push([q[0], q[1], e.r1, e.r2, e.ang]); }
+    if (held) { const q = V.P([gx + fF[0] * L * 0.5, gy + 0.05, gz + fF[2] * L * 0.5]); const e = projEll(V, M.mul(fF, held * 0.5 * grow), M.mul(sF, held * 0.2 * grow), null); ells.push([q[0], q[1], e.r1, e.r2, e.ang]); }
+    const kd = JT.SKY.kd; const a = alpha * (0.16 + 0.24 * kd) * M.clamp(1 - dh / 70, 0.25, 1) * fadeOut;
+    paintShadow(ctx, ells, [], a, soft);
   }
   function sortDraw(parts) { parts.sort((a, b) => b.d - a.d); for (const q of parts) q.f(); }
 
@@ -9603,7 +9653,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const gripK = o.grip && !o.airborne && !o.curled && !o.tucked && !o.thumb ? o.grip.k : 0; // belly hugs a thin stem
     const h0 = (1 - 0.3 * gripK) * L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) * (1 - 0.45 * (LK.flat || 0)) + L * 0.035 * strK + L * bob;
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
-    if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha);
+    if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha, 1, { kind: 'spider', perch: o.perch, held: o.heldLen, ph: moving ? wph : 0 });
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb; // seen from below: belly colours
     const fat = (sp._fatNow != null ? M.clamp(sp._fatNow, 0.66, 1.28) : M.clamp(0.85 + (sp.sat != null ? sp.sat : 0.7) * 0.34, 0.85, 1.2)) * (1 + breath);
     // head turns independently: gaze + an occasional curious look at the camera ("selfie glance")
@@ -9932,7 +9982,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const flying = e.sup && e.sup.k === 'air' && !e.owner; const moving = M.len(e._vel || [0, 0, 0]) > 1; const held = !!(o.held || o.curled); const fl = held ? (o.flail || 0) : 0; const buzz = fl > 0.25 && !flying;
     const a0 = o.alpha != null ? o.alpha : 1; ctx.globalAlpha = a0;
     const col = hex6(d.col); const px = L * V.s; const lod = lodFor(px, o); const S = d.shape;
-    if (!flying && !held && !o.noShadow) castShadow(ctx, V, p, f, s, n, L * 0.9, L * 0.15, a0, S === 'worm' ? 0.35 : S === 'springtail' || S === 'gnat' || S === 'lacewing' ? 0.6 : 1);
+    if (!flying && !held && !o.noShadow) castShadow(ctx, V, p, f, s, n, L * 0.9, L * 0.15, a0, S === 'worm' ? 0.35 : S === 'springtail' || S === 'gnat' || S === 'lacewing' ? 0.6 : 1, { kind: 'prey', perch: o.perch });
     if (lod === 0 && px < 4) { // tiny on screen: one shaded body is enough
       blob(ctx, V, W(0, 0, L * 0.16), M.mul(f, L * 0.45), M.mul(s, L * (S === 'worm' ? 0.1 : 0.2)), M.mul(n, L * 0.14), S === 'fly' || S === 'gnat' ? sh(col, -0.15) : col, { lod: 0 });
       if (flying) { const P = V.P(W(0, 0, L * 0.3)); ctx.fillStyle = 'rgba(230,240,255,0.35)'; ctx.beginPath(); ctx.arc(P[0], P[1], Math.max(1, px * 0.6), 0, 6.283); ctx.fill(); }
@@ -10064,7 +10114,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     sortDraw(parts);
     ctx.globalAlpha = 1;
   };
-  D.critter = { blob, limb, projEll, wing, curve, sh, mix, hex6, castShadow, lodFor, sortDraw, decals, Part, surf, facing };
+  D.critter = { blob, limb, projEll, wing, curve, sh, mix, hex6, castShadow, dropShadow, dropAt, paintShadow, shArt, lodFor, sortDraw, decals, Part, surf, facing };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -10175,7 +10225,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const Wf = (u, v, w) => [p0[0] + f[0] * u + s[0] * v + n[0] * w, p0[1] + f[1] * u + s[1] * v + n[1] * w, p0[2] + f[2] * u + s[2] * v + n[2] * w]; // fixed (feet)
     const lat = L * 0.035 * sw; const p = add(p0, mul(s, lat));
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w]; // swaying body
-    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s0, n0, L * 0.85, h0 + L * 0.06, alpha * 0.85);
+    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s0, n0, L, h0 + L * 0.06, alpha * 0.85, 1, { kind: 'mantis', perch: o.perch, held: o.heldLen, cross: o.heldCross, ph: moving ? (sp._walk || 0) * Math.PI : 0 });
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb;
     const parts = []; const push = (pt, fn, bias) => parts.push({ d: V.depth(pt) + (bias || 0), f: fn });
     const fat = M.clamp(0.88 + (sp.sat != null ? sp.sat : 0.7) * 0.25, 0.88, 1.15);
@@ -10769,6 +10819,28 @@ void main(){
 varying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`;
   const TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}
 void main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`;
+  // v27.2 shape-true shadows. SMASK paints the decor, flattened onto the floor along the light, into a floor-sized mask:
+  // r = cast darkness (fades with the occluder's height), g = contact shade at stems and edges, b = occluder height (for the penumbra).
+  const SMASK_VS = `attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;
+void main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }`;
+  const SMASK_FS = `precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;
+void main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }`;
+  const SBLUR_VS = `attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }`;
+  const SBLUR_FS = `precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;
+void main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }`;
+  // fine (sharp, near the ground) and coarse (wide, for high leaves) blurs mixed by how far up the occluder is
+  const SMIX_FS = `precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;
+void main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }`;
+  // drawn over the floor / uneven ground. uMode: 0 storybook (watercolour edge), 1 HD-2D (two dithered pixel levels), 2 Cuphead (flat, hard-edged)
+  const SHD_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;
+float m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }
+float bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }
+void main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;
+  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;
+    c=smoothstep(0.05,0.8,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }
+  else if(uMode<1.5){ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }
+  else { c=step(0.4,c)*0.85+step(0.78,c)*0.15; o=step(0.42,o); }
+  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }`;
   const MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}
 varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`;
   const MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}
@@ -11084,6 +11156,84 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       if (gm.n) { this.gl.bindBuffer(this.gl.ARRAY_BUFFER, gm.b); this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(v), this.gl.DYNAMIC_DRAW); }
       return gm;
     }
+    // ---------- v27.2 shape-true shadows ----------
+    smFree() { const gl = this.gl, S = this._sm; if (!S) return; for (const k of ['fA', 'fT', 'fF', 'fT2', 'fC']) if (S[k]) gl.deleteFramebuffer(S[k]); for (const k of ['tA', 'tT', 'tF', 'tT2', 'tC']) if (S[k]) gl.deleteTexture(S[k]); this._sm = null; }
+    smAlloc(W, H) {
+      const gl = this.gl; const S = { W, H }; const W2 = Math.max(32, W >> 1), H2 = Math.max(32, H >> 1);
+      const mk = (w, h) => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this.texParams(false);
+        const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return [t, f]; };
+      [S.tA, S.fA] = mk(W, H); [S.tT, S.fT] = mk(W, H); [S.tF, S.fF] = mk(W, H); [S.tT2, S.fT2] = mk(W2, H2); [S.tC, S.fC] = mk(W2, H2); S.W2 = W2; S.H2 = H2;
+      S.ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return S;
+    }
+    /** Contact shade: a soft rim round rocks / logs / trunks and a small dab where each stem enters the soil (x, y, z, a). */
+    smContacts(hg) {
+      const v = []; const tri = (a, b, c) => v.push(...a, ...b, ...c);
+      const rim = (poly, w, a0) => { if (!poly || poly.length < 3) return; const c = G.centroid(poly); const n = poly.length;
+        const pts = poly.map((q, i) => { const pv = poly[(i - 1 + n) % n], nx = poly[(i + 1) % n]; let ex = nx[0] - pv[0], ez = nx[1] - pv[1]; const l = Math.hypot(ex, ez) || 1; let ox = ez / l, oz = -ex / l; if (ox * (q[0] - c[0]) + oz * (q[1] - c[1]) < 0) { ox = -ox; oz = -oz; }
+          return [[q[0] - ox * 0.3, 0, q[1] - oz * 0.3, a0], [q[0] + ox * w, 0, q[1] + oz * w, 0]]; });
+        const C = [c[0], 0, c[1], a0];
+        for (let i = 0; i < n; i++) { const j = (i + 1) % n; const A = pts[i], B = pts[j]; tri(C, A[0], B[0]); tri(A[0], B[0], B[1]); tri(A[0], B[1], A[1]); } };
+      const dab = (x, z, r, a0) => { const C = [x, 0, z, a0]; const K = 10; for (let k = 0; k < K; k++) { const t0 = k / K * 6.2832, t1 = (k + 1) / K * 6.2832; tri(C, [x + Math.cos(t0) * r, 0, z + Math.sin(t0) * r, 0], [x + Math.cos(t1) * r, 0, z + Math.sin(t1) * r, 0]); } };
+      for (const { inst, g } of hg.meshes) { if (inst.parent || g.baseY > 0.5 || g.def.cat === 'ground' || g.def.arche === 'wallmount' || g.def.arche === 'scatter' || inst.type === 'heatlamp') continue;
+        const back = g.def.arche === 'backwall';
+        for (const so of g.solids) rim(so, back ? 2.4 : 1.9, 1);
+        for (const so of (g.soft || [])) rim(so, 1.3, 0.85);
+        if (!g.solids.length && !(g.soft && g.soft.length) && g.contacts) for (const q of g.contacts) dab(q[0], q[1], 1.25, 0.8); }
+      return v;
+    }
+    /** v27.2: the decor's real triangles flattened onto the floor along the light into one soft mask (dappled through leaf gaps),
+        plus contact shade. Rebuilt only when the light has moved ~1.5 degrees or the decor / ground changed; null if unsupported. */
+    shadowMap(hab, hg) {
+      if (this._smBroken || (this.R.set && this.R.set.ptNoSm)) return null;
+      const gl = this.gl; const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const key = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
+      if (hg.sm && hg.smKey === key) return hg.sm;
+      const prevFB = gl.getParameter(gl.FRAMEBUFFER_BINDING); const vp = gl.getParameter(gl.VIEWPORT);
+      try {
+        const P = this.P; if (!P.smask) { P.smask = this.prog(SMASK_VS, SMASK_FS); P.sblur = this.prog(SBLUR_VS, SBLUR_FS); P.smix = this.prog(SBLUR_VS, SMIX_FS); P.shd = this.prog(TEX_VS, SHD_FS); }
+        if (this._mx === undefined) this._mx = this.gl2 ? gl.MAX : ((gl.getExtension('EXT_blend_minmax') || {}).MAX_EXT || 0);
+        const dm = hab.dims; const N = this.R.quality === 'low' ? 256 : 512; const asp = dm.d / dm.w;
+        const W = asp <= 1 ? N : Math.max(64, Math.round(N / asp)), H = asp <= 1 ? Math.max(64, Math.round(N * asp)) : N;
+        let S = this._sm; if (!S || S.W !== W || S.H !== H) { this.smFree(); S = this._sm = this.smAlloc(W, H); }
+        if (!S.ok) throw new Error('shadow fbo');
+        if (!hg.ao) { const v = this.smContacts(hg); hg.ao = v.length ? this.buf(new Float32Array(v)) : null; hg.nao = v.length / 4; if (hg.ao) hg.del.push(hg.ao); }
+        gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND);
+        // 1. mask: decor flattened along the light (max-blended, so overlaps never stack), then contact shade straight down
+        gl.bindFramebuffer(gl.FRAMEBUFFER, S.fA); gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+        if (this._mx) { gl.blendEquation(this._mx); gl.blendFunc(gl.ONE, gl.ONE); } else gl.blendFunc(gl.ONE, gl.ONE);
+        let Q = this.use(P.smask); const hz = Math.hypot(L[0], L[2]); const ly = Math.max(L[1], hz / 2.6, 0.05);
+        gl.uniform3f(Q.u.uL, L[0], ly, L[2]); gl.uniform2f(Q.u.uDim, dm.w, dm.d); gl.uniform1f(Q.u.uFade, Math.max(18, (dm.h || 40) * 0.7)); gl.uniform1f(Q.u.uK, 0);
+        for (const { inst, g, m } of hg.meshes) { if (g.def.cat === 'ground' || inst.type === 'heatlamp' || !m.vb) continue; const u32 = m.idx instanceof Uint32Array; if (u32 && !this.uintOK) continue;
+          gl.bindBuffer(gl.ARRAY_BUFFER, m.vb); this.attribs(Q, [['aP', 3]], GM.STRIDE); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ib); gl.drawElements(gl.TRIANGLES, m.idx.length, u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); }
+        if (hg.ao) { gl.uniform3f(Q.u.uL, 0, 1, 0); gl.uniform1f(Q.u.uK, 1); gl.bindBuffer(gl.ARRAY_BUFFER, hg.ao); this.attribs(Q, [['aP', 3], ['aA', 1]], 4); gl.drawArrays(gl.TRIANGLES, 0, hg.nao); }
+        if (this._mx) gl.blendEquation(gl.FUNC_ADD);
+        // 2. blurs: fine at full size, wide at half size; 3. mixed by the occluder height (high leaves blur more) back into A
+        gl.disable(gl.BLEND); Q = this.use(P.sblur); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); this.attribs(Q, [['aXY', 2], ['aUV', 2]], 4); gl.activeTexture(gl.TEXTURE0); gl.uniform1i(Q.u.uTex, 0);
+        const fine = 0.32, wide = 1.15; // world units per kernel step
+        const pass = (src, fb, w, h, dx, dy) => { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.viewport(0, 0, w, h); gl.bindTexture(gl.TEXTURE_2D, src); gl.uniform2f(Q.u.uD, dx / dm.w, dy / dm.d); gl.drawArrays(gl.TRIANGLES, 0, 6); };
+        pass(S.tA, S.fT, W, H, fine, 0); pass(S.tT, S.fF, W, H, 0, fine);
+        pass(S.tA, S.fT2, S.W2, S.H2, wide, 0); pass(S.tT2, S.fC, S.W2, S.H2, 0, wide);
+        Q = this.use(P.smix); this.attribs(Q, [['aXY', 2], ['aUV', 2]], 4); gl.uniform1i(Q.u.uTex, 0); gl.uniform1i(Q.u.uTex2, 1);
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, S.tC); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.tF);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, S.fA); gl.viewport(0, 0, W, H); gl.drawArrays(gl.TRIANGLES, 0, 6);
+        hg.sm = { t: S.tA, S }; hg.smKey = key; hg.csKey = 'sm' + key; S.builds = (S.builds || 0) + 1;
+      } catch (e) { if (JT.DEV) console.warn('shadow map', e); this._smBroken = true; hg.sm = null; }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, prevFB); gl.viewport(vp[0], vp[1], vp[2], vp[3]); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+      return hg.sm;
+    }
+    /** Paint the shadow mask onto the floor and the uneven ground, in the current art style. */
+    drawShadowMap(V, hab, hg, tm, sm, night) {
+      const gl = this.gl; const SK = JT.SKY; const P = this.use(this.P.shd); this.view(P, V); gl.uniform1f(P.u.uZ, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, sm.t); gl.uniform1i(P.u.uTex, 0);
+      const mode = this._hd === 1 ? 1 : this._hd === 2 ? 2 : 0; gl.uniform1f(P.u.uMode, mode);
+      const cup = mode === 2; gl.uniform4f(P.u.uCol, cup ? 0.13 : 0.16 - night * 0.06, cup ? 0.08 : 0.1 - night * 0.02, cup ? 0.12 : 0.05 + night * 0.08, 1);
+      gl.uniform2f(P.u.uAmt, (cup ? 0.4 : mode === 1 ? 0.5 : 0.46) * (1 - night * 0.3) * M.clamp(SK.kd * 1.1, 0, 1), (cup ? 0.32 : 0.36) - night * 0.08);
+      if (tm && tm.n) { gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+        gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, [['aP', 3], ['aUV', 2]], 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0);
+        gl.depthFunc(gl.LESS); }
+      else gl.disable(gl.DEPTH_TEST);
+      gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor); this.attribs(P, [['aP', 3], ['aUV', 2]], 5); gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
+      gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.disable(gl.DEPTH_TEST);
+    }
     /** Long soft shadows thrown away from the sun/moon. Rebuilt only when the light has moved ~1.5 degrees. */
     castShadows(hg, hab) {
       const L = JT.LIGHT; const q = (v) => Math.round(v * 40); const key = q(L[0]) + ',' + q(L[1]) + ',' + q(L[2]);
@@ -11109,7 +11259,7 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       this.F = { night, grade, lamps: LL, lampU, sky: SK };
       gl.viewport(0, 0, VW, VH); gl.clearColor(CLR[0], CLR[1], CLR[2], 1); gl.clearDepth(1); gl.depthMask(true); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
-      const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT;
+      const hg = this.habGeom(hab); const gt = this.groundTexture(hab); const Lg = JT.LIGHT; const SM = this.shadowMap(hab, hg);
       let outPx = M.clamp(V.s / k * 0.13, 0.9, 2.1) * k; let lw = M.clamp(V.s / k * 0.2, 0.7, 2.0) * k; if (CUP) { outPx = Math.max(outPx * TS.out, 1.3 / PXF); lw = Math.max(lw * 1.15, 1.0 / PXF); } else if (HDT) { outPx = Math.max(outPx * 0.8, 1.05 / PXF); lw = Math.max(lw, 1.0 / PXF); }
       const mx = 90 * k;
       const visible = (g) => { const b = g._sb || (g._sb = this.boundsOf(g)); const q = V.P(b.c); const r = b.r * V.s + mx; return q[0] > -r && q[0] < W + r && q[1] > -r && q[1] < H + r; };
@@ -11149,15 +11299,16 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
             const wet = (TR.WET[hab.data.substrate] || 0) * M.clamp((hab.data.humidity - 0.35) / 0.6, 0, 1); const WFw = this._wxF, rw = WFw && WFw.hab === hab ? WFw.wet || 0 : 0; const am = Math.max(wet * wet * (3 - 2 * wet) * 0.6, rw * rw * (3 - 2 * rw) * 0.5); // v19: rain soaks the ground
             if (am > 0.01) { P = this.use(this.P.wet); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform1f(P.u.uAm, am);
               gl.bindBuffer(gl.ARRAY_BUFFER, tm.vb); this.attribs(P, L8, 8); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tm.ib); if (!tm.u32 || this.uintOK) gl.drawElements(gl.TRIANGLES, tm.n, tm.u32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); } }
+          if (SM) this.drawShadowMap(V, hab, hg, tm, SM, night);
           const gm = TR ? this.groundMarks(hab, night) : null;
           if (gm && gm.n) { if (tm && tm.n) gl.enable(gl.DEPTH_TEST); P = this.use(this.P.mark); this.view(P, V); this.light(P); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(P.u.uNoise, 0);
             gl.bindBuffer(gl.ARRAY_BUFFER, gm.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aC', 4], ['aK', 1]], 10); gl.drawArrays(gl.TRIANGLES, 0, gm.n); }
           if (tm && tm.n) { gl.depthMask(true); gl.clear(gl.DEPTH_BUFFER_BIT); }
           gl.disable(gl.DEPTH_TEST); gl.depthMask(false); P = this.use(this.P.tex); this.view(P, V); this.light(P); gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0); }
         // shadows on the ground
-        if (hg.shb) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+        if (hg.shb && !SM) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, hg.shb); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
           gl.uniform4f(P.u.uCol, 0.16, 0.1, 0.05, 0.42 - night * 0.12); gl.drawArrays(gl.TRIANGLES, 0, hg.nsh); }
-        { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
+        if (!SM) { const cs = this.castShadows(hg, hab); if (cs.b && SK.kd > 0.02) { P = this.use(this.P.tex); gl.bindTexture(gl.TEXTURE_2D, this.tex.radial); gl.bindBuffer(gl.ARRAY_BUFFER, cs.b); this.attribs(P, [['aP', 3], ['aUV', 2], ['aA', 1]], 6); gl.uniform1f(P.u.uLit, 0);
           gl.uniform4f(P.u.uCol, 0.16 - night * 0.06, 0.1 - night * 0.02, 0.05 + night * 0.08, (0.42 - night * 0.12) * SK.kd); gl.drawArrays(gl.TRIANGLES, 0, cs.n); } }
         // warm pools under lamps (added light)
         if (LL.length) this.lampPools(V, hab, LL, night);
@@ -11799,6 +11950,11 @@ void main(){
     collectScene(V, hab, night) {
       let ctx = null;
       const items = [];
+      // v27.2: shadow on the ground below a perched / airborne critter (support lookup cached per critter, refreshed ~4x a second)
+      const dropItem = (e, fr, L, kind, alpha, held) => { const c = fr.p; if (!M.finite3(c)) return; const now = hab.time || 0; let b = e._shB;
+        if (!b || Math.abs(now - b.t) > 0.25 || Math.abs(b.x - c[0]) + Math.abs(b.z - c[2]) > 1.5 || Math.abs(b.y - c[1]) > 2) { const sb = JT.Nav.supportBelow(hab, [c[0], c[1] - 0.5, c[2]]); b = e._shB = { t: now, x: c[0], y: c[1], z: c[2], gy: sb.pos[1] }; }
+        const gy = b.gy; if (c[1] - gy < L * 0.3) return; const q = D.critter.dropAt(hab, c, gy); const fr2 = { f: fr.f, s: fr.s };
+        items.push({ d: V.depth(q) + 0.03, f: () => D.critter.dropShadow(ctx, V, hab, c, gy, fr2.f, fr2.s, L, kind, alpha, held), p: q, r: L * 1.7 + 2 + (held || 0), ground: true }); };
       const follow = this.cam.mode === 'follow'; const fsp = follow ? (hab.spider(this.game.selectedId) || hab.spiders[0]) : null;
       const tgtId = fsp && fsp.target && fsp.target.kind === 'prey' ? fsp.target.id : null; /* the prey it is stalking */ const t = this.time; const geoms = hab.geoms; const sel = this.game.selectedId;
       const decDepth = {};
@@ -11827,9 +11983,9 @@ void main(){
             fr = { p: M.add(fr.p, M.mul(fr.n, L0 * 0.3)), f: fr.f, s: s2, n: n2 };
             D.prey(ctx, V, p, fr, { time: t, held: true, flail: 0.45 + 0.35 * Math.abs(Math.sin(t * 5 + (p.seed || 0))), noShadow: false }); return; }
           if (wk > 0.04 && p.sup && p.sup.k !== 'air') { const w = Math.sin(t * 3.1 + (p.seed || 0)) * 0.22 * wk; const c = Math.cos(w), si = Math.sin(w); fr = { p: fr.p, f: fr.f, s: M.add(M.mul(fr.s, c), M.mul(fr.n, si)), n: M.sub(M.mul(fr.n, c), M.mul(fr.s, si)) }; }
-          D.prey(ctx, V, p, fr, { time: t }); };
+          D.prey(ctx, V, p, fr, { time: t, perch: !!(p.sup && p.sup.k === 'path' && (JT.Nav.supFrame(hab, p.sup).r || 0) < L0 * 0.7) }); };
         items.push({ key: 'p' + p.id, d: pd, f: drawP, p: p.pos, r: (def.len || 3) * 1.5 + 1.5, xr: !!(tgtId && p.id === tgtId), bias: p.sup && p.sup.k !== 'floor' && p.sup.k !== 'air' ? (def.len || 3) * 0.85 : (def.len || 3) * 0.3 });
-        if (p.sup && p.sup.k === 'air') { const b = JT.Nav.supportBelow(hab, p.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, def.len * 0.4, 0.13 * M.clamp(1 - (p.pos[1] - b.pos[1]) / 80, 0.2, 1)), p: b.pos, r: def.len * 0.5 + 1, ground: true }); }
+        if (p.sup && (p.sup.k === 'air' || p.sup.k === 'path')) dropItem(p, D.frame(hab, p, 0.05), def.len || 3, 'prey', p.sup.k === 'air' ? 0.75 : 1, 0);
       }
       for (const sp of hab.spiders) {
         if (!M.finite3(sp.pos) || !onScreen(sp.pos)) continue;
@@ -11877,11 +12033,14 @@ void main(){
         const ventral = M.dot(fr.n, V.toCam) < -0.08;
         let d = animalDepth(sp); if (ventral && sp.sup && sp.sup.d && decDepth[sp.sup.d] != null) d = decDepth[sp.sup.d] + 0.05;
         const air = !!sp._air || (sp.sup && sp.sup.k === 'air');
+        // v27.2: perched on a stem / leaf edge -> no oval on the plant, the shadow drops to the ground below instead
+        const sfP = !air && sp.sup && sp.sup.k === 'path' ? JT.Nav.supFrame(hab, sp.sup) : null; const perch = !!sfP && (sfP.r || 0) < L * 0.7;
+        const hpS = sp.hold ? hab.preyById(sp.hold) : null; const heldLen = hpS ? Math.min(hpS.len || (JT.PREY_BY_ID[hpS.type] || {}).len || 3, L * 1.6) : 0;
         const draw = (alpha, xr) => {
           const hp = sp.hold ? hab.preyById(sp.hold) : null;
           let hug = null;
           if (hp && (sp._hug || 0) > 0.01) { const hd = JT.PREY_BY_ID[hp.type] || { len: 3 }; const base = Math.min(hp.len || hd.len, L * 1.1); const full = hp.full != null ? hp.full : 1; hug = { k: sp._hug, pl: base * (0.6 + 0.4 * full), big: base >= L * 0.6 ? 1 : 0 }; }
-          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && !(hab.data.nests || []).some(n => n.id === sp.nest && (n.build || (n.hole && n.hole.exit > 0.05))), spin: (hab.data.nests || []).some(n => n.id === sp.nest && n.build && n.owner === sp.id && JT.SpiderAI.NEST_STATES.has(sp.state)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, grip: air ? null : D.gripFor(hab, sp, L), noShadow: xr || hang > 0.2, meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
+          D.spider(ctx, V, sp, fr, { len: L, airborne: air, time: t, alpha, tucked: !!sp.nest && JT.SpiderAI.NEST_STATES.has(sp.state) && !(hab.data.nests || []).some(n => n.id === sp.nest && (n.build || (n.hole && n.hole.exit > 0.05))), spin: (hab.data.nests || []).some(n => n.id === sp.nest && n.build && n.owner === sp.id && JT.SpiderAI.NEST_STATES.has(sp.state)), lookCam: sp._lc > 0.02 ? sp._lc : 0, tilt: sp._tilt, hang, hug, grip: air ? null : D.gripFor(hab, sp, L), noShadow: xr || hang > 0.2, perch, heldLen, heldCross: !!(hpS && JT.MANTIS_LONG && JT.MANTIS_LONG.has && JT.MANTIS_LONG.has(hpS.type)), meal: hp ? (mp, fg, sg, n) => this.drawHeld(ctx, V, sp, hp, mp, fg, sg, n, L) : null });
         };
         if (hangA) { const fp = fr.p, fff = fr.f; items.push({ ln: { a: hangA, b: M.sub(fp, M.mul(fff, L * 0.32)), w: 0.08, al: 0.45 - night * 0.15 }, d: d + 0.01, f: () => { const a = V.P(hangA), b = V.P(M.sub(fp, M.mul(fff, L * 0.32))); ctx.strokeStyle = 'rgba(240,240,250,' + (0.45 - night * 0.15).toFixed(2) + ')'; ctx.lineWidth = Math.max(0.5, V.s * 0.08); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }); d = V.depth(fr.p); }
         // live safety dragline paid out behind a jump (it whips out behind a pounce, settling straight)
@@ -11899,7 +12058,7 @@ void main(){
         let hideK = 0; if (nst) { hideK = M.smooth(M.clamp((nst.prog - 0.3) / 0.6, 0, 1)); if (sp.state === 'emerge' && nst.hole) hideK *= 1 - M.smooth(M.clamp((nst.hole.exit || 0) * 1.4, 0, 1)); }
         const bodyA = 1 - hideK;
         if (bodyA > 0.01) items.push({ key: 's' + sp.id, hot: sp.id === sel, d, f: () => draw(bodyA), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
-        if (air) { const b = JT.Nav.supportBelow(hab, sp.pos); items.push({ d: V.depth(b.pos) + 0.03, f: () => blobShadow(ctx, V, b.pos, L * 0.45, 0.2 * M.clamp(1 - (sp.pos[1] - b.pos[1]) / 60, 0.2, 1)), p: b.pos, r: L * 0.55 + 1, ground: true }); }
+        if ((air || perch || hang > 0.2) && bodyA > 0.3) dropItem(sp, fr, L, JT.MANTIS_ARM ? 'mantis' : 'spider', bodyA, heldLen);
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf), p: lf.pos, r: 3 }); }
       for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !vis(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0];
@@ -14160,6 +14319,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   const famOf = (p) => p.type === 'jumperMeal' ? 'jumper' : JT.preyFamily(JT.PREY_BY_ID[p.type]);
   const isWorm = (fam) => fam === 'worm' || fam === 'cat';
   const LONG = new Set(['kicker', 'locust', 'moth', 'roach', 'beetle', 'worm', 'cat', 'jumper']); // held across the arms
+  JT.MANTIS_LONG = LONG;
   const handOf = (p) => { const k = String(p.id != null ? p.id : p.seed || 0); let h = 7; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0; return (h & 1) ? 1 : -1; };
   function partsOf(fam, p) {
     const P = []; const legs = (n, at) => { for (let i = 0; i < n; i++) P.push({ id: 'L' + i, k: 'leg', i, sd: i % 2 ? 1 : -1, at: at[i] }); };

@@ -104,7 +104,7 @@
     const Wf = (u, v, w) => [p0[0] + f[0] * u + s[0] * v + n[0] * w, p0[1] + f[1] * u + s[1] * v + n[1] * w, p0[2] + f[2] * u + s[2] * v + n[2] * w]; // fixed (feet)
     const lat = L * 0.035 * sw; const p = add(p0, mul(s, lat));
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w]; // swaying body
-    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s0, n0, L * 0.85, h0 + L * 0.06, alpha * 0.85);
+    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s0, n0, L, h0 + L * 0.06, alpha * 0.85, 1, { kind: 'mantis', perch: o.perch, held: o.heldLen, cross: o.heldCross, ph: moving ? (sp._walk || 0) * Math.PI : 0 });
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb;
     const parts = []; const push = (pt, fn, bias) => parts.push({ d: V.depth(pt) + (bias || 0), f: fn });
     const fat = M.clamp(0.88 + (sp.sat != null ? sp.sat : 0.7) * 0.25, 0.88, 1.15);

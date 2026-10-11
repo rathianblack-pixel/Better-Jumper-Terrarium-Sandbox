@@ -26,6 +26,7 @@
   const famOf = (p) => p.type === 'jumperMeal' ? 'jumper' : JT.preyFamily(JT.PREY_BY_ID[p.type]);
   const isWorm = (fam) => fam === 'worm' || fam === 'cat';
   const LONG = new Set(['kicker', 'locust', 'moth', 'roach', 'beetle', 'worm', 'cat', 'jumper']); // held across the arms
+  JT.MANTIS_LONG = LONG;
   const handOf = (p) => { const k = String(p.id != null ? p.id : p.seed || 0); let h = 7; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0; return (h & 1) ? 1 : -1; };
   function partsOf(fam, p) {
     const P = []; const legs = (n, at) => { for (let i = 0; i < n; i++) P.push({ id: 'L' + i, k: 'leg', i, sd: i % 2 ? 1 : -1, at: at[i] }); };

@@ -49,3 +49,11 @@ One title screen for both games, built on the real tank and matched to your art 
 **Long prey held from the side**: crickets, locusts, moths, roaches/dubia, beetles, mealworms, caterpillars and mantis tank-mates are held across the arms, like a cob under the jaws, with the body running out to one side (left or right per prey). Long insects are eaten head first, then back along the body. Parts on the eaten end disappear with it; legs, wings and the rest still drop off as before. Small prey (flies, gnats, aphids) is unchanged.
 
 Tests: `mantis_core` 65/65, `behave.js` no errors, `strike_probe` above, `combined.js` passes.
+
+## v27.2 — better shadows
+
+- **Shape-true decor shadows** (WebGL): each plant/rock/log's real triangles are flattened onto the floor along the sun/moon direction into one cached, floor-sized soft mask. Leaf gaps show through as dappled light, and higher leaves cast softer, lighter shadows. The mask is rebuilt only when the light moves about 1.5° or the decor/ground changes (GPU only, a few draws plus 5 small blur passes; 512 px, or 256 px on Low quality). It replaces the old oval decals, which are still used as a fallback.
+- **Contact shadows**: a thin soft rim where rocks, logs and trunks meet the soil, and a small dab where each stem goes in. These replace the large discs under plants.
+- **Critter shadows**: shaped like the body (abdomen + head, thin leg lines, mantis raptorial arms, and held prey) and cast along the light. On a thin stem or leaf edge, the critter only gets a faint contact at its feet, and its shadow drops to the ground or rock below, softer and fainter the higher it is. Jumping or airborne critters use the same drop shadow, and it fades out instead of spilling past the glass.
+- **Per art style**: Storybook uses soft watercolour edges (noise-broken, with a slight pigment rim). HD-2D uses 2 dithered pixel levels. Cuphead uses flat, hard-edged plum-brown shapes.
+- Test switch: settings `ptNoSm` turns the shadow map off (old decals).
