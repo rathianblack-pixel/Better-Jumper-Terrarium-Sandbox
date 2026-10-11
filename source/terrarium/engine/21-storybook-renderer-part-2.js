@@ -238,13 +238,16 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       if (!gl) throw new Error('no webgl');
       this.gl = gl; this.cv = canvas; this.R = R; this.gl2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
       this.uintOK = this.gl2 || !!gl.getExtension('OES_element_index_uint');
+      // v29: compile and link every program first and check them afterwards, so the GPU driver can work on them side by side
+      try { gl.getExtension('KHR_parallel_shader_compile'); } catch (e) { /* optional */ } this._defer = [];
       this.P = {
         mesh: this.prog(MESH_VS, MESH_FS), meshS: this.prog(MESH_VS, MESH_SIMPLE), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
       };
+      { const pend = this._defer; this._defer = null; for (const P of pend) this.finishProg(P); }
       this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false), cell: this.texFrom(this.cellCanvas(), true) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
       this.V2 = new JT.View(0, 0, 1, 0, 0, [0, 0, 0]); this.dyn = {}; this.lost = false;
-      canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; });
+      canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; this._edgeA = null; this._edgePB = null; });
       canvas.addEventListener('webglcontextrestored', () => { this.lost = false; this.reinit = true; });
       const q = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, q); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 0, 1, 1, -1, 1, 1, 1, 1, 1, 0, -1, -1, 0, 1, 1, 1, 1, 0, -1, 1, 0, 0]), gl.STATIC_DRAW); this.quad = q;
     }
@@ -295,10 +298,13 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     }
     // ---------- GL plumbing ----------
     prog(vs, fs) {
-      const gl = this.gl; const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error('shader: ' + gl.getShaderInfoLog(o)); return o; };
-      const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
-      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(p));
-      const P = { p, a: {}, u: {} }; const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES); for (let i = 0; i < na; i++) { const a = gl.getActiveAttrib(p, i); P.a[a.name] = gl.getAttribLocation(p, a.name); }
+      const gl = this.gl; const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
+      const p = gl.createProgram(), v = sh(gl.VERTEX_SHADER, vs), f = sh(gl.FRAGMENT_SHADER, fs); gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+      const P = { p, a: {}, u: {}, _sh: [v, f] }; if (this._defer) { this._defer.push(P); return P; } return this.finishProg(P);
+    }
+    finishProg(P) {
+      const gl = this.gl, p = P.p, sh = P._sh; delete P._sh;
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { for (const o of sh || []) if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error('shader: ' + gl.getShaderInfoLog(o)); throw new Error('link: ' + gl.getProgramInfoLog(p)); } const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES); for (let i = 0; i < na; i++) { const a = gl.getActiveAttrib(p, i); P.a[a.name] = gl.getAttribLocation(p, a.name); }
       const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); for (let i = 0; i < nu; i++) { const u = gl.getActiveUniform(p, i); const nm = u.name.replace(/\[0\]$/, ''); P.u[nm] = gl.getUniformLocation(p, u.name); }
       return P;
     }
@@ -680,8 +686,17 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); }
       // every ~10 s (and on habitat change, never mid-camera-move — a pixel read stalls the GPU): read one pixel at the bottom edge and paint the page background with it, so any strip of
       // screen the web view leaves uncovered (iOS home-screen apps) blends into the scene instead of showing a band
-      if (!this._edgeT || (performance.now() - this._edgeT > 10000 && !this._moving) || this._edgeH !== hab.id) { this._edgeT = performance.now(); this._edgeH = hab.id; try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-        const c = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; if (c !== this._edgeC) { this._edgeC = c; document.documentElement.style.backgroundColor = c; document.body.style.backgroundColor = c; } } catch (e) { /* ignore */ } }
+      // v29: on WebGL2 the pixel is copied into a buffer on the GPU and picked up a few frames later, once a fence says it's
+      // done, so the CPU never waits for the GPU (the old synchronous read stalled the first frame and then every 10 s).
+      const paintEdge = (px) => { const c = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; if (c !== this._edgeC) { this._edgeC = c; document.documentElement.style.backgroundColor = c; document.body.style.backgroundColor = c; } };
+      const EA = this._edgeA; if (EA && this.gl2) { let st = 0; try { st = gl.clientWaitSync(EA.f, 0, 0); } catch (e) { st = -1; }
+        if (st === gl.ALREADY_SIGNALED || st === gl.CONDITION_SATISFIED || st === -1 || ++EA.n > 90) { try { if (st !== -1) { const px = new Uint8Array(4); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, EA.b); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, px); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); paintEdge(px); } } catch (e) { /* ignore */ }
+          try { gl.deleteSync(EA.f); } catch (e) { /* ignore */ } this._edgeA = null; } }
+      if (!this._edgeA && (!this._edgeT || (performance.now() - this._edgeT > 10000 && !this._moving) || this._edgeH !== hab.id)) { this._edgeT = performance.now(); this._edgeH = hab.id;
+        if (this.gl2 && !(this.R.set.perf && this.R.set.ptSyncEdge)) { try { if (!this._edgePB || this._edgePBgl !== gl || this.reinit) { this._edgePB = gl.createBuffer(); this._edgePBgl = gl; gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._edgePB); gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ); }
+            gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._edgePB); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, 0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+            const f = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); if (f) this._edgeA = { f, b: this._edgePB, n: 0 }; } catch (e) { try { gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); } catch (e2) { /* ignore */ } } }
+        else try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); paintEdge(px); } catch (e) { /* ignore */ } }
     }
     boundsOf(g) { const pts = []; for (const e of (g.extent.length ? g.extent : g.foot || [])) pts.push([e[0], g.baseY, e[1]]); let c = [0, 0, 0]; if (!pts.length) return { c: g.center, r: 20 }; for (const p of pts) c = M.add(c, p); c = M.mul(c, 1 / pts.length); c[1] = g.baseY + g.height / 2; let r = g.height / 2 + 4; for (const p of pts) r = Math.max(r, Math.hypot(p[0] - c[0], p[2] - c[2]) + g.height / 2); return { c, r }; }
     /** Shop thumbnail of one decor geometry, painted like the habitat (ink + wash) into a 2D canvas. V: view in thumbnail pixels. */

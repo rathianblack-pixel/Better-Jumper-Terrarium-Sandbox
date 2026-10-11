@@ -172,7 +172,7 @@
       document.addEventListener('keydown', (e) => this.key(e));
       // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
       for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => A().start(), { capture: true, passive: true });
-      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (document.hidden && A().ctx && A().ctx.state === 'running' && A().ctx.suspend) { const ps = A().ctx.suspend(); if (ps && ps.catch) ps.catch(() => {}); } /* v29: no audio work (or battery drain) in the background */ if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
       { const poke = () => { this._activeUntil = performance.now() + 1800; }; for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'touchmove']) document.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons) return;
           // v17: scrolling the shop strip doesn't wake the tank up to 60 fps (the GPU stays free for the strip); thumbnails wait while the finger moves
           const t = e.target; if (ev !== 'keydown' && t && t.closest && t.closest('#drawerBody, #drawerChips')) { if (ev !== 'pointerdown') this._scrollUntil = performance.now() + 160; return; }
@@ -399,7 +399,7 @@
       const top = solid('top'), bars = [solid('dock'), solid('toolbar'), rect('drawer')].filter(Boolean);
       const all = hud.concat(bars, top ? [top] : []);
       this.R.hudRects = all.map(r => [r.left, r.top, r.right, r.bottom]);
-      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur));
+      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur) || (this.set.quality === 'auto' && (JT.Device.noGlass || (this.R._autoLvl || 0) >= 2 || !!this.R.locked30))); // v29: no live blur behind the bars on mid/low Android or while the phone struggles
       for (const bar of [$('dock'), document.querySelector('#toolbar .gl-bar')]) { // slide the glass lens under the current item
         const L = bar && bar.querySelector('.lens'); if (!L) continue; const b = bar.querySelector('button.on');
         if (!b || !b.offsetWidth) { L.classList.remove('on'); continue; }

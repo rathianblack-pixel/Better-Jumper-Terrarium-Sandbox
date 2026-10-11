@@ -12,16 +12,28 @@
     right: { yaw: -1.22, pitch: 0.44, label: 'Right' },
   };
   JT.CAMS = CAMS;
+  /* v29: what kind of phone / tablet this is (Android Chrome and iOS Safari get different defaults).
+     tier: 'high' | 'mid' | 'low'. Android reports memory (GB, capped at 8) and cores; iOS reports neither reliably, so it counts as 'high'
+     and relies on the adaptive resolution like before. */
+  JT.Device = JT.Device || (function () { const n = root.navigator || {}, ua = n.userAgent || '';
+    const ios = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (n.maxTouchPoints || 0) > 1), android = /Android/i.test(ua);
+    const mem = +n.deviceMemory || 0, cores = +n.hardwareConcurrency || 0, saver = !!(n.connection && n.connection.saveData);
+    let tier = 'high'; if (android) { tier = (mem && mem <= 2) || (cores && cores <= 4) ? 'low' : (mem && mem < 8) ? 'mid' : 'high'; } else if (mem && mem <= 2) tier = 'low';
+    const coarse = !!(root.matchMedia && root.matchMedia('(pointer:coarse)').matches);
+    return { ios, android, mem, cores, saver, tier, coarse, noGlass: android && tier !== 'high' }; })();
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
 
   class Renderer {
     constructor(canvas, game, settings) {
       this.cv = canvas; this.ctx = canvas.getContext('2d'); this.game = game; this.set = settings;
+      // v29: note whenever anything is painted on the effects layer, so a layer that stayed empty isn't cleared (and re-sent to the screen) every frame
+      { const c = this.ctx, R = this; if (c) for (const m of ['fill', 'stroke', 'fillRect', 'strokeRect', 'fillText', 'strokeText', 'drawImage', 'putImageData']) { const o = c[m]; if (typeof o === 'function') c[m] = function () { R._ovInk = true; return o.apply(this, arguments); }; } }
       this.cam = { mode: 'observer', zoom: 1, pan: [0, 0], oy: 0, op: 0 };
       this.cur = null; // smoothed {yaw,pitch,scale,c}
       this.fx = []; this.particles = []; this.ghost = null; this.hover = null;
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
       this.fps = 60; this._autoLow = false; this._autoLvl = 0; this.targetFps = 60; this.time = 0;
+      { const t = JT.Device.tier; if (t === 'low') { this._autoLvl = 2; this._closeK = 1.4; } else if (t === 'mid') { this._autoLvl = 1; this._closeK = 1.6; } } // v29: weaker Android phones start one or two steps lower (Auto can still step back up)
       this.V = new JT.View(0.5, 0.6, 1, 0, 0, [0, 0, 0]);
       this.glc = root.document && root.document.getElementById('glview'); this.gp = null; this.initGL();
       this.resize();
@@ -168,7 +180,7 @@
       const scene = this.collectScene(V, hab, night); em('col', performance.now() - t0); t0 = performance.now(); this._sprT = 0; this._upT = 0;
       try { this.gp.frame(V, hab, night, lamps, scene); } catch (e) { if ((this._glErr = (this._glErr || 0) + 1) < 5) console.error('storybook frame', e); }
       em('spr', this._sprT); em('up', this._upT); em('gl', performance.now() - t0 - this._sprT - this._upT); t0 = performance.now();
-      const ctx = this.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, this.cv.width, this.cv.height);
+      const ctx = this.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; if (this._ovDirty !== false || this._ovInk || (this.set.perf && this.set.ptOvClear)) ctx.clearRect(0, 0, this.cv.width, this.cv.height); this._ovInk = false; this._ovDirty = true;
       if (this.ghost && this.ghost.geom) this.drawGhostFoot(ctx, V, this.ghost);
       if (this.hover && this.hover.kind === 'decor') { const g = hab.geoms[this.hover.ent.id]; if (g) this.outlineDecor(ctx, V, g, 'rgba(200,70,50,0.9)'); }
       if (this.set.perf && this.set.ptNoFx) return;
@@ -181,7 +193,7 @@
         const gr = ctx.createRadialGradient(P[0], P[1], 0, P[0], P[1], r); gr.addColorStop(0, 'rgba(255,150,60,' + a.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,90,20,0)');
         ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(P[0] - r, P[1] - r, r * 2, r * 2); ctx.restore(); }
       if (this.set.debug) this.drawDebug(ctx, V, hab);
-      em('ov', performance.now() - t0);
+      this._ovDirty = !!this._ovInk; em('ov', performance.now() - t0);
     }
     drawGhostFoot(ctx, V, gh) {
       const g = gh.geom; if (!g.foot) return; const col = gh.ok ? 'rgba(70,150,80,' : 'rgba(200,60,50,'; ctx.save(); ctx.beginPath();

@@ -355,6 +355,7 @@ body.story{--gA:rgba(255,253,246,.56);--gB:rgba(255,253,246,.36);--gF:rgba(255,2
 body.lowfx{--gA:rgba(255,255,255,.5);--gB:rgba(255,255,255,.4);--gBlur:none;--gFBlur:none}
 body.lowfx:not(.story){--gA:rgba(28,20,12,.55);--gB:rgba(28,20,12,.45);--gF:rgba(28,20,12,.86);--gF2:rgba(28,20,12,.8)}
 body.story.lowfx{--gF:rgba(250,245,233,.92);--gF2:rgba(250,245,233,.88)}
+body.lowfx,body.story.lowfx{--blur:none}body.lowfx:not(.story){--pill:rgba(20,14,9,.74)}body.story.lowfx:not(.hd2d):not(.cuphead){--pill:rgba(250,245,233,.9)}
 #app .tb-left,#app .clock,#app .tb-right,#app .toast,#app #obsHud,#app #modeBar,#app #dock,#app #toolbar .gl-bar,#app #camCtl button{
  background:linear-gradient(140deg,var(--gA),var(--gB) 60%,var(--gA));-webkit-backdrop-filter:var(--gBlur);backdrop-filter:var(--gBlur);border:1px solid var(--gEdge);
  box-shadow:inset 1.5px 1.5px 0 var(--gRim),inset -1px -1px 0 rgba(255,255,255,.12),inset 0 0 14px rgba(255,255,255,.08),var(--gShade);text-shadow:var(--gTxt)}
@@ -732,6 +733,7 @@ body.tv #app>:not(canvas):not(#tvVeil):not(#tvCatch),body.tv #tip{opacity:0!impo
 /* ---------- v12: touch-device performance + polish ---------- */
 @media (pointer:coarse){
   :root,body.story{--blur:blur(8px) saturate(1.2)}
+  body.lowfx,body.story.lowfx{--blur:none}
   body:not(.lowfx){--gFBlur:blur(10px) saturate(1.4)}
   body.story:not(.lowfx){--gFBlur:blur(10px) saturate(1.5) brightness(1.04)}
 }
@@ -2942,17 +2944,19 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     // ---- jump edges between distinct objects ----
     const wallish = (n) => { const g = n.decor && geoms[n.decor]; return !!g && (g.def.arche === 'backwall' || g.def.arche === 'wallmount'); };
     const cand = nav.nodes.filter(n => (n.kind !== 'face' || (wallish(n) && n.path && n.path.i % 2 === 0 && n.pos[1] > 6)) && !n.lattice && (n.kind !== 'floor' || true) && (n.kind === 'top' || n.kind === 'floor' || n.path && (n.path.i % 2 === 0 || n.perch)));
+    const JS = jumpSolids(hab); // v29: solids + bounding boxes gathered once per build (same test, far fewer polygon checks)
     for (const a of cand) {
-      const near = [];
+      const near = []; const ax = a.pos[0], az = a.pos[2];
       for (const b of cand) {
         if (a === b) continue;
+        if (Math.abs(b.pos[0] - ax) > JMAX || Math.abs(b.pos[2] - az) > JMAX) continue; // d > JMAX anyway
         if (a.decor && a.decor === b.decor) continue;           // same object: walk, don't jump
         if (a.kind === 'floor' && b.kind === 'floor') continue;
         if (a.region && a.region === b.region) continue;
         const d = M.dist(a.pos, b.pos); if (d < 5 || d > JMAX) continue;
         const rise = b.pos[1] - a.pos[1]; if (rise > 24) continue;
         if (a.kind === 'floor' && rise < 3) continue;
-        if (jumpBlocked(hab, a.pos, b.pos)) continue;
+        if (jumpBlocked(hab, a.pos, b.pos, JS)) continue;
         near.push([d, b]);
       }
       near.sort((x, y) => x[0] - y[0]);
@@ -2992,11 +2996,21 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     return nav;
   };
 
-  function jumpBlocked(hab, a, b) {
+  // v29: axis-aligned box of a footprint polygon, with a hair of slack (a point / segment outside it can't touch the polygon)
+  const polyBox = (o) => { let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity; for (const p of o) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < z0) z0 = p[1]; if (p[1] > z1) z1 = p[1]; } return [x0 - 0.01, z0 - 0.01, x1 + 0.01, z1 + 0.01]; };
+  /** Boxes cached per navigation graph (a graph is rebuilt whenever the geometry it was made from changes). */
+  const navBox = (nav, o) => { let m = nav._bb; if (!m) { m = new Map(); try { Object.defineProperty(nav, '_bb', { value: m, enumerable: false, writable: true }); } catch (e) { nav._bb = m; } } let b = m.get(o); if (!b) { b = polyBox(o); m.set(o, b); } return b; };
+  Nav.polyBox = polyBox;
+  /** The boxes of a region's obstacles, in the same order (rebuilt if the list changed). */
+  const regionBoxes = (nav, r) => { let c = r._bbs; const ob = r.obstacles; if (!c || c.n !== ob.length || c.o0 !== ob[0] || c.oN !== ob[ob.length - 1]) { c = ob.map(o => navBox(nav, o)); c.n = ob.length; c.o0 = ob[0]; c.oN = ob[ob.length - 1];
+      try { Object.defineProperty(r, '_bbs', { value: c, enumerable: false, writable: true, configurable: true }); } catch (e) { r._bbs = c; } } return c; };
+  function jumpSolids(hab) { const out = []; for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g || !g.solids.length) continue; out.push({ hi: g.baseY + g.height - 0.5, lo: g.baseY - 0.5, s: g.solids, b: g.solids.map(polyBox) }); } return out; }
+  function jumpBlocked(hab, a, b, JS) {
+    JS = JS || jumpSolids(hab); const dab = M.dist(a, b);
     for (let k = 1; k < 5; k++) {
       const t = k / 5; const x = M.lerp(a[0], b[0], t), z = M.lerp(a[2], b[2], t);
-      const y = M.lerp(a[1], b[1], t) + Math.sin(t * Math.PI) * M.dist(a, b) * 0.18;
-      for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g || !g.solids.length) continue; if (y < g.baseY + g.height - 0.5 && y > g.baseY - 0.5) for (const s of g.solids) if (G.pointInPoly(x, z, s)) return true; }
+      const y = M.lerp(a[1], b[1], t) + Math.sin(t * Math.PI) * dab * 0.18;
+      for (const J of JS) { if (y < J.hi && y > J.lo) for (let i = 0; i < J.s.length; i++) { const bb = J.b[i]; if (x < bb[0] || x > bb[2] || z < bb[1] || z > bb[3]) continue; if (G.pointInPoly(x, z, J.s[i])) return true; } }
     }
     return false;
   }
@@ -3006,7 +3020,10 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
   Nav.SOFT_IN = 4.5;
   Nav.regionClear = function (nav, r, A, B) {
     /* a soft footprint (trunk, stem, log) may be entered only for a short way to reach a climb base standing in it, never crossed */
-    for (const o of r.obstacles) if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)) && insideLen(A, B, o) <= Nav.SOFT_IN)) return false;
+    const sx0 = Math.min(A[0], B[0]), sx1 = Math.max(A[0], B[0]), sz0 = Math.min(A[2], B[2]), sz1 = Math.max(A[2], B[2]);
+    const ob = r.obstacles, bbs = regionBoxes(nav, r);
+    for (let i = 0; i < ob.length; i++) { const o = ob[i], bb = bbs[i]; if (sx1 < bb[0] || sx0 > bb[2] || sz1 < bb[1] || sz0 > bb[3]) continue; // v29: box test first
+      if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)) && insideLen(A, B, o) <= Nav.SOFT_IN)) return false; }
     if (r.poly) { for (let k = 1; k < 4; k++) { const t = k / 4; if (!G.pointInPoly(M.lerp(A[0], B[0], t), M.lerp(A[2], B[2], t), r.poly)) return false; } }
     return true;
   };
@@ -3411,7 +3428,7 @@ window.JT_PACK = { id: 'mantis', name: 'Mantis Terrarium', saveKey: 'mantisTerra
     }
     _resnapMounts(wallId) {
       let moved = false;
-      for (const m of this.data.decor.filter(d => d.wall === wallId)) { const def = JT.DECOR_BY_ID[m.type]; const c = this._canMount(def, m.type, m.x, m.z, m.seed, m.id, m.my); if (c.ok) { m.x = c.x; m.z = c.z; m.rot = c.rot; m.my = c.my; m.wall = c.wall; moved = true; } }
+      for (const m of this.data.decor.filter(d => d.wall === wallId)) { const def = JT.DECOR_BY_ID[m.type]; const c = this._canMount(def, m.type, m.x, m.z, m.seed, m.id, m.my); if (c.ok) { if (m.x !== c.x || m.z !== c.z || m.rot !== c.rot || m.my !== c.my || m.wall !== c.wall) moved = true; m.x = c.x; m.z = c.z; m.rot = c.rot; m.my = c.my; m.wall = c.wall; } } // v29: rebuild only if a mount really moved (was: every load)
       if (moved) this.rebuild();
     }
     /** Older saves: free-standing back-wall panels become one wall across the whole back; pieces in its way move forward. */
@@ -11135,13 +11152,16 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       if (!gl) throw new Error('no webgl');
       this.gl = gl; this.cv = canvas; this.R = R; this.gl2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
       this.uintOK = this.gl2 || !!gl.getExtension('OES_element_index_uint');
+      // v29: compile and link every program first and check them afterwards, so the GPU driver can work on them side by side
+      try { gl.getExtension('KHR_parallel_shader_compile'); } catch (e) { /* optional */ } this._defer = [];
       this.P = {
         mesh: this.prog(MESH_VS, MESH_FS), meshS: this.prog(MESH_VS, MESH_SIMPLE), tex: this.prog(TEX_VS, TEX_FS), scr: this.prog(SCR_VS, SCR_FS), spr: this.prog(SPR_VS, SPR_FS), line: this.prog(LINE_VS, LINE_FS), mound: this.prog(MOUND_VS, MOUND_FS), wet: this.prog(WET_VS, WET_FS), mark: this.prog(MARK_VS, MARK_FS),
       };
+      { const pend = this._defer; this._defer = null; for (const P of pend) this.finishProg(P); }
       this.tex = { noise: this.texFrom(this.noiseCanvas(), true), paper: this.texFrom(this.paperCanvas(), true), radial: this.texFrom(this.radialCanvas(), false), cell: this.texFrom(this.cellCanvas(), true) };
       this.bufs = {}; this.atlas = mkCanvas(1024, 256); this.actx = this.atlas.getContext('2d'); this.atex = gl.createTexture();
       this.V2 = new JT.View(0, 0, 1, 0, 0, [0, 0, 0]); this.dyn = {}; this.lost = false;
-      canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; });
+      canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; this._edgeA = null; this._edgePB = null; });
       canvas.addEventListener('webglcontextrestored', () => { this.lost = false; this.reinit = true; });
       const q = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, q); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 0, 1, 1, -1, 1, 1, 1, 1, 1, 0, -1, -1, 0, 1, 1, 1, 1, 0, -1, 1, 0, 0]), gl.STATIC_DRAW); this.quad = q;
     }
@@ -11192,10 +11212,13 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
     }
     // ---------- GL plumbing ----------
     prog(vs, fs) {
-      const gl = this.gl; const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error('shader: ' + gl.getShaderInfoLog(o)); return o; };
-      const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
-      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(p));
-      const P = { p, a: {}, u: {} }; const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES); for (let i = 0; i < na; i++) { const a = gl.getActiveAttrib(p, i); P.a[a.name] = gl.getAttribLocation(p, a.name); }
+      const gl = this.gl; const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
+      const p = gl.createProgram(), v = sh(gl.VERTEX_SHADER, vs), f = sh(gl.FRAGMENT_SHADER, fs); gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+      const P = { p, a: {}, u: {}, _sh: [v, f] }; if (this._defer) { this._defer.push(P); return P; } return this.finishProg(P);
+    }
+    finishProg(P) {
+      const gl = this.gl, p = P.p, sh = P._sh; delete P._sh;
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { for (const o of sh || []) if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error('shader: ' + gl.getShaderInfoLog(o)); throw new Error('link: ' + gl.getProgramInfoLog(p)); } const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES); for (let i = 0; i < na; i++) { const a = gl.getActiveAttrib(p, i); P.a[a.name] = gl.getAttribLocation(p, a.name); }
       const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); for (let i = 0; i < nu; i++) { const u = gl.getActiveUniform(p, i); const nm = u.name.replace(/\[0\]$/, ''); P.u[nm] = gl.getUniformLocation(p, u.name); }
       return P;
     }
@@ -11577,8 +11600,17 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); }
       // every ~10 s (and on habitat change, never mid-camera-move — a pixel read stalls the GPU): read one pixel at the bottom edge and paint the page background with it, so any strip of
       // screen the web view leaves uncovered (iOS home-screen apps) blends into the scene instead of showing a band
-      if (!this._edgeT || (performance.now() - this._edgeT > 10000 && !this._moving) || this._edgeH !== hab.id) { this._edgeT = performance.now(); this._edgeH = hab.id; try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-        const c = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; if (c !== this._edgeC) { this._edgeC = c; document.documentElement.style.backgroundColor = c; document.body.style.backgroundColor = c; } } catch (e) { /* ignore */ } }
+      // v29: on WebGL2 the pixel is copied into a buffer on the GPU and picked up a few frames later, once a fence says it's
+      // done, so the CPU never waits for the GPU (the old synchronous read stalled the first frame and then every 10 s).
+      const paintEdge = (px) => { const c = 'rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; if (c !== this._edgeC) { this._edgeC = c; document.documentElement.style.backgroundColor = c; document.body.style.backgroundColor = c; } };
+      const EA = this._edgeA; if (EA && this.gl2) { let st = 0; try { st = gl.clientWaitSync(EA.f, 0, 0); } catch (e) { st = -1; }
+        if (st === gl.ALREADY_SIGNALED || st === gl.CONDITION_SATISFIED || st === -1 || ++EA.n > 90) { try { if (st !== -1) { const px = new Uint8Array(4); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, EA.b); gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, px); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); paintEdge(px); } } catch (e) { /* ignore */ }
+          try { gl.deleteSync(EA.f); } catch (e) { /* ignore */ } this._edgeA = null; } }
+      if (!this._edgeA && (!this._edgeT || (performance.now() - this._edgeT > 10000 && !this._moving) || this._edgeH !== hab.id)) { this._edgeT = performance.now(); this._edgeH = hab.id;
+        if (this.gl2 && !(this.R.set.perf && this.R.set.ptSyncEdge)) { try { if (!this._edgePB || this._edgePBgl !== gl || this.reinit) { this._edgePB = gl.createBuffer(); this._edgePBgl = gl; gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._edgePB); gl.bufferData(gl.PIXEL_PACK_BUFFER, 4, gl.STREAM_READ); }
+            gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._edgePB); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, 0); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+            const f = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0); if (f) this._edgeA = { f, b: this._edgePB, n: 0 }; } catch (e) { try { gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); } catch (e2) { /* ignore */ } } }
+        else try { const px = new Uint8Array(4); gl.readPixels(W >> 1, 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); paintEdge(px); } catch (e) { /* ignore */ } }
     }
     boundsOf(g) { const pts = []; for (const e of (g.extent.length ? g.extent : g.foot || [])) pts.push([e[0], g.baseY, e[1]]); let c = [0, 0, 0]; if (!pts.length) return { c: g.center, r: 20 }; for (const p of pts) c = M.add(c, p); c = M.mul(c, 1 / pts.length); c[1] = g.baseY + g.height / 2; let r = g.height / 2 + 4; for (const p of pts) r = Math.max(r, Math.hypot(p[0] - c[0], p[2] - c[2]) + g.height / 2); return { c, r }; }
     /** Shop thumbnail of one decor geometry, painted like the habitat (ink + wash) into a 2D canvas. V: view in thumbnail pixels. */
@@ -11986,16 +12018,28 @@ void main(){
     right: { yaw: -1.22, pitch: 0.44, label: 'Right' },
   };
   JT.CAMS = CAMS;
+  /* v29: what kind of phone / tablet this is (Android Chrome and iOS Safari get different defaults).
+     tier: 'high' | 'mid' | 'low'. Android reports memory (GB, capped at 8) and cores; iOS reports neither reliably, so it counts as 'high'
+     and relies on the adaptive resolution like before. */
+  JT.Device = JT.Device || (function () { const n = root.navigator || {}, ua = n.userAgent || '';
+    const ios = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (n.maxTouchPoints || 0) > 1), android = /Android/i.test(ua);
+    const mem = +n.deviceMemory || 0, cores = +n.hardwareConcurrency || 0, saver = !!(n.connection && n.connection.saveData);
+    let tier = 'high'; if (android) { tier = (mem && mem <= 2) || (cores && cores <= 4) ? 'low' : (mem && mem < 8) ? 'mid' : 'high'; } else if (mem && mem <= 2) tier = 'low';
+    const coarse = !!(root.matchMedia && root.matchMedia('(pointer:coarse)').matches);
+    return { ios, android, mem, cores, saver, tier, coarse, noGlass: android && tier !== 'high' }; })();
   function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
 
   class Renderer {
     constructor(canvas, game, settings) {
       this.cv = canvas; this.ctx = canvas.getContext('2d'); this.game = game; this.set = settings;
+      // v29: note whenever anything is painted on the effects layer, so a layer that stayed empty isn't cleared (and re-sent to the screen) every frame
+      { const c = this.ctx, R = this; if (c) for (const m of ['fill', 'stroke', 'fillRect', 'strokeRect', 'fillText', 'strokeText', 'drawImage', 'putImageData']) { const o = c[m]; if (typeof o === 'function') c[m] = function () { R._ovInk = true; return o.apply(this, arguments); }; } }
       this.cam = { mode: 'observer', zoom: 1, pan: [0, 0], oy: 0, op: 0 };
       this.cur = null; // smoothed {yaw,pitch,scale,c}
       this.fx = []; this.particles = []; this.ghost = null; this.hover = null;
       this.bgCache = {}; this.thumbs = {}; this.portraits = {};
       this.fps = 60; this._autoLow = false; this._autoLvl = 0; this.targetFps = 60; this.time = 0;
+      { const t = JT.Device.tier; if (t === 'low') { this._autoLvl = 2; this._closeK = 1.4; } else if (t === 'mid') { this._autoLvl = 1; this._closeK = 1.6; } } // v29: weaker Android phones start one or two steps lower (Auto can still step back up)
       this.V = new JT.View(0.5, 0.6, 1, 0, 0, [0, 0, 0]);
       this.glc = root.document && root.document.getElementById('glview'); this.gp = null; this.initGL();
       this.resize();
@@ -12142,7 +12186,7 @@ void main(){
       const scene = this.collectScene(V, hab, night); em('col', performance.now() - t0); t0 = performance.now(); this._sprT = 0; this._upT = 0;
       try { this.gp.frame(V, hab, night, lamps, scene); } catch (e) { if ((this._glErr = (this._glErr || 0) + 1) < 5) console.error('storybook frame', e); }
       em('spr', this._sprT); em('up', this._upT); em('gl', performance.now() - t0 - this._sprT - this._upT); t0 = performance.now();
-      const ctx = this.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, this.cv.width, this.cv.height);
+      const ctx = this.ctx; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; if (this._ovDirty !== false || this._ovInk || (this.set.perf && this.set.ptOvClear)) ctx.clearRect(0, 0, this.cv.width, this.cv.height); this._ovInk = false; this._ovDirty = true;
       if (this.ghost && this.ghost.geom) this.drawGhostFoot(ctx, V, this.ghost);
       if (this.hover && this.hover.kind === 'decor') { const g = hab.geoms[this.hover.ent.id]; if (g) this.outlineDecor(ctx, V, g, 'rgba(200,70,50,0.9)'); }
       if (this.set.perf && this.set.ptNoFx) return;
@@ -12155,7 +12199,7 @@ void main(){
         const gr = ctx.createRadialGradient(P[0], P[1], 0, P[0], P[1], r); gr.addColorStop(0, 'rgba(255,150,60,' + a.toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,90,20,0)');
         ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(P[0] - r, P[1] - r, r * 2, r * 2); ctx.restore(); }
       if (this.set.debug) this.drawDebug(ctx, V, hab);
-      em('ov', performance.now() - t0);
+      this._ovDirty = !!this._ovInk; em('ov', performance.now() - t0);
     }
     drawGhostFoot(ctx, V, gh) {
       const g = gh.geom; if (!g.foot) return; const col = gh.ok ? 'rgba(70,150,80,' : 'rgba(200,60,50,'; ctx.save(); ctx.beginPath();
@@ -13096,7 +13140,7 @@ void main(){
       document.addEventListener('keydown', (e) => this.key(e));
       // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
       for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => A().start(), { capture: true, passive: true });
-      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (document.hidden && A().ctx && A().ctx.state === 'running' && A().ctx.suspend) { const ps = A().ctx.suspend(); if (ps && ps.catch) ps.catch(() => {}); } /* v29: no audio work (or battery drain) in the background */ if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
       { const poke = () => { this._activeUntil = performance.now() + 1800; }; for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'touchmove']) document.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons) return;
           // v17: scrolling the shop strip doesn't wake the tank up to 60 fps (the GPU stays free for the strip); thumbnails wait while the finger moves
           const t = e.target; if (ev !== 'keydown' && t && t.closest && t.closest('#drawerBody, #drawerChips')) { if (ev !== 'pointerdown') this._scrollUntil = performance.now() + 160; return; }
@@ -13323,7 +13367,7 @@ void main(){
       const top = solid('top'), bars = [solid('dock'), solid('toolbar'), rect('drawer')].filter(Boolean);
       const all = hud.concat(bars, top ? [top] : []);
       this.R.hudRects = all.map(r => [r.left, r.top, r.right, r.bottom]);
-      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur));
+      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur) || (this.set.quality === 'auto' && (JT.Device.noGlass || (this.R._autoLvl || 0) >= 2 || !!this.R.locked30))); // v29: no live blur behind the bars on mid/low Android or while the phone struggles
       for (const bar of [$('dock'), document.querySelector('#toolbar .gl-bar')]) { // slide the glass lens under the current item
         const L = bar && bar.querySelector('.lens'); if (!L) continue; const b = bar.querySelector('button.on');
         if (!b || !b.offsetWidth) { L.classList.remove('on'); continue; }
@@ -15079,15 +15123,20 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   /* ---- tank picture for the title screen ---- */
   const SHOT_KEY = 'terrarium.shot.' + id;
   const snap = (cb) => {
-    const A = JT.app, R = A && A.R; const fin = () => { if (cb) { const f = cb; cb = null; f(); } };
+    const A = JT.app, R = A && A.R; const cb0 = cb; const fin = () => { if (cb) { const f = cb; cb = null; f(); } };
     if (!R || R.attract || JT.UI.photo || R._cap || document.hidden) { fin(); return; }
     let done = false; const to = setTimeout(() => { if (!done) { done = true; if (R._cap === cap) R._cap = null; fin(); } }, 450);
     const cap = (glc, cv) => { done = true; clearTimeout(to);
       try { const W0 = (glc || cv).width, H0 = (glc || cv).height, sc = Math.min(1, 1100 / Math.max(W0, H0)), W = Math.round(W0 * sc), H = Math.round(H0 * sc);
         if (W > 64 && H > 64) { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = '#0b120a'; x.fillRect(0, 0, W, H);
           if (glc) x.drawImage(glc, 0, 0, W, H); if (cv) x.drawImage(cv, 0, 0, W, H);
-          const u = c.toDataURL('image/jpeg', 0.72); const art = (JT.HD2D && JT.HD2D.art) || 'hd2d';
-          try { localStorage.setItem(SHOT_KEY, JSON.stringify({ u, art, t: Date.now() })); } catch (e) { try { localStorage.removeItem(SHOT_KEY); } catch (e2) { void e2; } } } } catch (e) { void e; }
+          const art = (JT.HD2D && JT.HD2D.art) || 'hd2d';
+          const store = (u) => { try { localStorage.setItem(SHOT_KEY, JSON.stringify({ u, art, t: Date.now() })); } catch (e) { try { localStorage.removeItem(SHOT_KEY); } catch (e2) { void e2; } } };
+          // v29: the periodic snapshot encodes its JPEG off the main thread (toBlob, may take a moment), so it no longer hitches a frame;
+          // leaving for the menu still encodes at once (the page is about to go)
+          if (!cb0 && c.toBlob && typeof FileReader !== 'undefined') { let ok = false; const t2 = setTimeout(() => { if (!ok) { ok = true; fin(); } }, 900);
+            c.toBlob((bl) => { if (!bl) { if (!ok) { ok = true; clearTimeout(t2); fin(); } return; } const fr = new FileReader(); fr.onloadend = () => { if (typeof fr.result === 'string') store(fr.result); if (!ok) { ok = true; clearTimeout(t2); fin(); } }; fr.readAsDataURL(bl); }, 'image/jpeg', 0.72); return; }
+          store(c.toDataURL('image/jpeg', 0.72)); } } catch (e) { void e; }
       fin(); };
     R._cap = cap;
   };

@@ -146,17 +146,19 @@
     // ---- jump edges between distinct objects ----
     const wallish = (n) => { const g = n.decor && geoms[n.decor]; return !!g && (g.def.arche === 'backwall' || g.def.arche === 'wallmount'); };
     const cand = nav.nodes.filter(n => (n.kind !== 'face' || (wallish(n) && n.path && n.path.i % 2 === 0 && n.pos[1] > 6)) && !n.lattice && (n.kind !== 'floor' || true) && (n.kind === 'top' || n.kind === 'floor' || n.path && (n.path.i % 2 === 0 || n.perch)));
+    const JS = jumpSolids(hab); // v29: solids + bounding boxes gathered once per build (same test, far fewer polygon checks)
     for (const a of cand) {
-      const near = [];
+      const near = []; const ax = a.pos[0], az = a.pos[2];
       for (const b of cand) {
         if (a === b) continue;
+        if (Math.abs(b.pos[0] - ax) > JMAX || Math.abs(b.pos[2] - az) > JMAX) continue; // d > JMAX anyway
         if (a.decor && a.decor === b.decor) continue;           // same object: walk, don't jump
         if (a.kind === 'floor' && b.kind === 'floor') continue;
         if (a.region && a.region === b.region) continue;
         const d = M.dist(a.pos, b.pos); if (d < 5 || d > JMAX) continue;
         const rise = b.pos[1] - a.pos[1]; if (rise > 24) continue;
         if (a.kind === 'floor' && rise < 3) continue;
-        if (jumpBlocked(hab, a.pos, b.pos)) continue;
+        if (jumpBlocked(hab, a.pos, b.pos, JS)) continue;
         near.push([d, b]);
       }
       near.sort((x, y) => x[0] - y[0]);
@@ -196,11 +198,21 @@
     return nav;
   };
 
-  function jumpBlocked(hab, a, b) {
+  // v29: axis-aligned box of a footprint polygon, with a hair of slack (a point / segment outside it can't touch the polygon)
+  const polyBox = (o) => { let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity; for (const p of o) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < z0) z0 = p[1]; if (p[1] > z1) z1 = p[1]; } return [x0 - 0.01, z0 - 0.01, x1 + 0.01, z1 + 0.01]; };
+  /** Boxes cached per navigation graph (a graph is rebuilt whenever the geometry it was made from changes). */
+  const navBox = (nav, o) => { let m = nav._bb; if (!m) { m = new Map(); try { Object.defineProperty(nav, '_bb', { value: m, enumerable: false, writable: true }); } catch (e) { nav._bb = m; } } let b = m.get(o); if (!b) { b = polyBox(o); m.set(o, b); } return b; };
+  Nav.polyBox = polyBox;
+  /** The boxes of a region's obstacles, in the same order (rebuilt if the list changed). */
+  const regionBoxes = (nav, r) => { let c = r._bbs; const ob = r.obstacles; if (!c || c.n !== ob.length || c.o0 !== ob[0] || c.oN !== ob[ob.length - 1]) { c = ob.map(o => navBox(nav, o)); c.n = ob.length; c.o0 = ob[0]; c.oN = ob[ob.length - 1];
+      try { Object.defineProperty(r, '_bbs', { value: c, enumerable: false, writable: true, configurable: true }); } catch (e) { r._bbs = c; } } return c; };
+  function jumpSolids(hab) { const out = []; for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g || !g.solids.length) continue; out.push({ hi: g.baseY + g.height - 0.5, lo: g.baseY - 0.5, s: g.solids, b: g.solids.map(polyBox) }); } return out; }
+  function jumpBlocked(hab, a, b, JS) {
+    JS = JS || jumpSolids(hab); const dab = M.dist(a, b);
     for (let k = 1; k < 5; k++) {
       const t = k / 5; const x = M.lerp(a[0], b[0], t), z = M.lerp(a[2], b[2], t);
-      const y = M.lerp(a[1], b[1], t) + Math.sin(t * Math.PI) * M.dist(a, b) * 0.18;
-      for (const inst of hab.decor) { const g = hab.geoms[inst.id]; if (!g || !g.solids.length) continue; if (y < g.baseY + g.height - 0.5 && y > g.baseY - 0.5) for (const s of g.solids) if (G.pointInPoly(x, z, s)) return true; }
+      const y = M.lerp(a[1], b[1], t) + Math.sin(t * Math.PI) * dab * 0.18;
+      for (const J of JS) { if (y < J.hi && y > J.lo) for (let i = 0; i < J.s.length; i++) { const bb = J.b[i]; if (x < bb[0] || x > bb[2] || z < bb[1] || z > bb[3]) continue; if (G.pointInPoly(x, z, J.s[i])) return true; } }
     }
     return false;
   }
@@ -210,7 +222,10 @@
   Nav.SOFT_IN = 4.5;
   Nav.regionClear = function (nav, r, A, B) {
     /* a soft footprint (trunk, stem, log) may be entered only for a short way to reach a climb base standing in it, never crossed */
-    for (const o of r.obstacles) if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)) && insideLen(A, B, o) <= Nav.SOFT_IN)) return false;
+    const sx0 = Math.min(A[0], B[0]), sx1 = Math.max(A[0], B[0]), sz0 = Math.min(A[2], B[2]), sz1 = Math.max(A[2], B[2]);
+    const ob = r.obstacles, bbs = regionBoxes(nav, r);
+    for (let i = 0; i < ob.length; i++) { const o = ob[i], bb = bbs[i]; if (sx1 < bb[0] || sx0 > bb[2] || sz1 < bb[1] || sz0 > bb[3]) continue; // v29: box test first
+      if (G.segHitsPoly([A[0], A[2]], [B[0], B[2]], o) && !(o.soft && (G.pointInPoly(A[0], A[2], o) || G.pointInPoly(B[0], B[2], o)) && insideLen(A, B, o) <= Nav.SOFT_IN)) return false; }
     if (r.poly) { for (let k = 1; k < 4; k++) { const t = k / 4; if (!G.pointInPoly(M.lerp(A[0], B[0], t), M.lerp(A[2], B[2], t), r.poly)) return false; } }
     return true;
   };

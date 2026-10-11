@@ -355,6 +355,7 @@ body.story{--gA:rgba(255,253,246,.56);--gB:rgba(255,253,246,.36);--gF:rgba(255,2
 body.lowfx{--gA:rgba(255,255,255,.5);--gB:rgba(255,255,255,.4);--gBlur:none;--gFBlur:none}
 body.lowfx:not(.story){--gA:rgba(28,20,12,.55);--gB:rgba(28,20,12,.45);--gF:rgba(28,20,12,.86);--gF2:rgba(28,20,12,.8)}
 body.story.lowfx{--gF:rgba(250,245,233,.92);--gF2:rgba(250,245,233,.88)}
+body.lowfx,body.story.lowfx{--blur:none}body.lowfx:not(.story){--pill:rgba(20,14,9,.74)}body.story.lowfx:not(.hd2d):not(.cuphead){--pill:rgba(250,245,233,.9)}
 #app .tb-left,#app .clock,#app .tb-right,#app .toast,#app #obsHud,#app #modeBar,#app #dock,#app #toolbar .gl-bar,#app #camCtl button{
  background:linear-gradient(140deg,var(--gA),var(--gB) 60%,var(--gA));-webkit-backdrop-filter:var(--gBlur);backdrop-filter:var(--gBlur);border:1px solid var(--gEdge);
  box-shadow:inset 1.5px 1.5px 0 var(--gRim),inset -1px -1px 0 rgba(255,255,255,.12),inset 0 0 14px rgba(255,255,255,.08),var(--gShade);text-shadow:var(--gTxt)}
@@ -732,6 +733,7 @@ body.tv #app>:not(canvas):not(#tvVeil):not(#tvCatch),body.tv #tip{opacity:0!impo
 /* ---------- v12: touch-device performance + polish ---------- */
 @media (pointer:coarse){
   :root,body.story{--blur:blur(8px) saturate(1.2)}
+  body.lowfx,body.story.lowfx{--blur:none}
   body:not(.lowfx){--gFBlur:blur(10px) saturate(1.4)}
   body.story:not(.lowfx){--gFBlur:blur(10px) saturate(1.5) brightness(1.04)}
 }

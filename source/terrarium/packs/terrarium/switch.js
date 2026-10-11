@@ -13,15 +13,20 @@
   /* ---- tank picture for the title screen ---- */
   const SHOT_KEY = 'terrarium.shot.' + id;
   const snap = (cb) => {
-    const A = JT.app, R = A && A.R; const fin = () => { if (cb) { const f = cb; cb = null; f(); } };
+    const A = JT.app, R = A && A.R; const cb0 = cb; const fin = () => { if (cb) { const f = cb; cb = null; f(); } };
     if (!R || R.attract || JT.UI.photo || R._cap || document.hidden) { fin(); return; }
     let done = false; const to = setTimeout(() => { if (!done) { done = true; if (R._cap === cap) R._cap = null; fin(); } }, 450);
     const cap = (glc, cv) => { done = true; clearTimeout(to);
       try { const W0 = (glc || cv).width, H0 = (glc || cv).height, sc = Math.min(1, 1100 / Math.max(W0, H0)), W = Math.round(W0 * sc), H = Math.round(H0 * sc);
         if (W > 64 && H > 64) { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = '#0b120a'; x.fillRect(0, 0, W, H);
           if (glc) x.drawImage(glc, 0, 0, W, H); if (cv) x.drawImage(cv, 0, 0, W, H);
-          const u = c.toDataURL('image/jpeg', 0.72); const art = (JT.HD2D && JT.HD2D.art) || 'hd2d';
-          try { localStorage.setItem(SHOT_KEY, JSON.stringify({ u, art, t: Date.now() })); } catch (e) { try { localStorage.removeItem(SHOT_KEY); } catch (e2) { void e2; } } } } catch (e) { void e; }
+          const art = (JT.HD2D && JT.HD2D.art) || 'hd2d';
+          const store = (u) => { try { localStorage.setItem(SHOT_KEY, JSON.stringify({ u, art, t: Date.now() })); } catch (e) { try { localStorage.removeItem(SHOT_KEY); } catch (e2) { void e2; } } };
+          // v29: the periodic snapshot encodes its JPEG off the main thread (toBlob, may take a moment), so it no longer hitches a frame;
+          // leaving for the menu still encodes at once (the page is about to go)
+          if (!cb0 && c.toBlob && typeof FileReader !== 'undefined') { let ok = false; const t2 = setTimeout(() => { if (!ok) { ok = true; fin(); } }, 900);
+            c.toBlob((bl) => { if (!bl) { if (!ok) { ok = true; clearTimeout(t2); fin(); } return; } const fr = new FileReader(); fr.onloadend = () => { if (typeof fr.result === 'string') store(fr.result); if (!ok) { ok = true; clearTimeout(t2); fin(); } }; fr.readAsDataURL(bl); }, 'image/jpeg', 0.72); return; }
+          store(c.toDataURL('image/jpeg', 0.72)); } } catch (e) { void e; }
       fin(); };
     R._cap = cap;
   };

@@ -5,6 +5,14 @@ self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Pr
 self.addEventListener('fetch', e => {
   const r = e.request; if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
   // pages: network first (picks up new versions), cached copy when offline; everything else cache first
-  if (r.mode === 'navigate') { e.respondWith(fetch(r).then(res => { const cp = res.clone(); caches.open(CACHE).then(c => c.put(r, cp)); return res; }).catch(() => caches.match(r, { ignoreSearch: true }).then(h => h || caches.match('index.html')))); return; }
+  // v29: on a slow or flaky mobile connection the cached page is used after 2.5 s instead of waiting (the download carries on and updates the cache)
+  if (r.mode === 'navigate') {
+    let saved; const net = fetch(r).then(res => { if (res && res.ok) { const cp = res.clone(); saved = caches.open(CACHE).then(c => c.put(r, cp)); } return res; });
+    e.waitUntil(net.then(() => saved, () => {}).catch(() => {}));
+    const cached = () => caches.match(r, { ignoreSearch: true }).then(h => h || caches.match('index.html'));
+    e.respondWith(new Promise(done => { let settled = false; const use = (p) => p.then(v => { if (!settled && v) { settled = true; done(v); } return v; });
+      const t = setTimeout(() => { cached().then(h => { if (h && !settled) { settled = true; done(h); } }); }, 2500);
+      net.then(res => { clearTimeout(t); if (!settled) { settled = true; done(res); } }, () => { clearTimeout(t); use(cached()).then(h => { if (!h && !settled) { settled = true; done(Response.error()); } }); }); }));
+    return; }
   e.respondWith(caches.match(r).then(hit => hit || fetch(r)));
 });
