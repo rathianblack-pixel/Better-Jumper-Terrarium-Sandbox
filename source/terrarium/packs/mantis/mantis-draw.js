@@ -59,6 +59,11 @@
     const buzz = o.ghost ? 0 : M.clamp(sp._mBuzz || 0, 0, 1), box = o.ghost ? 0 : M.clamp(sp._mBox || 0, 0, 1), sip = o.ghost ? 0 : M.clamp(sp._mSip || 0, 0, 1);
     const eyeW = o.ghost ? 0 : M.clamp(sp._mEyeW || 0, 0, 1), lay = o.ghost ? 0 : M.clamp(sp._mLay || 0, 0, 1);
     let { f, s, n } = fr; let p0 = fr.p; const st = sp.state || 'idle';
+    // v32 motion layer: planted feet, slow head-first turning, body + abdomen springs
+    const RG = JT.Gait && !o.ghost ? JT.Gait.rig(sp, o, fr, o.len, 'mantis') : null;
+    const HD = RG ? JT.Gait.heading(RG, fr, !o.airborne && !o.curled && !o.hug && !o.meal && !sp.hold && !STRIKE.has(st) && !(sp._mHangK > 0.001) && !(o.hangK > 0.001) && !((sp._mDead || 0) > 0.01) && !sp._mMount && !((sp._mFlatK || 0) > 0.3) && !o.lookAt) : null;
+    if (HD) { f = HD.f; s = HD.s; }
+    const hdA = HD ? HD.a : 0;
     const stage = sp.stage != null ? sp.stage : 5; const adult = stage >= 4; const seed = sp.seed || 1;
     // hanging head-down to molt: the hind feet stay on the twig, the body swings down beneath them
     const hk = M.smooth(M.clamp(o.hangK != null ? o.hangK : (o.ghost ? 0 : sp._mHangK || 0), 0, 1)); let piv = null;
@@ -100,24 +105,27 @@
     if (swayK > 0 && (LK.leafRock || (FLG.rockWalk && moving))) swayK = Math.max(swayK, LK.leafRock ? 0.5 : 0.9);
     if (dead > 0.3) swayK = 0;
     const sw = swayK * (Math.sin(t * 2.2 + seed * 0.7) * 0.75 + Math.sin(t * 3.7 + seed) * 0.25) + (o.thumb || o.ghost ? 0 : (sp._mPeer || 0) * 1.7 * Math.sin(t * 6.5 + seed) + (sp._mRock || 0) * 2);
-    const h0 = L * (0.115 - 0.035 * crouch - 0.02 * sleep + 0.01 * threat) * (LK.flat ? 0.72 : 1) * (1 - 0.6 * flatK);
+    const h0 = L * (0.115 - 0.035 * crouch - 0.02 * sleep + 0.01 * threat) * (LK.flat ? 0.72 : 1) * (1 - 0.6 * flatK) + (RG && hk < 0.01 ? RG.bob : 0);
     const Wf = (u, v, w) => [p0[0] + f[0] * u + s[0] * v + n[0] * w, p0[1] + f[1] * u + s[1] * v + n[1] * w, p0[2] + f[2] * u + s[2] * v + n[2] * w]; // fixed (feet)
     const lat = L * 0.035 * sw; const p = add(p0, mul(s, lat));
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w]; // swaying body
-    if (!air && !o.noShadow && hk < 0.3) castShadow(ctx, V, p0, f, s0, n0, L, h0 + L * 0.06, alpha * 0.85, 1, { kind: 'mantis', perch: o.perch, held: o.heldLen, cross: o.heldCross, ph: moving ? (sp._walk || 0) * Math.PI : 0 });
+    const doShadow = !air && !o.noShadow && hk < 0.3; const shLegs = []; // v32: cast after the legs are placed, from the real joints
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb;
     const parts = []; const push = (pt, fn, bias) => parts.push({ d: V.depth(pt) + (bias || 0), f: fn });
     const fat = M.clamp(0.88 + (sp.sat != null ? sp.sat : 0.7) * 0.25, 0.88, 1.15);
 
     // ---------- thorax + abdomen ----------
     const T = W(0.02 * L, 0, h0);                                    // thorax (walking legs attach here)
-    const abW = L * 0.062 * (LK.abdW || 1) * fat * (adult ? 1 : 0.85) * thin * (male ? 0.84 : 1);
+    const breathe = o.ghost || dead > 0.3 ? 0 : Math.sin(t * (sleep ? 1.1 : 1.9) + seed) * (sleep ? 0.02 : 0.028); // abdomen pumping (breathing)
+    const abW = L * 0.062 * (LK.abdW || 1) * fat * (adult ? 1 : 0.85) * thin * (male ? 0.84 : 1) * (1 + breathe);
     const curl = adult ? 0 : 0.42 * (LK.curl || 1) * (o.curled ? 1.5 : 1);
     const segs = 6, aLen = L * 0.47 * (LK.aLen || 1); let ap = add(T, mul(f, -L * 0.035)); let ang = adult ? -0.06 : 0.05;
     const abSeg = [];
     for (let i = 0; i < segs; i++) {
       ang += curl * (0.18 + 0.2 * i) + (adult ? -0.012 : 0) - lay * 0.09 * i;
-      const dir = nrm(rot(mul(f, -1), n, ang)); const up = nrm(sub(n, mul(dir, M.dot(n, dir))));
+      let dir = nrm(rot(mul(f, -1), n, ang + (RG ? RG.ap * 0.25 * (i + 1) / segs : 0)));
+      if (RG && Math.abs(RG.ay) > 1e-3 && hk < 0.01) dir = nrm(add(dir, mul(s, -RG.ay * 0.22 * (i + 1) / segs))); // the long abdomen trails round a turn
+      const up = nrm(sub(n, mul(dir, M.dot(n, dir))));
       const sl = aLen / segs; const c = add(ap, mul(dir, sl * 0.5)); const taper = [0.82, 0.98, 1.05, 1, 0.84, 0.55][i];
       abSeg.push({ c, dir, up, w: abW * taper, sl }); ap = add(ap, mul(dir, sl * 0.95));
     }
@@ -196,6 +204,7 @@
     let gz = (sp._mGz != null ? sp._mGz : (sp._gazeNow || 0)) * 0.5; // head snaps (held fixes, quick jumps)
     if (o.lookCam) { const cf = sub(V.toCam, mul(n, M.dot(V.toCam, n))); if (M.len(cf) > 0.2) { const c2 = nrm(cf); const a = Math.atan2(M.dot(c2, s), M.dot(c2, f)); if (Math.abs(a) < 2.2) gz = M.lerp(gz, M.clamp(a, -1.2, 1.2), o.lookCam); } }
     if (o.lookAt && M.finite3(o.lookAt)) { const d = sub(o.lookAt, N); const a = Math.atan2(M.dot(d, s), M.dot(d, f)); gz = M.clamp(a, -1.3, 1.3); }
+    if (hdA) gz = M.clamp(gz - hdA, -1.35, 1.35); // the body lags behind the turn; the head keeps looking where it wants
     const hf0 = nrm(rot(f, s, gz)); const hs = nrm(M.cross(n, hf0));
     let hDown = sleep ? 0.9 : holdK > 0.3 ? 0.75 : 0.35 + 0.1 * hunt; // face tips down (feeding: head bowed onto the meal)
     if (sip > 0.001) hDown = M.lerp(hDown, 1.2, sip); if (dead > 0.001) hDown = M.lerp(hDown, 0.9, dead);
@@ -226,7 +235,7 @@
     for (const sd of [-1, 1]) {
       const a = sum(Hc, mul(hu, L * 0.03), mul(hs, sd * L * 0.012), mul(hf, L * 0.008));
       const al = L * 0.36 * (LK.antL || 1) * (adult ? 1 : 0.8) * (male ? 1.2 : 1);
-      const wv = Math.sin(t * (1.6 + 0.3 * sd) + seed + sd) * 0.18;
+      const wv = Math.sin(t * (1.6 + 0.3 * sd) + seed + sd) * 0.18 + (RG ? M.clamp(RG.yawR * 0.05, -0.3, 0.3) + RG.ay * 0.4 : 0) + (alert || hunt ? 0.08 * Math.max(0, Math.sin(t * 7.3 + seed * 2 + sd)) ** 8 : 0);
       let dir = nrm(sum(mul(hf0, 0.75), mul(n, sleep ? -0.4 : 0.55), mul(hs, sd * (0.32 + wv))));
       if (sleep || dead > 0.5) dir = nrm(sum(mul(hf0, -0.2), mul(n, -0.3), mul(hs, sd * 0.6)));
       else if (flatK > 0.3) dir = nrm(sum(mul(hf0, 1), mul(n, 0.08), mul(hs, sd * 0.12)));
@@ -243,7 +252,10 @@
       const poses = [];
       // folded "praying": coxa hangs down-forward, femur back up under the head, tibia folded shut along it
       { const c = sum(Sh, mul(nrm(sum(mul(f, 0.45), mul(n, -0.9))), Lc), mul(s, sd * L * 0.008)); const k = sum(c, mul(nrm(sum(mul(f, 0.62), mul(n, 0.78))), Lf), mul(s, sd * L * 0.004));
-        const tb = sum(k, mul(nrm(sub(c, k)), Lt * 0.92), mul(f, L * 0.012)); const ta = add(tb, mul(nrm(sum(mul(f, 0.35), mul(n, -1))), L * 0.05)); poses.push([1, c, k, tb, ta]); }
+        let tb = sum(k, mul(nrm(sub(c, k)), Lt * 0.92), mul(f, L * 0.012));
+        // v32 cocked: stalking / ready to strike, the folded arms lift a little and the tibiae ease open (with a faint quiver)
+        const ck = o.ghost ? 0 : hunt * (0.55 + 0.45 * crouch) + (sp._mPeer || 0) * 0.3; if (ck > 0.01) { const q = 1 + 0.15 * Math.sin(t * 23 + sd * 2 + seed) * crouch; tb = add(tb, mul(nrm(sum(mul(f, 0.7), mul(n, 0.5))), L * 0.03 * ck * q)); }
+        const ta = add(tb, mul(nrm(sum(mul(f, 0.35), mul(n, -1))), L * 0.05)); poses.push([1, c, add(k, mul(n, L * 0.012 * ck)), tb, ta]); }
       const w = [1];
       // reaching / striking: everything thrown forward, tibia open
       // two phases: shoot out straight at the prey (tibia wide open), then sweep in, the tibia snapping shut on it
@@ -315,14 +327,19 @@
       let fu = (mid ? 0.2 : -0.24) * L * legL, fv = sd * L * (mid ? 0.27 : 0.29) * (1 + 0.15 * crouch) * legL * (LK.flat ? 1.18 : 1), fw = 0;
       if (flatK > 0.01) { fu = M.lerp(fu, (mid ? 0.3 : -0.44) * L * legL, flatK); fv = M.lerp(fv, sd * L * 0.07, flatK); }
       if (dead > 0.01) { fu *= 1 - 0.45 * dead; fv *= 1 - 0.4 * dead; }
-      fu += Math.sin(ph) * L * 0.075 * moving; fw += Math.max(0, Math.cos(ph)) * L * 0.05 * moving;
+      const mvS = RG ? 0 : moving; fu += Math.sin(ph) * L * 0.075 * mvS; fw += Math.max(0, Math.cos(ph)) * L * 0.05 * mvS;
+      const tapK = RG && mid ? JT.Gait.tapOf(RG, lk) : 0; if (tapK > 0.001) { fu += L * 0.05 * tapK; fw += L * 0.08 * tapK; }
+      if (RG && RG.bob < 0) fv *= 1 + Math.max(0, -RG.bob) / L * 2.5; // landing: legs splay to take the weight
       if (threat) { fv *= 1.15; } if (sleep) fv *= 0.92;
       if (air) { fu = (mid ? 0.12 : -0.3) * L; fv *= 0.75; fw = h0 * 0.5; }
       if (o.curled) { fu *= 0.6; fv *= 0.6; fw = h0 * 0.6; }
       let foot = air || o.curled ? W(fu, fv, fw) : Wf(fu, fv, fw);
       if (piv) foot = lerp3(foot, sum(piv, mul(s, sd * L * (mid ? 0.1 : 0.05)), mul(f, mid ? L * 0.05 : 0)), hk); // hanging: all four feet grip the twig
-      const knee = sum(lerp3(hip, foot, 0.42), mul(n, L * (mid ? 0.12 : 0.14) * (1 - 0.3 * crouch) * (legL > 1 ? 1 + (legL - 1) * 0.6 : 1) * (LK.flat ? 0.7 : 1) * (1 - 0.7 * flatK)), mul(s, sd * L * 0.02));
+      let footP = null; if (RG) footP = JT.Gait.foot(RG, lk, foot, air || o.curled || hk > 0.001 || dead > 0.01 || flatK > 0.3 ? 1 : Math.min(1, tapK * 4), n);
+      let knee = sum(lerp3(hip, foot, 0.42), mul(n, L * (mid ? 0.12 : 0.14) * (1 - 0.3 * crouch) * (legL > 1 ? 1 + (legL - 1) * 0.6 : 1) * (LK.flat ? 0.7 : 1) * (1 - 0.7 * flatK)), mul(s, sd * L * 0.02));
+      if (footP && M.dist(footP, foot) > L * 0.002) { const l1 = M.dist(hip, knee), l2 = M.dist(knee, foot); knee = JT.Gait.knee(hip, footP, l1, l2, knee); foot = footP; }
       const ank = add(lerp3(knee, foot, 0.88), mul(n, L * 0.012));
+      if (doShadow) shLegs.push([hip, knee, ank, foot, RG ? JT.Gait.liftOf(RG, lk) : 0]);
       push(knee, () => {
         limb(ctx, V, [hip, knee], [L * 0.016 * (thin < 1 ? 0.75 + 0.25 * thin : 1)], legC, lod, null);
         limb(ctx, V, [knee, ank, foot], [L * 0.012 * (thin < 1 ? 0.75 + 0.25 * thin : 1), L * 0.008], sh(legC, -0.05), lod, null);
@@ -331,6 +348,7 @@
       }, L * 0.01 * (sd * M.dot(s, V.toCam) > 0 ? -1 : 1));
       void lk;
     }
+    if (doShadow) castShadow(ctx, V, p0, f, s0, n0, L, h0 + L * 0.06, alpha * 0.85, 1, { kind: 'mantis', perch: o.perch, held: o.heldLen, cross: o.heldCross, ph: moving && !RG ? (sp._walk || 0) * Math.PI : 0, legs: shLegs });
 
     // ---------- held meal: in the arms, under the jaws, never on top of the head ----------
     if (o.meal) { const back = V.depth(holdC) + 0.001; parts.push({ d: back, f: () => { o.meal(holdC, hf0, nrm(M.cross(n, hf0)), n); ctx.globalAlpha = alpha; } }); }

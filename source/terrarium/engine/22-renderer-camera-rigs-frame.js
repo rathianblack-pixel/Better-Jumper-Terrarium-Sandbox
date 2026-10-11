@@ -223,9 +223,9 @@
       let ctx = null;
       const items = [];
       // v27.2: shadow on the ground below a perched / airborne critter (support lookup cached per critter, refreshed ~4x a second)
-      const dropItem = (e, fr, L, kind, alpha, held) => { const c = fr.p; if (!M.finite3(c)) return; const now = hab.time || 0; let b = e._shB;
+      const dropItem = (e, fr, L, kind, alpha, held, airE) => { const c = fr.p; if (!M.finite3(c)) return; const now = hab.time || 0; let b = e._shB;
         if (!b || Math.abs(now - b.t) > 0.25 || Math.abs(b.x - c[0]) + Math.abs(b.z - c[2]) > 1.5 || Math.abs(b.y - c[1]) > 2) { const sb = JT.Nav.supportBelow(hab, [c[0], c[1] - 0.5, c[2]]); b = e._shB = { t: now, x: c[0], y: c[1], z: c[2], gy: sb.pos[1] }; }
-        const gy = b.gy; if (c[1] - gy < L * 0.3) return; const q = D.critter.dropAt(hab, c, gy); const fr2 = { f: fr.f, s: fr.s };
+        const gy = b.gy; if (c[1] - gy < (airE ? 0 : L * 0.3)) return; /* v32: airborne = always (no shadow gap just after take-off / before landing) */ const q = D.critter.dropAt(hab, c, gy); const fr2 = { f: fr.f, s: fr.s };
         items.push({ d: V.depth(q) + 0.03, f: () => D.critter.dropShadow(ctx, V, hab, c, gy, fr2.f, fr2.s, L, kind, alpha, held), p: q, r: L * 1.7 + 2 + (held || 0), ground: true }); };
       const follow = this.cam.mode === 'follow'; const fsp = follow ? (hab.spider(this.game.selectedId) || hab.spiders[0]) : null;
       const tgtId = fsp && fsp.target && fsp.target.kind === 'prey' ? fsp.target.id : null; /* the prey it is stalking */ const t = this.time; const geoms = hab.geoms; const sel = this.game.selectedId;
@@ -330,7 +330,7 @@
         let hideK = 0; if (nst) { hideK = M.smooth(M.clamp((nst.prog - 0.3) / 0.6, 0, 1)); if (sp.state === 'emerge' && nst.hole) hideK *= 1 - M.smooth(M.clamp((nst.hole.exit || 0) * 1.4, 0, 1)); }
         const bodyA = 1 - hideK;
         if (bodyA > 0.01) items.push({ key: 's' + sp.id, hot: sp.id === sel, d, f: () => draw(bodyA), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
-        if ((air || perch || hang > 0.2) && bodyA > 0.3) dropItem(sp, fr, L, JT.MANTIS_ARM ? 'mantis' : 'spider', bodyA, heldLen);
+        if ((air || perch || hang > 0.2) && bodyA > 0.3) dropItem(sp, fr, L, JT.MANTIS_ARM ? 'mantis' : 'spider', bodyA, heldLen, air);
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf), p: lf.pos, r: 3 }); }
       for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !vis(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0];

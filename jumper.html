@@ -8169,6 +8169,146 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 
 </script>
 <script>
+/* v32 procedural motion layer (shared by both games, visual only — the simulation is untouched).
+   Sits between the AI and the drawers:
+   - planted feet: every foot keeps a world position while the body moves over it, lifts when it strays too far from
+     its rest spot, and swings in an arc to a spot a little ahead (lead by the body's velocity). Neighbouring legs never
+     lift together (spider: alternating tetrapod; mantis: diagonal pairs). Turning in place = a ripple of small steps.
+   - two-bone leg IK: constant segment lengths, the drawer's knee placement is kept only as the bend direction.
+   - staged turning: the body heading lags the AI heading — jumpers snap round in quick pivots (saccades), mantises turn
+     slowly; the head keeps pointing where the AI wants (head leads, body follows).
+   - body + abdomen springs: dip when a foot lands, squash on landing from a jump, abdomen lags in turns and twitches
+     while stalking, an occasional front-leg tap when idle.
+   A rig only exists for live critters drawn with a clock (not thumbnails, ghosts, shed skins or field-guide cards). */
+(function (root) {
+  'use strict';
+  const JT = root.JT, M = JT.M; if (!JT || !M) return;
+  const add = M.add, sub = M.sub, mul = M.mul, dot = M.dot, len = M.len;
+  const ease = (k) => k * k * (3 - 2 * k);
+  const G = JT.Gait = { on: true };
+  const flat = (v, n) => sub(v, mul(n, dot(v, n)));
+  const KIND = {
+    spider: { stride: 0.2, sw: [0.07, 0.16], lift: 1, legs: 8, turn: 'snap' },
+    mantis: { stride: 0.16, sw: [0.16, 0.36], lift: 0.8, legs: 4, turn: 'smooth' },
+  };
+  G.KIND = KIND;
+  function resetLegs(R) { R.legs = {}; R.swing = 0; }
+  /** Per-frame rig for a critter. kind: 'spider' | 'mantis'. Returns null when this draw must not use (or advance) it. */
+  G.rig = function (sp, o, fr, L, kind) {
+    if (!G.on || !sp || sp.id == null || o.thumb || o.ghost || o.time == null || !fr || !M.finite3(fr.p)) return null;
+    if (root.JT_NO_GAIT) return null;
+    const t = o.time; let R = sp._rig;
+    if (!R || R.kind !== kind) R = sp._rig = { kind, K: KIND[kind], L, t, legs: {}, swing: 0, p: fr.p.slice(), v: [0, 0, 0], vf: null, turning: false, still: 0,
+      bob: 0, bv: 0, ay: 0, ayv: 0, ap: 0, apv: 0, air: !!o.airborne, yawR: 0, twT: 2 + Math.random() * 3, tap: null, tapT: 3 + Math.random() * 6, settleCD: 0, fid: 0 };
+    let dt = t - R.t;
+    if (dt < -1e-6 || dt > 0.5 || Math.abs(L - R.L) > R.L * 0.25) { resetLegs(R); R.vf = null; R.v = [0, 0, 0]; R.p = fr.p.slice(); R.t = t; R.L = L; dt = 0; }
+    if (dt <= 1e-6) { // a second draw in the same frame (reflection, after-image...): only the main body may reuse the rig
+      R.dt = 0; return M.dist(fr.p, R.p) < L * 0.02 ? R : null;
+    }
+    dt = Math.min(dt, 0.1); R.dt = dt; R.t = t; R.L = L; R.fid++;
+    const dp = sub(fr.p, R.p);
+    if (len(dp) > L * 2) { resetLegs(R); R.vf = null; R.v = [0, 0, 0]; }
+    else R.v = M.lerp3(R.v, mul(dp, 1 / dt), Math.min(1, dt * 12));
+    R.p = fr.p.slice();
+    const spd = len(R.v); R.still = spd < L * 0.2 ? R.still + dt : 0; R.spd = spd;
+    // landing from a jump / fall: a squash that the legs absorb
+    const air = !!o.airborne; if (R.air && !air) { R.bv -= L * (kind === 'spider' ? 1.6 : 0.9); R.apv -= 2.2; } R.air = air;
+    // springs: body height (bob) and abdomen yaw/pitch lag
+    const sk = kind === 'spider' ? 260 : 120, sc = kind === 'spider' ? 22 : 15;
+    R.bv += (-sk * R.bob - sc * R.bv) * dt; R.bob = M.clamp(R.bob + R.bv * dt, -L * 0.06, L * 0.03);
+    const ayT = M.clamp(-R.yawR * (kind === 'spider' ? 0.05 : 0.09), -0.4, 0.4);
+    R.ayv += (90 * (ayT - R.ay) - 11 * R.ayv) * dt; R.ay = M.clamp(R.ay + R.ayv * dt, -0.5, 0.5);
+    R.apv += (-140 * R.ap - 12 * R.apv) * dt; R.ap = M.clamp(R.ap + R.apv * dt, -0.35, 0.35);
+    R.settleCD = Math.max(0, R.settleCD - dt);
+    // stalking jumpers flick the abdomen now and then (little vertical twitches)
+    const hunt = /^(stalk|creep|crouch|display|assess|lunge|watch|fingerWatch)$/.test(sp.state || '');
+    if (kind === 'spider' && hunt) { R.twT -= dt; if (R.twT <= 0) { R.twT = 0.6 + Math.random() * 2.2; R.apv += (Math.random() < 0.5 ? -1 : 1) * (2.5 + Math.random() * 2); } }
+    // idle: now and then one front leg lifts and taps the surface (tasting / testing the footing)
+    if (R.tap) { R.tap.k += dt / R.tap.T; if (R.tap.k >= 1) R.tap = null; }
+    else if (R.still > 1.2 && !air && /^(idle|look|watch|rest|bask|scan|alert|wait)$/.test(sp.state || 'idle')) {
+      R.tapT -= dt; if (R.tapT <= 0) { R.tapT = 4 + Math.random() * 9; R.tap = { lk: (Math.random() < 0.5 ? 0 : 1) + (kind === 'spider' && Math.random() < 0.3 ? 2 : 0), k: 0, T: kind === 'spider' ? 0.55 : 0.9, n: kind === 'spider' ? 2 + (Math.random() * 2 | 0) : 1 }; }
+    }
+    return R;
+  };
+  /** Idle tap of one leg: 0..1 lift and how free it is from the ground. */
+  G.tapOf = function (R, lk) {
+    if (!R || !R.tap || R.tap.lk !== lk) return 0; const k = R.tap.k; const env = Math.sin(Math.PI * M.clamp(k, 0, 1));
+    return env * (0.55 + 0.45 * Math.abs(Math.sin(k * Math.PI * R.tap.n)));
+  };
+  /** Visual heading. enable=false hands the AI heading straight through. Returns { f, s, a } (a: visual minus AI yaw, toward s). */
+  G.heading = function (R, fr, enable) {
+    const f = fr.f, s = fr.s, n = fr.n;
+    if (!R) return null;
+    if (!enable) { R.vf = f.slice(); R.turning = false; R.yawR = M.lerp(R.yawR, 0, Math.min(1, (R.dt || 0) * 8)); return null; }
+    let vf = R.vf ? flat(R.vf, n) : null; if (!vf || len(vf) < 0.3) vf = f.slice(); vf = M.norm(vf);
+    let a = Math.atan2(dot(vf, s), dot(vf, f));
+    if (R.dt > 0) {
+      const dt = R.dt;
+      if (R.K.turn === 'snap') { // jumping spider: holds its heading, then pivots in a quick burst
+        const thr = R.spd > R.L * 0.6 ? 0.18 : 0.4;
+        if (!R.turning && (Math.abs(a) > thr || (Math.abs(a) > 0.035 && R.still > 0.5))) R.turning = true;
+        if (R.turning) { const st = Math.min(Math.abs(a), dt * 14); a -= Math.sign(a) * st; if (Math.abs(a) < 0.012) { a = 0; R.turning = false; } }
+      } else { // mantis: deliberate, eased, never faster than ~2 rad/s
+        const st = Math.min(Math.abs(a), Math.max(dt * 0.35, Math.min(Math.abs(a) * dt * 3.5, dt * 3))); a -= Math.sign(a) * st;
+      }
+      a = M.clamp(a, R.K.turn === 'snap' ? -0.75 : -0.5, R.K.turn === 'snap' ? 0.75 : 0.5);
+      // world yaw rate of the visual body (for the abdomen lag): change of a plus how the AI heading itself turned
+      let aiR = 0; if (R._f) { const pf = M.norm(flat(R._f, n)); aiR = Math.atan2(dot(M.cross(pf, f), n), dot(pf, f)) / dt; }
+      R.yawR = M.lerp(R.yawR, M.clamp(aiR + (a - (R._a || 0)) / dt, -12, 12), Math.min(1, dt * 10));
+    }
+    R._f = f.slice(); R._a = a;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const f2 = M.norm(add(mul(f, ca), mul(s, sa))), s2 = M.norm(sub(mul(s, ca), mul(f, sa)));
+    R.vf = f2; return { f: f2, s: s2, a };
+  };
+  /** Planted foot for leg lk. target: where the drawer wants the foot this frame (rest pose + pose offsets, no gait wobble).
+      free 0..1: how much the pose owns the foot (raised, reaching, grooming...). Returns the world foot position. */
+  G.foot = function (R, lk, target, free, n, mul0) {
+    const K = R.K, L = R.L; let g = R.legs[lk];
+    if (!g) g = R.legs[lk] = { p: target.slice(), k: -1, out: target.slice(), lift: 0 };
+    if (!(R.dt > 0)) return g.out || target;
+    if (g.fid === R.fid) return g.out; g.fid = R.fid;
+    free = M.clamp(free || 0, 0, 1); const dt = R.dt; g.tg = target; g.fr = free;
+    if (free > 0.985) { if (g.k >= 0) R.swing--; g.p = target.slice(); g.k = -1; g.lift = 0; g.out = target.slice(); return g.out; }
+    const stride = L * K.stride * (mul0 || 1);
+    if (M.dist(g.p, target) > L * 0.9) { g.p = target.slice(); if (g.k >= 0) { g.k = -1; R.swing--; } }
+    let lead = flat(mul(R.v, K.sw[1] * 0.9), n); const ll = len(lead); if (ll > stride * 0.75) lead = mul(lead, stride * 0.75 / ll);
+    // how fast this foot's rest spot moves (body speed + turning): quicker steps when the body turns on the spot
+    const tv = g.ltg ? M.dist(target, g.ltg) / dt : 0; g.ltg = target; g.tv = M.lerp(g.tv || 0, tv, Math.min(1, dt * 10));
+    const swingT = M.clamp(0.42 * stride / Math.max(R.spd, g.tv, 1e-3), K.sw[0] * 0.8, K.sw[1]);
+    let pos;
+    if (g.k >= 0) {
+      g.k += dt / g.T; g.to = M.lerp3(g.to, add(target, lead), Math.min(1, dt * 14));
+      if (g.k >= 1) { g.p = g.to.slice(); g.k = -1; R.swing--; g.lift = 0; R.bv -= L * (K.legs === 8 ? 0.05 : 0.08); pos = g.p; }
+      else { const e = ease(g.k); const h = g.h * Math.pow(Math.sin(Math.PI * Math.min(1, g.k * 1.08)), 0.75); g.lift = h; pos = add(M.lerp3(g.from, g.to, e), mul(n, h)); }
+    } else {
+      const err = M.dist(g.p, target);
+      const nb = [lk ^ 1, lk - 2, lk + 2]; let busy = false; for (const q of nb) { const h = R.legs[q]; if (h && h.k >= 0 && h.k < 0.85) { busy = true; break; } }
+      const room = R.swing < K.legs / 2 && !busy;
+      const settle = R.still > 0.3 && err > stride * 0.28 && R.settleCD <= 0;
+      const keep = K.legs === 8 ? 4 : 2; // never fewer feet than this on the ground
+      if (!room && err > stride * 2.1) { if (R.swing <= K.legs - keep) { /* forced step below */ } else g.p = M.lerp3(g.p, target, Math.min(1, dt * 5)); } // no free slot: drag rather than float
+      if ((room && (err > stride || settle)) || (err > stride * 2.3 && R.swing < K.legs - keep)) {
+        g.from = g.p.slice(); g.to = add(target, lead); g.k = 0; g.T = settle && err <= stride ? K.sw[1] * 1.1 : swingT; R.swing++;
+        g.h = M.clamp(err * 0.55, L * 0.03, L * 0.11) * K.lift; if (settle) R.settleCD = K.sw[1] * 0.45;
+      }
+      pos = g.p;
+    }
+    g.out = free > 0.005 ? M.lerp3(pos, target, free) : pos.slice(); return g.out;
+  };
+  /** Is leg lk in the air (0..1 of its step height)? Used by the shadow and contact dots. */
+  G.liftOf = (R, lk) => { const g = R && R.legs[lk]; return g && g.k >= 0 ? M.clamp(g.lift / (R.L * 0.06), 0, 1) : 0; };
+  /** Two-bone IK: knee for hip -> foot with segment lengths l1, l2, bending toward the hint knee. */
+  G.knee = function (hip, foot, l1, l2, hint) {
+    const d = sub(foot, hip); const D = len(d); if (D < 1e-6) return hint; const u = mul(d, 1 / D);
+    const Dm = Math.min(D, (l1 + l2) * 0.999); const a = (l1 * l1 - l2 * l2 + Dm * Dm) / (2 * Dm); const h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    let b = sub(hint, hip); b = sub(b, mul(u, dot(b, u))); const bl = len(b); if (bl < 1e-6) return hint;
+    return add(add(hip, mul(u, a)), mul(b, h / bl));
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
 /* Jumper Terrarium — volumetric critters ("field-guide plate" style with macro-photo touches).
    Every body part is a true 3D ellipsoid: its silhouette is the exact projection for the current
    camera, so nothing collapses to a line from the side or while climbing. Markings are decals that
@@ -8342,15 +8482,42 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   /** Art style of the shadows: 0 storybook (soft), 1 HD-2D (two hard pixel levels), 2 Cuphead (flat hard shape). */
   function shArt() { const H = JT.HD2D; const w = H && H._was; return w === 'hd' ? 1 : w === 'cuphead' ? 2 : 0; }
   /** Fill a set of screen ellipses [x, y, r1, r2, ang] + strokes [[pts], w] as one shadow. soft 0..1 widens the penumbra. */
-  function paintShadow(ctx, ells, strokes, a, soft) {
-    if (a < 0.004) return; const art = shArt(); const ga = ctx.globalAlpha; ctx.globalAlpha = 1;
-    const one = (k, al) => { if (al < 0.003) return; const col = art === 2 ? 'rgba(26,14,24,' : 'rgba(12,8,4,';
-      ctx.fillStyle = col + al.toFixed(3) + ')'; ctx.beginPath(); for (const e of ells) { ctx.moveTo(e[0] + e[2] * k * Math.cos(e[4]), e[1] + e[2] * k * Math.sin(e[4])); ctx.ellipse(e[0], e[1], Math.max(0.3, e[2] * k), Math.max(0.3, e[3] * k + (k - 1) * e[2] * 0.25), e[4], 0, 6.283); } ctx.fill();
-      if (strokes.length) { ctx.strokeStyle = col + (al * 0.85).toFixed(3) + ')'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        for (const [pts, w] of strokes) { ctx.lineWidth = Math.max(0.5, w * (1 + (k - 1) * 2)); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); } } };
-    if (art === 2) one(1, Math.min(0.5, a * 1.25));
-    else if (art === 1) { one(1.18 + soft * 0.3, a * 0.5); one(0.86, a * 0.55); }
-    else { one(1.3 + soft * 0.7, a * 0.22); one(1.1 + soft * 0.3, a * 0.3); one(0.92, a * 0.5); }
+  // v32: a shadow is painted as ONE union shape (opaque into a small scratch canvas, then composited once at the shadow's
+  // opacity), so overlapping body / leg pieces never stack up into dark blotches. The scratch is drawn at reduced
+  // resolution and smoothed back up: a cheap soft penumbra that widens with height (Storybook); HD-2D keeps hard pixels,
+  // Cuphead a flat crisp shape.
+  const SHB = { c: null, g: null };
+  function shBuf(w, h) {
+    if (typeof document === 'undefined') return null;
+    if (!SHB.c) { SHB.c = document.createElement('canvas'); SHB.c.width = 64; SHB.c.height = 64; SHB.g = SHB.c.getContext('2d'); }
+    if (SHB.c.width < w || SHB.c.height < h) { SHB.c.width = Math.max(SHB.c.width, Math.ceil(w / 32) * 32); SHB.c.height = Math.max(SHB.c.height, Math.ceil(h / 32) * 32); SHB.g = SHB.c.getContext('2d'); }
+    return SHB;
+  }
+  function shapePath(g, ells, strokes, k, grow) {
+    g.beginPath(); for (const e of ells) { const r1 = Math.max(0.3, e[2] * grow), r2 = Math.max(0.3, e[3] * grow + (grow - 1) * e[2] * 0.25); g.moveTo(e[0] + r1 * Math.cos(e[4]), e[1] + r1 * Math.sin(e[4])); g.ellipse(e[0], e[1], r1, r2, e[4], 0, 6.283); } g.fill();
+    if (strokes.length) { g.lineCap = 'round'; g.lineJoin = 'round'; for (const [pts, w] of strokes) { g.lineWidth = Math.max(0.5, w * (1 + (grow - 1) * 2)); g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); } }
+  }
+  /** Fill a set of screen ellipses [x, y, r1, r2, ang] + strokes [[pts], w] as one shadow at opacity a. soft 0..1 widens the penumbra. */
+  function paintShadow(ctx, ells, strokes, a, soft, blurPx) {
+    if (a < 0.004 || (!ells.length && !strokes.length)) return; const art = shArt(); const ga = ctx.globalAlpha;
+    const col = art === 2 ? 'rgb(26,14,24)' : 'rgb(12,8,4)';
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const e of ells) { const r = Math.max(e[2], e[3]) * 1.35 + 1; x0 = Math.min(x0, e[0] - r); x1 = Math.max(x1, e[0] + r); y0 = Math.min(y0, e[1] - r); y1 = Math.max(y1, e[1] + r); }
+    for (const [pts, w] of strokes) for (const q of pts) { const r = w * 1.5 + 1; x0 = Math.min(x0, q[0] - r); x1 = Math.max(x1, q[0] + r); y0 = Math.min(y0, q[1] - r); y1 = Math.max(y1, q[1] + r); }
+    const W0 = x1 - x0, H0 = y1 - y0; if (!(W0 > 0 && H0 > 0) || W0 > 4000 || H0 > 4000) return;
+    // blur radius in screen px -> scratch scale (1 / blur)
+    const size = Math.max(W0, H0); const blur = art === 2 ? 0 : art === 1 ? 2 : Math.max(1, blurPx != null ? blurPx : size * (0.03 + 0.06 * soft));
+    const k = art === 2 ? 1 : art === 1 ? 0.5 : M.clamp(1 / blur, 0.12, 0.8);
+    const pad = art === 0 ? Math.ceil(blur * 1.5) + 2 : 2; const bx = x0 - pad, by = y0 - pad, bw = W0 + pad * 2, bh = H0 + pad * 2;
+    const sw = Math.ceil(bw * k) + 2, shh = Math.ceil(bh * k) + 2; const B = shBuf(sw, shh);
+    const one = (grow, al) => { if (al < 0.003) return;
+      if (!B) { ctx.globalAlpha = 1; ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',' + al.toFixed(3) + ')'); ctx.strokeStyle = ctx.fillStyle; shapePath(ctx, ells, strokes, 1, grow); return; }
+      const g = B.g; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, sw + 1, shh + 1);
+      g.setTransform(k, 0, 0, k, -bx * k + 1, -by * k + 1); g.fillStyle = col; g.strokeStyle = col; shapePath(g, ells, strokes, k, grow);
+      ctx.save(); ctx.globalAlpha = al; ctx.imageSmoothingEnabled = art !== 1; ctx.drawImage(B.c, 0, 0, sw, shh, bx - 1 / k, by - 1 / k, sw / k, shh / k); ctx.restore(); };
+    if (art === 2) one(1, Math.min(0.42, a * 1.1));
+    else if (art === 1) { one(1.15 + soft * 0.25, a * 0.42); one(0.9, a * 0.5); }
+    else one(1 + soft * 0.25, a);
     ctx.globalAlpha = ga;
   }
   /** Body plan of a shadow in body units (×L): ellipses [u, halfLen, halfW], legs [angle, reach, kneeLift], arm strokes. */
@@ -8362,27 +8529,38 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   function castShadow(ctx, V, p, f, s, n, L, h, alpha, wk, opt) {
     wk = wk || 1; opt = opt || {}; const sk = SHAPES[opt.kind || 'prey'] || SHAPES.prey; const art = shArt(); const px = Math.max(0.5, V.s);
     const ln = Math.max(0.35, M.dot(LG, n)); const Lt = M.sub(LG, M.mul(n, ln)); // light along the surface
-    const cap = L * 0.75; const sh = (u, v, hh) => { let o = M.mul(Lt, -hh / ln); const ol = M.len(o); if (ol > cap * hh / Math.max(h, 1e-3)) o = M.mul(o, cap * hh / Math.max(h, 1e-3) / ol);
-      return V.P([p[0] + f[0] * u + s[0] * v + o[0], p[1] + f[1] * u + s[1] * v + o[1], p[2] + f[2] * u + s[2] * v + o[2]]); };
+    const cap = L * 0.75; const off = (hh) => { let o = M.mul(Lt, -hh / ln); const ol = M.len(o); const cp = cap * hh / Math.max(h, 1e-3); if (ol > cp) o = M.mul(o, cp / ol); return o; };
+    const sh = (u, v, hh) => { const o = off(hh); return V.P([p[0] + f[0] * u + s[0] * v + o[0], p[1] + f[1] * u + s[1] * v + o[1], p[2] + f[2] * u + s[2] * v + o[2]]); };
+    // a world point (leg joint) laid onto the surface along the light
+    const shW = (q) => { const d = M.sub(q, p); const hh = Math.max(0, M.dot(d, n)); const b = M.sub(q, M.mul(n, M.dot(d, n))); return V.P(M.add(b, off(hh))); };
+    const kd = JT.SKY.kd; const lit = 0.2 + 0.16 * kd; const Lpx = L * px; // night: faint, bright lamp/day: clearly there (never black)
+    const hK = M.clamp(1 - (h / L - 0.12) * 0.9, 0.55, 1); // a high-standing body casts a lighter, softer shadow
+    const legs = opt.legs && opt.legs.length ? opt.legs : null;
     const feet = [];
-    if (opt.kind && opt.kind !== 'prey') { const ph = opt.ph || 0; for (let i = 0; i < sk.legs.length; i++) { const [an, re] = sk.legs[i]; for (const sd of [-1, 1]) { const g = ((i + (sd > 0 ? 1 : 0)) % 2 ? 1 : -1) * Math.sin(ph) * 0.06; const u = sk.at * L + Math.cos(an) * re * L + g * L, v = sd * Math.sin(an) * re * L; feet.push([u, v, an, re, sd]); } } }
+    if (!legs && opt.kind && opt.kind !== 'prey') { const ph = opt.ph || 0; for (let i = 0; i < sk.legs.length; i++) { const [an, re] = sk.legs[i]; for (const sd of [-1, 1]) { const g = ((i + (sd > 0 ? 1 : 0)) % 2 ? 1 : -1) * Math.sin(ph) * 0.06; const u = sk.at * L + Math.cos(an) * re * L + g * L, v = sd * Math.sin(an) * re * L; feet.push([u, v, an, re, sd]); } } }
     // perched on a thin stem or leaf edge: only a whisper of contact at the feet (the real shadow drops to the ground)
     if (!opt.perch) {
-      const ells = [], strokes = []; 
+      const ells = [], strokes = [];
       for (const [u, hl, hw] of sk.e) { const c = sh(u * L, 0, h); const e = projEll(V, M.mul(f, hl * L * (opt.kind ? 1 : wk > 0.5 ? 1 : 1.1)), M.mul(s, hw * L * wk), null); ells.push([c[0], c[1], e.r1, e.r2, e.ang]); }
       if (opt.held) { const hl = opt.held; const c = sh(L * (opt.kind === 'mantis' ? 0.42 : 0.5), 0, h * 0.8); const cross = opt.kind === 'mantis' && opt.cross; const e = cross ? projEll(V, M.mul(s, hl * 0.5), M.mul(f, hl * 0.16), null) : projEll(V, M.mul(f, hl * 0.5), M.mul(s, hl * 0.2), null); ells.push([c[0], c[1], e.r1, e.r2, e.ang]); }
-      const lw = Math.max(0.6, L * px * 0.045);
-      for (const [u, v, an, re, sd] of feet) { const kn = sk.legs.find(q => q[0] === an); const ku = sk.at * L + Math.cos(an) * re * L * 0.45, kv = sd * Math.sin(an) * re * L * 0.48;
+      const lw = Math.max(0.6, L * px * (opt.kind === 'mantis' ? 0.03 : 0.04));
+      if (legs) for (const lg of legs) strokes.push([lg.slice(0, 4).map(shW), lw]);
+      else for (const [u, v, an, re, sd] of feet) { const kn = sk.legs.find(q => q[0] === an); const ku = sk.at * L + Math.cos(an) * re * L * 0.45, kv = sd * Math.sin(an) * re * L * 0.48;
         strokes.push([[sh(sk.at * L, sd * L * 0.05, h), sh(ku, kv, h + kn[2] * L), sh(u, v, 0)], lw]); }
-      if (sk.arms) for (const [a0, a1] of sk.arms) for (const sd of [-1, 1]) strokes.push([[sh(a0 * L, sd * L * 0.04, h + L * 0.12), sh(a1 * L, sd * L * 0.05, h + L * 0.04)], lw * 1.3]);
-      const kd = JT.SKY.kd; const a = alpha * (0.2 + 0.24 * kd) * (art === 2 ? 1.05 : 1);
-      paintShadow(ctx, ells, strokes, a, M.clamp(h / L, 0, 1) * 0.5);
-      // contact shade right under the body (much smaller than before)
-      const P2 = V.P(M.add(p, M.mul(f, sk.e.length > 1 ? -L * 0.08 : 0))); const e2 = projEll(V, M.mul(f, L * (opt.kind ? 0.3 : 0.4)), M.mul(s, L * 0.2 * wk), null);
-      paintShadow(ctx, [[P2[0], P2[1], e2.r1, e2.r2, e2.ang]], [], alpha * 0.2, 0.2);
+      if (sk.arms && !opt.noArms) for (const [a0, a1] of sk.arms) for (const sd of [-1, 1]) strokes.push([[sh(a0 * L, sd * L * 0.04, h + L * 0.12), sh(a1 * L, sd * L * 0.05, h + L * 0.04)], lw * 1.3]);
+      const soft = M.clamp(h / L, 0, 1) * 0.5;
+      const a = alpha * lit * hK * (art === 2 ? 1.05 : 1);
+      // legs stand up off the ground: their shadow is fainter and softer than the body's
+      paintShadow(ctx, [], strokes, a * 0.85, soft, Lpx * (0.012 + 0.03 * soft));
+      paintShadow(ctx, ells, [], a, soft, Lpx * (0.025 + 0.05 * soft));
+      // contact occlusion right under the body: small, soft
+      const P2 = V.P(M.add(p, M.mul(f, sk.e.length > 1 ? -L * 0.08 : 0))); const e2 = projEll(V, M.mul(f, L * (opt.kind ? 0.28 : 0.38)), M.mul(s, L * 0.18 * wk), null);
+      paintShadow(ctx, [[P2[0], P2[1], e2.r1, e2.r2, e2.ang]], [], alpha * (0.07 + 0.07 * kd) * hK, 0.6, Lpx * 0.05);
     }
-    if (feet.length && (opt.perch || art === 0)) { const ells = []; const r = Math.max(0.45, L * px * 0.035); for (const [u, v] of feet) { const q = V.P([p[0] + f[0] * u + s[0] * v, p[1] + f[1] * u + s[1] * v, p[2] + f[2] * u + s[2] * v]); ells.push([q[0], q[1], r, r * 0.7, 0]); }
-      paintShadow(ctx, ells, [], alpha * (opt.perch ? (art === 1 ? 0.16 : 0.26) : 0.12), 0); }
+    // contact dots where the feet touch (fade out as a foot lifts)
+    if (opt.perch || art === 0) { const r = Math.max(0.45, L * px * 0.03); const aD = alpha * (opt.perch ? (art === 1 ? 0.14 : 0.2) : 0.1);
+      if (legs) { const ells = []; for (const lg of legs) { if ((lg[4] || 0) > 0.25) continue; const q = V.P(lg[3]); ells.push([q[0], q[1], r, r * 0.7, 0]); } paintShadow(ctx, ells, [], aD, 0, r * 0.8); }
+      else if (feet.length) { const ells = []; for (const [u, v] of feet) { const q = V.P([p[0] + f[0] * u + s[0] * v, p[1] + f[1] * u + s[1] * v, p[2] + f[2] * u + s[2] * v]); ells.push([q[0], q[1], r, r * 0.7, 0]); } paintShadow(ctx, ells, [], aD, 0, r * 0.8); } }
   }
   /** Shadow dropped onto the ground (or a rock top) below a critter perched on a plant or in the air: the body flattened along the light,
       softer and fainter the higher it is. c: body centre, gy: surface height below, f/s: body axes. */
@@ -8395,7 +8573,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const capL = (v) => { const l = Math.hypot(v[0], v[2]); return l > 1.6 ? [v[0] * 1.6 / l, 0, v[2] * 1.6 / l] : v; }; const fF = capL(flat(f)), sF = capL(flat(s)); const fadeOut = M.clamp(1 - q0[3] / (L * 0.6), 0, 1); if (fadeOut <= 0.02) return; const soft = M.clamp(dh / 30, 0, 1); const grow = 1 + soft * 0.5; const ells = [];
     for (const [u, hl, hw] of sk.e) { const q = V.P([gx + fF[0] * u * L, gy + 0.05, gz + fF[2] * u * L]); const e = projEll(V, M.mul(fF, hl * L * grow), M.mul(sF, hw * L * grow * (kind === 'prey' ? 0.8 : 1)), null); ells.push([q[0], q[1], e.r1, e.r2, e.ang]); }
     if (held) { const q = V.P([gx + fF[0] * L * 0.5, gy + 0.05, gz + fF[2] * L * 0.5]); const e = projEll(V, M.mul(fF, held * 0.5 * grow), M.mul(sF, held * 0.2 * grow), null); ells.push([q[0], q[1], e.r1, e.r2, e.ang]); }
-    const kd = JT.SKY.kd; const a = alpha * (0.16 + 0.24 * kd) * M.clamp(1 - dh / 70, 0.25, 1) * fadeOut;
+    const kd = JT.SKY.kd; const a = alpha * (0.1 + 0.2 * kd) * M.clamp(1 - dh / 60, 0.2, 1) * fadeOut;
     paintShadow(ctx, ells, [], a, soft);
   }
   function sortDraw(parts) { parts.sort((a, b) => b.d - a.d); for (const q of parts) q.f(); }
@@ -8450,6 +8628,11 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const S = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0]; const pal0 = o.palette || S.pal; const L = o.len;
     let { f, s, n } = fr; let p = fr.p; const t = o.time || 0;
     const LK = S.look || {}; const gait = LK.gait; const gp = sp._gPause || 0;
+    // v32 motion layer: planted feet, staged (saccadic) turning, body + abdomen springs
+    const RG = JT.Gait ? JT.Gait.rig(sp, o, fr, L, 'spider') : null;
+    const HD = RG ? JT.Gait.heading(RG, fr, !o.airborne && !o.curled && !o.tucked && !o.hug && !o.meal && !sp.hold && sp.state !== 'pounce' && !o.hang) : null;
+    if (HD) { f = HD.f; s = HD.s; }
+    const hdA = HD ? HD.a : 0;
     // species gait offsets (visual only): ant mimics weave in zig-zags, magnolia greens sway and twitch
     if (!o.thumb && !o.airborne && !o.curled && !o.tucked && !o.hug && !o.meal) {
       let lat = 0, ang = 0;
@@ -8467,14 +8650,15 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const flat = sp._flat || 0, strK = sp._stretchK || 0, wipe = sp._wipe || 0, flick = sp._flick || 0, hang = o.hang || 0;
     const wph = (sp._walk || 0) * Math.PI; const bob = moving && !o.airborne ? Math.abs(Math.sin(wph)) * (gait === 'bouncy' ? 0.03 : gait === 'hop' ? 0.022 : gait === 'heavy' ? 0.01 : gait === 'stopgo' ? 0.012 : 0) : 0;
     const gripK = o.grip && !o.airborne && !o.curled && !o.tucked && !o.thumb ? o.grip.k : 0; // belly hugs a thin stem
-    const h0 = (1 - 0.3 * gripK) * L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) * (1 - 0.45 * (LK.flat || 0)) + L * 0.035 * strK + L * bob;
+    const h0 = (1 - 0.3 * gripK) * L * (0.14 - 0.07 * crouch) * (1 - 0.42 * flat) * (1 - 0.45 * (LK.flat || 0)) + L * 0.035 * strK + L * bob + (RG ? RG.bob : 0);
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
-    if (!o.airborne && !o.noShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha, 1, { kind: 'spider', perch: o.perch, held: o.heldLen, ph: moving ? wph : 0 });
+    const shLegs = []; const doShadow = !o.airborne && !o.noShadow; // v32: drawn after the legs are placed, from the real joints
     const under = M.dot(n, V.toCam) < -0.05 && !o.thumb; // seen from below: belly colours
     const fat = (sp._fatNow != null ? M.clamp(sp._fatNow, 0.66, 1.28) : M.clamp(0.85 + (sp.sat != null ? sp.sat : 0.7) * 0.34, 0.85, 1.2)) * (1 + breath);
     // head turns independently: gaze + an occasional curious look at the camera ("selfie glance")
-    let gz = (sp._gazeNow || 0) * 0.3;
+    let gz = (sp._gazeNow || 0) * 0.3 - hdA * 0.9;
     if (o.lookCam) { const cf = M.sub(V.toCam, M.mul(n, M.dot(V.toCam, n))); if (M.len(cf) > 0.2) { const c2 = M.norm(cf); const a = Math.atan2(M.dot(c2, s), M.dot(c2, f)); if (Math.abs(a) < 1.6) gz = M.lerp(gz, M.clamp(a, -0.55, 0.55), o.lookCam); } }
+    gz = M.clamp(gz, -0.62, 0.62);
     const fg = M.norm(M.add(M.mul(f, Math.cos(gz)), M.mul(s, Math.sin(gz)))); let sg = M.norm(M.cross(n, fg)); let nh = n;
     // curious head tilt toward a close, still camera: roll the carapace a little about its long axis
     if (o.tilt > 0.01) { const sgn = M.dot(sg, V.toCam) >= 0 ? 1 : -1; const ra = 0.3 * o.tilt * sgn; const cr = Math.cos(ra), sr = Math.sin(ra); const sg2 = M.norm(M.add(M.mul(sg, cr), M.mul(n, sr))); nh = M.norm(M.sub(M.mul(n, cr), M.mul(sg, sr))); sg = sg2; }
@@ -8513,10 +8697,11 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     // --- abdomen (raised while stalking, plump when fed) ---
     // spinning a retreat: abdomen tipped down so the spinnerets touch the surface, swaying with each hind-leg pull
     const spin = o.spin ? 1 : 0, spw = spin ? Math.sin(t * 4.2) : 0;
-    const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06 - 0.42 * spin; let af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))); const an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
+    const ta = stalk + crouch * 0.1 - (sp._prepT > 0 ? 0.28 : 0) - flat * 0.06 - 0.42 * spin + (RG ? RG.ap : 0); let af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta))); const an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
     if (spin) af = M.norm(M.add(af, M.mul(s, spw * 0.16)));
+    if (RG && Math.abs(RG.ay) > 1e-3) af = M.norm(M.add(af, M.mul(s, -RG.ay * 0.8))); // abdomen swings out behind a turn, then catches up
     const aL = ant ? 1 : LK.aL || 1, aW = ant ? 1 : LK.aW || 1, aH = ant ? 1 : LK.aH || 1;
-    const ac = M.add(W(ant ? -0.33 * L : -(0.27 + 0.24 * (aL - 1) + 0.125 * (cL - 1)) * L, 0, h0 + L * 0.09 * (0.6 + 0.4 * aH)), M.mul(an, L * 0.02));
+    const ac = M.add(W(ant ? -0.33 * L : -(0.27 + 0.24 * (aL - 1) + 0.125 * (cL - 1)) * L, 0, h0 + L * 0.09 * (0.6 + 0.4 * aH)), M.add(M.mul(an, L * 0.02), M.mul(s, RG ? -RG.ay * 0.8 * L * 0.26 : 0)));
     const abd = Part(ac, M.mul(af, L * (ant ? 0.23 : 0.3 * aL) * (0.95 + fat * 0.05)), M.mul(s, L * (ant ? 0.13 : 0.22 * aW) * fat), M.mul(an, L * (ant ? 0.13 : 0.19 * aH) * fat));
     parts.push({ d: V.depth(ac), f: () => {
       blob(ctx, V, abd.c, abd.ax, abd.ay, abd.az, bodyCol(pal.abd, pal.belly), { lod, gloss: ant ? 0.9 : 0.6, fuzz: lod === 2 && !ant ? (LK.fuzz != null ? LK.fuzz * 1.1 : 1) : 0, fuzzCol: pal.hair, hatch: lod === 2, sheen: S.sheen != null ? S.sheen : S.pattern === 'emerald' ? 1 : S.pattern === 'peacock' ? 2 : 0, time: t });
@@ -8589,7 +8774,11 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       // Portia: every leg on its own rhythm (never in step), plus slow waving during its pauses
       const ph = gait === 'choppy' ? (sp._walk || 0) * Math.PI * (1 + 0.17 * lk) + lk * 1.37 : (sp._walk || 0) * Math.PI + (i % 2) * Math.PI + (sd > 0 ? Math.PI : 0);
       const sw = gait === 'glide' ? 0.7 : 1;
-      let fu = FU[i] * L * lg + Math.sin(ph) * L * 0.12 * moving * lg * sw, fv = FV[i] * L * sd * (1 + crouch * 0.12) * (1 + (lg - 1) * 0.6), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * moving * sw;
+      const mvS = RG ? 0 : moving; // with a rig the feet are planted and step on their own (no sliding sine wobble)
+      let fu = FU[i] * L * lg + Math.sin(ph) * L * 0.12 * mvS * lg * sw, fv = FV[i] * L * sd * (1 + crouch * 0.12 + (RG ? Math.max(0, -RG.bob) / L * 3 : 0)) * (1 + (lg - 1) * 0.6), fw = Math.max(0, Math.cos(ph)) * L * 0.08 * mvS * sw;
+      const tapK = RG ? JT.Gait.tapOf(RG, lk) : 0; if (tapK > 0.001) { fu += L * 0.05 * tapK; fw += L * 0.11 * tapK; }
+      // pre-jump: the hind legs gather in under the body, loading up
+      const load = (sp._prepT > 0 || (sp.state === 'lunge' && sp.st < 0.3)) && !o.airborne ? 1 : 0; if (load && i >= 2) { fu += L * 0.07; fv *= 0.92; }
       if (gait === 'choppy' && i < 3) fw += L * 0.06 * gp * Math.max(0, Math.sin(t * (1.3 + 0.37 * lk) + lk * 2.3));
       if (LK.antennae && i === 0 && !o.curled && !o.tucked) { const ak = 1 - reach; fu += L * 0.1 * ak; fv *= 1 - 0.5 * ak; fw += L * (0.4 + (sp.state === 'antMarch' ? 0.16 : 0.07) * Math.sin(t * (sp.state === 'antMarch' ? 11 : 6.5) + sd * 1.9)) * ak; } // ant mimic: pair I up like antennae
       if (i === 0 && raise > 0) { fu += L * 0.2 * raise; fw += L * 0.18 * raise * (1 - 0.8 * fore); fv *= 1 - 0.1 * raise; }
@@ -8631,10 +8820,21 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         gAnk = M.add(M.add(gc, M.mul(ga, ua * 0.78)), rad(th * 0.55, gR + L * 0.08));
         foot = M.lerp3(foot, M.add(M.add(gc, M.mul(ga, ua * 0.82)), rad(th, gR + up)), gk);
       }
+      let footP = null;
+      if (RG) { // how much the pose owns this foot (raised, reaching, grooming, waving...) vs. standing on it
+        let fr0 = o.airborne || o.curled || o.tucked || hang > 0.01 || hk > 0.01 ? 1 : 0;
+        if (i === 0) fr0 = Math.max(fr0, raise, wipe, sp.state === 'groom' ? 1 : 0, LK.antennae ? 1 : 0);
+        if (i < 2) fr0 = Math.max(fr0, fore * 0.9, reach);
+        if (sp.state === 'display' && i <= (S.prefs.display > 0.7 ? 2 : 0)) fr0 = 1;
+        if (spin && i >= 2) fr0 = 1; if (gait === 'choppy' && i < 3) fr0 = Math.max(fr0, gp * 0.85);
+        fr0 = Math.max(fr0, strK, Math.min(1, tapK * 4));
+        footP = JT.Gait.foot(RG, lk, foot, fr0, n);
+      }
       const mid = M.lerp3(hip, foot, 0.4);
       const far = sd * M.dot(s, V.toCam) < -0.15 && !o.thumb; // far-side legs: keep the knee low so it never pokes up over the head
       let knee = M.add(M.add(mid, M.mul(n, L * (0.15 + crouch * 0.06) * Math.sqrt(lg) * sw * (1 - 0.35 * (LK.flat || 0)) * (1 - 0.45 * flat) * (o.curled ? 0.4 : o.tucked ? 0.7 : 1) * (far ? 0.45 : 1) * (i < 2 ? 1 - 0.65 * reach : 1) * (1 + 0.35 * hk) * (1 - 0.3 * gk))), M.mul(s, sd * L * (0.06 + 0.06 * hk)));
       const kv = M.dot(M.sub(knee, p), s) * sd, minV = L * (o.curled ? 0.24 : o.tucked ? 0.27 : far ? 0.4 : 0.33) * (1 + (lg - 1) * 0.5) * (1 - gk) + gk * (gR + L * 0.16); if (kv < minV) knee = M.add(knee, M.mul(s, sd * (minV - kv)));
+      if (footP && M.dist(footP, foot) > L * 0.002) { const l1 = M.dist(hip, knee), l2 = M.dist(knee, foot); knee = JT.Gait.knee(hip, footP, l1, l2, knee); foot = footP; }
       let ankle = M.add(M.lerp3(knee, foot, 0.62), M.mul(n, L * 0.05));
       if (gAnk) ankle = M.lerp3(ankle, gAnk, gk);
       if (hk > 0.001) { // embrace: knee lifted high and just outside the prey, tarsus hooking down and in around it
@@ -8644,6 +8844,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         const aH = latTo(M.add(M.add(foot, M.mul(fg, i === 0 ? -hr * 0.45 : 0)), M.mul(n, hr * 0.55 + L * 0.03)), hr * 0.95 + L * 0.03);
         ankle = M.lerp3(ankle, aH, hk);
       }
+      if (doShadow) shLegs.push([hip, knee, ankle, foot, RG ? JT.Gait.liftOf(RG, lk) : (o.airborne || o.curled || o.tucked ? 1 : 0)]);
       const wk = (i === 0 ? (LK.frontW || 1.3) : 1) * (LK.legW || 1);
       const col = i === 0 ? sh(pal.leg, -0.04) : pal.leg;
       let kd = V.depth(knee) + (M.dot(M.sub(knee, cc), V.toCam) > 0 ? -0.02 : 0.02);
@@ -8666,6 +8867,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const back = Math.max(V.depth(cc), V.depth(mp)) + 0.03;
       parts.push({ d: back, f: () => { o.meal(mp, fg, sg, n); ctx.globalAlpha = alpha; } });
     }
+    if (doShadow) castShadow(ctx, V, p, f, s, n, L, h0 + L * 0.12, alpha, 1, { kind: 'spider', perch: o.perch, held: o.heldLen, ph: moving && !RG ? wph : 0, legs: shLegs });
     sortDraw(parts);
     ctx.globalAlpha = 1;
   };
@@ -10682,9 +10884,9 @@ void main(){
       let ctx = null;
       const items = [];
       // v27.2: shadow on the ground below a perched / airborne critter (support lookup cached per critter, refreshed ~4x a second)
-      const dropItem = (e, fr, L, kind, alpha, held) => { const c = fr.p; if (!M.finite3(c)) return; const now = hab.time || 0; let b = e._shB;
+      const dropItem = (e, fr, L, kind, alpha, held, airE) => { const c = fr.p; if (!M.finite3(c)) return; const now = hab.time || 0; let b = e._shB;
         if (!b || Math.abs(now - b.t) > 0.25 || Math.abs(b.x - c[0]) + Math.abs(b.z - c[2]) > 1.5 || Math.abs(b.y - c[1]) > 2) { const sb = JT.Nav.supportBelow(hab, [c[0], c[1] - 0.5, c[2]]); b = e._shB = { t: now, x: c[0], y: c[1], z: c[2], gy: sb.pos[1] }; }
-        const gy = b.gy; if (c[1] - gy < L * 0.3) return; const q = D.critter.dropAt(hab, c, gy); const fr2 = { f: fr.f, s: fr.s };
+        const gy = b.gy; if (c[1] - gy < (airE ? 0 : L * 0.3)) return; /* v32: airborne = always (no shadow gap just after take-off / before landing) */ const q = D.critter.dropAt(hab, c, gy); const fr2 = { f: fr.f, s: fr.s };
         items.push({ d: V.depth(q) + 0.03, f: () => D.critter.dropShadow(ctx, V, hab, c, gy, fr2.f, fr2.s, L, kind, alpha, held), p: q, r: L * 1.7 + 2 + (held || 0), ground: true }); };
       const follow = this.cam.mode === 'follow'; const fsp = follow ? (hab.spider(this.game.selectedId) || hab.spiders[0]) : null;
       const tgtId = fsp && fsp.target && fsp.target.kind === 'prey' ? fsp.target.id : null; /* the prey it is stalking */ const t = this.time; const geoms = hab.geoms; const sel = this.game.selectedId;
@@ -10789,7 +10991,7 @@ void main(){
         let hideK = 0; if (nst) { hideK = M.smooth(M.clamp((nst.prog - 0.3) / 0.6, 0, 1)); if (sp.state === 'emerge' && nst.hole) hideK *= 1 - M.smooth(M.clamp((nst.hole.exit || 0) * 1.4, 0, 1)); }
         const bodyA = 1 - hideK;
         if (bodyA > 0.01) items.push({ key: 's' + sp.id, hot: sp.id === sel, d, f: () => draw(bodyA), p: fr.p, r: L * 1.7 + 1, xr: follow && sp === fsp, bias: !air && sp.sup && sp.sup.k !== 'floor' && sp.sup.k !== 'air' ? L * 0.85 : L * 0.25 });
-        if ((air || perch || hang > 0.2) && bodyA > 0.3) dropItem(sp, fr, L, JT.MANTIS_ARM ? 'mantis' : 'spider', bodyA, heldLen);
+        if ((air || perch || hang > 0.2) && bodyA > 0.3) dropItem(sp, fr, L, JT.MANTIS_ARM ? 'mantis' : 'spider', bodyA, heldLen, air);
       }
       for (const lf of (hab._leaves || [])) { if (!M.finite3(lf.pos) || !onScreen(lf.pos)) continue; items.push({ d: V.depth(lf.pos) - 0.02, f: () => D.leafBit(ctx, V, lf), p: lf.pos, r: 3 }); }
       for (const n of (hab.data.nests || [])) { if (!M.finite3(n.pos) || !vis(n.pos)) continue; const up = (JT.Nav.validSup(hab, n.sup) ? JT.Nav.supFrame(hab, n.sup).n : [0, 1, 0]) || [0, 1, 0];
