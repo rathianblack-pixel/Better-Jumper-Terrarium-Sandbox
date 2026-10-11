@@ -57,3 +57,6 @@ Tests: `mantis_core` 65/65, `behave.js` no errors, `strike_probe` above, `combin
 - **Critter shadows**: shaped like the body (abdomen + head, thin leg lines, mantis raptorial arms, and held prey) and cast along the light. On a thin stem or leaf edge, the critter only gets a faint contact at its feet, and its shadow drops to the ground or rock below, softer and fainter the higher it is. Jumping or airborne critters use the same drop shadow, and it fades out instead of spilling past the glass.
 - **Per art style**: Storybook uses soft watercolour edges (noise-broken, with a slight pigment rim). HD-2D uses 2 dithered pixel levels. Cuphead uses flat, hard-edged plum-brown shapes.
 - Test switch: settings `ptNoSm` turns the shadow map off (old decals).
+
+## v27.3 — Cuphead critters no longer look see-through
+Critter sprites didn't write depth, so the Cuphead post pass (which inks outlines wherever depth jumps, and softens the backdrop where depth is empty) drew the outlines of stems and leaves *behind* a critter right across its body. In Cuphead mode, solid sprite pixels now write depth (`uCut` in the sprite shader, `engine/21-storybook-renderer-part-2.js`).

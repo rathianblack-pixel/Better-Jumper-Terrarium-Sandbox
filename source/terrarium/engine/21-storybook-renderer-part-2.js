@@ -105,7 +105,7 @@ void main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*
   float m=(0.9+0.1*g)*(0.95+0.05*g2)*vig; gl_FragColor=vec4(vec3(m)*uCol.rgb,1.0); }`;
   const SPR_VS = `attribute vec2 aXY; attribute float aZ; attribute vec2 aUV; attribute vec4 aT; uniform vec2 uRes; varying vec2 vUV; varying vec4 vT;
 void main(){ vUV=aUV; vT=aT; gl_Position=vec4(aXY.x/uRes.x*2.0-1.0, 1.0-aXY.y/uRes.y*2.0, clamp(aZ*0.0011,-0.999,0.999), 1.0); }`;
-  const SPR_FS = `precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm; uniform float uHD; uniform sampler2D uDepT; uniform vec2 uOut; uniform float uOcc; uniform float uPx;
+  const SPR_FS = `precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm; uniform float uHD; uniform sampler2D uDepT; uniform vec2 uOut; uniform float uOcc; uniform float uPx; uniform float uCut;
 float b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }
 float bay4(vec2 p){ p=mod(floor(p),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }
 vec4 S(vec2 uv){ vec4 c=texture2D(uTex,uv); if(uPm>0.5) c.rgb*=c.a; return c; }
@@ -131,6 +131,7 @@ void main(){ if(uOcc>0.5){ float sd=texture2D(uDepT, gl_FragCoord.xy/uOut).r; bo
     a=smoothstep(0.3,0.55,c.a);
     float an=0.0; for(int i=0;i<8;i++){ float t=float(i)*0.7854; an=max(an, S(vUV+vec2(cos(t),sin(t))*d).a); }
     float ink=smoothstep(0.3,0.6,an)*(1.0-a)*uInkAmt; rgb=u*a*vT.rgb+uInk*ink; a=a+ink*(1.0-a);
+    if(uCut>0.5 && a<0.5) discard; // solid pixels write depth, so the post pass's depth-edge ink can't draw what's behind over the critter
   } else {
     vec4 c=S(vUV); vec2 d=uTexel*1.3;
     float an=max(max(texture2D(uTex,vUV+vec2(d.x,0.0)).a, texture2D(uTex,vUV-vec2(d.x,0.0)).a), max(texture2D(uTex,vUV+vec2(0.0,d.y)).a, texture2D(uTex,vUV-vec2(0.0,d.y)).a));
@@ -737,10 +738,11 @@ void main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDep
         const c = [[x0, y0, u0, v0], [x1, y0, u1, v0], [x1, y1, u1, v1], [x0, y0, u0, v0], [x1, y1, u1, v1], [x0, y1, u0, v1]]; for (const p of c) out.push(p[0], p[1], s.z, p[2], p[3], t[0], t[1], t[2], s.sc || 1); };
       for (const s of list) { if (s.skip) continue; quad(s, v); if (s.it.xr) quad(s, xr); }
       const P = this.use(this.P.spr); gl.uniform2f(P.u.uRes, W, H); gl.uniform1i(P.u.uTex, 0); gl.uniform2f(P.u.uTexel, 1 / AW, 1 / AH); gl.uniform3f(P.u.uInk, 0.15 * (1 - night * 0.3), 0.11 * (1 - night * 0.3), 0.08 * (1 - night * 0.3)); gl.uniform1f(P.u.uInkAmt, 0.9); gl.uniform1f(P.u.uAlpha, 1); gl.uniform1f(P.u.uPm, cpu && !direct ? 1 : 0); const HPp = this._hdPost; gl.uniform1f(P.u.uHD, HPp ? 1 : this._hd === 2 ? -1 : 0); gl.uniform1f(P.u.uPx, HPp ? Math.max(1, 1 / HPp.f) : this._hd === 2 ? JT.HD2D.toonSty().spr * k * (this._cupF || 1) : 1); if (this._hd === 2) { const ti = JT.HD2D.toonSty().ink; gl.uniform3f(P.u.uInk, ti[0], ti[1], ti[2]); gl.uniform1f(P.u.uInkAmt, 1); }
-      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const CUT = !HPp && this._hd === 2; gl.uniform1f(P.u.uCut, CUT ? 1 : 0);
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(CUT); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       const HP = this._hdPost; if (HP) { gl.disable(gl.DEPTH_TEST); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, HP.dt2); gl.uniform1i(P.u.uDepT, 1); gl.activeTexture(gl.TEXTURE0); gl.uniform2f(P.u.uOut, W, H); }
       gl.uniform1f(P.u.uOcc, HP ? 1 : 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('spr', new Float32Array(v))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, v.length / 9);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('spr', new Float32Array(v))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, v.length / 9); gl.depthMask(false);
       if (xr.length) { // observe: the watched jumper (and the prey it is hunting) show through anything in front of them at 65%
         gl.depthFunc(gl.GREATER); gl.uniform1f(P.u.uAlpha, 0.65); if (HP) gl.uniform1f(P.u.uOcc, 2); gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf('sprx', new Float32Array(xr))); this.attribs(P, [['aXY', 2], ['aZ', 1], ['aUV', 2], ['aT', 4]], 9); gl.drawArrays(gl.TRIANGLES, 0, xr.length / 9); gl.depthFunc(gl.LEQUAL); gl.uniform1f(P.u.uAlpha, 1); }
     }
