@@ -41,13 +41,20 @@
     R.p = fr.p.slice();
     const spd = len(R.v); R.still = spd < L * 0.2 ? R.still + dt : 0; R.spd = spd;
     // landing from a jump / fall: a squash that the legs absorb
-    const air = !!o.airborne; if (R.air && !air) { R.bv -= L * (kind === 'spider' ? 1.6 : 0.9); R.apv -= 2.2; } R.air = air;
+    const air = !!o.airborne; if (R.air && !air) { R.bv -= L * (kind === 'spider' ? 1.6 : 0.9); R.apv -= 2.2; R.land = 1; } R.air = air;
     // springs: body height (bob) and abdomen yaw/pitch lag
     const sk = kind === 'spider' ? 260 : 120, sc = kind === 'spider' ? 22 : 15;
-    R.bv += (-sk * R.bob - sc * R.bv) * dt; R.bob = M.clamp(R.bob + R.bv * dt, -L * 0.06, L * 0.03);
+    // v32.1: springs are sub-stepped (<= 1/120 s). One big Euler step per frame went unstable when frames were slow
+    // (or a sprite was only repainted every other frame) and the body bounced up and down on the spot.
     const ayT = M.clamp(-R.yawR * (kind === 'spider' ? 0.05 : 0.09), -0.4, 0.4);
-    R.ayv += (90 * (ayT - R.ay) - 11 * R.ayv) * dt; R.ay = M.clamp(R.ay + R.ayv * dt, -0.5, 0.5);
-    R.apv += (-140 * R.ap - 12 * R.apv) * dt; R.ap = M.clamp(R.ap + R.apv * dt, -0.35, 0.35);
+    const nS = Math.min(16, Math.ceil(dt / (1 / 120))), h = dt / nS;
+    for (let i = 0; i < nS; i++) {
+      R.bv += (-sk * R.bob - sc * R.bv) * h; R.bob = M.clamp(R.bob + R.bv * h, -L * 0.06, L * 0.03);
+      R.ayv += (90 * (ayT - R.ay) - 11 * R.ayv) * h; R.ay = M.clamp(R.ay + R.ayv * h, -0.5, 0.5);
+      R.apv += (-140 * R.ap - 12 * R.apv) * h; R.ap = M.clamp(R.ap + R.apv * h, -0.35, 0.35);
+    }
+    if (Math.abs(R.bob) < L * 1e-4 && Math.abs(R.bv) < L * 1e-3) { R.bob = 0; R.bv = 0; }
+    R.land = Math.max(0, (R.land || 0) - dt * 3);
     R.settleCD = Math.max(0, R.settleCD - dt);
     // stalking jumpers flick the abdomen now and then (little vertical twitches)
     const hunt = /^(stalk|creep|crouch|display|assess|lunge|watch|fingerWatch)$/.test(sp.state || '');
@@ -83,7 +90,7 @@
       a = M.clamp(a, R.K.turn === 'snap' ? -0.75 : -0.5, R.K.turn === 'snap' ? 0.75 : 0.5);
       // world yaw rate of the visual body (for the abdomen lag): change of a plus how the AI heading itself turned
       let aiR = 0; if (R._f) { const pf = M.norm(flat(R._f, n)); aiR = Math.atan2(dot(M.cross(pf, f), n), dot(pf, f)) / dt; }
-      R.yawR = M.lerp(R.yawR, M.clamp(aiR + (a - (R._a || 0)) / dt, -12, 12), Math.min(1, dt * 10));
+      R.yawR = M.lerp(R.yawR, M.clamp(aiR + (a - (R._a || 0)) / dt, -12, 12), Math.min(1, dt * 6));
     }
     R._f = f.slice(); R._a = a;
     const ca = Math.cos(a), sa = Math.sin(a);

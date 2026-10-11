@@ -36,3 +36,13 @@ Used by the jumper drawer (`engine/19-…`) and the mantis drawer (`packs/mantis
 - `tests/gait_probe.js` (new): in-game follow-cam run, both games: no errors, no NaNs.
 - mantis_core 65/65, lineup (both games) no errors, shadows checked in all 3 art styles.
 - Not measured on a real phone; the cost is a few vector ops per leg per frame, and up to 4 small shadow composites per critter.
+
+# v32.1 — fix: lag + bouncing in place
+- **Bouncing:** the body/abdomen springs took one big step per frame. At low frame rates (or when a critter sprite is only
+  repainted every other frame) that step went unstable and the body bounced up and down on the spot (measured: up to
+  6 body-lengths of up/down travel per 4 s at 8–15 fps). Springs are now sub-stepped (≤ 1/120 s): travel ≈ 0 at any frame
+  rate. The leg splay is tied to real landings only, so it can no longer feed the bounce.
+- **Lag:** v32 painted every shadow through a scratch canvas. Critter sprites are painted on a CPU-side sheet, so each
+  shadow forced a GPU read-back on phones. Shadows are now a single path (ellipses + leg capsules, same winding, one
+  fill) drawn straight into the sprite: same soft/union look, no scratch canvas, no read-back.
+- Critter draw cost is back to within ~10 % of v31 (`tests/gait_bench.js`).
