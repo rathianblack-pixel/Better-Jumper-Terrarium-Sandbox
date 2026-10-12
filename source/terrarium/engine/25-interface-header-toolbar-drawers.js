@@ -1435,6 +1435,12 @@
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
       const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
       q.appendChild(seg); w.appendChild(q);
+      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Critter painting')); const sg = el('div', 'seg small'); const on = s.gpuCrit !== false; // v33
+        for (const [v, l] of [[true, 'GPU (fast)'], [false, 'Classic']]) { const b = el('button', on === v ? 'on' : '', l); b.onclick = () => { s.gpuCrit = v; this.R._gcOff = false; if (this.R.gp) this.R.gp._gcOff = false; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'GPU: the graphics chip paints critters directly, which is much lighter on the processor. Classic: the original painter, for comparison.')); w.appendChild(fr); }
+      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Show fps')); const sg = el('div', 'seg small'); // v33: the performance readout (top left)
+        for (const [v, l] of [[false, 'Off'], [true, 'On']]) { const b = el('button', !!s.perf === v ? 'on' : '', l); b.onclick = () => { s.perf = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
+        fr.appendChild(sg); w.appendChild(fr); }
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Art style')); const sg = el('div', 'seg small');
         for (const [v, l] of [['hd2d', 'HD-2D'], ['cuphead', 'Cuphead'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Cuphead: 1930s cartoon on old film. Storybook: ink and watercolour.')); w.appendChild(fr); }

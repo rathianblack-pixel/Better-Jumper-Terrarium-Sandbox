@@ -591,9 +591,9 @@ void main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=textu
 
     // ---------- per-frame ----------
     frame(V, hab, night, lamps, scene) {
-      const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._cache = null; this.P.blit = null; this.P.ups = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
+      const gl = this.gl; if (this.lost) return; if (this.reinit) { this.reinit = false; this._gc = null; this._cache = null; this.P.blit = null; this.P.ups = null; this.hg = null; this.bgT = null; this.gT = null; for (const id in hab.geoms) if (hab.geoms[id]._mesh) hab.geoms[id]._mesh.vb = null; }
       const W = this.cv.width, H = this.cv.height; const k = this.R.k; this.cur = null;
-      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.toon); const TS = CUP ? JT.HD2D.toonSty() : null; this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._hdF = HDT && !CUP ? HDT.f : 0;
+      const HDT = JT.HD2D ? JT.HD2D.begin(this, W, H) : null; const VW = HDT ? HDT.w : W, VH = HDT ? HDT.h : H, PXF = HDT ? HDT.f : 1; const CUP = !!(HDT && JT.HD2D.toon); const TS = CUP ? JT.HD2D.toonSty() : null; this._cupF = HDT ? HDT.f : 1; this._tgtFB = HDT ? HDT.fb : null; this._vpW = VW; this._vpH = VH; this._hdF = HDT && !CUP ? HDT.f : 0;
       const CLR = HDT ? (CUP ? TS.clear : JT.HD2D.clear) : PAPER; this._hd = HDT ? (CUP ? 2 : 1) : 0;
       const SK = JT.SKY; const grade = SK.grade.slice();
       const lampU = this._lampU || (this._lampU = new Float32Array(16)); lampU.fill(0); const LL = []; // v31: reused (no garbage per frame) lamps.slice(0, 4).forEach((L, i) => { const y = this.R.lampSurface(hab, L); lampU.set([L.pool[0], (y + L.head[1]) / 2, L.pool[2], L.r * 1.25 + (L.head[1] - y) * 0.4], i * 4); LL.push(L); });
@@ -787,6 +787,8 @@ void main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=textu
     }
     gradeAt(p) { const F = this.F; let r = F.grade[0], g = F.grade[1], b = F.grade[2]; for (let i = 0; i < F.lamps.length; i++) { const u = F.lampU; const d = Math.hypot(p[0] - u[i * 4], p[1] - u[i * 4 + 1], p[2] - u[i * 4 + 2]); const a = M.clamp(1 - d / u[i * 4 + 3], 0, 1); const s = a * a * (0.25 + 0.9 * F.night); r += s; g += s * 0.72; b += s * 0.42; } return [Math.min(1.3, r), Math.min(1.3, g), Math.min(1.3, b)]; }
 
+    /** v33 GPU critter painter (21b), made on first use; any failure turns it off for the session. */
+    gpuCrit() { if (this._gc && this._gc.gl === this.gl) return this._gc; this._gc = null; try { this._gc = new JT.GPUCrit(this.gl); } catch (e) { console.warn('GPU critters off:', e && e.message); this._gcOff = true; } return this._gc; }
     /** Critters, remains, drops, nests and leaf bits: drawn by the 2D art code into one sprite sheet, then placed in 3D. */
     sprites(V, hab, scene, night) {
       const gl = this.gl, R = this.R, k = R.k; const W = this.cv.width, H = this.cv.height; const list = []; const tS = performance.now();
@@ -834,23 +836,36 @@ void main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=textu
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex);
       if (direct) { const sz = ATW + 'x' + ATH; if (sz !== this._atexSz) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, ATW, ATH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); this._atexSz = sz; } gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); }
       const pool = this._scr || (this._scr = new Map()); let upT = 0;
+      const GC = direct && this.gl2 && R.set.gpuCrit !== false && !this._gcOff ? this.gpuCrit() : null; const later = [];
+      if (GC) { GC.beginFrame(); GC.aw = ATW; GC.ah = ATH; }
+      const paintCPU = (s) => {
+          let g = g0, ox = 0, oy = 0, sc0 = null; const S = s.rp * 2 + 2;
+          if (direct) { sc0 = pool.get(S); if (!sc0) { const c = mkCanvas(S, S); sc0 = { c, g: c.getContext('2d', { willReadFrequently: true }) }; pool.set(S, sc0); } sc0.f = sf; g = sc0.g; ox = 1 - s.ax; oy = 1 - s.ay;
+            g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, S, S); }
+          else g.clearRect(s.ax - 1, s.ay - 1, S, S);
+          const cx = s.ax + s.rp + ox, cy = s.ay + s.rp + oy;
+          if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q0[0]), V.cy + (cy - s.q0[1]), V.c);
+          else { V2.set(V.yaw, V.pitch, V.s * s.sc, 0, 0, V.c); const q2 = V2.P(s.it.p); V2.set(V.yaw, V.pitch, V.s * s.sc, cx - q2[0], cy - q2[1], V.c); }
+          g.save(); g.beginPath(); g.rect(s.ax + ox, s.ay + oy, s.rp * 2, s.rp * 2); g.clip();
+          try { scene.run(s.it, g, V2); } catch (e) { if (JT.DEV) console.warn(e); }
+          g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+          if (direct) { const t1 = performance.now(); gl.texSubImage2D(gl.TEXTURE_2D, 0, s.ax - 1, s.ay - 1, gl.RGBA, gl.UNSIGNED_BYTE, sc0.c); upT += performance.now() - t1; }
+      };
       for (const s of order) {
         if (direct ? s.ay - 1 + s.rp * 2 + 2 > ATH : s.ay + s.rp * 2 > ATH) { s.skip = true; continue; }
         const k = s.it.key, pv = k ? SC.get(k) : null; s.ps = V.s * s.sc;
         if (reuse && pv && !s.it.xr && !s.it.hot && pv.sig === sig && pv.ax === s.ax && pv.ay === s.ay && pv.rp === s.rp && (s.it.still ? sf - pv.f < 24 : sf - pv.f < 2 && ((sf + pv.h) & 1))) { s.ps = pv.ps; s.keep = true; continue; }
         if (k) SC.set(k, { ax: s.ax, ay: s.ay, rp: s.rp, ps: s.ps, f: sf, sig, h: k.charCodeAt(k.length - 1) & 1 }); // id parity: half the critters refresh on odd frames, half on even
-        let g = g0, ox = 0, oy = 0, sc0 = null; const S = s.rp * 2 + 2;
-        if (direct) { sc0 = pool.get(S); if (!sc0) { const c = mkCanvas(S, S); sc0 = { c, g: c.getContext('2d', { willReadFrequently: true }) }; pool.set(S, sc0); } sc0.f = sf; g = sc0.g; ox = 1 - s.ax; oy = 1 - s.ay;
-          g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, S, S); }
-        else g.clearRect(s.ax - 1, s.ay - 1, S, S);
-        const cx = s.ax + s.rp + ox, cy = s.ay + s.rp + oy;
-        if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q0[0]), V.cy + (cy - s.q0[1]), V.c);
-        else { V2.set(V.yaw, V.pitch, V.s * s.sc, 0, 0, V.c); const q2 = V2.P(s.it.p); V2.set(V.yaw, V.pitch, V.s * s.sc, cx - q2[0], cy - q2[1], V.c); }
-        g.save(); g.beginPath(); g.rect(s.ax + ox, s.ay + oy, s.rp * 2, s.rp * 2); g.clip();
-        try { scene.run(s.it, g, V2); } catch (e) { if (JT.DEV) console.warn(e); }
-        g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-        if (direct) { const t1 = performance.now(); gl.texSubImage2D(gl.TEXTURE_2D, 0, s.ax - 1, s.ay - 1, gl.RGBA, gl.UNSIGNED_BYTE, sc0.c); upT += performance.now() - t1; }
+        if (GC) { // v33: the GPU paints this critter straight into its slot (no CPU raster, no upload)
+          const S = s.rp * 2 + 2, g = GC.begin(s.ax - 1, s.ay - 1, S, S); const cx = s.ax + s.rp, cy = s.ay + s.rp;
+          if (s.sc === 1) V2.set(V.yaw, V.pitch, V.s, V.cx + (cx - s.q0[0]), V.cy + (cy - s.q0[1]), V.c);
+          else { V2.set(V.yaw, V.pitch, V.s * s.sc, 0, 0, V.c); const q2 = V2.P(s.it.p); V2.set(V.yaw, V.pitch, V.s * s.sc, cx - q2[0], cy - q2[1], V.c); }
+          g.save(); g.beginPath(); g.rect(s.ax, s.ay, s.rp * 2, s.rp * 2); g.clip(); let ok = true;
+          try { scene.run(s.it, g, V2); } catch (e) { ok = false; if (JT.DEV) console.warn(e); }
+          if (!GC.end(ok)) later.push(s); continue; }
+        paintCPU(s);
       }
+      if (GC) { const t1 = performance.now(); GC.flush(this.atex, ATW, ATH, { fb: this._tgtFB || null, w: this._hdPost ? W : (this._vpW || W), h: this._hdPost ? H : (this._vpH || H), prog: this.cur ? this.cur.p : null }); upT += performance.now() - t1; if (GC.broken) this._gcOff = true; for (const s of later) paintCPU(s); this._gcStat = GC.stats; }
       if (!(sf % 120)) { for (const [k, v] of SC) if (sf - v.f > 120) SC.delete(k); for (const [k, v] of pool) if (sf - v.f > 240) pool.delete(k); }
       const tU = performance.now(); R._sprT = tU - tS - upT;
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);

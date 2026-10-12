@@ -200,6 +200,7 @@
     const pad = art === 0 ? Math.ceil(blur * 1.5) + 2 : 2; const bx = x0 - pad, by = y0 - pad, bw = W0 + pad * 2, bh = H0 + pad * 2;
     const sw = Math.ceil(bw * k) + 2, shh = Math.ceil(bh * k) + 2; const B = shBuf(sw, shh);
     const one = (grow, al) => { if (al < 0.003) return;
+      if (ctx.gpuShadow) { ctx.gpuShadow(ells, strokes, grow, col, al, art === 0 ? 1.5 / k : 1); return; } // v33: GPU painter: soft union shape, no scratch canvas
       if (!B) { ctx.globalAlpha = 1; ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',' + al.toFixed(3) + ')'); ctx.strokeStyle = ctx.fillStyle; shapePath(ctx, ells, strokes, 1, grow); return; }
       const g = B.g; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, sw + 1, shh + 1);
       g.setTransform(k, 0, 0, k, -bx * k + 1, -by * k + 1); g.fillStyle = col; g.strokeStyle = col; shapePath(g, ells, strokes, k, grow);
