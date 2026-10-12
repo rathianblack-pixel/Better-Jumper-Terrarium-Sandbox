@@ -356,6 +356,7 @@
     ctx.globalAlpha = 1;
     sp._mHold = holdC; sp._mMouth = mouth; // exposed for the feeding pack (where to anchor prey + crumbs)
   };
+  D.jumper = D.spider; // v33: the real jumping-spider drawer, kept for spider-shaped prey (Tiny Jumper)
   D.spider = D.mantis;
   // shed skins: the right size and stage, left hanging head-down on the twig where the mantis molted
   const remains0 = D.remains;

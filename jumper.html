@@ -8993,7 +8993,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     if (d.shape === 'spider') {
       const fl0 = o.flail || 0; const pseudo = { species: e.species || 'zebra', state: 'idle', _walk: e._walk, _moving: fl0 > 0.15 || M.len(e._vel || [0, 0, 0]) > 1, seed: e.seed, sat: 0.6 };
       const pal = e.species ? null : { ceph: '#3a2a20', abd: '#4a3628', mark: '#d8c8a8', leg: '#4a3a2c', chel: '#3a2a20', hair: '#a08a6a', belly: '#6a5a4a' };
-      D.spider(ctx, V, pseudo, fr, { len: (o.len || d.len) * (o.scale || 1), palette: pal, alpha: o.alpha, curled: fl0 > 0.15 ? false : (o.held || o.curled), time: o.time, noShadow: o.held }); return;
+      ((e.type !== 'jumperMeal' && D.jumper) || D.spider)(ctx, V, pseudo, fr, { len: (o.len || d.len) * (o.scale || 1), palette: pal, alpha: o.alpha, curled: fl0 > 0.15 ? false : (o.held || o.curled), time: o.time, noShadow: o.held }); return;
     }
     const L = (o.len || d.len) * (o.scale || 1); const { f, s, n } = fr; const p = fr.p;
     const W = (u, v, w) => [p[0] + f[0] * u + s[0] * v + n[0] * w, p[1] + f[1] * u + s[1] * v + n[1] * w, p[2] + f[2] * u + s[2] * v + n[2] * w];
