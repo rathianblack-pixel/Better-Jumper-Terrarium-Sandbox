@@ -15507,17 +15507,50 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
     const N = 240, SPEED = 0.25, PRE = 20, POST = 36; // frames at 30 Hz
     const SKIP = new Set(['mem', '_route', 'stats', 'traits', 'name', 'id', 'species', 'type', 'seed', '_ip', '_if', 'home', 'log', 'journal', 'path', '_sc']);
     const OBJ = new Set(['sup', '_air', '_pz', '_glance', '_dangleOff', '_hang', 'target', 'weak', '_yank']);
-    const numArr = (v) => Array.isArray(v) && v.length <= 16 && v.every(x => typeof x === 'number');
-    const rec = (k, v) => { if (SKIP.has(k)) return undefined; const t = typeof v; if (v == null || t === 'number' || t === 'string' || t === 'boolean') return { v }; if (numArr(v)) return { v: v.slice() }; if (OBJ.has(k) && t === 'object') return { v: JT.deepClone(v) }; return undefined; };
-    const recordable = (k, v) => rec(k, v) !== undefined;
-    function snap(e) { const o = {}; for (const k of Object.keys(e)) { const r = rec(k, e[k]); if (r) o[k] = r.v; } return o; }
-    function put(e, o) { for (const k of Object.keys(e)) if (!(k in o) && recordable(k, e[k])) delete e[k];
-      for (const k of Object.keys(o)) { const v = o[k]; e[k] = v == null || typeof v !== 'object' ? v : Array.isArray(v) ? v.slice() : JT.deepClone(v); } }
+        /* The recorder runs every 30 Hz sim step, so it must not churn memory: the 240-frame ring buffer reuses its frame
+       objects and entity snapshots. A snapshot keeps plain numbers in a Float64Array (no boxed numbers), and reuses the
+       arrays/small objects inside it (copied in place with deepClone's JSON semantics instead of JSON round-trips). */
+    const ABSENT = Symbol('absent'); const own = Object.prototype.hasOwnProperty;
+    const numArr = (v) => { if (!Array.isArray(v) || v.length > 16) return false; for (let i = 0; i < v.length; i++) if (typeof v[i] !== 'number') return false; return true; };
+    // 0 = not recorded, 1 = number, 2 = other scalar, 3 = short number array, 4 = small pose object
+    const kind = (k, v) => { if (SKIP.has(k)) return 0; const t = typeof v; if (t === 'number') return 1; if (v == null || t === 'string' || t === 'boolean') return 2; if (numArr(v)) return 3; if (OBJ.has(k) && t === 'object') return 4; return 0; };
+    const recordable = (k, v) => kind(k, v) !== 0;
+    function cp(dst, v, d) {
+      if (v === null) return null; const t = typeof v;
+      if (t === 'number') return isFinite(v) ? v : null; if (t === 'string' || t === 'boolean') return v; if (t !== 'object') return ABSENT;
+      if (d > 24 || typeof v.toJSON === 'function') return JSON.parse(JSON.stringify(v));
+      if (Array.isArray(v)) { const a = Array.isArray(dst) ? dst : []; a.length = v.length; for (let i = 0; i < v.length; i++) { const x = cp(a[i], v[i], d + 1); a[i] = x === ABSENT ? null : x; } return a; }
+      let o = dst && typeof dst === 'object' && !Array.isArray(dst) ? dst : null; // reuse only when the keys match, so fields keep their (unboxed) shape
+      if (o) { let nv = 0, no = 0; for (const k in v) if (own.call(v, k)) { if (v[k] === undefined || typeof v[k] === 'function' || !own.call(o, k)) { o = null; break; } nv++; } if (o) { for (const k in o) no++; if (no !== nv) o = null; } }
+      if (!o) o = {}; for (const k in v) if (own.call(v, k)) { const x = cp(o[k], v[k], d + 1); if (x !== ABSENT) o[k] = x; } return o;
+    }
+    class Snap {
+      constructor() { this.n = 0; this.keys = []; this.kinds = new Uint8Array(64); this.num = new Float64Array(64); this.val = []; this.iState = -1; }
+      fill(e) { let n = 0; this.iState = -1;
+        for (const k in e) { if (!own.call(e, k)) continue; const v = e[k]; const t = kind(k, v); if (!t) continue;
+          if (n >= this.kinds.length) { const K = new Uint8Array(n * 2), F = new Float64Array(n * 2); K.set(this.kinds); F.set(this.num); this.kinds = K; this.num = F; }
+          this.keys[n] = k; this.kinds[n] = t; if (k === 'state') this.iState = n;
+          if (t === 1) { this.num[n] = v; this.val[n] = null; } else if (t === 2) this.val[n] = v;
+          else if (t === 3) { const a = Array.isArray(this.val[n]) ? this.val[n] : (this.val[n] = []); a.length = v.length; for (let i = 0; i < v.length; i++) a[i] = v[i]; }
+          else this.val[n] = cp(this.val[n], v, 0);
+          n++; }
+        for (let i = n; i < this.val.length; i++) this.val[i] = null; this.n = n; return this; }
+      idx(k) { for (let i = 0; i < this.n; i++) if (this.keys[i] === k) return i; return -1; }
+      at(i) { return i < 0 ? undefined : this.kinds[i] === 1 ? this.num[i] : this.val[i]; }
+      get(k) { return this.at(this.idx(k)); }
+      get state() { return this.at(this.iState); }
+      get pos() { return this.get('pos'); } get fwd() { return this.get('fwd'); } // read like the old plain snapshots
+    }
+    const snap = (e) => new Snap().fill(e);
+    function put(e, o) { const has = new Set(o.keys.slice(0, o.n)); for (const k of Object.keys(e)) if (!has.has(k) && recordable(k, e[k])) delete e[k];
+      for (let i = 0; i < o.n; i++) { const k = o.keys[i], t = o.kinds[i], v = t === 1 ? o.num[i] : o.val[i]; e[k] = t === 3 ? v.slice() : t === 4 && v != null && typeof v === 'object' ? JT.deepClone(v) : v; } }
     const R = { buf: [], habId: null, active: null, offer: null };
+    function fill(f, list, n, k) { for (const e of list) { const r = f.pool[n] || (f.pool[n] = [null, new Snap(), k]); r[0] = e; r[2] = k; r[1].fill(e); f.ents.push(r); n++; } return n; }
     R.record = function (game) {
       if (R.active) return; const h = game.hab; if (!h) return; if (h !== R.habId) { R.buf = []; R.habId = h; }
-      const ents = []; for (const s of h.data.spiders) ents.push([s, snap(s), 's']); for (const p of h.data.prey) ents.push([p, snap(p), 'p']);
-      R.buf.push({ t: game.state.time, ents }); if (R.buf.length > N) R.buf.shift();
+      const f = R.buf.length >= N ? R.buf.shift() : { t: 0, ents: [], pool: [] }; f.t = game.state.time; f.ents.length = 0;
+      let n = fill(f, h.data.spiders, 0, 's'); n = fill(f, h.data.prey, n, 'p'); for (let j = n; j < f.pool.length; j++) f.pool[j][0] = null; // don't keep removed critters alive
+      R.buf.push(f);
     };
     /** Range for the latest pounce of jumper `id` that ended in a bite: [start, catch, end] frame indices. */
     /** Frames for one pounce of jumper `id` that ended in a bite: the one closest to clock time `tc` (the catch the
@@ -15555,9 +15588,9 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
     function apply(x) {
       const A = R.active; const F = A.frames; const i = Math.min(F.length - 1, Math.floor(x)), j = Math.min(F.length - 1, i + 1), a = x - i;
       A.game.state.time = F[i].t + (F[j].t - F[i].t) * a; const nxt = new Map(F[j].ents.map(r => [r[0], r[1]]));
-      const inF = new Set(); for (const [e, o] of F[i].ents) { inF.add(e); put(e, o); const q = nxt.get(e);
-        if (q && q.pos && e.pos && Math.hypot(q.pos[0] - e.pos[0], q.pos[1] - e.pos[1], q.pos[2] - e.pos[2]) < 30) { e.pos = e.pos.map((v, k) => v + (q.pos[k] - v) * a);
-          if (q.fwd && e.fwd) { const f = e.fwd.map((v, k) => v + (q.fwd[k] - v) * a); const l = Math.hypot(f[0], f[1], f[2]); if (l > 1e-3) e.fwd = f.map(v => v / l); } } }
+      const inF = new Set(); for (const [e, o] of F[i].ents) { inF.add(e); put(e, o); const q = nxt.get(e), qp = q && q.get('pos'), qf = q && q.get('fwd');
+        if (qp && e.pos && Math.hypot(qp[0] - e.pos[0], qp[1] - e.pos[1], qp[2] - e.pos[2]) < 30) { e.pos = e.pos.map((v, k) => v + (qp[k] - v) * a);
+          if (qf && e.fwd) { const f = e.fwd.map((v, k) => v + (qf[k] - v) * a); const l = Math.hypot(f[0], f[1], f[2]); if (l > 1e-3) e.fwd = f.map(v => v / l); } } }
       // critters that were not in the tank yet at this moment stay out of sight
       for (const s of A.hab.data.prey) if (!inF.has(s)) { s._rpHide = s._rpHide || { buried: s.buried }; s.buried = true; }
     }
@@ -15621,7 +15654,8 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
        was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
        Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
     const M = JT.M; const crit = () => { const h = (AT.on && AT.g ? AT.g : game).hab; return h ? h.data.spiders.concat(h.data.prey) : []; };
-    function snapPrev() { for (const e of crit()) { if (!e.pos) continue; e._ip = e.pos.slice(); e._if = e.fwd ? e.fwd.slice() : null; } }
+    const keep = (a, v) => { if (!v) return null; if (!a || a.length !== v.length) return v.slice(); for (let i = 0; i < v.length; i++) a[i] = v[i]; return a; }; // copy in place: no new arrays every step
+    function snapPrev() { const h = (AT.on && AT.g ? AT.g : game).hab; if (!h) return; for (const L of [h.data.spiders, h.data.prey]) for (const e of L) { if (!e.pos) continue; e._ip = keep(e._ip, e.pos); e._if = keep(e._if, e.fwd); } }
     function blendIn(a) {
       const saved = []; if (a >= 0.999) return () => {};
       for (const e of crit()) { const p0 = e._ip, p1 = e.pos; if (!p0 || !p1 || !M.finite3(p0) || !M.finite3(p1) || M.dist(p0, p1) > 8) continue;

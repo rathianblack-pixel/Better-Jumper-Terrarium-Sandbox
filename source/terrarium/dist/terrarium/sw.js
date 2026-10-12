@@ -1,0 +1,18 @@
+// Terrarium service worker: keeps the title screen and both games playable offline. Version changes with every build.
+const CACHE = 'tr-mv4xs26z', FILES = ["./", "index.html", "jumper.html", "mantis.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/favicon-64.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/card-jumper.png", "icons/card-mantis.png", "icons/dome.png", "icons/hero-jumper-hd2d.webp", "icons/hero-jumper-cuphead.webp", "icons/hero-jumper-storybook.webp", "icons/hero-mantis-hd2d.webp", "icons/hero-mantis-cuphead.webp", "icons/hero-mantis-storybook.webp"];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('tr-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('fetch', e => {
+  const r = e.request; if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
+  // pages: network first (picks up new versions), cached copy when offline; everything else cache first
+  // v29: on a slow or flaky mobile connection the cached page is used after 2.5 s instead of waiting (the download carries on and updates the cache)
+  if (r.mode === 'navigate') {
+    let saved; const net = fetch(r).then(res => { if (res && res.ok) { const cp = res.clone(); saved = caches.open(CACHE).then(c => c.put(r, cp)); } return res; });
+    e.waitUntil(net.then(() => saved, () => {}).catch(() => {}));
+    const cached = () => caches.match(r, { ignoreSearch: true }).then(h => h || caches.match('index.html'));
+    e.respondWith(new Promise(done => { let settled = false; const use = (p) => p.then(v => { if (!settled && v) { settled = true; done(v); } return v; });
+      const t = setTimeout(() => { cached().then(h => { if (h && !settled) { settled = true; done(h); } }); }, 2500);
+      net.then(res => { clearTimeout(t); if (!settled) { settled = true; done(res); } }, () => { clearTimeout(t); use(cached()).then(h => { if (!h && !settled) { settled = true; done(Response.error()); } }); }); }));
+    return; }
+  e.respondWith(caches.match(r).then(hit => hit || fetch(r)));
+});
