@@ -29,10 +29,36 @@
     HP[k] = function () { const n0 = (this.data.drops || []).length; const r = f0.apply(this, arguments); size(this, Math.min(n0, (this.data.drops || []).length)); if (this.data.drops.length > 44) this.data.drops.splice(0, this.data.drops.length - 44); return r; };
   }
   // drawing: allow genuinely small beads on screen (the old minimum was 1.2 px)
-  const D = JT.Draw; if (D && D.drop) { const d0 = D.drop; D.drop = function (ctx, V, w, pos) { if (!w._sz) return d0.apply(this, arguments); const p = V.P(pos); const r = Math.max(0.7, w.r * V.s);
-    const gr = ctx.createRadialGradient(p[0] - r * 0.3, p[1] - r * 0.4, r * 0.1, p[0], p[1], r);
-    gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.35, 'rgba(190,225,245,0.72)'); gr.addColorStop(1, 'rgba(120,170,210,0.5)');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], p[1] - r * 0.6, r, 0, 6.283); ctx.fill(); }; }
+  const D = JT.Draw; if (D && D.drop) { const d0 = D.drop; D.drop = function (ctx, V, w, pos) {
+    if (!w._sz) return d0.apply(this, arguments);
+    const p = V.P(pos); const r = Math.max(0.7, w.r * V.s);
+    if (r > 1.2) {
+      ctx.fillStyle = 'rgba(10,20,30,0.24)';
+      ctx.beginPath();
+      ctx.ellipse(p[0], p[1], r * 0.85, r * 0.35, 0, 0, 6.283);
+      ctx.fill();
+    }
+    const cy = p[1] - r * 0.55;
+    const gr = ctx.createRadialGradient(p[0] - r * 0.32, cy - r * 0.32, r * 0.08, p[0], cy, r);
+    gr.addColorStop(0, 'rgba(255,255,255,0.92)');
+    gr.addColorStop(0.3, 'rgba(215,242,255,0.72)');
+    gr.addColorStop(0.7, 'rgba(140,195,230,0.4)');
+    gr.addColorStop(0.95, 'rgba(80,140,190,0.65)');
+    gr.addColorStop(1, 'rgba(40,80,120,0.8)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], cy, r, 0, 6.283); ctx.fill();
+    if (r > 1.4) {
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(p[0] - r * 0.28, cy - r * 0.32, Math.max(0.4, r * 0.22), 0, 6.283);
+      ctx.fill();
+    }
+    if (r > 2.2) {
+      ctx.fillStyle = 'rgba(220,250,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(p[0] + r * 0.15, cy + r * 0.5, r * 0.45, r * 0.18, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }; }
 })(typeof window !== 'undefined' ? window : globalThis);
 
 

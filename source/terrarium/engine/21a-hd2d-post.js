@@ -113,6 +113,14 @@ void main(){
     float edgeCA = smoothstep(0.30, 0.68, length(uv - 0.5));
     c = mix(c, vec3(rOff, c.g, bOff), edgeCA * 0.65);
   }
+  // --- diorama glass frame bevel reflection & lip gleam ---
+  vec2 edgeDist = min(uv, 1.0 - uv);
+  float glassBorder = smoothstep(0.015, 0.002, edgeDist.x) + smoothstep(0.018, 0.002, edgeDist.y);
+  float glassGleam = smoothstep(0.004, 0.001, abs(uv.y - 0.985)) * smoothstep(0.1, 0.9, uv.x);
+  c += vec3(0.85, 0.95, 1.0) * (glassGleam * 0.22 + glassBorder * 0.06) * uFx;
+  // --- micro-condensation gradient near bottom substrate ---
+  float bottomMist = (1.0 - smoothstep(0.0, 0.11, uv.y)) * smoothstep(-0.2, 0.6, sin(uv.x * 38.0) * 0.2 + 0.8);
+  c = mix(c, c * 0.88 + vec3(0.65, 0.78, 0.88) * 0.22, bottomMist * 0.35 * uFx);
   // --- vignette (heavier at the top and bottom, like a stage) ---
   vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = smoothstep(0.98, 0.28, length(q)); c *= mix(0.58, 1.0, vg);
   c += (h21(gl_FragCoord.xy+fract(uTime))-0.5)/255.0;

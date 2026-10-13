@@ -55,12 +55,12 @@
             }
             ctx.stroke(), ctx.restore();
         }(ctx, P, e, hp, col), o.sheen && function(ctx, P, e, V, kind, t) {
-            const h = ((57 * V.yaw + (3 === kind ? 290 : 2 === kind ? 200 : 140) + 25 * Math.sin(.7 * t)) % 360 + 360) % 360;
+            const h = ((57 * V.yaw + (4 === kind ? (165 + 40 * Math.sin(1.6 * V.yaw)) : 3 === kind ? 290 : 2 === kind ? 200 : 140) + 25 * Math.sin(.7 * t)) % 360 + 360) % 360;
             ctx.save(), ctx.beginPath(), ctx.ellipse(P[0], P[1], e.r1, e.r2, e.ang, 0, 6.283), 
             ctx.clip();
             const g = ctx.createLinearGradient(P[0] - e.r1, P[1] - e.r1, P[0] + e.r1, P[1] + e.r1);
-            g.addColorStop(0, "hsla(" + h + ",90%,60%,0)"), g.addColorStop(.45, "hsla(" + h + ",90%,62%,0.42)"), 
-            g.addColorStop(.6, "hsla(" + (h + 60) % 360 + ",90%,65%,0.3)"), g.addColorStop(1, "hsla(" + h + ",90%,60%,0)"), 
+            g.addColorStop(0, "hsla(" + h + ",95%,60%,0)"), g.addColorStop(.45, "hsla(" + h + ",95%,64%,0.48)"), 
+            g.addColorStop(.6, "hsla(" + (h + 45) % 360 + ",95%,68%,0.38)"), g.addColorStop(1, "hsla(" + h + ",95%,60%,0)"), 
             ctx.fillStyle = g, ctx.fillRect(P[0] - e.r1, P[1] - e.r1, 2 * e.r1, 2 * e.r1), ctx.restore();
         }(ctx, P, e, V, o.sheen, o.time || 0), !1 !== o.ink && R > 2.5 && (ctx.beginPath(), 
         ctx.ellipse(P[0], P[1], R, Math.max(.3, e.r2), e.ang, 0, 6.283), ctx.lineWidth = Math.max(.45, Math.min(1.5, .065 * R)), 
@@ -114,16 +114,25 @@
     }
     function wing(ctx, V, c, ax, ay, fill, edge, veins, lod) {
         const P = V.P(c), e = projEll(V, ax, ay, null);
-        if (!(e.r1 < .5) && (ctx.beginPath(), ctx.ellipse(P[0], P[1], e.r1, Math.max(.35, e.r2), e.ang, 0, 6.283), 
-        ctx.fillStyle = fill, ctx.fill(), lod > 0 && e.r1 > 3 && (ctx.lineWidth = Math.max(.4, .03 * e.r1), 
-        ctx.strokeStyle = edge, ctx.stroke(), veins && e.r1 > 6))) {
-            const r0 = V.P(M.sub(c, ax));
-            ctx.beginPath();
-            for (let k = -2; k <= 2; k++) {
-                const q = V.P(M.add(M.add(c, M.mul(ax, .75)), M.mul(ay, .38 * k)));
-                ctx.moveTo(r0[0], r0[1]), ctx.lineTo(q[0], q[1]);
+        if (!(e.r1 < .5)) {
+            ctx.beginPath(), ctx.ellipse(P[0], P[1], e.r1, Math.max(.35, e.r2), e.ang, 0, 6.283), 
+            ctx.fillStyle = fill, ctx.fill();
+            if (lod > 0 && e.r1 > 3) {
+                const wg = ctx.createLinearGradient(P[0] - e.r1 * .5, P[1] - e.r2 * .5, P[0] + e.r1 * .5, P[1] + e.r2 * .5);
+                wg.addColorStop(0, "rgba(90,210,255,0.22)"), wg.addColorStop(0.5, "rgba(255,120,220,0.18)"), 
+                wg.addColorStop(1, "rgba(130,255,170,0.22)"), ctx.fillStyle = wg, ctx.beginPath(), 
+                ctx.ellipse(P[0], P[1], e.r1, Math.max(.35, e.r2), e.ang, 0, 6.283), ctx.fill(), 
+                ctx.lineWidth = Math.max(.4, .03 * e.r1), ctx.strokeStyle = edge, ctx.stroke();
+                if (veins && e.r1 > 6) {
+                    const r0 = V.P(M.sub(c, ax));
+                    ctx.beginPath();
+                    for (let k = -2; k <= 2; k++) {
+                        const q = V.P(M.add(M.add(c, M.mul(ax, .75)), M.mul(ay, .38 * k)));
+                        ctx.moveTo(r0[0], r0[1]), ctx.lineTo(q[0], q[1]);
+                    }
+                    ctx.globalAlpha *= .7, ctx.stroke(), ctx.globalAlpha /= .7;
+                }
             }
-            ctx.globalAlpha *= .7, ctx.stroke(), ctx.globalAlpha /= .7;
         }
     }
     function Part(c, ax, ay, az) {
@@ -527,15 +536,26 @@
                     const g = ctx.createRadialGradient(P[0], P[1], .1 * rr, P[0], P[1], rr);
                     g.addColorStop(0, big ? LK.eyeCol || "#2a1c12" : "#120c08"), g.addColorStop(.55, "#0a0705"), 
                     g.addColorStop(1, "#000"), ctx.fillStyle = g, ctx.beginPath(), ctx.arc(P[0], P[1], rr, 0, 6.283), 
-                    ctx.fill(), big && rr > 2.5 && (ctx.strokeStyle = LK.eyeCol ? "rgba(190,130,60,0.55)" : "rgba(120,90,60,0.35)", 
-                    ctx.lineWidth = Math.max(.5, .12 * rr), ctx.beginPath(), ctx.arc(P[0], P[1], .62 * rr, 0, 6.283), 
-                    ctx.stroke());
-                    const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * .55)), shine = big ? .92 : .7;
-                    big && rr > 2 && JT.HD2D && JT.HD2D.on, ctx.fillStyle = "rgba(255,255,255," + shine + ")", 
-                    ctx.beginPath(), ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(.5, rr * (big ? .32 : .35)), 0, 6.283), 
-                    ctx.fill(), big && rr > 2 && (ctx.fillStyle = "rgba(255,255,255,0.45)", ctx.beginPath(), 
-                    ctx.arc(P[0] - .7 * gp[0], P[1] - .7 * gp[1] + .15 * rr, Math.max(.4, .13 * rr), 0, 6.283), 
-                    ctx.fill());
+                    ctx.fill();
+                    if (big && rr > 2) {
+                        ctx.strokeStyle = "rgba(64,224,208,0.22)", ctx.lineWidth = Math.max(.4, .08 * rr), 
+                        ctx.beginPath(), ctx.arc(P[0], P[1], .84 * rr, 0, 6.283), ctx.stroke();
+                        ctx.strokeStyle = LK.eyeCol ? "rgba(195,135,65,0.6)" : "rgba(130,95,60,0.45)", 
+                        ctx.lineWidth = Math.max(.5, .12 * rr), ctx.beginPath(), ctx.arc(P[0], P[1], .62 * rr, 0, 6.283), 
+                        ctx.stroke();
+                    }
+                    const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * .55)), shine = big ? .95 : .75;
+                    ctx.fillStyle = "rgba(255,255,255," + shine + ")", ctx.beginPath(), 
+                    ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(.5, rr * (big ? .32 : .35)), 0, 6.283), ctx.fill();
+                    if (big && rr > 2.5) {
+                        ctx.fillStyle = "rgba(255,255,255,1.0)", ctx.beginPath(), 
+                        ctx.arc(P[0] + gp[0] * 1.05, P[1] + gp[1] * 1.05, Math.max(.35, rr * .16), 0, 6.283), ctx.fill();
+                    }
+                    if (big && rr > 2) {
+                        ctx.fillStyle = "rgba(220,240,255,0.52)", ctx.beginPath(), 
+                        ctx.arc(P[0] - .65 * gp[0], P[1] - .65 * gp[1] + .12 * rr, Math.max(.4, .14 * rr), 0, 6.283), 
+                        ctx.fill();
+                    }
                 }
                 ctx.globalAlpha = alpha, LK.tufts && lod > 0 && !under && function(ctx, V, cph, LK, L, px, fg, sg, nh, pal) {
                     const kind = LK.tufts, lw = k => Math.max(.5, L * V.s * k);
@@ -661,7 +681,7 @@
                 f: () => blob(ctx, V, chc, M.mul(fg, .05 * L * ck), M.mul(sg, .045 * L * Math.sqrt(ck)), M.mul(n, .07 * L * ck), pal.chel, {
                     lod: lod,
                     gloss: 1,
-                    sheen: LK.irid || 0,
+                    sheen: LK.irid || 4,
                     time: t
                 })
             });
@@ -688,7 +708,7 @@
                         ink: "pompom" === pk
                     });
                     const rr = r * L * V.s;
-                    ("pompom" === pk || "fluffy" === pk) && rr > 2 && puff(ctx, V.P(c), rr, "pompom" === pk ? sh(pc, .15) : pc, "pompom" === pk ? 14 : 9, Math.max(.5, .12 * rr));
+                    rr > 1.8 && puff(ctx, V.P(c), rr, "pompom" === pk ? sh(pc, .18) : sh(pc, .12), "pompom" === pk ? 14 : "fluffy" === pk ? 9 : 6, Math.max(.4, .1 * rr));
                 }
             });
         }
@@ -1201,8 +1221,9 @@
             const N = 7;
             for (let i = 0; i < N; i++) {
                 const k = i / (N - 1), c2 = W((.32 - .62 * k) * L, 0, .1 * L), wv = L * (.24 - .16 * Math.abs(k - .4));
-                B(c2, M.mul(f, .08 * L), M.mul(s, wv), M.mul(n, .1 * L * (1 - .6 * Math.abs(k - .45))), sh(col, 37 * i % 7 / 40 - .05), {
-                    gloss: .3
+                B(c2, M.mul(f, .08 * L), M.mul(s, wv), M.mul(n, .1 * L * (1 - .6 * Math.abs(k - .45))), sh(col, i % 2 ? -.07 : .05), {
+                    gloss: .55,
+                    ink: lod > 0
                 });
             }
             for (const sd of [ -1, 1 ]) {
@@ -1215,7 +1236,7 @@
             add(el.c, () => {
                 blob(ctx, V, el.c, el.ax, el.ay, el.az, col, {
                     lod: lod,
-                    gloss: beetle ? 1 : .6,
+                    gloss: beetle ? 1.25 : .6,
                     hatch: !0
                 }), lod > 0 && decals(ctx, V, el, beetle ? [ stripe(0, .03, "dark", -.95, .95) ].concat(d.spots ? [ dot(-.2, .4, .13, "pale"), dot(-.2, -.4, .13, "pale"), dot(-.6, .2, .1, "pale"), dot(-.6, -.2, .1, "pale") ] : [ stripe(.45, .02, "dark", -.8, .8, .5), stripe(-.45, .02, "dark", -.8, .8, .5) ]) : [ band(.5, .04, "dark"), band(.2, .04, "dark"), band(-.1, .04, "dark"), band(-.4, .04, "dark"), band(-.7, .04, "dark"), stripe(.9, .06, "pale", -.6, .6, .5), stripe(-.9, .06, "pale", -.6, .6, .5) ], {
                     dark: sh(col, -.5),
