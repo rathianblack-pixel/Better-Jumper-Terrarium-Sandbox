@@ -52,7 +52,7 @@
     function fill(f, list, n, k) { for (const e of list) { const r = f.pool[n] || (f.pool[n] = [null, new Snap(), k]); r[0] = e; r[2] = k; r[1].fill(e); f.ents.push(r); n++; } return n; }
     R.record = function (game) {
       if (R.active) return; const h = game.hab; if (!h) return; if (h !== R.habId) { R.buf = []; R.habId = h; }
-      const f = R.buf.length >= N ? R.buf.shift() : { t: 0, ents: [], pool: [] }; f.t = game.state.time; f.ents.length = 0;
+      const f = R.buf.length >= N ? R.buf.shift() : { t: 0, ents: [], pool: [] }; f.t = h.time; f.ents.length = 0;
       let n = fill(f, h.data.spiders, 0, 's'); n = fill(f, h.data.prey, n, 'p'); for (let j = n; j < f.pool.length; j++) f.pool[j][0] = null; // don't keep removed critters alive
       R.buf.push(f);
     };
@@ -69,7 +69,7 @@
     }
     R.available = (id, tc) => !!range(id, tc);
     R.onCatch = function (UI, sp, tc) {
-      if (R.active || !sp) return; const id = sp.id; if (tc == null) tc = UI.game.state.time;
+      if (R.active || !sp) return; const id = sp.id; if (tc == null) tc = UI.game.hab.time;
       if (R.offer && R.offer.el) R.offer.el.remove(); // a newer catch replaces the older offer
       const t = UI.toast('<b>Nice catch!</b> <span class="rp">Watch it in slow motion \u25B6</span>', 'replay', 3200); R.offer = { id, tc, el: t };
       if (t) t.onclick = (ev) => { ev.stopPropagation(); t.remove(); R.start(UI, id, tc); };
@@ -82,7 +82,7 @@
       const frames = R.buf.slice(rg[0], rg[4] + 1); const added = [];
       for (const f of frames) for (const [e, , k] of f.ents) { if (live.has(e)) continue; live.set(e, snap(e)); const list = k === 's' ? h.data.spiders : h.data.prey; if (!list.includes(e)) { list.push(e); added.push([list, e]); } }
       const cam = UI.obs ? { obs: true, lock: UI.obs.lock } : { obs: false }; const sel = g.selectedId;
-      R.active = { id, frames, i: 0, hold: 0, settle: 0.45, live, added, time: g.state.time, game: g, hab: h, cam, sel, slowA: rg[1] - rg[0], pounceI: rg[2] - rg[0], catchI: rg[3] - rg[0] };
+      R.active = { id, frames, i: 0, hold: 0, settle: 0.45, live, added, time: g.state.time, localTime: h.time, game: g, hab: h, cam, sel, slowA: rg[1] - rg[0], pounceI: rg[2] - rg[0], catchI: rg[3] - rg[0] };
       if (!UI.obs) UI.toggleObserve(true, id); else { UI.obs.lock = id; UI.pickSubject(true); }
       let hud = document.getElementById('replayHud'); if (!hud) { hud = document.createElement('div'); hud.id = 'replayHud'; document.getElementById('app').appendChild(hud); }
       hud.innerHTML = '<div class="rpBadge">\u25B6 Slow motion \u00BC\u00D7 <span>tap anywhere to return</span></div>'; hud.classList.remove('hidden');
@@ -91,7 +91,7 @@
     };
     function apply(x) {
       const A = R.active; const F = A.frames; const i = Math.min(F.length - 1, Math.floor(x)), j = Math.min(F.length - 1, i + 1), a = x - i;
-      A.game.state.time = F[i].t + (F[j].t - F[i].t) * a; const nxt = new Map(F[j].ents.map(r => [r[0], r[1]]));
+      A.hab.data.simTime = F[i].t + (F[j].t - F[i].t) * a; const nxt = new Map(F[j].ents.map(r => [r[0], r[1]]));
       const inF = new Set(); for (const [e, o] of F[i].ents) { inF.add(e); put(e, o); const q = nxt.get(e), qp = q && q.get('pos'), qf = q && q.get('fwd');
         if (qp && e.pos && Math.hypot(qp[0] - e.pos[0], qp[1] - e.pos[1], qp[2] - e.pos[2]) < 30) { e.pos = e.pos.map((v, k) => v + (qp[k] - v) * a);
           if (qf && e.fwd) { const f = e.fwd.map((v, k) => v + (qf[k] - v) * a); const l = Math.hypot(f[0], f[1], f[2]); if (l > 1e-3) e.fwd = f.map(v => v / l); } } }
@@ -110,7 +110,7 @@
       for (const s of h.data.prey) if (s._rpHide) { s.buried = s._rpHide.buried; delete s._rpHide; }
       for (const [list, e] of A.added) { const k = list.indexOf(e); if (k >= 0) list.splice(k, 1); }
       for (const [e, o] of A.live) { put(e, o); if (e.pos) { e._ip = e.pos.slice(); e._if = e.fwd ? e.fwd.slice() : null; } }
-      A.game.state.time = A.time; const UI = JT.UI; const hud = document.getElementById('replayHud'); if (hud) hud.classList.add('hidden');
+      A.game.state.time = A.time; A.hab.data.simTime = A.localTime; const UI = JT.UI; const hud = document.getElementById('replayHud'); if (hud) hud.classList.add('hidden');
       if (UI && UI.obs) { if (!A.cam.obs) UI.toggleObserve(false); else { UI.obs.lock = A.cam.lock && h.spider(A.cam.lock) ? A.cam.lock : null; } }
       if (UI && UI.game && UI.game.hab.spider(A.sel)) UI.game.selectedId = A.sel;
     };
@@ -193,7 +193,7 @@
       if (AT.on) { try { AT.frame(dt); } catch (e) { console.error('attract', e); AT.stop(); } requestAnimationFrame(frame); return; }
       acc += dt; let n = 0;
       if (Replay.active) { acc = 0; try { Replay.step(dt); } catch (e) { console.error('replay', e); Replay.stop(); } } // paused while a slow-motion replay plays
-      else if (JT.UI.photo) acc = 0; // v11 photo mode: time stands still
+      else if (JT.UI.photo || JT.UI.tankSetup) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // Sustainable by default: fixed 30 fps on phones; 60 only when requested on desktop.
@@ -214,7 +214,7 @@
 
       const due = rAcc >= 1 / desired - 0.001;
       if (due) {
-        { const t0 = performance.now(); const undo = blendIn(Replay.active ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
+        { const t0 = performance.now(); const undo = blendIn(Replay.active || JT.UI.tankSetup ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
           d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + (R.gp && R.gp.splitS < 1 ? '  soft ' + R.gp.splitS.toFixed(2) : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') + (R.gp && R.gp._gcStat && settings.gpuCrit !== false ? '\ngpu critters ' + R.gp._gcStat.gpu + (R.gp._gcStat.cpu ? ' (+' + R.gp._gcStat.cpu + ' classic)' : '') + '  shapes ' + R.gp._gcStat.shapes : settings.gpuCrit === false ? '\nclassic critters' : '') : ''); } }
@@ -269,8 +269,7 @@
         };
         AT.frame = (dt) => {
           const h0 = sg.hab; if (!h0) return;
-          if (h0._warm > 0) { const t0 = performance.now(); while (h0._warm > 0 && performance.now() - t0 < 12) { h0.update(STEP, true); h0._warm--; } if (h0._warm <= 0) frameShot(); return; }
-          for (const h of sg.habs) if (h !== h0 && h._warm > 0) { const t0 = performance.now(); while (h._warm > 0 && performance.now() - t0 < 3) { h.update(STEP, true); h._warm--; } }
+          if (h0._warm > 0) { const t0 = performance.now(); while (h0._warm > 0 && performance.now() - t0 < 12) { h0.data.simTime += STEP; h0.update(STEP, true); h0._warm--; } if (h0._warm <= 0) frameShot(); return; }
           acc += dt; let n = 0; while (acc >= STEP && n < 4) { snapPrev(); sg.tick(STEP); acc -= STEP; n++; } if (n >= 4) acc = 0;
           // director: slow drift + gentle push while the shot runs; cut on time
           const fc = R.fcam; if (fc && fc.st && !AT.veil) { fc.orbit(AT.drift * dt, 0); fc.userZoom = M.clamp(fc.userZoom * (1 + AT.push * dt), 1.2, 2.6); }

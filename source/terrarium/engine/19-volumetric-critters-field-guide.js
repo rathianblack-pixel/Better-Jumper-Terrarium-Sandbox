@@ -1007,12 +1007,13 @@
             time: T
         }, opt || {}))), legW = k => L * k, legs6 = (spread, w, colr, hipW, gait) => {
             for (const sd of [ -1, 1 ]) for (let i = 0; i < 3; i++) {
-                const ph = (e._walk || 0) * Math.PI + 2.1 * i + (sd > 0 ? 1.5 : 0), u = (.18 - .16 * i) * L, fu = u + (.12 - .14 * i) * L + .07 * Math.sin(ph) * L * (moving ? 1 : 0), lift = .05 * Math.max(0, Math.cos(ph)) * L * (moving ? 1 : 0), hip = W(u, sd * L * (hipW || .07), .1 * L), foot = held ? fl > .02 ? W(.5 * u + .12 * Math.sin(26 * T + 2.1 * i + sd) * L * fl, sd * L * spread * (.42 + .4 * fl * (.5 + .5 * Math.sin(19 * T + 1.7 * i + 2 * sd))), .25 * L - .1 * Math.cos(23 * T + i) * L * fl) : W(.5 * u, sd * L * spread * .4, .25 * L) : flying ? W(u - .1 * L, sd * L * spread * .5, 0 * L) : W(fu, sd * L * spread, lift), knee = M.add(M.lerp3(hip, foot, .45), M.mul(n, L * (gait || .14)));
+                const grooming=e.state==='groom'&&i===0&&!held&&!flying;
+                const ph = (e._walk || 0) * Math.PI + 2.1 * i + (sd > 0 ? 1.5 : 0), u = (.18 - .16 * i) * L, fu = u + (.12 - .14 * i) * L + .07 * Math.sin(ph) * L * (moving ? 1 : 0), lift = .05 * Math.max(0, Math.cos(ph)) * L * (moving ? 1 : 0), hip = W(u, sd * L * (hipW || .07), .1 * L), foot = held ? fl > .02 ? W(.5 * u + .12 * Math.sin(26 * T + 2.1 * i + sd) * L * fl, sd * L * spread * (.42 + .4 * fl * (.5 + .5 * Math.sin(19 * T + 1.7 * i + 2 * sd))), .25 * L - .1 * Math.cos(23 * T + i) * L * fl) : W(.5 * u, sd * L * spread * .4, .25 * L) : flying ? W(u - .1 * L, sd * L * spread * .5, 0 * L) : grooming ? W(.34*L + .04*L*Math.sin(e.st*9),sd*.08*L,.28*L) : W(fu, sd * L * spread, lift), knee = M.add(M.lerp3(hip, foot, .45), M.mul(n, L * (gait || .14)));
                 add(knee, () => limb(ctx, V, [ hip, knee, foot ], [ legW(w), legW(.7 * w) ], colr, lod, null), M.dot(M.sub(knee, p), V.toCam) > 0 ? -.01 : .01);
             }
         }, antennae = (base, len, colr, w, curl) => {
             for (const sd of [ -1, 1 ]) {
-                const sw = .06 * Math.sin(2.2 * T + sd + (e.seed || 0)), a = W(base * L, sd * L * .04, .2 * L), m = W(base * L + L * len * .5, sd * L * (.15 + sw), L * (.3 + curl)), b = W(base * L + L * len, sd * L * (.32 + 2 * sw), L * (.22 + curl));
+                const sw = (e.state==='nibble'?.13:.06) * Math.sin((e.state==='nibble'?7:2.2) * T + sd + (e.seed || 0)), a = W(base * L, sd * L * .04, .2 * L), m = W(base * L + L * len * .5, sd * L * (.15 + sw), L * (.3 + curl)), b = W(base * L + L * len, sd * L * (.32 + 2 * sw), L * (.22 + curl));
                 add(m, () => curve(ctx, V, a, m, b, L * w, ink(colr)));
             }
         };

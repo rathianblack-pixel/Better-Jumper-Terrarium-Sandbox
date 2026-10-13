@@ -1,0 +1,681 @@
+{
+  "result": "PASS",
+  "cases": [
+    {
+      "viewport": "desktop",
+      "step": 1,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 1,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 1,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 2,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 2,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 2,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 3,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 3,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "step": 3,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 1,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 1,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 1,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 2,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 2,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 2,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 3,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 3,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "phone",
+      "step": 3,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 1,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 1,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 1,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 2,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 2,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 2,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Continue",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 3,
+      "state": "normal",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 3,
+      "state": "hover",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    },
+    {
+      "viewport": "landscape",
+      "step": 3,
+      "state": "focus",
+      "buttons": [
+        {
+          "label": "Back",
+          "color": "rgb(83, 97, 59)",
+          "background": "rgb(231, 234, 220)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 5.476376657610359
+        },
+        {
+          "label": "Create Tank & Enter",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(83, 97, 59)",
+          "opacity": "1",
+          "visible": true,
+          "textFits": true,
+          "contrast": 6.686128563146901
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,199 @@
+{
+  "checks": [
+    {
+      "name": "desktop",
+      "spacing": {
+        "inView": true,
+        "headGap": 8,
+        "footGap": 8,
+        "sceneSpace": 345.609375
+      },
+      "cancel": {
+        "same": true,
+        "dataSame": true,
+        "idsSame": true,
+        "rendererReal": true,
+        "previewDifferent": true,
+        "error": null
+      }
+    },
+    {
+      "name": "desktop",
+      "applied": {
+        "success": true,
+        "kept": true,
+        "sameClock": true,
+        "sameCount": true,
+        "spiders": true,
+        "prey": true,
+        "sameLayout": true,
+        "undo": true
+      },
+      "undo": {
+        "enabled": true,
+        "ok": true,
+        "age": 0.2509722222222222,
+        "sat": 0.41,
+        "hyd": 0.66,
+        "time": true,
+        "decor": true,
+        "undoRemoved": true
+      },
+      "protection": {
+        "apply": true,
+        "undo": true,
+        "text": "Apply/Undo locked: Pip is molting or recovering. Cancel to resume; try again after recovery."
+      },
+      "biome": {
+        "ok": true,
+        "error": null,
+        "decor": true
+      },
+      "persist": true,
+      "repeat": {
+        "error": null,
+        "same": true,
+        "globals": true
+      }
+    },
+    {
+      "name": "phone",
+      "spacing": {
+        "inView": true,
+        "headGap": 8,
+        "footGap": 8,
+        "sceneSpace": 405.125
+      },
+      "cancel": {
+        "same": true,
+        "dataSame": true,
+        "idsSame": true,
+        "rendererReal": true,
+        "previewDifferent": true,
+        "error": null
+      }
+    },
+    {
+      "name": "phone",
+      "applied": {
+        "success": true,
+        "kept": true,
+        "sameClock": true,
+        "sameCount": true,
+        "spiders": true,
+        "prey": true,
+        "sameLayout": true,
+        "undo": true
+      },
+      "undo": {
+        "enabled": true,
+        "ok": true,
+        "age": 0.25104166666666666,
+        "sat": 0.41,
+        "hyd": 0.66,
+        "time": true,
+        "decor": true,
+        "undoRemoved": true
+      },
+      "protection": {
+        "apply": true,
+        "undo": true,
+        "text": "Apply/Undo locked: Pip is molting or recovering. Cancel to resume; try again after recovery."
+      },
+      "biome": {
+        "ok": true,
+        "error": null,
+        "decor": true
+      },
+      "persist": true,
+      "repeat": {
+        "error": null,
+        "same": true,
+        "globals": true
+      }
+    },
+    {
+      "name": "landscape",
+      "spacing": {
+        "inView": true,
+        "headGap": 6,
+        "footGap": 6,
+        "sceneSpace": 24
+      },
+      "cancel": {
+        "same": true,
+        "dataSame": true,
+        "idsSame": true,
+        "rendererReal": true,
+        "previewDifferent": true,
+        "error": null
+      }
+    },
+    {
+      "name": "landscape",
+      "applied": {
+        "success": true,
+        "kept": true,
+        "sameClock": true,
+        "sameCount": true,
+        "spiders": true,
+        "prey": true,
+        "sameLayout": true,
+        "undo": true
+      },
+      "undo": {
+        "enabled": true,
+        "ok": true,
+        "age": 0.25104166666666666,
+        "sat": 0.41,
+        "hyd": 0.66,
+        "time": true,
+        "decor": true,
+        "undoRemoved": true
+      },
+      "protection": {
+        "apply": true,
+        "undo": true,
+        "text": "Apply/Undo locked: Pip is molting or recovering. Cancel to resume; try again after recovery."
+      },
+      "biome": {
+        "ok": true,
+        "error": null,
+        "decor": true
+      },
+      "persist": true,
+      "repeat": {
+        "error": null,
+        "same": true,
+        "globals": true
+      }
+    },
+    {
+      "extra": {
+        "fixed": true,
+        "climate": true,
+        "replacementGuard": true,
+        "unconfirmed": true,
+        "applied": true,
+        "inactive": true,
+        "loaded": true,
+        "loadedUndo": true,
+        "invalidated": true,
+        "retreatLocked": true,
+        "framing": [
+          {
+            "art": "storybook",
+            "visible": true
+          },
+          {
+            "art": "hd2d",
+            "visible": true
+          }
+        ],
+        "uniqueIds": true
+      }
+    }
+  ],
+  "errors": [],
+  "result": "PASS"
+}

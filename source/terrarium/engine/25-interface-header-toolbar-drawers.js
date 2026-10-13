@@ -298,7 +298,7 @@
     /** Haptic feedback for a moment (see HAPTIC). gesture = called straight from your own tap (lets iPhones tick). */
     buzz(kind, gesture) {
       if (!this.set || this.set.haptics === false) return; const pat = HAPTIC[kind]; if (pat == null) return;
-      if (canVibrate()) { try { navigator.vibrate(pat); } catch (e) { /* blocked until first tap */ } return; }
+      if (canVibrate()) { if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return; try { navigator.vibrate(pat); } catch (e) { /* blocked until first tap */ } return; }
       if (IOS && gesture) iosTick();
     },
     hapticsInfo() { return canVibrate() ? 'Buzzes on taps, pounces, catches and molts.' : IOS ? 'iPhone: a light tick on your own taps only (Safari has no full vibration).' : 'This device has no vibration.'; },
@@ -375,7 +375,7 @@
     /** Stop following and ease back to the previous overview camera. */
     unfollow() { if (this.obs) { this.toggleObserve(false); return; } if (this.R.cam.mode !== 'follow') return; const prev = this._prevCam && this._prevCam !== 'follow' ? this._prevCam : 'iso'; this.setCam(prev); },
     toggleFollow() { this.toggleObserve(null, this.game.selectedId); },
-    setTimeMode(m) { this.game.state.timeMode = m; this.refreshHeader(); this.updateClock(); A().sfx('click'); },
+    setTimeMode(m) { this.game.state.timeMode = m; this.hab.data.localTimeMode = m; this.game.save(); this.refreshHeader(); this.updateClock(); A().sfx('click'); },
     switchHab(i) {
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); this.undoClear && this.undoClear(); const rep = g.activate(i);
       const h = g.hab; g.selectedId = h.spiders[0] ? h.spiders[0].id : null; this.R.cur = null; this.R.resetView();
@@ -432,7 +432,7 @@
       const R = this.R;
       if (t === 'pounce' && d.sp && d.sp._air && M.finite3(d.sp._air.from) && R && R.particles && R.particles.length < 380) { const o = d.sp._air.from; const L = JT.SpiderAI.len(d.sp); const fl = d.sp._air.launchSup === 'floor'; // bits of substrate kicked back
         const dir = M.norm(M.sub(d.sp._air.from, d.sp._air.to)); for (let i = 0; i < (fl ? 9 : 4); i++) R.particles.push({ pos: o.slice(), v: [dir[0] * 9 + (JT.R() - 0.5) * 10, 4 + JT.R() * 9, dir[2] * 9 + (JT.R() - 0.5) * 10], t: 0, life: 0.35 + JT.R() * 0.35, col: fl ? 'rgba(120,92,64,0.85)' : 'rgba(170,150,120,0.6)', r: Math.max(0.12, L * 0.03) + JT.R() * 0.15 }); }
-      if (t === 'catch' && JT.Replay && d.sp && !JT.Replay.active) { const tc = this.game.state.time; setTimeout(() => { if (!JT.Replay.active && this.game.hab.spider(d.sp.id)) JT.Replay.onCatch(this, d.sp, tc); }, 450); }
+      if (t === 'catch' && JT.Replay && d.sp && !JT.Replay.active) { const tc = this.hab.time; setTimeout(() => { if (!JT.Replay.active && this.game.hab.spider(d.sp.id)) JT.Replay.onCatch(this, d.sp, tc); }, 450); }
       const mine = d && d.sp && (d.sp.id === this.game.selectedId || (this.obs && d.sp.id === this.obs.sub)); // the jumper you are looking at
       if (t === 'pounce' && mine) { A().sfx('pounce'); this.buzz('pounce'); }
       if (t === 'catch') { const pd = d.prey && JT.PREY_BY_ID[d.prey.type]; A().sfx(pd && (pd.fly || pd.flies || /fly|gnat|moth|lacewing/.test(d.prey.type)) ? 'strikeFly' : 'strike'); if (mine || this.obs) this.buzz('catch'); }
@@ -768,6 +768,7 @@
         '<div class="state">' + esc(line) + '</div>' +
         (pz ? '<div class="ctitle">' + esc(pz.title) + ' · ' + pz.traits.map(t => esc(t.label)).join(', ') + '</div>' : '') +
         '<div class="cthought">' + esc(sp.thought || line || '…') + '</div>' +
+        (AI.careHtml ? AI.careHtml(h,sp) : '') +
         '<div class="full">' +
         '<div class="rule"></div>' +
         meter('Hunger', hl, sp.sat, 'sat') + meter('Water', pct(sp.hyd != null ? sp.hyd : 1) + '%', sp.hyd != null ? sp.hyd : 1, 'hyd') + meter('Growth', moltTxt, sp.stage >= 5 ? 1 : Math.min(1, sp.meals / need), 'molt') +
@@ -881,7 +882,7 @@
       }
       const others = []; g.habs.forEach((hb, i) => { if (hb !== h) hb.spiders.forEach(x => others.push([x, hb, i])); });
       if (others.length) { w.appendChild(el('h4', '', 'In your other tanks')); const row = el('div', 'sheet-list');
-        for (const [x, hb, i] of others) { const b = el('button', '', esc(x.name) + '<small class="muted">' + esc(JT.SPECIES_BY_ID[x.species].name) + ' · ' + esc(hb.title) + '</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); g.selectedId = x.id; this.showPanel(x.id); }; row.appendChild(b); }
+        for (const [x, hb, i] of others) { const b = el('button', '', esc(x.name) + '<small class="muted">' + esc(JT.SPECIES_BY_ID[x.species].name) + ' · ' + esc(hb.title) + '</small>'); b.onclick = () => { this.closeModal(); this.switchHab(i); g.selectedId = x.id; this.toggleObserve(true, x.id); }; row.appendChild(b); }
         w.appendChild(row); }
       if (h.spiders.length && h.spiders.length < h.dims.cap) { const b = el('button', 'modal-btn', 'Add another jumper…'); b.onclick = () => this.jumpersSheet('collection'); w.appendChild(b); }
       return w;
@@ -892,7 +893,7 @@
       wrap.appendChild(el('p', 'muted', 'Adding to <b>' + esc(h.title) + '</b> · ' + h.spiders.length + '/' + h.dims.cap + ' jumpers (' + JT.HABITATS[h.data.type].name + '), up to ' + JT.PER_SPECIES + ' of each species. Raise a jumper to Adult to unlock the next. Total catches: ' + st.catches + '.'));
       if (mine.length) {
         const row = el('div', 'form-row'); row.appendChild(el('label', '', 'Your jumpers'));
-        for (const [s, hb, i] of mine) { const b = el('button', 'modal-btn', esc(s.name) + ' <span class="muted" style="color:#c8b48a">(' + (hb ? esc(hb.title) : 'holding cup') + ')</span>'); b.onclick = () => { if (!hb) { this.tanksModal(); return; } this.closeModal(); if (i !== st.active) this.switchHab(i); g.selectedId = s.id; this.showPanel(s.id); }; row.appendChild(b); }
+        for (const [s, hb, i] of mine) { const b = el('button', 'modal-btn', esc(s.name) + ' <span class="muted" style="color:#c8b48a">(' + (hb ? esc(hb.title) : 'holding cup') + ')</span>'); b.onclick = () => { if (!hb) { this.tanksModal(); return; } this.closeModal(); const otherTank = i !== st.active; if (otherTank) this.switchHab(i); g.selectedId = s.id; if (otherTank) this.toggleObserve(true, s.id); else this.showPanel(s.id); }; row.appendChild(b); }
         wrap.appendChild(row);
       }
       const grid = el('div', 'grid'); const best = st.best || {};
@@ -1228,30 +1229,32 @@
     /** v11: every tank in one list: search, sort, favourites, status at a glance, the holding cup and a new-tank builder. */
     tanksModal() {
       const g = this.game, st = g.state; const w = el('div', 'tanks');
-      w.appendChild(el('p', 'muted', g.habs.length + ' of ' + JT.MAX_HABS + ' tanks. Only the tank you are viewing is running; the others wait and catch up when you come back.'));
+      w.appendChild(el('p', 'muted', g.habs.length + ' of ' + JT.MAX_HABS + ' tanks. Only the tank you are viewing is running; the others are fully paused, including their local clock. No catch-up on return.'));
       const tools = el('div', 'tk-tools');
       const q = el('input'); q.type = 'search'; q.placeholder = 'Find a jumper or tank'; q.value = this._tkQ || ''; q.setAttribute('aria-label', 'Find a jumper or tank');
-      const sg = el('div', 'seg small'); const sorts = [['recent', 'Recent'], ['name', 'A\u2013Z'], ['care', 'Needs care']];
+      const sg = el('div', 'seg small'); const sorts = [['recent', 'Recent'], ['name', 'A\u2013Z'], ['care', 'Needs care'], ['favorites', 'Favorites']];
       for (const [v, l] of sorts) { const b = el('button', (this._tkSort || 'recent') === v ? 'on' : '', l); b.onclick = () => { this._tkSort = v; A().sfx('click'); [...sg.children].forEach(c => c.classList.toggle('on', c === b)); draw(); }; sg.appendChild(b); }
-      if (g.habs.length > 3) tools.appendChild(q); tools.appendChild(sg); w.appendChild(tools);
+      tools.appendChild(q); tools.appendChild(sg); w.appendChild(tools);
       const list = el('div', 'tklist'); w.appendChild(list);
       const chip = (cls, t) => '<span class="tchip ' + cls + '">' + t + '</span>';
       const names = (a) => a.slice(0, 2).map(x => esc(x.name)).join(', ') + (a.length > 2 ? ' +' + (a.length - 2) : '');
       const draw = () => {
         list.innerHTML = ''; const term = (this._tkQ || '').trim().toLowerCase(); const mode = this._tkSort || 'recent';
         let rows = g.habs.map((h, i) => ({ h, i, s: g.tankStatus(h) }));
-        if (term) rows = rows.filter(({ h }) => (h.title + ' ' + JT.HABITATS[h.data.type].name + ' ' + h.spiders.map(x => JT.SPECIES_BY_ID[x.species].name).join(' ')).toLowerCase().includes(term));
-        rows.sort((a, b) => (!!b.h.data.fav - !!a.h.data.fav) || (mode === 'name' ? (!a.h.spiders.length - !b.h.spiders.length) || a.h.title.localeCompare(b.h.title) : mode === 'care' ? b.s.score - a.s.score || a.i - b.i : (b.i === st.active) - (a.i === st.active) || (b.h.data.visitAt || 0) - (a.h.data.visitAt || 0)));
+        if (term) rows = rows.filter(({ h }) => (h.title + ' ' + h.data.name + ' ' + JT.HABITATS[h.data.type].name + ' ' + (JT.Biome ? JT.Biome.of(h).name : '') + ' ' + h.spiders.map(x => x.name + ' ' + JT.SPECIES_BY_ID[x.species].name).join(' ')).toLowerCase().includes(term));
+        if (mode === 'favorites') rows = rows.filter(({h}) => h.data.fav);
+        if (mode === 'care') rows = rows.filter(({s}) => s.score > 0);
+        rows.sort((a, b) => (mode === 'care' ? 0 : !!b.h.data.fav - !!a.h.data.fav) || (mode === 'name' ? (!a.h.spiders.length - !b.h.spiders.length) || a.h.title.localeCompare(b.h.title) : mode === 'care' ? b.s.score - a.s.score || a.i - b.i : (b.i === st.active) - (a.i === st.active) || (b.h.data.visitAt || 0) - (a.h.data.visitAt || 0)));
         if (!rows.length) list.appendChild(el('p', 'muted', 'No tank matches \u201c' + esc(term) + '\u201d.'));
         for (const { h, i, s: ts } of rows) {
           const H = JT.HABITATS[h.data.type]; const r = el('div', 'tkrow' + (i === st.active ? ' on' : ''));
           const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64)));
           r.appendChild(pics);
-          let chips = i === st.active ? chip('view', 'Viewing') : '';
+          let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Paused');
           if (ts.molting.length) chips += chip('molt', 'Molting: ' + names(ts.molting));
           if (ts.hungry.length) chips += chip('warn', 'Hungry: ' + names(ts.hungry));
           if (ts.thirsty.length) chips += chip('warn', 'Thirsty: ' + names(ts.thirsty));
-          if (h.spiders.length && !ts.food) chips += chip('warn', 'No food');
+          if (ts.hungry.length && !ts.food) chips += chip('warn', 'Add suitable food');
           if (h.spiders.length && !ts.score) chips += chip('ok', 'All good');
           r.appendChild(el('div', 'tktx', '<div class="tn">' + esc(h.title) + '</div><div class="ts">' + esc(H.name) + ' \u00b7 ' + h.spiders.length + '/' + H.cap + ' jumper' + (H.cap === 1 ? '' : 's') + '</div>' + (chips ? '<div class="tst">' + chips + '</div>' : '')));
           const bs = el('div', 'tkb');
@@ -1334,7 +1337,7 @@
       db.onclick = () => {
         if (!root.confirm('Delete ' + h.title + '? The decor, prey and silk are removed.' + (h.spiders.length ? ' ' + h.spiders.map(x => x.name).join(', ') + ' will wait in the holding cup.' : ''))) return;
         const act = h === g.hab; if (act) { if (this.obs) this.toggleObserve(false); this.hidePanel(); this.cancelMode(); this.undoClear && this.undoClear(); }
-        const n = h.spiders.length; if (!g.deleteHabitat(h)) return; if (act) { const nh = g.hab; g.selectedId = nh.spiders[0] ? nh.spiders[0].id : null; this.R.cur = null; this.R.resetView(); }
+        const n = h.spiders.length; if (!g.deleteHabitat(h)) return; if (act) { const nh = g.hab; g.selectedId = nh.spiders[0] ? nh.spiders[0].id : null; this.R.cur = null; this.R.resetView(); this.restoreTankView && this.restoreTankView(); }
         this.refreshHeader(); g.save(); A().sfx('rustle'); this.toast('Tank deleted.' + (n ? ' Its jumpers are waiting in the holding cup.' : '')); this.tanksModal(); };
       r4.appendChild(du); r4.appendChild(rb); r4.appendChild(db); w.appendChild(r4);
       this.openModal(h.title, w);

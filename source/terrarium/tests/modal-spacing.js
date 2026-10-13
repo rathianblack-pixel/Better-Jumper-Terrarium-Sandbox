@@ -1,0 +1,27 @@
+const {chromium}=require('playwright'),assert=require('assert'),fs=require('fs'),path=require('path');
+const BASE=process.env.GAME_URL||'http://localhost:8000',OUT=process.env.TEST_OUTPUT||path.join(__dirname,'living-results/modal-spacing');fs.mkdirSync(OUT,{recursive:true});
+(async()=>{const browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/usr/local/bin/chromium',headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const report={result:'PASS',cases:[],errors:[]};try{
+ for(const [name,viewport]of [['desktop',{width:1280,height:720}],['screenshot-size',{width:870,height:576}],['phone',{width:390,height:844}],['landscape',{width:844,height:390}]]){
+ const ctx=await browser.newContext({viewport});await ctx.addInitScript(()=>localStorage.setItem('jumperTerrarium.settings',JSON.stringify({quality:'low',art:'storybook',tips:false,muted:true,haptics:false})));const p=await ctx.newPage();p.on('pageerror',e=>report.errors.push(name+': '+e.message));await p.goto(BASE+'/jumper.html');await p.waitForFunction(()=>window.JT?.app);await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});JT.app.game.state.biomeSetup=false;JT.UI.closeModal()});
+ for(const screen of ['jumpers','collection','journal','tanks','tank-settings','jumper-profile','settings','menu','help','wizard-1','wizard-2','wizard-3']){
+  await p.evaluate(screen=>{const u=JT.UI;switch(screen){case'jumpers':u.jumpersSheet('tank');break;case'collection':u.jumpersSheet('collection');break;case'journal':u.jumpersSheet('journal');break;case'tanks':u.tanksModal();break;case'tank-settings':u.tankEditModal(u.game.state.active);break;case'jumper-profile':u.profileModal(u.hab.spiders[0]);break;case'settings':u.settingsModal();break;case'menu':u.moreSheet();break;case'help':u.helpModal();break;case'wizard-1':u.biomeWizard(false);break;default:document.getElementById('bmNext').click();}},screen);
+  for(const fraction of [0,.35,.75,1]){
+   const metrics=await p.evaluate(fraction=>{
+    const modal=document.getElementById('modal'),body=document.getElementById('modalBody');body.scrollTop=(body.scrollHeight-body.clientHeight)*fraction;
+    const head=modal.querySelector('.modal-head'),top=modal.querySelector(':scope>.modal-top-controls'),bottom=modal.querySelector(':scope>.modal-bottom-controls'),br=body.getBoundingClientRect(),mr=modal.getBoundingClientRect();
+    const fixed=[head,top,bottom].filter(Boolean),protectedAreas=fixed.map(el=>{const r=el.getBoundingClientRect(),points=[.2,.5,.8].map(t=>document.elementFromPoint(r.left+r.width*t,r.top+r.height/2));return {class:el.className,opaque:getComputedStyle(el).backgroundColor,contentBleeds:points.some(e=>e&&e.closest('#modalBody'))}});
+    const cards=[...body.querySelectorAll('.grid>.entry')].map(el=>{const s=getComputedStyle(el),h=el.querySelector('h4'),next=h&&h.nextElementSibling;return {leftPadding:parseFloat(s.paddingLeft),topPadding:parseFloat(s.paddingTop),titleOverlap:!!(h&&next&&h.getBoundingClientRect().bottom>next.getBoundingClientRect().top+.5)}});
+    return {inViewport:mr.top>=-1&&mr.bottom<=innerHeight+1,bodyHeight:br.height,fixedTopGap:br.top-(top||head).getBoundingClientRect().bottom,fixedBottomGap:bottom?bottom.getBoundingClientRect().top-br.bottom:10,headerClear:head.getBoundingClientRect().bottom<=br.top+.5,topClear:!top||top.getBoundingClientRect().bottom<=br.top+.5,bottomClear:!bottom||br.bottom<=bottom.getBoundingClientRect().top+.5,protectedAreas,cards,toolbarsInsideScroller:body.querySelectorAll('.living-actions,.sheet-tabs,.bm-actions').length};
+   },fraction);
+   assert(metrics.inViewport&&metrics.bodyHeight>12&&metrics.headerClear&&metrics.topClear&&metrics.bottomClear,`${name} ${screen}: ${JSON.stringify(metrics)}`);
+   assert(metrics.fixedTopGap>=9&&metrics.fixedBottomGap>=9,'Fixed breathing room is retained when scrolled');assert.equal(metrics.toolbarsInsideScroller,0);assert(metrics.protectedAreas.every(a=>!a.contentBleeds));assert(metrics.cards.every(c=>c.leftPadding>=14&&c.topPadding>=14&&!c.titleOverlap));
+   report.cases.push({viewport:name,screen,scrollFraction:fraction,cardCount:metrics.cards.length,bodyHeight:metrics.bodyHeight});
+   if(fraction===.35&&['collection','journal','wizard-3','tank-settings','settings'].includes(screen))await p.screenshot({path:path.join(OUT,`${name}-${screen}.png`)});
+  }
+ }
+ // Tab switching and modal transitions must not retain or duplicate old toolbar/footer nodes.
+ await p.evaluate(()=>JT.UI.jumpersSheet('collection'));assert.equal(await p.locator('#modal>.modal-top-controls').count(),1);assert.equal(await p.locator('#createNewTank').count(),1);await p.getByRole('button',{name:'Journal',exact:true}).click();assert.equal(await p.locator('#modal>.modal-top-controls').count(),1);await p.evaluate(()=>JT.UI.settingsModal());assert.equal(await p.locator('#modal>.modal-top-controls').count(),0);assert.equal(await p.locator('#modal>.modal-bottom-controls').count(),0);
+ await ctx.close();console.log('PASS spacing:',name);
+ }
+ assert.deepEqual(report.errors,[]);console.log('PASS',report.cases.length,'sheet/scroll geometry checks');
+ }catch(e){report.result='FAIL';report.failure=e.stack;console.error(e);process.exitCode=1}finally{fs.writeFileSync(path.join(OUT,'modal-spacing-report.json'),JSON.stringify(report,null,2));await browser.close()}})();

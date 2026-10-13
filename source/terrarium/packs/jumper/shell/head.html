@@ -877,6 +877,10 @@ body.title-preview #app{pointer-events:none}
 #app #photoUi #phShot{background:rgba(10,17,9,.5)!important;border-color:#f6f4e9!important}
 #app #photoUi #phShot i{background:#f6f4e9!important}
 #app #modal .gold{color:#53613b!important}
+/* Wizard actions must outrank generic modal .gold text styling. */
+#app #modal .bm-actions button{background:#e7eadc!important;color:#53613b!important;text-shadow:none!important}
+#app #modal .bm-actions button.gold{background:#53613b!important;color:#ffffff!important}
+#app #modal .bm-actions button:focus-visible{outline:2px solid #2c302a;outline-offset:3px}
 @media(max-height:500px) and (orientation:landscape){
  #app #drawer.bm-drawer .cards .sect{display:none!important}
  #app #drawer.bm-drawer .card{padding:4px!important}

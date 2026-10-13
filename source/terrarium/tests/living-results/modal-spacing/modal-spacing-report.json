@@ -1,0 +1,1350 @@
+{
+  "result": "PASS",
+  "cases": [
+    {
+      "viewport": "desktop",
+      "screen": "jumpers",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumpers",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumpers",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumpers",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "desktop",
+      "screen": "collection",
+      "scrollFraction": 0,
+      "cardCount": 32,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "collection",
+      "scrollFraction": 0.35,
+      "cardCount": 32,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "collection",
+      "scrollFraction": 0.75,
+      "cardCount": 32,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "collection",
+      "scrollFraction": 1,
+      "cardCount": 32,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "journal",
+      "scrollFraction": 0,
+      "cardCount": 47,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "journal",
+      "scrollFraction": 0.35,
+      "cardCount": 47,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "journal",
+      "scrollFraction": 0.75,
+      "cardCount": 47,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "journal",
+      "scrollFraction": 1,
+      "cardCount": 47,
+      "bodyHeight": 444
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tanks",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tanks",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tanks",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tanks",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tank-settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 491.140625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tank-settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 491.140625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tank-settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 491.140625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "tank-settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 491.140625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumper-profile",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "jumper-profile",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "menu",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "menu",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "menu",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "menu",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "help",
+      "scrollFraction": 0,
+      "cardCount": 12,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "help",
+      "scrollFraction": 0.35,
+      "cardCount": 12,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "help",
+      "scrollFraction": 0.75,
+      "cardCount": 12,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "help",
+      "scrollFraction": 1,
+      "cardCount": 12,
+      "bodyHeight": 563
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-1",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 465.578125
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-1",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 465.578125
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-1",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 465.578125
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-1",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 465.578125
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-2",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-2",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-2",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-2",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-3",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 509.40625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-3",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 509.40625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-3",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 509.40625
+    },
+    {
+      "viewport": "desktop",
+      "screen": "wizard-3",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 509.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumpers",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumpers",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumpers",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumpers",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 263
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "collection",
+      "scrollFraction": 0,
+      "cardCount": 32,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "collection",
+      "scrollFraction": 0.35,
+      "cardCount": 32,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "collection",
+      "scrollFraction": 0.75,
+      "cardCount": 32,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "collection",
+      "scrollFraction": 1,
+      "cardCount": 32,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "journal",
+      "scrollFraction": 0,
+      "cardCount": 47,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "journal",
+      "scrollFraction": 0.35,
+      "cardCount": 47,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "journal",
+      "scrollFraction": 0.75,
+      "cardCount": 47,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "journal",
+      "scrollFraction": 1,
+      "cardCount": 47,
+      "bodyHeight": 300
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tanks",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tanks",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tanks",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tanks",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 373.640625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tank-settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tank-settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tank-settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "tank-settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumper-profile",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "jumper-profile",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "menu",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "menu",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "menu",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "menu",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "help",
+      "scrollFraction": 0,
+      "cardCount": 12,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "help",
+      "scrollFraction": 0.35,
+      "cardCount": 12,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "help",
+      "scrollFraction": 0.75,
+      "cardCount": 12,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "help",
+      "scrollFraction": 1,
+      "cardCount": 12,
+      "bodyHeight": 419
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-1",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-1",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-1",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-1",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-2",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-2",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-2",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-2",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 313.890625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-3",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-3",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-3",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "screenshot-size",
+      "screen": "wizard-3",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 365.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumpers",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 293.75
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumpers",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 293.75
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumpers",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 293.75
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumpers",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 293.75
+    },
+    {
+      "viewport": "phone",
+      "screen": "collection",
+      "scrollFraction": 0,
+      "cardCount": 32,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "collection",
+      "scrollFraction": 0.35,
+      "cardCount": 32,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "collection",
+      "scrollFraction": 0.75,
+      "cardCount": 32,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "collection",
+      "scrollFraction": 1,
+      "cardCount": 32,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "journal",
+      "scrollFraction": 0,
+      "cardCount": 47,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "journal",
+      "scrollFraction": 0.35,
+      "cardCount": 47,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "journal",
+      "scrollFraction": 0.75,
+      "cardCount": 47,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "journal",
+      "scrollFraction": 1,
+      "cardCount": 47,
+      "bodyHeight": 533
+    },
+    {
+      "viewport": "phone",
+      "screen": "tanks",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 464.0625
+    },
+    {
+      "viewport": "phone",
+      "screen": "tanks",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 464.0625
+    },
+    {
+      "viewport": "phone",
+      "screen": "tanks",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 464.0625
+    },
+    {
+      "viewport": "phone",
+      "screen": "tanks",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 464.0625
+    },
+    {
+      "viewport": "phone",
+      "screen": "tank-settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "tank-settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "tank-settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "tank-settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumper-profile",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "jumper-profile",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "menu",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "menu",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "menu",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "menu",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "help",
+      "scrollFraction": 0,
+      "cardCount": 12,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "help",
+      "scrollFraction": 0.35,
+      "cardCount": 12,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "help",
+      "scrollFraction": 0.75,
+      "cardCount": 12,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "help",
+      "scrollFraction": 1,
+      "cardCount": 12,
+      "bodyHeight": 721
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-1",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-1",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-1",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-1",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-2",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 388.390625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-2",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 388.390625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-2",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 388.390625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-2",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 388.390625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-3",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-3",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-3",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "phone",
+      "screen": "wizard-3",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 667.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumpers",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumpers",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumpers",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumpers",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "collection",
+      "scrollFraction": 0,
+      "cardCount": 32,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "collection",
+      "scrollFraction": 0.35,
+      "cardCount": 32,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "collection",
+      "scrollFraction": 0.75,
+      "cardCount": 32,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "collection",
+      "scrollFraction": 1,
+      "cardCount": 32,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "journal",
+      "scrollFraction": 0,
+      "cardCount": 47,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "journal",
+      "scrollFraction": 0.35,
+      "cardCount": 47,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "journal",
+      "scrollFraction": 0.75,
+      "cardCount": 47,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "journal",
+      "scrollFraction": 1,
+      "cardCount": 47,
+      "bodyHeight": 126
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tanks",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tanks",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tanks",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tanks",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tank-settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tank-settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tank-settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "tank-settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumper-profile",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumper-profile",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "jumper-profile",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "settings",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "settings",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "settings",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "settings",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "menu",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "menu",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "menu",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "menu",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "help",
+      "scrollFraction": 0,
+      "cardCount": 12,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "help",
+      "scrollFraction": 0.35,
+      "cardCount": 12,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "help",
+      "scrollFraction": 0.75,
+      "cardCount": 12,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "help",
+      "scrollFraction": 1,
+      "cardCount": 12,
+      "bodyHeight": 233
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-1",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-1",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-1",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-1",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-2",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-2",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-2",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-2",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-3",
+      "scrollFraction": 0,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-3",
+      "scrollFraction": 0.35,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-3",
+      "scrollFraction": 0.75,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    },
+    {
+      "viewport": "landscape",
+      "screen": "wizard-3",
+      "scrollFraction": 1,
+      "cardCount": 0,
+      "bodyHeight": 179.40625
+    }
+  ],
+  "errors": []
+}

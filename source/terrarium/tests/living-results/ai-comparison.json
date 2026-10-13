@@ -1,0 +1,30 @@
+{
+  "scenario": "Deliberately missed pounces at a fixed launch point; immediate retries before disengagement",
+  "results": {
+    "original": {
+      "attempts": 3,
+      "immediateRetries": 2,
+      "disengaged": true,
+      "failedLaunch": [
+        35,
+        0,
+        30
+      ],
+      "misses": 3
+    },
+    "upgraded": {
+      "attempts": 2,
+      "immediateRetries": 1,
+      "disengaged": true,
+      "failedLaunch": [
+        30,
+        0,
+        30
+      ],
+      "misses": 2
+    }
+  },
+  "immediateRetryReduction": 0.5,
+  "result": "PASS",
+  "limitation": "Forced-failure policy regression, not a full hunting-success benchmark or a general intelligence multiplier."
+}

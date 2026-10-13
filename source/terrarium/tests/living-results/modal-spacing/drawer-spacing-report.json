@@ -1,0 +1,411 @@
+{
+  "result": "PASS",
+  "cases": [
+    {
+      "viewport": "desktop",
+      "tab": "decor",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "decor",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "decor",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "plants",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "plants",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "plants",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "walls",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 229.375
+    },
+    {
+      "viewport": "desktop",
+      "tab": "walls",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 229.375
+    },
+    {
+      "viewport": "desktop",
+      "tab": "walls",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 229.375
+    },
+    {
+      "viewport": "desktop",
+      "tab": "substrate",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "substrate",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "substrate",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 219
+    },
+    {
+      "viewport": "desktop",
+      "tab": "food",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 191.78125
+    },
+    {
+      "viewport": "desktop",
+      "tab": "food",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 191.78125
+    },
+    {
+      "viewport": "desktop",
+      "tab": "food",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 191.78125
+    },
+    {
+      "viewport": "phone",
+      "tab": "decor",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "decor",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "decor",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "plants",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "plants",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "plants",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "walls",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 244.75
+    },
+    {
+      "viewport": "phone",
+      "tab": "walls",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 244.75
+    },
+    {
+      "viewport": "phone",
+      "tab": "walls",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 244.75
+    },
+    {
+      "viewport": "phone",
+      "tab": "substrate",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "substrate",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "substrate",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 193.390625
+    },
+    {
+      "viewport": "phone",
+      "tab": "food",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 183.671875
+    },
+    {
+      "viewport": "phone",
+      "tab": "food",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 183.671875
+    },
+    {
+      "viewport": "phone",
+      "tab": "food",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 183.671875
+    },
+    {
+      "viewport": "landscape",
+      "tab": "decor",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "decor",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "decor",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "plants",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "plants",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "plants",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "walls",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 147
+    },
+    {
+      "viewport": "landscape",
+      "tab": "walls",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 147
+    },
+    {
+      "viewport": "landscape",
+      "tab": "walls",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 147
+    },
+    {
+      "viewport": "landscape",
+      "tab": "substrate",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "substrate",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "substrate",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 103
+    },
+    {
+      "viewport": "landscape",
+      "tab": "food",
+      "fraction": 0,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 167
+    },
+    {
+      "viewport": "landscape",
+      "tab": "food",
+      "fraction": 0.5,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 167
+    },
+    {
+      "viewport": "landscape",
+      "tab": "food",
+      "fraction": 1,
+      "insideViewport": true,
+      "headerClear": true,
+      "bleed": false,
+      "bodyHeight": 167
+    }
+  ],
+  "errors": []
+}

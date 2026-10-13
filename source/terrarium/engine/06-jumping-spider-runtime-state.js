@@ -181,7 +181,7 @@
 
   // ---------------- needs ----------------
   function needs(hab, sp, dt) {
-    const sleeping = sp.state === 'sleep' || sp.state === 'premolt' || sp.state === 'molting';
+    const sleeping = sp.state === 'sleep' || sp.state === 'premolt' || sp.state === 'molting' || sp.state === 'postMolt' || sp.soft > 0;
     sp.sat = Math.max(0, sp.sat - dt * 0.00188 * (sleeping ? 0.35 : 1)); // ~17.5% hungrier than the original 0.0016
     sp.hyd = Math.max(0, sp.hyd - dt * 0.0011 * (1.3 - hab.data.humidity * 0.6));
     sp.ageDays += dt / DAY;
@@ -236,7 +236,7 @@
   }
   AI.canSee = canSee; AI.noteSeen = (h, s, e) => noteSeen(h, s, e);
   /** Remember where an animal was last seen (memory used when it slips out of view). */
-  function noteSeen(hab, sp, e) { const ls = sp._ls || (sp._ls = {}); ls[e.id] = { pos: e.pos.slice(), sup: e.sup ? JT.deepClone(e.sup) : { k: 'floor' }, fwd: (e.fwd || [1, 0, 0]).slice(), t: hab.time }; }
+  function noteSeen(hab, sp, e) { const ls = sp._ls || (sp._ls = {}); ls[e.id] = { pos: e.pos.slice(), sup: e.sup ? JT.deepClone(e.sup) : { k: 'floor' }, fwd: (e.fwd || [1, 0, 0]).slice(), t: hab.time }; const ids=Object.keys(ls).sort((a,b)=>ls[b].t-ls[a].t); for(const id of ids.slice(12))delete ls[id]; sp.mem.sight = ls; }
 
   // ---------------- perception ----------------
   function perceive(hab, sp) {
@@ -256,7 +256,7 @@
       let p = ang * motion * covF * (0.35 + distF) * 1.4;
       if (veryHungry && motion > 0.5) p = Math.max(p, 0.5); // vibration/motion sense when starving
       if (e.sup && e.sup.k === 'air') p *= 0.8;
-      if (JT.R() < p) { if (!canSee(hab, sp, e)) return; if (!seen[e.id]) sp._noticedAt = now; seen[e.id] = now; noteSeen(hab, sp, e); }
+      if (JT.R() < p) { if (!canSee(hab, sp, e)) return; if (AI.inspectCue && !AI.inspectCue(hab, sp, e, c, motion)) return; if (!seen[e.id]) sp._noticedAt = now; seen[e.id] = now; noteSeen(hab, sp, e); }
     };
     for (const p of hab.data.prey) { if (p.owner || p.buried || p.dead) continue; const d = JT.PREY_BY_ID[p.type]; if (!AI.huntableFor(sp, d)) continue; consider(p); }
     if (sp.sat < 0.32 && sp.pers.cannibal > 0.5) for (const o of hab.data.spiders) if ((o !== sp && !MOLT.has(o.state) || (o !== sp && o.soft > 0)) && !(JT.sigHas(sp_(o), 'ant') && !JT.sigHas(sp_(sp), 'ant') && sp.sat > 0.12)) consider(o, true); // the ant disguise works
@@ -268,6 +268,7 @@
     const wk = !isSpider && JT.PreyAI.weakK ? JT.PreyAI.weakK(e) : 0; // a groggy escapee is an easy second chance
     const maxR = AI.sizeLimit(sp) + wk * 0.25;
     if (ratio > maxR) return -1;
+    if (sp.soft > 0) return -1; if (sp.mem.ignore[e.id] > hab.time) return -1;
     if (ratio > 1 && AI.fragile(sp)) return -1; // never a big fight while soft or about to molt
     const crumbs = !isSpider && !def.huntable; // springtails: only worth it when starving
     if (ratio < 0.08 && L > 6 && !crumbs) return -1;
@@ -299,7 +300,7 @@
     for (const id in seen) {
       let e = hab.preyById(id), isS = false; if (!e) { e = hab.spider(id); isS = !!e; } if (!e || e === sp) continue;
       if (!isS && (e.owner || e.buried)) continue;
-      if (now - seen[id] > 1.5 && !canSee(hab, sp, e)) continue; // out of view for a while: not worth starting on
+      if (!canSee(hab, sp, e)) continue; // out of view for a while: not worth starting on
       if (opportunist && (isS || M.dist(sp.pos, e.pos) > J * 0.9 || JT.R() > 0.3 + sp.traits.bold * 0.3)) continue;
       const sc = scoreTarget(hab, sp, e, isS); if (sc > bs) { bs = sc; best = { kind: isS ? 'spider' : 'prey', id: e.id, since: hab.time }; }
     }
@@ -327,9 +328,9 @@
     const th = detectThreat(hab, sp);
     if (th && cur < 60) { startFlee(hab, sp, th); return; }
     if (cur >= 60) return;
-    if (sp.hyd < 0.3 && cur < 50 && !(sp._drinkFail > hab.time)) { if (startDrink(hab, sp)) return; }
+    if (sp.hyd < (sp.sat < 0.18 ? 0.22 : 0.4) && cur < 50 && !(sp._drinkFail > hab.time)) { if (startDrink(hab, sp)) return; }
     if (cur >= 50) return;
-    const canHunt = sp.soft < 40 && !(sp._hesitate > hab.time); // just shaken off: a few seconds of hesitation
+    const canHunt = sp.soft <= 0 && !(sp._hesitate > hab.time); // just shaken off: a few seconds of hesitation
     if (canHunt) perceive(hab, sp);
     if (canHunt && cur < 40) {
       const t = chooseTarget(hab, sp);
@@ -623,7 +624,7 @@
     const pred = predict(hab, sp, e, 0.3 + T.tactics * 1.0);
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp, false, true));
     const heading = e.fwd ? horiz(e.fwd) : [1, 0, 0];
-    const misses = sp.mem.misses || 0; const shift = misses >= 2 ? 1.6 : 1;
+    const misses = sp.mem.misses || 0; const shift = misses >= 1 ? 1.6 : 1;
     const hungerW = sp.sat < 0.35 ? 1.6 : 1;
     const bigT = sp.target.kind === 'prey' && AI.ratioOf(sp, e0) > 1.05; const kick = bigT && KICKERS.has(e0.type);
     const cands = [];
@@ -659,7 +660,8 @@
       if (elev > 6) s += (S.prefs.height * 2.5 + T.tactics * 1.5) * (misses >= 2 ? 1.4 : 1);
       if (elev < -12) s -= 2;
       const dd = M.dist(c.pos, pred.pos) / J; s -= Math.abs(dd - 0.6) * 2;
-      if (sp.mem.failPos && M.dist(c.pos, sp.mem.failPos) < 14) s -= 3;
+      if (sp.mem.failPos && M.dist(c.pos, sp.mem.failPos) < 14) s -= 6;
+      for (const f of sp.mem.failures || []) if (hab.time - f.t < 90 && M.dist(c.pos, f.pos) < 12) s -= 5;
       if (e._vel && M.len(e._vel) > 2 && M.dist(c.pos, pred.pos) < M.dist(c.pos, e.pos)) s += T.tactics * 2;
       if (sp.pos[1] > 10 && c.pos[1] < 2 && elev < 2) s -= 2.5 * (sp.pos[1] / 30); // don't descend needlessly
       // no needless detours: a winding route to a launch point that is not much better is worse than a direct one
@@ -704,7 +706,7 @@
   /** What the hunter believes about its target: the live animal while in view, its last-seen memory otherwise. */
   function known(hab, sp, e) {
     if (sp._tVis !== false) return e;
-    const m = sp._ls && sp._ls[e.id]; if (!m) return e;
+    const m = sp._ls && sp._ls[e.id] || {pos:sp.pos.slice(),sup:sp.sup,fwd:sp.fwd};
     return { id: e.id, type: e.type, species: e.species, stage: e.stage, name: e.name, traits: e.traits, pos: m.pos, sup: m.sup, fwd: m.fwd, _vel: [0, 0, 0], state: 'idle' };
   }
   const memT = (sp) => 5 + sp.traits.tactics * 8 + sp.traits.patience * 4;
@@ -785,7 +787,7 @@
     const vis = trackTarget(hab, sp, e, dt);
     aimAt(hab, sp, known(hab, sp, e).pos, dt, 7);
     if (reconsider(hab, sp, dt)) return;
-    if (e.sup.k !== 'air') { setState(sp, 'assess'); return; }
+    if (vis && e.sup.k !== 'air') { setState(sp, 'assess'); return; }
     if (!vis && lostFor(hab, sp) > 2.5) { sp.mem.ignore[e.id] = hab.time + 6; AI.dropTarget(hab, sp); return; }
     if (vis && strikeOK(hab, sp, e, 0.6) && JT.R() < dt * (0.4 + sp.traits.tactics) * 3) { startCrouch(hab, sp, 0.25); return; }
     if (sp.st > 10 + sp.traits.patience * 10) { sp.mem.ignore[e.id] = hab.time + 8; AI.dropTarget(hab, sp); }
@@ -794,7 +796,7 @@
   function preyView(hab, sp, e) {
     const to = M.sub(sp.pos, e.pos); to[1] = 0; const l = M.len(to) || 1; const f = e.fwd || [1, 0, 0]; const fl = Math.hypot(f[0], f[2]) || 1;
     const look = (f[0] * to[0] + f[2] * to[2]) / (fl * l);
-    const busy = M.len(e._vel || [0, 0, 0]) > 1 || e.state === 'walk' || e.state === 'clean';
+    const busy = M.len(e._vel || [0, 0, 0]) > 1 || e.state === 'walk' || e.state === 'clean' || e.state === 'groom' || e.state === 'nibble';
     return { look, busy, facing: look > 0.35 && l < ((targetDef(hab, sp, e) || {}).sense || 20) * 2.2, back: look < -0.3 };
   }
   AI.preyView = preyView;
@@ -882,14 +884,15 @@
   function startPeek(hab, sp, e) {
     const m = sp._ls && sp._ls[e.id]; const nm = preyName(targetDef(hab, sp, e));
     sp._peeks = (sp._peeks || 0) + 1;
-    if (!m || sp._peeks > 2) { loseTarget(hab, sp, e, 'Lost the ' + nm + '. Watching for movement.'); return; }
+    if (!m || hab.time - m.t > memT(sp) * 2 || sp._peeks > 2) { loseTarget(hab, sp, e, 'Lost the ' + nm + '. Watching for movement.'); return; }
     const J = AI.jump(sp); const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp, false, true));
     const ghost = { id: e.id, type: e.type, species: e.species, stage: e.stage, pos: m.pos, sup: m.sup };
     const cands = [];
     for (const n of hab.nav.nodes) {
       if (n.kind === 'face' || !isFinite(dj.dist[n.id])) continue;
       const d = M.dist(n.pos, m.pos); if (d > Math.max(30, J * 1.6) || d < 3 || M.dist(n.pos, sp.pos) < 4) continue;
-      cands.push({ n, s: -dj.dist[n.id] * 0.04 - Math.abs(d - J * 0.7) * 0.08 + (n.pos[1] > m.pos[1] + 4 ? 1 : 0) + JT.R() * 0.3 });
+      const checked = sp._checkedPeeks || (sp._checkedPeeks=[]); if (checked.some(p=>M.dist(p,n.pos)<8)) continue;
+      cands.push({ n, s: Nav.coverAt(hab,n.pos) * 1.2 -dj.dist[n.id] * 0.04 - Math.abs(d - J * 0.7) * 0.08 + (n.pos[1] > m.pos[1] + 4 ? 1 : 0) + JT.R() * 0.3 });
     }
     cands.sort((a, b) => b.s - a.s);
     let pick = null;
@@ -897,10 +900,11 @@
     if (!pick && cands[0]) pick = cands[0].n;
     const r = pick && Nav.buildRoute(hab, dj, pick.sup, pick.pos);
     if (!r) { loseTarget(hab, sp, e, 'Lost the ' + nm + '. Watching for movement.'); return; }
+    sp._checkedPeeks.push(pick.pos.slice()); if(sp._checkedPeeks.length>2)sp._checkedPeeks.shift();
     sp._route = r; sp._routeStart = hab.time; sp._peekPos = m.pos.slice(); sp._peekLook = 0;
     setState(sp, 'peek', sp._peeks > 1 ? 'Still looking for the ' + nm + '.' : 'Lost sight of the ' + nm + ' — checking where it went.');
   }
-  function loseTarget(hab, sp, e, why) { if (e) sp.mem.ignore[e.id] = hab.time + 12; sp._peeks = 0; AI.dropTarget(hab, sp); setState(sp, 'lookout', why || 'Lost it. Watching for movement.'); }
+  function loseTarget(hab, sp, e, why) { if (e) sp.mem.ignore[e.id] = hab.time + 12; sp._peeks = 0; sp._checkedPeeks = []; AI.dropTarget(hab, sp); setState(sp, 'lookout', why || 'Lost it. Watching for movement.'); }
   H.peek = function (hab, sp, dt) {
     const e = targetEnt(hab, sp); if (!e) return AI.dropTarget(hab, sp);
     const vis = trackTarget(hab, sp, e, dt);
@@ -928,13 +932,14 @@
   H.crouch = function (hab, sp, dt) {
     const e = targetEnt(hab, sp); if (!e) return AI.dropTarget(hab, sp);
     const vis = trackTarget(hab, sp, e, dt);
-    aimAt(hab, sp, e.pos, dt, 10);
+    aimAt(hab, sp, known(hab, sp, e).pos, dt, 10);
     if (!vis) { if (lostFor(hab, sp) > 0.5) replan(hab, sp, e); return; }
     const d = M.dist(sp.pos, e.pos);
     if (d > effJump(sp, e.pos) * 1.02) { if (e.sup.k === 'air') { setState(sp, 'track'); return; } replan(hab, sp, e); return; }
     if (sp.st >= sp._crouchDur) {
       // a big one is only jumped once it keeps still (it gives up waiting after a few seconds)
       if (sp._bigT && e._vel && M.len(e._vel) > 1.5 && sp.st < sp._crouchDur + 3) return;
+      if (AI.strikeWindow && !AI.strikeWindow(hab, sp, e) && sp.st < sp._crouchDur + 1.5 + sp.traits.patience * 2) { sp.thought = 'Waiting for a steadier landing window.'; return; }
       if (strikeOK(hab, sp, e, 1.02)) launchPounce(hab, sp, e); else replan(hab, sp, e);
     }
   };
@@ -950,7 +955,7 @@
     const def = targetDef(hab, sp, e); const land = landingFor(hab, sp, e);
     let to = land.sup ? AI.surfPt(hab, { pos: land.pos, sup: land.sup }, 0) : land.pos; if (e.sup.k === 'air') { const v = e._vel || [0, 0, 0]; to = M.add(e.pos, M.mul(v, AI.pounceDur(M.dist(sp.pos, e.pos)) * sp.traits.tactics)); }
     // launch from the surface the jumper is visibly on (never from inside a trunk) and only along a clear line
-    const from = AI.surfPt(hab, sp, 0); const L = AI.len(sp);
+    const from = AI.surfPt(hab, sp, 0); sp._launchPos = sp.pos.slice(); const L = AI.len(sp);
     if (segBlocked(hab, AI.surfPt(hab, sp, L * 0.3), to, L * 0.5, lenOfE(e) * 0.5 + 0.8, 0.8) || segBlocked(hab, from, to, L * 0.5, lenOfE(e) * 0.5 + 0.8, 0.8)) { sp.mem.blockPos = { pos: sp.pos.slice(), t: hab.time }; replan(hab, sp, e); return; }
     const d = M.dist(from, to);
     sp._air = { from, to, t: 0, dur: AI.pounceDur(d), apex: 0, straight: true, ease: true, land: land.sup, launchY: sp.pos[1], tY: e.pos[1] };
@@ -992,15 +997,17 @@
     }
   };
   function miss(hab, sp, e) {
-    sp.mem.misses = (sp.mem.misses || 0) + 1; sp.mem.failPos = sp.pos.slice(); sp.stats.misses++;
+    sp.mem.misses = (sp.mem.misses || 0) + 1; sp.mem.failPos = (sp._launchPos || sp.pos).slice(); sp.stats.misses++;
+    const failures = sp.mem.failures || (sp.mem.failures=[]); failures.push({pos:sp.mem.failPos.slice(), t:hab.time, id:e&&e.id}); if(failures.length>6)failures.shift();
     hab.event('miss', { sp });
     JT.PreyAI.alarm(hab, sp.pos, 24, 0.85, null, sp);
     if (e && e.type && sp.target && sp.target.kind === 'prey') { const pt = sp.mem.ptype || (sp.mem.ptype = {}); const r = pt[e.type] || (pt[e.type] = { c: 0, m: 0 }); r.m++; }
     if (e) {
       if (sp.target && sp.target.kind === 'prey') JT.PreyAI.escape(hab, e, sp, false);
+      if (sp._tMissId !== e.id) { sp._tMiss = 0; sp._tMissId = e.id; }
       sp._tMiss = (sp._tMiss || 0) + 1;
-      if (sp._tMiss >= 3) { sp.mem.ignore[e.id] = hab.time + 25; sp._tMiss = 0; sp.thought = 'Missed again — giving the ' + preyName(targetDef(hab, sp, e)) + ' a rest.'; AI.dropTarget(hab, sp); if (sp.state === 'pounce') setState(sp, 'rest'); return; }
-      sp.thought = 'Missed! Regrouping.';
+      if (sp._tMiss >= 2) { sp.mem.ignore[e.id] = hab.time + 30 + sp.traits.patience * 15; sp._tMiss = 0; sp.thought = 'Missed again — giving the ' + preyName(targetDef(hab, sp, e)) + ' a rest.'; AI.dropTarget(hab, sp); if (sp.state === 'pounce') setState(sp, 'rest'); return; }
+      sp.thought = 'Missed — trying a different launch point.'; sp._route = null; sp._plan = null;
       if (sp.state === 'pounce') setState(sp, 'assess');
     } else if (sp.state === 'pounce') setState(sp, 'idle', 'Missed.');
   }
@@ -1286,6 +1293,7 @@
       else s = hgt * 3 * (0.5 + S.prefs.height) + cover * 5 + quiet * 0.05 - c * 0.02 + (sp.home && M.dist(sp.home.pos, n.pos) < 8 ? 3 : 0) + (!nesting && AI.blendAt(hab, sp.species, n.sup, n.pos) ? 1.5 : 0);
       for (const o of others) if (o.retreat && o.retreat.pos && M.dist(o.retreat.pos, n.pos) < 10) s -= 4;
       if (avoid) { const ad = M.dist(avoid, n.pos); if (ad < 12) continue; s -= Math.max(0, 34 - ad) * 0.25; }
+      if (AI.placeBonus) s += AI.placeBonus(hab,sp,n.pos,nesting?'retreat':'perch') * 0.25;
       if (s > bs) { bs = s; best = n; }
     }
     if (!best) return null;
@@ -1339,7 +1347,7 @@
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp));
     const srcs = hab.data.drops.map(d => ({ pos: d.pos, sup: d.sup, id: d.id, decor: d.decor, pool: !!d.pool })).concat(maxCost ? [] : hab.nav.water.map((w, i) => ({ pos: w.pos, sup: w.sup, decor: w.decor, perm: i })));
     let best = null, bc = maxCost || 260;
-    for (const s of srcs) { const gc = Nav.goalCost(hab, dj, s.sup, s.pos); if (gc && gc.cost < bc) { bc = gc.cost; best = s; } }
+    for (const s of srcs) { if (AI.waterKnown && !AI.waterKnown(hab,sp,s)) continue; const gc = Nav.goalCost(hab, dj, s.sup, s.pos); const familiarity=AI.placeBonus?AI.placeBonus(hab,sp,s.pos,'water'):0; if (gc && gc.cost - familiarity < bc) { bc = gc.cost - familiarity; best = s; } }
     if (!best) { sp._drinkFail = hab.time + (maxCost ? 12 : 30); return false; }
     const r = Nav.buildRoute(hab, dj, best.sup, best.pos); if (!r) { sp._drinkFail = hab.time + 30; return false; }
     sp._route = r; sp._routeStart = hab.time; sp._drink = best; AI.dropTarget(hab, sp);
@@ -1560,13 +1568,14 @@
       const L = AI.len(sp);
       hab.addRemains('exuvia', sp.pos, sp.sup, 'exuvia', { species: sp.species, len: L });
       sp.stage = Math.min(5, sp.stage + 1); sp.meals = 0; sp.molts++; sp.soft = 120;
+      sp.sat = Math.max(0.28, Math.min(0.30, sp.sat * 0.45));
       if (sp.stage === 5) { sp.adultDays = 0; hab.event('journal', { id: 'adult', sp }); }
       hab.event('journal', { id: 'molt', sp }); hab.event('journal', { id: 'softMolt', sp });
       hab.event('molt', { sp });
-      setState(sp, 'postMolt', 'Freshly molted — pale and soft, resting while the new skin hardens.');
+      setState(sp, 'postMolt', 'Recovering from molt — hungry, resting while the new skin hardens.');
     }
   };
-  H.postMolt = function (hab, sp, dt) { if (sp.st > 25) { sp.retreat = null; startEmerge(hab, sp, 'stretch', 'Stretching its new legs carefully.'); } };
+  H.postMolt = function (hab, sp, dt) { if (sp.soft <= 0) { sp.retreat = null; startEmerge(hab, sp, 'stretch', 'Stretching its new legs carefully.'); } };
 
   // ---- sleep ----
   function startSleep(hab, sp) {
@@ -1952,6 +1961,8 @@
     return out;
   };
   AI.restore = function (hab, sp) {
+    sp.mem = sp.mem || {misses:0, ignore:{}, success:{}}; sp.mem.ignore = sp.mem.ignore || {};
+    sp._ls = sp.mem.sight || {};
     // transient plans don't persist; resume safely from saved biological state
     sp._route = null; sp._air = null; sp._plan = null; sp._hang = null; sp._dangleOff = null; sp._glance = null; sp._dodge = null; sp._tVis = null;
     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }

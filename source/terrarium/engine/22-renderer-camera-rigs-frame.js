@@ -239,7 +239,7 @@
                 const c = this.cv, cw = c.clientWidth, ch = c.clientHeight;
                 (cw !== this._cw || ch !== this._ch || cw > 0 && (Math.abs(c.width - cw * this.k) > 2 || Math.abs(c.height - ch * this.k) > 2)) && this.resize();
             }
-            this.time += dt;
+            this.time = this.game.hab ? this.game.hab.time : this.time + dt;
             const hab = this.game.hab;
             if (!hab) return;
             if (dt > 0) {

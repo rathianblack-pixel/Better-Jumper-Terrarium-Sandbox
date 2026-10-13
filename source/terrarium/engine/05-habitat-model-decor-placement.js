@@ -15,6 +15,8 @@
       this.game = game || null;
       this.data = Object.assign({ id: JT.newId('h'), name: 'Habitat', type: 'standard', substrate: 'coco', bg: 'mossy', humidity: 0.6, age: 0,
         decor: [], spiders: [], prey: [], remains: [], drops: [], silk: [] }, data || {});
+      if (!Number.isFinite(this.data.simTime)) this.data.simTime = this.game && this.game.state ? this.game.state.time : 0;
+      if (!this.data.localTimeMode) this.data.localTimeMode = this.game && this.game.state ? this.game.state.timeMode || 'auto' : 'day';
       this.geoms = {}; this.nav = null; this._geomVersion = 0;
       this.rebuild(); this._fitWalls(); for (const wd of this.data.decor.filter(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall')) this._resnapMounts(wd.id); // older mounts hanging past a wall edge slide back on
     }
@@ -24,8 +26,13 @@
     /** Tanks are named after the jumpers living in them (v11): "Pip", "Pip & Bean", "Pip, Bean & Mochi"; none: "Empty tank". */
     get title() { const n = this.data.spiders.map(x => x.name); if (!n.length) return 'Empty tank'; return n.length === 1 ? n[0] : n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1]; }
     get prey() { return this.data.prey; }
-    get time() { return this.game ? this.game.state.time : (this._t || 0); }
-    daylight() { return this.game ? this.game.daylight() : 1; }
+    get time() { return this.game ? this.data.simTime : (this._t || 0); }
+    daylight() {
+      const mode = this.data.localTimeMode || 'auto';
+      if (mode === 'day') return 1; if (mode === 'night') return 0;
+      const t = (this.time % (JT.DAY || 480)) / (JT.DAY || 480);
+      return M.clamp(Math.sin((t - 0.2) / 0.62 * Math.PI) * 1.6, 0, 1);
+    }
     find(id) { return this.data.spiders.find(s => s.id === id) || this.data.prey.find(p => p.id === id) || null; }
     spider(id) { return this.data.spiders.find(s => s.id === id) || null; }
     preyById(id) { return this.data.prey.find(p => p.id === id) || null; }
@@ -454,8 +461,8 @@
     }
     /** Morning dew: a few droplets condense on leaves and walls around dawn when humid enough. */
     updateDew(dt) {
-      if (!this.game) return; const tod = this.game.tod ? this.game.tod() : null; if (tod == null) return;
-      const day = Math.floor(this.game.state.time / (JT.DAY || 480));
+      if (!this.game) return; const tod = (this.time % (JT.DAY || 480)) / (JT.DAY || 480); if (tod == null) return;
+      const day = Math.floor(this.time / (JT.DAY || 480));
       if (tod > 0.2 && tod < 0.3 && this.data.humidity > 0.5 && this.data.dewDay !== day) {
         this.data.dewDay = day;
         const cands = this.nav.nodes.filter(n => !n.landing && n.kind !== 'floor' && n.pos[1] > 3);

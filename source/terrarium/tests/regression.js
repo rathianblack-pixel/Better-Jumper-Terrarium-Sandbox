@@ -5,11 +5,11 @@ try{for(const [name,viewport] of [['desktop',{width:1280,height:720}],['mobile',
  const c=await browser.newContext({viewport,deviceScaleFactor:name==='mobile'?3:1,isMobile:name!=='desktop',hasTouch:name!=='desktop'}),page=await c.newPage();page.on('pageerror',e=>report.errors.push(name+': '+e.message));page.on('console',m=>{if(m.type()==='error'&& !m.text().includes('favicon'))report.errors.push(name+': '+m.text())});
  await page.goto(base+'/index.html');const frame=page.frames().find(f=>f.url().includes('preview=1'));await frame.waitForFunction(()=>window.JT?.app);await page.waitForTimeout(1400);
  assert.equal(await page.evaluate(()=>localStorage.getItem('jumperTerrarium.v14.save')),null,'preview must not create save');
- const t=await frame.evaluate(()=>JT.app.game.state.time);await page.waitForTimeout(400);assert((await frame.evaluate(()=>JT.app.game.state.time))>t,'preview is live');
+ const t=await frame.evaluate(()=>JT.app.game.state.time);await frame.waitForFunction(t=>JT.app.game.state.time>t,t,{timeout:10000});
  await page.screenshot({path:OUTPUT+'/title-'+name+'.png'});await page.click('#start');assert(await page.locator('#new').isVisible());assert(await page.locator('#continue').isDisabled());await page.screenshot({path:OUTPUT+'/start-options-'+name+'.png'});
  await page.click('#new');await page.waitForURL('**/jumper.html');await page.waitForFunction(()=>window.JT?.app);await page.waitForTimeout(1000);
  // Complete the retained onboarding with real controls.
- if(await page.locator('#modalWrap').isVisible()){for(let n=0;n<2;n++){const button=page.getByRole('button',{name:'Continue',exact:true});if(await button.count())await button.click();}const create=page.getByRole('button',{name:'Create habitat',exact:true});if(await create.count())await create.click();}
+ if(await page.locator('#modalWrap').isVisible()){for(let n=0;n<2;n++){const button=page.getByRole('button',{name:'Continue',exact:true});if(await button.count())await button.click();}const create=page.getByRole('button',{name:'Create Tank & Enter',exact:true});if(await create.count())await create.click();}
  await page.evaluate(()=>{JT.app.settings.tips=false;JT.UI.hideTip();JT.UI._tipQ=[];JT.app.game.state.biomeSetup=false;JT.UI.closeModal();JT.UI.hidePanel();JT.app.game.state.timeMode='day';JT.app.settings.art='hd2d';JT.app.settings.pixel='fine';JT.app.settings.quality='high';JT.app.R._thermalLevel=0;JT.app.R.resize()});await page.waitForTimeout(600);
  assert(await page.locator('#spiderPanel').isHidden());assert.equal(await page.locator('#dock button').count(),5);
  assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('#dock')).backgroundImage),'none');

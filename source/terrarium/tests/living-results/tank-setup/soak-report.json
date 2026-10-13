@@ -1,0 +1,39 @@
+{
+  "result": "PASS",
+  "checks": [
+    {
+      "mode": "layout",
+      "elapsed": 30.00000000000682,
+      "finite": true,
+      "supports": true,
+      "jumpers": true
+    },
+    {
+      "mode": "preset",
+      "elapsed": 30.00000000000682,
+      "finite": true,
+      "supports": true,
+      "jumpers": true
+    },
+    {
+      "mode": "biome",
+      "elapsed": 30.00000000000682,
+      "finite": true,
+      "supports": true,
+      "jumpers": true
+    },
+    {
+      "shortcut": "legacy preset",
+      "mode": "preset"
+    },
+    {
+      "shortcut": "legacy biome",
+      "mode": "biome"
+    },
+    {
+      "shortcut": "menu",
+      "open": true
+    }
+  ],
+  "errors": []
+}
