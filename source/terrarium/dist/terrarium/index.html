@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#131f0d">
+<title>Terrarium</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Terrarium">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<style>
+  :root { --ink: #f1ead8; --muted: #c9c0a6; --gold: #d8b66a; --leaf: #8fbf5a; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #131f0d; color: var(--ink); font-family: Georgia, 'Times New Roman', serif; overflow: hidden; }
+  body { background: radial-gradient(ellipse at 50% 34%, #4f6a34 0%, #24391a 48%, #0e170a 100%); }
+  .mote { position: fixed; border-radius: 50%; background: rgba(240, 236, 190, .5); filter: blur(1px); animation: drift linear infinite; pointer-events: none; }
+  @keyframes drift { from { transform: translateY(0); opacity: 0; } 15% { opacity: .8; } to { transform: translateY(-110vh); opacity: 0; } }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom)); transition: opacity .5s ease, transform .5s ease; }
+  .screen.hide { opacity: 0; transform: scale(.98); pointer-events: none; }
+  .dome { width: min(46vw, 46vh, 300px); height: auto; filter: drop-shadow(0 18px 30px rgba(0,0,0,.45)); animation: breathe 6s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: translateY(-6px); } }
+  h1 { font-weight: normal; font-size: clamp(40px, 9vw, 76px); letter-spacing: .06em; margin: 18px 0 4px; font-variant: small-caps; text-shadow: 0 2px 18px rgba(0,0,0,.4); }
+  .sub { color: var(--muted); font-style: italic; margin: 0 0 34px; font-size: clamp(15px, 2.6vw, 19px); text-align: center; }
+  .btn { font: inherit; font-variant: small-caps; letter-spacing: .08em; font-size: 22px; color: #1d2a12; background: linear-gradient(#e8cf8c, #c9a556); border: 0; border-radius: 999px; padding: 14px 54px; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.35); transition: transform .15s ease; }
+  .btn:active { transform: scale(.97); }
+  h2 { text-align: center; font-weight: normal; font-variant: small-caps; letter-spacing: .06em; font-size: clamp(26px, 5vw, 38px); margin: 0 0 6px; }
+  .cards { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; margin: 22px 0 26px; max-width: 760px; }
+  .card { font: inherit; color: inherit; text-align: left; width: min(340px, 86vw); background: rgba(20, 30, 14, .55); border: 1px solid rgba(232, 214, 160, .28); border-radius: 22px; padding: 16px; cursor: pointer; display: flex; gap: 14px; align-items: center; backdrop-filter: blur(6px); transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+  .card:hover, .card:focus-visible { transform: translateY(-3px); border-color: var(--gold); background: rgba(30, 44, 20, .7); outline: none; }
+  .card img { width: 96px; height: 96px; border-radius: 20px; flex: none; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+  .card b { display: block; font-weight: normal; font-size: 23px; font-variant: small-caps; letter-spacing: .04em; }
+  .card span { display: block; color: var(--muted); font-size: 14.5px; line-height: 1.35; margin-top: 3px; }
+  .card em { display: block; color: var(--leaf); font-size: 13.5px; margin-top: 7px; font-style: normal; letter-spacing: .03em; }
+  .link { font: inherit; background: none; border: 0; color: var(--muted); font-style: italic; cursor: pointer; font-size: 16px; }
+  .foot { position: fixed; left: 0; right: 0; text-align: center; bottom: max(10px, env(safe-area-inset-bottom)); color: rgba(201, 192, 166, .55); font-size: 12px; font-style: italic; }
+</style>
+</head>
+<body>
+<section class="screen" id="title">
+  <img class="dome" src="icons/dome.png" alt="">
+  <h1>Terrarium</h1>
+  <p class="sub">A calm little world under glass</p>
+  <button class="btn" id="start">Start</button>
+</section>
+<section class="screen hide" id="pick" aria-hidden="true">
+  <h2>Who lives in your terrarium?</h2>
+  <p class="sub" style="margin-bottom:0">Each has its own tanks, journal and progress. You can switch any time from the ⋯ menu.</p>
+  <div class="cards">
+    <button class="card" data-go="jumper.html" data-key="jumperTerrarium.v14.save"><img src="icons/card-jumper.png" alt=""><div><b>Jumping Spiders</b><span>Curious hunters that leap, spin silk, dance and watch you back.</span><em></em></div></button>
+    <button class="card" data-go="mantis.html" data-key="mantisTerrarium.v1.save"><img src="icons/card-mantis.png" alt=""><div><b>Mantises</b><span>Patient ambushers that strike, eat their prey alive and molt hanging head-down.</span><em></em></div></button>
+  </div>
+  <button class="link" id="back">‹ Back</button>
+</section>
+<div class="foot">Your tanks are saved on this device</div>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  for (var i = 0; i < 14; i++) { var m = document.createElement('div'); m.className = 'mote'; var s = 2 + Math.random() * 4; m.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (Math.random() * 100) + 'vw;top:' + (60 + Math.random() * 50) + 'vh;animation-duration:' + (14 + Math.random() * 18) + 's;animation-delay:-' + (Math.random() * 20) + 's'; document.body.appendChild(m); }
+  function info(key) { try { var t = localStorage.getItem(key); if (!t) return 'New · start fresh'; var d = JSON.parse(t), n = (d.habitats || []).length, days = Math.floor((d.time || 0) / 480) + 1; var c = 0; (d.habitats || []).forEach(function (h) { c += (h.spiders || []).length; }); return 'Continue · ' + n + ' tank' + (n === 1 ? '' : 's') + ', ' + c + ' living there · day ' + days; } catch (e) { return 'Continue'; } }
+  document.querySelectorAll('.card').forEach(function (c) { c.querySelector('em').textContent = info(c.getAttribute('data-key')); c.onclick = function () { try { localStorage.setItem('terrarium.last', c.getAttribute('data-go')); } catch (e) {} document.body.style.transition = 'opacity .35s'; document.body.style.opacity = '0'; setTimeout(function () { location.href = c.getAttribute('data-go'); }, 300); }; });
+  function show(a, b) { $(a).classList.add('hide'); $(a).setAttribute('aria-hidden', 'true'); $(b).classList.remove('hide'); $(b).removeAttribute('aria-hidden'); }
+  $('start').onclick = function () { show('title', 'pick'); };
+  $('back').onclick = function () { show('pick', 'title'); };
+  if (location.hash === '#pick') show('title', 'pick');
+  try { var last = localStorage.getItem('terrarium.last'); if (last) { var c = document.querySelector('.card[data-go="' + last + '"]'); if (c) c.parentNode.insertBefore(c, c.parentNode.firstChild); } } catch (e) {}
+})();
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+</script>
+</body>
+</html>

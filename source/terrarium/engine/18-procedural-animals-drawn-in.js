@@ -327,5 +327,3 @@
     ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.quadraticCurveTo(C[0], C[1], B[0], B[1]); ctx.stroke();
   };
 })(typeof window !== 'undefined' ? window : globalThis);
-
-

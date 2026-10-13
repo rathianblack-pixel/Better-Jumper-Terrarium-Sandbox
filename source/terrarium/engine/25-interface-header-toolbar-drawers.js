@@ -126,14 +126,14 @@
       this.game = game; this.R = R; this.set = settings; this.cv = $('view'); this._bootAt = performance.now();
       this.bind(); this.refreshHeader();
       game.on((t, d) => this.onGame(t, d));
-      this.hidePanel();
+      const sp = game.hab.spider(game.selectedId); if (sp) this.showPanel(sp.id);
     },
     get hab() { return this.game.hab; },
     isMobile() { return root.matchMedia && root.matchMedia(UI.MOBILE_MQ).matches; },
 
     // ------------------------------------------------ binding
     bind() {
-      document.querySelectorAll('#cams button').forEach(b => b.onclick = () => { A().sfx('click'); this.frontView(); });
+      document.querySelectorAll('#cams button').forEach(b => b.onclick = () => this.setCam(b.dataset.cam));
       document.querySelectorAll('#timeMode button').forEach(b => b.onclick = () => this.setTimeMode(b.dataset.tm));
       document.querySelectorAll('#toolbar button').forEach(b => b.onclick = () => this.tool(b.dataset.tool));
       document.querySelectorAll('#dock button').forEach(b => b.onclick = () => this.dock(b.dataset.dock));
@@ -148,14 +148,13 @@
       $('btnHelp').onclick = () => this.helpModal();
       $('btnManage').onclick = () => this.manageModal();
       $('habPicker').onclick = () => this.habPickerModal();
-      $('jumperControl').onclick = () => this.jumpersSheet();
       $('drawerClose').onclick = () => this.closeDrawer();
       $('modalClose').onclick = () => this.closeModal();
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
       // phone camera buttons: 1 iso, 2 front, 3 back; tapping the current camera again re-centres the view
       // phone camera: one button shows the current view; tapping it opens the list of views (+ re-centre)
       { const cc = $('camCtl'), tg = $('camToggle'); const open = (on) => { cc.classList.toggle('open', on); tg.setAttribute('aria-expanded', on ? 'true' : 'false'); };
-        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(false); this.frontView(); };
+        tg.onclick = (e) => { e.stopPropagation(); A().sfx('click'); open(!cc.classList.contains('open')); };
         document.querySelectorAll('#camList button[data-cam]').forEach(b => b.onclick = () => { open(false); if (this.R.cam.mode === b.dataset.cam) { this.R.resetView(); A().sfx('click'); } else this.setCam(b.dataset.cam); });
         $('camRecentre').onclick = () => { open(false); this.R.resetView(); A().sfx('click'); };
         document.addEventListener('pointerdown', (e) => { if (cc.classList.contains('open') && !cc.contains(e.target)) open(false); }, true); }
@@ -173,7 +172,7 @@
       document.addEventListener('keydown', (e) => this.key(e));
       // audio may only start from a real activation gesture (iOS: touchend/click, not pointerdown)
       for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, () => A().start(), { capture: true, passive: true });
-      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (document.hidden && A().ctx && A().ctx.state === 'running' && A().ctx.suspend) { const ps = A().ctx.suspend(); if (ps && ps.catch) ps.catch(() => {}); } /* v29: no audio work (or battery drain) in the background */ if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && A()._silent) A()._silent.pause(); if (!document.hidden && A().ctx && A().ctx.state !== 'running') { const pr = A().ctx.resume(); if (pr && pr.catch) pr.catch(() => {}); } });
       { const poke = () => { this._activeUntil = performance.now() + 1800; }; for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'touchmove']) document.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons) return;
           // v17: scrolling the shop strip doesn't wake the tank up to 60 fps (the GPU stays free for the strip); thumbnails wait while the finger moves
           const t = e.target; if (ev !== 'keydown' && t && t.closest && t.closest('#drawerBody, #drawerChips')) { if (ev !== 'pointerdown') this._scrollUntil = performance.now() + 160; return; }
@@ -235,7 +234,7 @@
         if (drag) {
           const tol = e.pointerType === 'mouse' ? 5 : 16; // fingers wobble; a short wobble is still a tap
           if (!drag.moved && Math.hypot(p[0] - drag.s[0], p[1] - drag.s[1]) > tol) drag.moved = true;
-          if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.orbitBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
+          if (drag.moved) { if (drag.ghost) this.updateGhost(p[0], p[1]); else this.R.panBy(p[0] - drag.l[0], p[1] - drag.l[1]); }
           drag.l = p;
           if (e.pointerType === 'mouse' && !drag.moved) this.hoverAt(p);
         }
@@ -327,7 +326,7 @@
       if (this.obs) return;
       if (k === 'r' || k === 'R') { if (this.mode === 'place') this.rotatePlace(); return; }
       if ((k === 'l' || k === 'L') && this.mode === 'place') { this.toggleLeaves(); return; }
-      if (k === '1' || k === '2') this.frontView(); else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
+      if (k >= '1' && k <= '4') { const cm = this.camModes()[+k - 1]; if (cm) this.setCam(cm); } else if (k === 'f' || k === 'F') this.toggleObserve(true, this.game.selectedId);
       else if (k === '+' || k === '=') this.R.zoomBy(1.2); else if (k === '-' || k === '_') this.R.zoomBy(1 / 1.2); else if (k === '0') this.R.resetView();
       else if (k === 'm' || k === 'M') this.tool('mist');
       else if (k === 'b' || k === 'B') this.tool('build'); else if (k === 'c' || k === 'C') this.tool('care'); else if (k === 'j' || k === 'J') this.tool('jumpers');
@@ -341,10 +340,7 @@
       { const many = g.habs.length > 4; const show = many ? [st.active] : g.habs.map((_, i) => i); // v11: up to 30 tanks, so a long shelf collapses into the tank list
         for (const i of show) { const h = g.habs[i]; const b = el('button', i === st.active ? 'on' : '', esc(h.title)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); }
         const all = el('button', 'tk-all', g.habs.length > 1 ? 'All tanks · ' + g.habs.length : 'Tanks'); all.title = 'All your tanks'; all.onclick = () => this.tanksModal(); tabs.appendChild(all); }
-      $('habPicker').textContent = g.hab.title;
-      const nameControl = $('jumperControl');
-      if (nameControl) { const sp = g.hab.spider(g.selectedId) || g.hab.spiders[0]; nameControl.querySelector('span').textContent = sp ? sp.name : 'Choose a jumper'; nameControl.title = g.hab.title + ' · Choose a jumper'; }
-
+      $('habPicker').textContent = g.hab.title + ' \u25BE';
       this.syncCams();
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
@@ -354,16 +350,14 @@
     updateClock() { $('dayLbl').textContent = 'Day ' + this.game.day(); $('timeLbl').textContent = JT.fmtTime(this.game.tod()) + (this.game.state.timeMode !== 'auto' ? (this.game.state.timeMode === 'day' ? ' · day' : ' · night') : ''); },
     /** Views on offer: a back wall closes off the back, so wall tanks get the two sides instead. */
     hasWall(h) { h = h || this.hab; return !!h && h.decor.some(d => (JT.DECOR_BY_ID[d.type] || {}).arche === 'backwall'); },
-    camModes() { return ['observer']; }, // one overview camera now: drag to orbit it, Front snaps back to straight on
+    camModes() { return this.hasWall() ? ['iso', 'observer', 'left', 'right'] : ['iso', 'observer', 'reverse']; },
     /** Show only the views that make sense for this tank; slide to Front if the current one stopped making sense. */
     syncCams() {
       const ms = this.camModes(), cur = this.R.cam.mode; this._camKey = ms.join();
       { const lb = $('camLbl'); if (lb) lb.textContent = (JT.CAMS[cur] && JT.CAMS[cur].label || 'View').replace(/^Isometric$/, 'Iso'); }
-      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur && this.R.straightFront); }); this._camFront = this.R.straightFront;
+      document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => { b.classList.toggle('hidden', !ms.includes(b.dataset.cam)); b.classList.toggle('on', b.dataset.cam === cur); });
       if (!this.obs && cur !== 'follow' && !ms.includes(cur)) { this.R.setMode('observer'); document.querySelectorAll('#cams button, #camCtl button[data-cam]').forEach(b => b.classList.toggle('on', b.dataset.cam === 'observer')); }
     },
-    /** Back to the straight-on front view (leaves Observe / follow too). */
-    frontView() { if (this.obs) this.toggleObserve(false); else if (this.R.cam.mode === 'follow') this.setCam('observer'); this.R.resetView(); this.syncCams(); },
     setCam(m) {
       if (m !== 'follow' && !this.camModes().includes(m)) m = 'observer';
       if (m === 'follow' && this.R.cam.mode !== 'follow') this._prevCam = this.R.cam.mode;
@@ -380,7 +374,7 @@
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); this.undoClear && this.undoClear(); const rep = g.activate(i);
       const h = g.hab; g.selectedId = h.spiders[0] ? h.spiders[0].id : null; this.R.cur = null; this.R.resetView();
       if (rep && rep.meals.length) setTimeout(() => this.toast('While you were away: ' + rep.meals.map(([x, n]) => '<b>' + esc(x.name) + '</b> caught ' + (n === 1 ? 'a meal' : n + ' meals')).join(', ') + '.', 'quiet', 4200), 350);
-      this.hidePanel();
+      if (g.selectedId && !this.isMobile()) this.showPanel(g.selectedId); else this.hidePanel();
       if (this.obs) this.obs.sub = null;
       if (this.tab) this.openDrawer(this.tab); this.refreshHeader(); A().sfx('click');
     },
@@ -403,7 +397,7 @@
       const top = solid('top'), bars = [solid('dock'), solid('toolbar'), rect('drawer')].filter(Boolean);
       const all = hud.concat(bars, top ? [top] : []);
       this.R.hudRects = all.map(r => [r.left, r.top, r.right, r.bottom]);
-      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur) || (this.set.quality === 'auto' && (JT.Device.noGlass || (this.R._autoLvl || 0) >= 2 || !!this.R.locked30))); // v29: no live blur behind the bars on mid/low Android or while the phone struggles
+      document.body.classList.toggle('lowfx', this.R.quality === 'low' || !!(this.set.perf && this.set.ptNoBlur));
       for (const bar of [$('dock'), document.querySelector('#toolbar .gl-bar')]) { // slide the glass lens under the current item
         const L = bar && bar.querySelector('.lens'); if (!L) continue; const b = bar.querySelector('button.on');
         if (!b || !b.offsetWidth) { L.classList.remove('on'); continue; }
@@ -1363,7 +1357,7 @@
       row(hs, 'All tanks…', () => this.sub(back, () => this.tanksModal()), false, g.habs.length + ' of ' + JT.MAX_HABS + ((g.state.cup || []).length ? ' · ' + g.state.cup.length + ' in the holding cup' : ''));
       // view
       const vs = sect('View');
-      row(vs, 'Front view', () => { this.closeModal(); this.frontView(); }, false, 'Drag the tank to orbit · this snaps back to straight on');
+      segRow(vs, 'Camera', this.camModes().map(m => [m, JT.CAMS[m].label.replace(/^Isometric$/, 'Iso')]), this.R.cam.mode, (m) => { this.setCam(m); this.moreSheet(); });
       segRow(vs, 'Time', [['auto', 'Natural'], ['day', 'Day'], ['night', 'Night']], g.state.timeMode, (m) => { this.setTimeMode(m); this.moreSheet(); });
       row(vs, this.obs ? 'Stop observing' : 'Observe a jumper', () => { this.closeModal(); this.toggleObserve(!this.obs); });
       if (this.hab.spiders.length) row(vs, 'Ambient TV', () => { this.closeModal(); this.tvMode(true); }, false, 'Hands-free watching: the camera picks the moments. Tap to come back.');
@@ -1433,33 +1427,15 @@
       const s = this.set, h = this.hab; const w = el('div');
       w.appendChild(el('h4', '', 'Background for ' + esc(h.title)));
       const bgs = el('div', 'bgs');
-      for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.textContent = ''; b.appendChild(el('span', 'bg-label', B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { if (h === this.hab && h.data.bg !== id) this.undoPush('Background: ' + B.name); h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
+      for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { if (h === this.hab && h.data.bg !== id) this.undoPush('Background: ' + B.name); h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
       w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
-      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; this.R._thermalLevel = 0; this.R._healthySeconds = this.R._missSeconds = this.R._costSeconds = 0; this.R.softS = 1; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
-      q.appendChild(seg); q.appendChild(el('span', 'muted', 'High 2.0× · Medium 1.5× · Low 1.0×. Auto adjusts from 2.0× down to 1.0×, never below Low.')); w.appendChild(q);
-      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Critter painting')); const sg = el('div', 'seg small'); const on = s.gpuCrit !== false; // v33
-        for (const [v, l] of [[true, 'GPU (fast)'], [false, 'Classic']]) { const b = el('button', on === v ? 'on' : '', l); b.onclick = () => { s.gpuCrit = v; this.R._gcOff = false; if (this.R.gp) this.R.gp._gcOff = false; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'GPU: the graphics chip paints critters directly, which is much lighter on the processor. Classic: the original painter, for comparison.')); w.appendChild(fr); }
-      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Show fps')); const sg = el('div', 'seg small'); // v33: the performance readout (top left)
-        for (const [v, l] of [[false, 'Off'], [true, 'On']]) { const b = el('button', !!s.perf === v ? 'on' : '', l); b.onclick = () => { s.perf = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); w.appendChild(fr); }
-      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Art style')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['hd2d', 'HD-2D'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resize(); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Storybook: ink and watercolour.')); w.appendChild(fr); }
-      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel texture')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['fine', 'Fine'], ['classic', 'Classic'], ['chunky', 'Chunky']]) { const b = el('button', (s.pixel || 'fine') === v ? 'on' : '', l); b.onclick = () => { s.pixel = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Fine uses the full render resolution. Classic and Chunky are optional coarser pixel-art effects.')); w.appendChild(fr); }
-      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']]) { const b = el('button', (s.blur || 'light') === v ? 'on' : '', l); b.onclick = () => { s.blur = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Depth-of-field and tilt-shift blur around the edges of the view')); w.appendChild(fr); }
+      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
+      q.appendChild(seg); w.appendChild(q);
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Frame rate')); const sg = el('div', 'seg small');
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: steady 30 fps. Smooth: up to 60 on desktop; phones stay at 30 to reduce heat.')); w.appendChild(fr); }
-      { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Surface detail')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['rich', 'Rich'], ['simple', 'Simple']]) { const b = el('button', (s.detail || (JT.app && JT.app.R && JT.app.R.gp && JT.app.R.gp._swGL ? 'simple' : 'rich')) === v ? 'on' : '', l); b.onclick = () => { s.detail = v; JT.Settings.save(s); try { JT.app.R.resetCaches(); } catch (e) {} this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Rich: bark, stone, moss and wood textures on decor. Simple is lighter on older devices (Battery saver uses it too)')); w.appendChild(fr); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: 60 fps while the device keeps up, 30 when it is busy')); w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       w.appendChild(el('h4', '', 'Feel & help'));
       { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }
@@ -1520,7 +1496,7 @@
     // ------------------------------------------------ per-frame
     update(dt) {
       this._t += dt; this._panelT += dt; this._hudT = (this._hudT || 0) + dt;
-      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join() || this._camFront !== this.R.straightFront) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
+      if (this._hudT > 0.12) { this._hudT = 0; try { this.layoutHud(); if (this._camKey !== this.camModes().join()) this.syncCams(); } catch (e) { /* layout is cosmetic */ } }
       const g = this.game; const h = g.hab;
       if (this.obs) this.updateObs(dt);
       if (this.photo && this.R.fcam && performance.now() - this.photo.t0 > 1600) this.R.fcam.pause = Math.max(this.R.fcam.pause || 0, 1.5); // photo mode: after the close-up settles, the camera stays where you put it
@@ -1545,5 +1521,3 @@
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
-
-

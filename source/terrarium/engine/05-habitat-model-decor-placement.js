@@ -183,7 +183,7 @@
     }
     _resnapMounts(wallId) {
       let moved = false;
-      for (const m of this.data.decor.filter(d => d.wall === wallId)) { const def = JT.DECOR_BY_ID[m.type]; const c = this._canMount(def, m.type, m.x, m.z, m.seed, m.id, m.my); if (c.ok) { if (m.x !== c.x || m.z !== c.z || m.rot !== c.rot || m.my !== c.my || m.wall !== c.wall) moved = true; m.x = c.x; m.z = c.z; m.rot = c.rot; m.my = c.my; m.wall = c.wall; } } // v29: rebuild only if a mount really moved (was: every load)
+      for (const m of this.data.decor.filter(d => d.wall === wallId)) { const def = JT.DECOR_BY_ID[m.type]; const c = this._canMount(def, m.type, m.x, m.z, m.seed, m.id, m.my); if (c.ok) { m.x = c.x; m.z = c.z; m.rot = c.rot; m.my = c.my; m.wall = c.wall; moved = true; } }
       if (moved) this.rebuild();
     }
     /** Older saves: free-standing back-wall panels become one wall across the whole back; pieces in its way move forward. */
@@ -548,5 +548,3 @@
     return d;
   };
 })(typeof window !== 'undefined' ? window : globalThis);
-
-

@@ -11,50 +11,17 @@
     const N = 240, SPEED = 0.25, PRE = 20, POST = 36; // frames at 30 Hz
     const SKIP = new Set(['mem', '_route', 'stats', 'traits', 'name', 'id', 'species', 'type', 'seed', '_ip', '_if', 'home', 'log', 'journal', 'path', '_sc']);
     const OBJ = new Set(['sup', '_air', '_pz', '_glance', '_dangleOff', '_hang', 'target', 'weak', '_yank']);
-        /* The recorder runs every 30 Hz sim step, so it must not churn memory: the 240-frame ring buffer reuses its frame
-       objects and entity snapshots. A snapshot keeps plain numbers in a Float64Array (no boxed numbers), and reuses the
-       arrays/small objects inside it (copied in place with deepClone's JSON semantics instead of JSON round-trips). */
-    const ABSENT = Symbol('absent'); const own = Object.prototype.hasOwnProperty;
-    const numArr = (v) => { if (!Array.isArray(v) || v.length > 16) return false; for (let i = 0; i < v.length; i++) if (typeof v[i] !== 'number') return false; return true; };
-    // 0 = not recorded, 1 = number, 2 = other scalar, 3 = short number array, 4 = small pose object
-    const kind = (k, v) => { if (SKIP.has(k)) return 0; const t = typeof v; if (t === 'number') return 1; if (v == null || t === 'string' || t === 'boolean') return 2; if (numArr(v)) return 3; if (OBJ.has(k) && t === 'object') return 4; return 0; };
-    const recordable = (k, v) => kind(k, v) !== 0;
-    function cp(dst, v, d) {
-      if (v === null) return null; const t = typeof v;
-      if (t === 'number') return isFinite(v) ? v : null; if (t === 'string' || t === 'boolean') return v; if (t !== 'object') return ABSENT;
-      if (d > 24 || typeof v.toJSON === 'function') return JSON.parse(JSON.stringify(v));
-      if (Array.isArray(v)) { const a = Array.isArray(dst) ? dst : []; a.length = v.length; for (let i = 0; i < v.length; i++) { const x = cp(a[i], v[i], d + 1); a[i] = x === ABSENT ? null : x; } return a; }
-      let o = dst && typeof dst === 'object' && !Array.isArray(dst) ? dst : null; // reuse only when the keys match, so fields keep their (unboxed) shape
-      if (o) { let nv = 0, no = 0; for (const k in v) if (own.call(v, k)) { if (v[k] === undefined || typeof v[k] === 'function' || !own.call(o, k)) { o = null; break; } nv++; } if (o) { for (const k in o) no++; if (no !== nv) o = null; } }
-      if (!o) o = {}; for (const k in v) if (own.call(v, k)) { const x = cp(o[k], v[k], d + 1); if (x !== ABSENT) o[k] = x; } return o;
-    }
-    class Snap {
-      constructor() { this.n = 0; this.keys = []; this.kinds = new Uint8Array(64); this.num = new Float64Array(64); this.val = []; this.iState = -1; }
-      fill(e) { let n = 0; this.iState = -1;
-        for (const k in e) { if (!own.call(e, k)) continue; const v = e[k]; const t = kind(k, v); if (!t) continue;
-          if (n >= this.kinds.length) { const K = new Uint8Array(n * 2), F = new Float64Array(n * 2); K.set(this.kinds); F.set(this.num); this.kinds = K; this.num = F; }
-          this.keys[n] = k; this.kinds[n] = t; if (k === 'state') this.iState = n;
-          if (t === 1) { this.num[n] = v; this.val[n] = null; } else if (t === 2) this.val[n] = v;
-          else if (t === 3) { const a = Array.isArray(this.val[n]) ? this.val[n] : (this.val[n] = []); a.length = v.length; for (let i = 0; i < v.length; i++) a[i] = v[i]; }
-          else this.val[n] = cp(this.val[n], v, 0);
-          n++; }
-        for (let i = n; i < this.val.length; i++) this.val[i] = null; this.n = n; return this; }
-      idx(k) { for (let i = 0; i < this.n; i++) if (this.keys[i] === k) return i; return -1; }
-      at(i) { return i < 0 ? undefined : this.kinds[i] === 1 ? this.num[i] : this.val[i]; }
-      get(k) { return this.at(this.idx(k)); }
-      get state() { return this.at(this.iState); }
-      get pos() { return this.get('pos'); } get fwd() { return this.get('fwd'); } // read like the old plain snapshots
-    }
-    const snap = (e) => new Snap().fill(e);
-    function put(e, o) { const has = new Set(o.keys.slice(0, o.n)); for (const k of Object.keys(e)) if (!has.has(k) && recordable(k, e[k])) delete e[k];
-      for (let i = 0; i < o.n; i++) { const k = o.keys[i], t = o.kinds[i], v = t === 1 ? o.num[i] : o.val[i]; e[k] = t === 3 ? v.slice() : t === 4 && v != null && typeof v === 'object' ? JT.deepClone(v) : v; } }
+    const numArr = (v) => Array.isArray(v) && v.length <= 16 && v.every(x => typeof x === 'number');
+    const rec = (k, v) => { if (SKIP.has(k)) return undefined; const t = typeof v; if (v == null || t === 'number' || t === 'string' || t === 'boolean') return { v }; if (numArr(v)) return { v: v.slice() }; if (OBJ.has(k) && t === 'object') return { v: JT.deepClone(v) }; return undefined; };
+    const recordable = (k, v) => rec(k, v) !== undefined;
+    function snap(e) { const o = {}; for (const k of Object.keys(e)) { const r = rec(k, e[k]); if (r) o[k] = r.v; } return o; }
+    function put(e, o) { for (const k of Object.keys(e)) if (!(k in o) && recordable(k, e[k])) delete e[k];
+      for (const k of Object.keys(o)) { const v = o[k]; e[k] = v == null || typeof v !== 'object' ? v : Array.isArray(v) ? v.slice() : JT.deepClone(v); } }
     const R = { buf: [], habId: null, active: null, offer: null };
-    function fill(f, list, n, k) { for (const e of list) { const r = f.pool[n] || (f.pool[n] = [null, new Snap(), k]); r[0] = e; r[2] = k; r[1].fill(e); f.ents.push(r); n++; } return n; }
     R.record = function (game) {
       if (R.active) return; const h = game.hab; if (!h) return; if (h !== R.habId) { R.buf = []; R.habId = h; }
-      const f = R.buf.length >= N ? R.buf.shift() : { t: 0, ents: [], pool: [] }; f.t = game.state.time; f.ents.length = 0;
-      let n = fill(f, h.data.spiders, 0, 's'); n = fill(f, h.data.prey, n, 'p'); for (let j = n; j < f.pool.length; j++) f.pool[j][0] = null; // don't keep removed critters alive
-      R.buf.push(f);
+      const ents = []; for (const s of h.data.spiders) ents.push([s, snap(s), 's']); for (const p of h.data.prey) ents.push([p, snap(p), 'p']);
+      R.buf.push({ t: game.state.time, ents }); if (R.buf.length > N) R.buf.shift();
     };
     /** Range for the latest pounce of jumper `id` that ended in a bite: [start, catch, end] frame indices. */
     /** Frames for one pounce of jumper `id` that ended in a bite: the one closest to clock time `tc` (the catch the
@@ -92,9 +59,9 @@
     function apply(x) {
       const A = R.active; const F = A.frames; const i = Math.min(F.length - 1, Math.floor(x)), j = Math.min(F.length - 1, i + 1), a = x - i;
       A.game.state.time = F[i].t + (F[j].t - F[i].t) * a; const nxt = new Map(F[j].ents.map(r => [r[0], r[1]]));
-      const inF = new Set(); for (const [e, o] of F[i].ents) { inF.add(e); put(e, o); const q = nxt.get(e), qp = q && q.get('pos'), qf = q && q.get('fwd');
-        if (qp && e.pos && Math.hypot(qp[0] - e.pos[0], qp[1] - e.pos[1], qp[2] - e.pos[2]) < 30) { e.pos = e.pos.map((v, k) => v + (qp[k] - v) * a);
-          if (qf && e.fwd) { const f = e.fwd.map((v, k) => v + (qf[k] - v) * a); const l = Math.hypot(f[0], f[1], f[2]); if (l > 1e-3) e.fwd = f.map(v => v / l); } } }
+      const inF = new Set(); for (const [e, o] of F[i].ents) { inF.add(e); put(e, o); const q = nxt.get(e);
+        if (q && q.pos && e.pos && Math.hypot(q.pos[0] - e.pos[0], q.pos[1] - e.pos[1], q.pos[2] - e.pos[2]) < 30) { e.pos = e.pos.map((v, k) => v + (q.pos[k] - v) * a);
+          if (q.fwd && e.fwd) { const f = e.fwd.map((v, k) => v + (q.fwd[k] - v) * a); const l = Math.hypot(f[0], f[1], f[2]); if (l > 1e-3) e.fwd = f.map(v => v / l); } } }
       // critters that were not in the tank yet at this moment stay out of sight
       for (const s of A.hab.data.prey) if (!inF.has(s)) { s._rpHide = s._rpHide || { buried: s.buried }; s.buried = true; }
     }
@@ -118,59 +85,47 @@
   })();
   JT.Replay = Replay;
   function boot() {
-    const preview = new URLSearchParams(location.search).get('preview') === '1';
-    const freshEntry = new URLSearchParams(location.search).get('new') === '1';
     const settings = JT.Settings.load();
-    if (!settings.notebookQualityV2) { settings.pixel = 'fine'; settings.notebookQualityV2 = true; }
-    if (preview) { settings.muted = true; settings.keepAwake = false; settings.tips = false; settings.quality = 'medium'; settings.art = 'hd2d'; }
-
-    if (!['hd2d', 'storybook'].includes(settings.art)) settings.art = 'storybook';
-    delete settings.film; if (!preview) JT.Settings.save(settings);
     // v1.3: keep the screen awake while the game is open and visible (Settings → Keep screen awake, on by default).
     // Screen Wake Lock API where available (re-taken after every return to the app, since the system drops it when hidden);
-    // No hidden looping video on unsupported browsers: avoid decoder work and heat.
+    // older iOS/Android without it: a tiny muted, looping, invisible video, started from the first tap.
     { const WL = { s: null, busy: false, vid: null };
       const want = () => settings.keepAwake !== false && !document.hidden;
       const sync = async () => {
-        if (!want()) { const l = WL.s; WL.s = null; if (l) { try { await l.release(); } catch (e) { /* already gone */ } } return; }
+        if (!want()) { const l = WL.s; WL.s = null; if (l) { try { await l.release(); } catch (e) { /* already gone */ } } if (WL.vid) WL.vid.pause(); return; }
         if (navigator.wakeLock && navigator.wakeLock.request) { if ((WL.s && !WL.s.released) || WL.busy) return; WL.busy = true;
           try { const l = await navigator.wakeLock.request('screen'); if (want()) { WL.s = l; l.addEventListener('release', () => { if (WL.s === l) WL.s = null; }); } else l.release().catch(() => {}); } catch (e) { /* not allowed yet (needs a tap) or refused */ }
           WL.busy = false; return; }
-      };
+        if (!WL.vid) { const v = document.createElement('video'); v.muted = true; v.loop = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true'); v.tabIndex = -1;
+          v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1';
+          const add = (type, b64) => { const so = document.createElement('source'); so.type = type; so.src = 'data:' + type + ';base64,' + b64; v.appendChild(so); };
+          add('video/webm', 'GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAH5EU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHWTbuMU6uEElTDZ1OsggEcTbuMU6uEHFO7a1OsggHj7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsCrXsYMPQkBNgIxMYXZmNjEuMS4xMDBXQYxMYXZmNjEuMS4xMDBEiYhAn0AAAAAAABZUrmvBrgEAAAAAAAA414EBc8WIunAdA2naOMScgQAitZyDdW5kiIEAhoVWX1ZQOIOBASPjg4Q7msoA4ImwgRC6gRCagQISVMNn+nNzn2PAgGfImUWjh0VOQ09ERVJEh4xMYXZmNjEuMS4xMDBzc9VjwItjxYi6cB0Dado4xGfIoEWjh0VOQ09ERVJEh5NMYXZjNjEuMy4xMDAgbGlidnB4Z8ihRaOIRFVSQVRJT05Eh5MwMDowMDowMi4wMDAwMDAwMDAAH0O2dcPngQCjo4EAAIAQAgCdASoQABAAAEcIhYWImYSIAgIADA1gAP7/q1CAo5mBA+gAsQEAARAQABgAMD/0DAAAAP7/q1CAHFO7a5G7j7OBALeK94EB8YIBm/CBAw=='); add('video/mp4', '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X21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS0yIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0xIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAADmWIhAW///8PRQABT3+AARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcAAAAGQZo4CvqAARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAc='); document.body.appendChild(v); WL.vid = v; }
+        if (WL.vid.paused) { const pr = WL.vid.play(); if (pr && pr.catch) pr.catch(() => {}); } };
       document.addEventListener('visibilitychange', sync); root.addEventListener('pageshow', sync);
       for (const ev of ['pointerdown', 'touchend', 'keydown', 'click']) document.addEventListener(ev, sync, { passive: true, capture: true });
-      JT.Wake = { sync, held: () => !!(WL.s && !WL.s.released) }; setTimeout(sync, 0); }
+      JT.Wake = { sync, held: () => !!(WL.s && !WL.s.released) || !!(WL.vid && !WL.vid.paused) }; setTimeout(sync, 0); }
     const game = new JT.Game();
-    // The title preview is disposable: it never reads or writes the player's save.
-    if (preview) game.save = () => {};
-    if (freshEntry && !preview) { const old = localStorage.getItem('jumperTerrarium.v14.save'); if (old) localStorage.setItem('jumperTerrarium.v14.save.before-new', old); }
-    let restored = false; try { if (!preview && !freshEntry) restored = game.load(); } catch (e) { console.error(e); }
-
+    let restored = false; try { restored = game.load(); } catch (e) { console.error(e); }
     if (!restored) game.newGame();
-    if (preview) game.state.biomeSetup = false;
-    game._biomeOnboard = !restored && !preview;
+    game._biomeOnboard = !restored;
     if (game._biomeOnboard) game.state.biomeSetup = true;
     if (!game.hab.spider(game.selectedId)) game.selectedId = game.hab.spiders[0] ? game.hab.spiders[0].id : null;
     const R = new JT.Renderer(document.getElementById('view'), game, settings);
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
-    if (preview) { document.body.classList.add('title-preview'); R.cam.zoom = 1.12; }
-    if (freshEntry) history.replaceState(null, '', location.pathname);
-
-    const welcome = (fresh) => setTimeout(() => { if (fresh) { game._biomeOnboard = true; if (game._biomeOnboard) game.state.biomeSetup = true; } if (game.state.biomeSetup) JT.UI.biomeWizard(true); }, 600);
+    const welcome = (fresh) => setTimeout(() => { if (fresh) { game._biomeOnboard = true; if (game._biomeOnboard) game.state.biomeSetup = true; } JT.UI.toast('Welcome to the biome revamp. Choose your first jumper, then build its home or start with a recommended layout.', '', 6000); if (game.state.biomeSetup) JT.UI.biomeWizard(true); }, 600);
     const AT = { on: false, g: null }; // the start screen's live showcase (a separate, never-saved game)
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
-    const STEP = 1 / 30; let acc = 0, last = performance.now(), cost = 8, rAcc = 0, perfT = 0;
+    const STEP = 1 / 30; let idleSlowUntil = 0, idleSlowLast = -1e9, idleLowT = 0, idleUp = false; void idleUp; let acc = 0, last = performance.now(), skip = false, cost = 8, lastDt = 0, rAcc = 0, lock30 = 0, lockEnd = -1e9, lowT = 0, perfT = 0; void lastDt; void skip;
     /* Smooth motion: the simulation steps at 30 Hz, the screen may draw at 60. Each step remembers where every critter
        was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
        Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
     const M = JT.M; const crit = () => { const h = (AT.on && AT.g ? AT.g : game).hab; return h ? h.data.spiders.concat(h.data.prey) : []; };
-    const keep = (a, v) => { if (!v) return null; if (!a || a.length !== v.length) return v.slice(); for (let i = 0; i < v.length; i++) a[i] = v[i]; return a; }; // copy in place: no new arrays every step
-    function snapPrev() { const h = (AT.on && AT.g ? AT.g : game).hab; if (!h) return; for (const L of [h.data.spiders, h.data.prey]) for (const e of L) { if (!e.pos) continue; e._ip = keep(e._ip, e.pos); e._if = keep(e._if, e.fwd); } }
+    function snapPrev() { for (const e of crit()) { if (!e.pos) continue; e._ip = e.pos.slice(); e._if = e.fwd ? e.fwd.slice() : null; } }
     function blendIn(a) {
       const saved = []; if (a >= 0.999) return () => {};
       for (const e of crit()) { const p0 = e._ip, p1 = e.pos; if (!p0 || !p1 || !M.finite3(p0) || !M.finite3(p1) || M.dist(p0, p1) > 8) continue;
@@ -178,17 +133,7 @@
         if (e._if && e.fwd) { const f = [e._if[0] + (e.fwd[0] - e._if[0]) * a, e._if[1] + (e.fwd[1] - e._if[1]) * a, e._if[2] + (e.fwd[2] - e._if[2]) * a]; if (M.len(f) > 1e-3) e.fwd = M.norm(f); } }
       return () => { for (const [e, p, f] of saved) { e.pos = p; e.fwd = f; } };
     }
-    let workLast = performance.now();
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { game.save(); if (JT.Audio._silent) JT.Audio._silent.pause(); if (JT.Audio.ctx) JT.Audio.ctx.suspend().catch(() => {}); }
-      else { last = workLast = performance.now(); acc = rAcc = 0; if (JT.Audio.ctx && !settings.muted) JT.Audio.ctx.resume().catch(() => {}); }
-    });
     function frame(now) {
-      if (document.hidden) { last = workLast = now; acc = rAcc = 0; requestAnimationFrame(frame); return; }
-      const mobile = JT.Device.android || JT.Device.ios || JT.Device.coarse;
-      const desired = settings.fps === 'smooth' && !mobile && !(R._thermalLevel > 0) ? 60 : 30;
-      if (now - workLast < 1000 / desired - 0.7) { requestAnimationFrame(frame); return; }
-      workLast = now;
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
       if (AT.on) { try { AT.frame(dt); } catch (e) { console.error('attract', e); AT.stop(); } requestAnimationFrame(frame); return; }
       acc += dt; let n = 0;
@@ -196,28 +141,33 @@
       else if (JT.UI.photo) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
-      // Sustainable by default: fixed 30 fps on phones; 60 only when requested on desktop.
-      // Auto alone adapts resolution. Manual presets stay at their chosen multiplier.
-      rAcc += dt; R.targetFps = desired; R.locked30 = mobile || R._thermalLevel > 0;
-      R._missSeconds = dt > (1 / desired) * 1.35 ? (R._missSeconds || 0) + dt : Math.max(0, (R._missSeconds || 0) - dt * 0.25);
-      if (settings.quality === 'auto' && (R._missSeconds > 2.5 || (cost > 1000 / desired * 0.7 && (R._costSeconds = (R._costSeconds || 0) + dt) > 2.5)) && (R._thermalLevel || 0) < 4 && now > (R._backoffAt || 0)) {
-        R._thermalLevel = (R._thermalLevel || 0) + 1; R._missSeconds = R._costSeconds = 0; R._backoffAt = now + 10000; R.resize();
-      }
-      if (cost <= 1000 / desired * 0.7) R._costSeconds = Math.max(0, (R._costSeconds || 0) - dt);
-      if (settings.quality === 'auto') {
-        const healthy = dt < 1 / desired * 1.15 && cost < 1000 / desired * 0.45;
-        R._healthySeconds = healthy ? (R._healthySeconds || 0) + dt : 0;
-        if (R._healthySeconds > 20 && R._thermalLevel > 0 && now > (R._backoffAt || 0)) {
-          R._thermalLevel--; R._healthySeconds = 0; R._backoffAt = now + 15000; R.resize();
-        }
-      }
-
-      const due = rAcc >= 1 / desired - 0.001;
-      if (due) {
+      // adaptive pacing: if a frame costs too much, render at half rate (simulation keeps full rate)
+      // Frame pacing. The simulation runs at 30 Hz, so redrawing faster only matters while something else moves:
+      // touching / dragging, the camera gliding, Observe/Follow, placing decor. Otherwise draw once per simulation step
+      // (about 30 fps), which roughly halves GPU work and heat. 'smooth' always draws (capped at 60 fps, also on
+      // 120 Hz screens); 'saver' always uses 30.
+      rAcc += dt; const fm = settings.fps || 'auto'; const U = JT.UI;
+      let lively = fm === 'smooth' || !!Replay.active || !!U.photo || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
+      // v1.3: Auto also draws idle scenes at 60 fps while the device keeps up (the still-camera cache makes those frames cheap).
+      // If idle frames can't hold ~50 fps for 3 s, idle drops back to 30 for a minute (two minutes after a repeat).
+      if (fm === 'auto' && !lively) { const tn = performance.now(); if (tn > idleSlowUntil) { lively = true; idleUp = true;
+          if (R.fps < 50) { idleLowT += dt; if (idleLowT > 3) { idleSlowUntil = tn + (tn - idleSlowLast < 180000 ? 120000 : 60000); idleSlowLast = tn; idleLowT = 0; lively = false; idleUp = false; } } else idleLowT = Math.max(0, idleLowT - dt); }
+        else idleUp = false; }
+      // A phone that can't hold 60 (hot, Low Power Mode) gets a steady 30 instead of an uneven 35-50, which feels far worse.
+      // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
+      if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
+        if (lock30 && (now > lock30 || R._unlock30)) { lock30 = 0; R.fps = 60; lowT = 0; } R._unlock30 = false;
+        const floor = R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 3;
+        if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
+        if (lock30) { lively = false; lockEnd = now; } }
+      R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30; if (lively && idleUp) R.targetFps = 47; // idle 60 is a bonus: it never pushes the resolution down by itself
+      const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
+      if (due) { skip = !skip;
         { const t0 = performance.now(); const undo = blendIn(Replay.active ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
+      lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
-          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + (R.gp && R.gp.splitS < 1 ? '  soft ' + R.gp.splitS.toFixed(2) : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') + (R.gp && R.gp._gcStat && settings.gpuCrit !== false ? '\ngpu critters ' + R.gp._gcStat.gpu + (R.gp._gcStat.cpu ? ' (+' + R.gp._gcStat.cpu + ' classic)' : '') + '  shapes ' + R.gp._gcStat.shapes : settings.gpuCrit === false ? '\nclassic critters' : '') : ''); } }
+          d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') : ''); } }
       else if (perfT) { perfT = 0; const d = document.getElementById('perfro'); if (d) d.remove(); }
       requestAnimationFrame(frame);
     }
@@ -231,7 +181,7 @@
     {
       const SP = document.getElementById('splash'); const force = /[?&]splash=1/.test(location.search);
       if (SP && navigator.webdriver && !force) { SP.remove(); if (!restored) welcome(false); }
-      else if (!SP) { if (!restored && !preview) welcome(false); }
+      else if (!SP) { if (!restored) welcome(false); }
       else {
         const $s = (id) => document.getElementById(id);
         const go = $s('splashGo'), choices = $s('spChoices'), cont = $s('spCont'), nw = $s('spNew'), note = $s('spNote'), foot = $s('spFoot'), veil = $s('spVeil');
@@ -357,5 +307,3 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })(window);
-
-

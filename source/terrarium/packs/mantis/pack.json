@@ -1,0 +1,63 @@
+{
+ "name": "Mantis Terrarium",
+ "out": "mantis-terrarium",
+ "static": [
+  "packs/mantis/static"
+ ],
+ "headReplace": [
+  [
+   "<title>Jumper Terrarium</title>",
+   "<title>Mantis Terrarium</title>"
+  ],
+  [
+   "<meta name=\"apple-mobile-web-app-title\" content=\"Terrarium\">",
+   "<meta name=\"apple-mobile-web-app-title\" content=\"Mantis\">"
+  ],
+  [
+   "<p class=\"sp-tag\">a calm jumping-spider terrarium</p>",
+   "<p class=\"sp-tag\">a calm praying-mantis terrarium</p>"
+  ]
+ ],
+ "inject": {
+  "01-core-namespace-math-rng.js": [
+   "pre.js"
+  ],
+  "03-procedural-decor-geometry.js": [
+   "content.js"
+  ],
+  "07-prey-cleanup-fauna-locomotion.js": [
+   "journal.js",
+   "mantis-ai.js",
+   "mantis-ai2.js",
+   "mantis-life.js"
+  ],
+  "10-biomes-v14-climates-weather.js": [
+   "mantis-save.js",
+   "unlock.js"
+  ],
+  "13-legacy-adapter-retained-for.js": [
+   "homes.js"
+  ],
+  "20-storybook-renderer-part-1.js": [
+   "mantis-draw.js"
+  ],
+  "28-boot-main-loop-fixed.js": [
+   "mantis-meal.js",
+   "ui.js",
+   "mantis-ui2.js"
+  ],
+  "04-physical-navigation.js": [
+   "decor.js"
+  ],
+  "11-native-biome-decor-extensions.js": [
+   "biomes.js"
+  ],
+  "08-adaptive-habitat-presets-themes.js": [
+   "atmos.js"
+  ],
+  "24-procedural-webaudio-calm-generative.js": [
+   "atmos-draw.js"
+  ]
+ },
+ "splash": "art/splash.svg"
+}

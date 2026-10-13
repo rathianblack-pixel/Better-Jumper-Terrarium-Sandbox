@@ -63,5 +63,3 @@ if(!h.decor.some(d=>(JT.DECOR_BY_ID[d.type]||{}).water))for(let k=0;k<35;k++)if(
 for(const sp of h.spiders){sp.pos=h.randomFloorPoint();sp.sup={k:'floor'};sp._route=null;AI.restore(h,sp);}h._biZones=null;return theme;};
 JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 })(typeof window!=='undefined'?window:globalThis);
-
-

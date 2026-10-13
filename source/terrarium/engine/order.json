@@ -72,10 +72,6 @@
   },
   "18-procedural-animals-drawn-in.js",
   "18a-sized-droplets.js",
-  "18b-procedural-gait.js",
-  {
-   "gap": []
-  },
   {
    "gap": []
   },
@@ -88,8 +84,6 @@
    "gap": []
   },
   "21-storybook-renderer-part-2.js",
-  "21b-gpu-critters.js",
-  "21a-hd2d-post.js",
   {
    "gap": []
   },

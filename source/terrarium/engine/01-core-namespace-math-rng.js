@@ -133,5 +133,3 @@
     return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' am' : ' pm');
   };
 })(typeof window !== 'undefined' ? window : globalThis);
-
-

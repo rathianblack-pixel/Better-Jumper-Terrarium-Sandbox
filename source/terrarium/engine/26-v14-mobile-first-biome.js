@@ -25,5 +25,3 @@ const cb=U.collectionBody;U.collectionBody=function(){const w=cb.apply(this,argu
 const profile=U.profileModal;U.profileModal=function(sp){profile.apply(this,arguments);if(typeof sp==='string')sp=this.hab.spider(sp);if(!sp)return;const h=this.game.habs.find(h=>h.spiders.includes(sp));$('modalBody').prepend(el('p','bm-profile',h?B.label(h,sp.species).text+' · '+B.of(h).name+' · Home: '+home(sp.species):'Home biome: '+home(sp.species)));};
 const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);const sp=this.hab.spider(this.game.selectedId);if(!sp)return;const p=$('spiderPanel');if(!p)return;let row=p.querySelector('.bm-climate');if(!row){row=el('p','bm-climate');p.append(row);}row.textContent='Climate · '+B.label(this.hab,sp.species).text+' ('+B.of(this.hab).name+')';};
 })(typeof window!=='undefined'?window:globalThis);
-
-

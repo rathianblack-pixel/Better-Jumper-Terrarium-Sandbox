@@ -643,5 +643,3 @@
     ['Misty Birch Wood', 'birch', ['standard', 'wide', 'cube']], ['Golden Dusk Glade', 'duskglade', ['standard', 'wide', 'panoramic']], ['Red Sand Outback', 'outback', ['wide', 'panoramic', 'standard']], ['Peat Bog Garden', 'bog', ['standard', 'cube', 'nano', 'breeder']],
   ];
 })(typeof window !== 'undefined' ? window : globalThis);
-
-
