@@ -38,3 +38,4 @@
  const check=J.Game.prototype.checkUnlocks;J.Game.prototype.checkUnlocks=function(){const result=check.apply(this,arguments);if(!this.state.biomeTourDone&&['rainforest','desert','paludarium','nightmoss'].every(id=>this.habs.some(h=>B.id(h)===id))){this.state.biomeTourDone=true;this.hab.event('journal',{id:'biomeTour'});}return result;};
  const set=B.setBiome;B.setBiome=function(h,id){const b=set.call(B,h,id);if(b.id!=='classic')h.data.humidity=b.targetHumidity;for(const sp of h.spiders)sp.biomeSpeed=B.speedK(h,sp);return b;};
 })(typeof window!=='undefined'?window:globalThis);
+

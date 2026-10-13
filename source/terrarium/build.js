@@ -1,46 +1,13 @@
-// Mantis/Jumper Terrarium build: one shared engine (engine/*.js, order in engine/order.json) + a pack per game.
-// A pack (packs/<id>/pack.json) supplies its page shell (head/tail HTML), static files, and extra scripts injected
-// before named engine files. node build.js [pack...]  ->  dist/<pack.out>/
-const fs = require('fs'), path = require('path');
-const R = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
-const order = JSON.parse(R('engine/order.json')).scripts;
-const copyDir = (a, b) => { fs.mkdirSync(b, { recursive: true }); for (const f of fs.readdirSync(a)) { const s = path.join(a, f), d = path.join(b, f); if (fs.statSync(s).isDirectory()) copyDir(s, d); else fs.copyFileSync(s, d); } };
-function page(id, extra) {
-  extra = extra || {}; const dir = 'packs/' + id, P = JSON.parse(R(dir + '/pack.json'));
-  const shellOf = (k) => P.shell && P.shell[k] ? P.shell[k] : 'packs/jumper/shell/' + k + '.html';
-  let headTxt = R(shellOf('head')); for (const [a, b] of P.headReplace || []) { if (!headTxt.includes(a)) throw new Error(id + ': head text not found: ' + a.slice(0, 60)); headTxt = headTxt.split(a).join(b); }
-  if (P.splash) { const a = headTxt.indexOf('<svg class="sp-art"'), e = headTxt.indexOf('</svg>', a); if (a < 0 || e < 0) throw new Error(id + ': splash art not found'); headTxt = headTxt.slice(0, a) + R(dir + '/' + P.splash).trim() + headTxt.slice(e + 6); }
-  if (P.headAppend) headTxt = headTxt.replace('</style>', R(dir + '/' + P.headAppend) + '\n</style>');
-  const out = [headTxt]; const inj = P.inject || {}; if (extra.combined) out.push('<script>window.JT_COMBINED = true;</script>');
-  const script = (body) => { out.push('<script>'); out.push(body); out.push('</script>'); };
-  for (const s of order) {
-    if (s.gap) { out.push(...s.gap); continue; }
-    for (const f of inj[s] || []) script(R(dir + '/' + f));
-    script(R('engine/' + s));
-  }
-  for (const f of inj['@end'] || []) script(R(dir + '/' + f));
-  for (const f of extra.end || []) script(R(f));
-  out.push(R(shellOf('tail')));
-  let html = out.join('\n');
-  if (extra.title) html = html.replace(/<title>[^<]*<\/title>/, '<title>' + extra.title + '</title>').replace(/(<meta name="apple-mobile-web-app-title" content=")[^"]*"/, '$1' + extra.title + '"');
-  return { P, html };
-}
-function build(id) {
-  const P0 = JSON.parse(R('packs/' + id + '/pack.json'));
-  if (P0.combine) return combine(id, P0);
-  const { P, html } = page(id); const out = [html];
-  const dist = path.join(__dirname, 'dist', P.out); fs.rmSync(dist, { recursive: true, force: true });
-  for (const st of P.static || []) copyDir(path.join(__dirname, st), dist);
-  fs.mkdirSync(dist, { recursive: true }); fs.writeFileSync(path.join(dist, 'index.html'), out.join('\n'));
-  console.log('built', id, '->', 'dist/' + P.out, (out.join('\n').length / 1e6).toFixed(2) + ' MB');
-}
-// combined app: a title screen (index.html) + one page per game, sharing icons, manifest and service worker
-function combine(id, P) {
-  const C = P.combine, dist = path.join(__dirname, 'dist', P.out); fs.rmSync(dist, { recursive: true, force: true });
-  for (const st of P.static || []) copyDir(path.join(__dirname, st), dist);
-  fs.copyFileSync(path.join(__dirname, 'packs', id, C.index), path.join(dist, 'index.html'));
-  let total = 0; for (const [file, game] of Object.entries(C.pages)) { let { html } = page(game, { end: (C.end || []).map(f => 'packs/' + id + '/' + f), title: C.title, combined: true }); if (C.early) { if (!html.includes('<body>')) throw new Error(id + ': <body> not found'); html = html.replace('<body>', () => '<body>\n' + R('packs/' + id + '/' + C.early)); } fs.writeFileSync(path.join(dist, file), html); total += html.length; }
-  const sw = path.join(dist, 'sw.js'); if (fs.existsSync(sw)) fs.writeFileSync(sw, fs.readFileSync(sw, 'utf8').replace(/const CACHE = 'tr-[^']*'/, "const CACHE = 'tr-" + Date.now().toString(36) + "'"));
-  console.log('built', id, '->', 'dist/' + P.out, '(title screen + ' + Object.keys(C.pages).join(', ') + ')', (total / 1e6).toFixed(2) + ' MB');
-}
-const ids = process.argv.slice(2); (ids.length ? ids : fs.readdirSync(path.join(__dirname, 'packs'))).forEach(build);
+/* Rebuild the jumper-only release using its editable shared engine and page shell. */
+const fs=require('fs'),path=require('path');
+const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
+const copy=(a,b)=>{fs.mkdirSync(b,{recursive:true});for(const name of fs.readdirSync(a)){const from=path.join(a,name),to=path.join(b,name);fs.statSync(from).isDirectory()?copy(from,to):fs.copyFileSync(from,to)}};
+const out=path.join(__dirname,'dist/terrarium');fs.rmSync(out,{recursive:true,force:true});copy(path.join(__dirname,'packs/terrarium/static'),out);
+fs.copyFileSync(path.join(__dirname,'packs/terrarium/launcher.html'),path.join(out,'index.html'));
+let head=read('packs/jumper/shell/head.html').replace('<body>','<body>\n'+read('packs/terrarium/early.html'));
+const scripts=JSON.parse(read('engine/order.json')).scripts,parts=[head,'<script>window.JT_COMBINED=true;</script>'];
+for(const item of scripts){if(item.gap)parts.push(...item.gap);else parts.push('<script>\n'+read('engine/'+item)+'\n</script>')}
+parts.push('<script>\n'+read('packs/terrarium/switch.js')+'\n</script>',read('packs/jumper/shell/tail.html'));
+fs.writeFileSync(path.join(out,'jumper.html'),parts.join('\n'));
+const sw=path.join(out,'sw.js');fs.writeFileSync(sw,fs.readFileSync(sw,'utf8').replace(/const CACHE='[^']+'/g,"const CACHE='tr-jumper-"+Date.now().toString(36)+"'"));
+console.log('Built jumper-only release: dist/terrarium');

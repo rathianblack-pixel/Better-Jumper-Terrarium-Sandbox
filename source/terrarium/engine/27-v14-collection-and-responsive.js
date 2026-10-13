@@ -10,3 +10,4 @@
  U._undoApply=function(s){const obj=typeof s==='string'?JSON.parse(s):s,out=oldApply.apply(this,arguments);if(Object.prototype.hasOwnProperty.call(obj,'v14Weather')){if(obj.v14Weather){this.hab.data.bev=JSON.parse(JSON.stringify(obj.v14Weather));this.hab.data.wx=this.hab.data.bev;}else{delete this.hab.data.bev;delete this.hab.data.wx;}weatherChip();}return out;};
  const style=D.createElement('style');style.textContent='.v14-native-card{outline:1px solid #8aaf73;box-shadow:inset 0 0 20px #72945418}.v14-native-card .b14-summary .b14-pill{background:#263f2a;color:#d3eebc;border-color:#789c65}@media(max-width:560px){.v14-weather-name{display:none}}';D.head.appendChild(style);
 })(window);
+

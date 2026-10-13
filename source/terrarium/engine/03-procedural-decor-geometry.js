@@ -794,3 +794,5 @@
     const L = Math.hypot(gx, gy, gz); return L > 1e-6 ? [gx / L, gy / L, gz / L] : [0, 1, 0];
   };
 })(typeof window !== 'undefined' ? window : globalThis);
+
+

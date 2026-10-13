@@ -442,3 +442,5 @@
   Nav.routeDecorCount = function (route) { const s = new Set(); for (const st of route.steps) if (st.decor) s.add(st.decor); return s.size; };
   Nav.routeHasJump = function (route) { return route.steps.some(s => s.mode === 'jump'); };
 })(typeof window !== 'undefined' ? window : globalThis);
+
+

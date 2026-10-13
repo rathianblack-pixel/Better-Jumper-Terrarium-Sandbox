@@ -34,3 +34,5 @@ JT.Habitat.prototype.canPlace=function(type){const result=nativePlace.apply(this
 JT.SpiderAI.nestSiteOK=function(hab,sup,pos,length){if(sup&&sup.d){const g=hab.geoms[sup.d];if(g&&own.has(g.type)&&g.def.noNest)return false;}if(sup&&sup.k==='floor')for(const inst of hab.decor){if(!own.has(inst.type)||(inst.type!=='pond'&&inst.type!=='lilypond'))continue;const g=hab.geoms[inst.id];if(g&&Math.hypot(pos[0]-inst.x,pos[2]-inst.z)<g.def.p.r+JT.SpiderAI.nestRoom(length))return false;}return nativeNest.apply(this,arguments);};
 JT.BiomeContent={version:1,ids:rows.map(r=>r[0]),registered:Array.from(own),skipped};
 })(typeof window!=='undefined'?window:globalThis);
+
+

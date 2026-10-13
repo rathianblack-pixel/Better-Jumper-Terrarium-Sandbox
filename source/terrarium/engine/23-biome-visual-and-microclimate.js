@@ -63,3 +63,4 @@
   B.tick=function(h,dt){oldTick.call(B,h,dt);if(B.id(h)==='classic'||!(dt>0))return;h._bmExtra=(h._bmExtra||0)+dt;if(h._bmExtra<2)return;h._bmExtra=0;const w=wx(h);if(w==='wind'){for(const inst of h.decor){const d=JT.DECOR_BY_ID[inst.type];if(d&&(d.arche==='grass'||d.arche==='flower')){const sw=inst._sw||(inst._sw={x:0,z:0,vx:0,vz:0});sw.vx+=0.8;sw.vz+=0.25;}}if(B.id(h)==='prairie')for(const p of h.prey){if(p.state==='idle'&&JT.R()<0.4){p.st=0;p.dur=0;p._goal=null;}}}for(const sp of h.spiders)if(sp.sup&&sp.sup.k==='face'&&B.id(h)==='oldbark'&&B.homeOf(sp.species)==='oldbark'&&JT.R()<0.035&&!sp.target)sp.thought='Blending into the old bark, waiting for movement.';};
  }
 })(typeof window!=='undefined'?window:globalThis);
+

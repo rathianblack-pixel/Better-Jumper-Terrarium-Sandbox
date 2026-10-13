@@ -612,7 +612,7 @@
     return { pos: [x, e.pos[1], z], sup: JT.deepClone(e.sup) };
   }
   /** Reach of a leap from a height difference: leaping down carries much farther (gravity helps), up much shorter. */
-  function reachFor(J, dh) { if (AI.reachFor) return AI.reachFor(J, dh); return dh >= 0 ? J + Math.min(J * 1.3, dh * 0.85) : J - Math.min(J * 0.6, -dh * 0.8); } // packs may replace it (a mantis's reach doesn't grow downhill)
+  function reachFor(J, dh) { if (AI.reachFor) return AI.reachFor(J, dh); return dh >= 0 ? J + Math.min(J * 1.3, dh * 0.85) : J - Math.min(J * 0.6, -dh * 0.8); } 
   function effJump(sp, tpos) { return reachFor(AI.jump(sp), sp.pos[1] - tpos[1]); }
   AI.effJump = effJump;
 
@@ -980,7 +980,7 @@
     const e = targetEnt(hab, sp);
     if (e && t > 0.35) {
       const def = targetDef(hab, sp, e);
-      const catchR = AI.catchR ? AI.catchR(sp, def) : AI.len(sp) * 0.55 + def.len * 0.45 + 2.2; // packs may judge the catch their own way (mantis: from the arm reach)
+      const catchR = AI.catchR ? AI.catchR(sp, def) : AI.len(sp) * 0.55 + def.len * 0.45 + 2.2; 
       if (M.dist(sp.pos, AI.surfPt(hab, e, 0)) < catchR) { doCatch(hab, sp, e, A); return; }
     }
     if (A.t >= 1) {
@@ -1727,7 +1727,7 @@
   };
   AI.startDangle = startDangle;
   function startDangle(hab, sp) {
-    if (AI.NO_SILK) return false; // packs whose critter makes no silk (mantis)
+    if (AI.NO_SILK) return false; 
     const L = AI.len(sp); let point = sp.pos.slice(), exclude = null;
     if (sp.sup.k === 'path') {
       const fr = Nav.supFrame(hab, sp.sup); if (!fr.tan || Math.abs(fr.tan[1]) > 0.55 || fr.n[1] < 0.55) return false;
@@ -1964,3 +1964,5 @@
     if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
   };
 })(typeof window !== 'undefined' ? window : globalThis);
+
+

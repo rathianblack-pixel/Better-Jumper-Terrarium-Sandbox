@@ -119,24 +119,22 @@
   JT.Replay = Replay;
   function boot() {
     const settings = JT.Settings.load();
+    if (!['hd2d', 'storybook'].includes(settings.art)) settings.art = 'storybook';
+    delete settings.film; JT.Settings.save(settings);
     // v1.3: keep the screen awake while the game is open and visible (Settings → Keep screen awake, on by default).
     // Screen Wake Lock API where available (re-taken after every return to the app, since the system drops it when hidden);
-    // older iOS/Android without it: a tiny muted, looping, invisible video, started from the first tap.
+    // No hidden looping video on unsupported browsers: avoid decoder work and heat.
     { const WL = { s: null, busy: false, vid: null };
       const want = () => settings.keepAwake !== false && !document.hidden;
       const sync = async () => {
-        if (!want()) { const l = WL.s; WL.s = null; if (l) { try { await l.release(); } catch (e) { /* already gone */ } } if (WL.vid) WL.vid.pause(); return; }
+        if (!want()) { const l = WL.s; WL.s = null; if (l) { try { await l.release(); } catch (e) { /* already gone */ } } return; }
         if (navigator.wakeLock && navigator.wakeLock.request) { if ((WL.s && !WL.s.released) || WL.busy) return; WL.busy = true;
           try { const l = await navigator.wakeLock.request('screen'); if (want()) { WL.s = l; l.addEventListener('release', () => { if (WL.s === l) WL.s = null; }); } else l.release().catch(() => {}); } catch (e) { /* not allowed yet (needs a tap) or refused */ }
           WL.busy = false; return; }
-        if (!WL.vid) { const v = document.createElement('video'); v.muted = true; v.loop = true; v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('aria-hidden', 'true'); v.tabIndex = -1;
-          v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1';
-          const add = (type, b64) => { const so = document.createElement('source'); so.type = type; so.src = 'data:' + type + ';base64,' + b64; v.appendChild(so); };
-          add('video/webm', 'GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAH5EU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHWTbuMU6uEElTDZ1OsggEcTbuMU6uEHFO7a1OsggHj7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsCrXsYMPQkBNgIxMYXZmNjEuMS4xMDBXQYxMYXZmNjEuMS4xMDBEiYhAn0AAAAAAABZUrmvBrgEAAAAAAAA414EBc8WIunAdA2naOMScgQAitZyDdW5kiIEAhoVWX1ZQOIOBASPjg4Q7msoA4ImwgRC6gRCagQISVMNn+nNzn2PAgGfImUWjh0VOQ09ERVJEh4xMYXZmNjEuMS4xMDBzc9VjwItjxYi6cB0Dado4xGfIoEWjh0VOQ09ERVJEh5NMYXZjNjEuMy4xMDAgbGlidnB4Z8ihRaOIRFVSQVRJT05Eh5MwMDowMDowMi4wMDAwMDAwMDAAH0O2dcPngQCjo4EAAIAQAgCdASoQABAAAEcIhYWImYSIAgIADA1gAP7/q1CAo5mBA+gAsQEAARAQABgAMD/0DAAAAP7/q1CAHFO7a5G7j7OBALeK94EB8YIBm/CBAw=='); add('video/mp4', 'AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAW/bW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAll0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAABAAAAAQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHRbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABfG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAATxzdGJsAAAAuHN0c2QAAAAAAAAAAQAAAKhhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAEABIAAAASAAAAAAAAAABFExhdmM2MS4zLjEwMCBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAALmF2Y0MBQsAK/+EAFmdCwArZHsBEAAADAAQAAAMACDxImSABAAVoy4PLIAAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAApAAAAKQAAAABhzdHRzAAAAAAAAAAEAAAACAABAAAAAABRzdHNzAAAAAAAAAAEAAAABAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAABAAAAAQAAABxzdHN6AAAAAAAAAAAAAAACAAAChgAAAAoAAAAYc3RjbwAAAAAAAAACAAAGAgAACKgAAAKRdHJhawAAAFx0a2hkAAAAAwAAAAAAAAAAAAAAAgAAAAAAAAfQAAAAAAAAAAAAAAABAQAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAJGVkdHMAAAAcZWxzdAAAAAAAAAABAAAH0AAABAAAAQAAAAACCW1kaWEAAAAgbWRoZAAAAAAAAAAAAAAAAAAAH0AAAEKAVcQAAAAAAC1oZGxyAAAAAAAAAABzb3VuAAAAAAAAAAAAAAAAU291bmRIYW5kbGVyAAAAAbRtaW5mAAAAEHNtaGQAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAXhzdGJsAAAAfnN0c2QAAAAAAAAAAQAAAG5tcDRhAAAAAAAAAAEAAAAAAAAAAAABABAAAAAAH0AAAAAAADZlc2RzAAAAAAOAgIAlAAIABICAgBdAFQAAAAAAH0AAAAE4BYCAgAUViFblAAaAgIABAgAAABRidHJ0AAAAAAAAH0AAAAE4AAAAIHN0dHMAAAAAAAAAAgAAABAAAAQAAAAAAQAAAoAAAAAoc3RzYwAAAAAAAAACAAAAAQAAAAEAAAABAAAAAgAAAAgAAAABAAAAWHN0c3oAAAAAAAAAAAAAABEAAAATAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAABxzdGNvAAAAAAAAAAMAAAXvAAAIiAAACLIAAAAac2dwZAEAAAByb2xsAAAAAgAAAAH//wAAABxzYmdwAAAAAHJvbGwAAAABAAAAEQAAAAEAAABhdWR0YQAAAFltZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAACxpbHN0AAAAJKl0b28AAAAcZGF0YQAAAAEAAAAATGF2ZjYxLjEuMTAwAAAACGZyZWUAAALrbWRhdNwATGF2YzYxLjMuMTAwAAIwQA4AAAJwBgX//2zcRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTY0IHIzMTkxIDQ2MTNhYzMgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDI0IC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MCByZWY9MyBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS0yIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0xIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAADmWIhAW///8PRQABT3+AARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAcAAAAGQZo4CvqAARggBwEYIAcBGCAHARggBwEYIAcBGCAHARggBwEYIAc='); document.body.appendChild(v); WL.vid = v; }
-        if (WL.vid.paused) { const pr = WL.vid.play(); if (pr && pr.catch) pr.catch(() => {}); } };
+      };
       document.addEventListener('visibilitychange', sync); root.addEventListener('pageshow', sync);
       for (const ev of ['pointerdown', 'touchend', 'keydown', 'click']) document.addEventListener(ev, sync, { passive: true, capture: true });
-      JT.Wake = { sync, held: () => !!(WL.s && !WL.s.released) || !!(WL.vid && !WL.vid.paused) }; setTimeout(sync, 0); }
+      JT.Wake = { sync, held: () => !!(WL.s && !WL.s.released) }; setTimeout(sync, 0); }
     const game = new JT.Game();
     let restored = false; try { restored = game.load(); } catch (e) { console.error(e); }
     if (!restored) game.newGame();
@@ -153,7 +151,7 @@
     { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
     root.addEventListener('pagehide', () => game.save());
     root.addEventListener('beforeunload', () => game.save());
-    const STEP = 1 / 30; let idleSlowUntil = 0, idleSlowLast = -1e9, idleLowT = 0, idleUp = false; void idleUp; let acc = 0, last = performance.now(), skip = false, cost = 8, lastDt = 0, rAcc = 0, lock30 = 0, lockEnd = -1e9, lowT = 0, perfT = 0; void lastDt; void skip;
+    const STEP = 1 / 30; let acc = 0, last = performance.now(), cost = 8, rAcc = 0, perfT = 0;
     /* Smooth motion: the simulation steps at 30 Hz, the screen may draw at 60. Each step remembers where every critter
        was; a frame drawn between steps shows them part-way (position + facing), then the true state is put back.
        Big jumps (teleports, habitat switches) are not blended. Purely visual: the simulation never sees it. */
@@ -167,7 +165,17 @@
         if (e._if && e.fwd) { const f = [e._if[0] + (e.fwd[0] - e._if[0]) * a, e._if[1] + (e.fwd[1] - e._if[1]) * a, e._if[2] + (e.fwd[2] - e._if[2]) * a]; if (M.len(f) > 1e-3) e.fwd = M.norm(f); } }
       return () => { for (const [e, p, f] of saved) { e.pos = p; e.fwd = f; } };
     }
+    let workLast = performance.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { game.save(); if (JT.Audio._silent) JT.Audio._silent.pause(); if (JT.Audio.ctx) JT.Audio.ctx.suspend().catch(() => {}); }
+      else { last = workLast = performance.now(); acc = rAcc = 0; if (JT.Audio.ctx && !settings.muted) JT.Audio.ctx.resume().catch(() => {}); }
+    });
     function frame(now) {
+      if (document.hidden) { last = workLast = now; acc = rAcc = 0; requestAnimationFrame(frame); return; }
+      const mobile = JT.Device.android || JT.Device.ios || JT.Device.coarse;
+      const desired = settings.fps === 'smooth' && !mobile && !(R._thermalLevel > 0) ? 60 : 30;
+      if (now - workLast < 1000 / desired - 0.7) { requestAnimationFrame(frame); return; }
+      workLast = now;
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
       if (AT.on) { try { AT.frame(dt); } catch (e) { console.error('attract', e); AT.stop(); } requestAnimationFrame(frame); return; }
       acc += dt; let n = 0;
@@ -175,30 +183,17 @@
       else if (JT.UI.photo) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
-      // adaptive pacing: if a frame costs too much, render at half rate (simulation keeps full rate)
-      // Frame pacing. The simulation runs at 30 Hz, so redrawing faster only matters while something else moves:
-      // touching / dragging, the camera gliding, Observe/Follow, placing decor. Otherwise draw once per simulation step
-      // (about 30 fps), which roughly halves GPU work and heat. 'smooth' always draws (capped at 60 fps, also on
-      // 120 Hz screens); 'saver' always uses 30.
-      rAcc += dt; const fm = settings.fps || 'auto'; const U = JT.UI;
-      let lively = fm === 'smooth' || !!Replay.active || !!U.photo || (fm === 'auto' && (performance.now() < (U._activeUntil || 0) || R._moving || !!U.obs || !!U.mode));
-      // v1.3: Auto also draws idle scenes at 60 fps while the device keeps up (the still-camera cache makes those frames cheap).
-      // If idle frames can't hold ~50 fps for 3 s, idle drops back to 30 for a minute (two minutes after a repeat).
-      if (fm === 'auto' && !lively) { const tn = performance.now(); if (tn > idleSlowUntil) { lively = true; idleUp = true;
-          if (R.fps < 50) { idleLowT += dt; if (idleLowT > 3) { idleSlowUntil = tn + (tn - idleSlowLast < 180000 ? 120000 : 60000); idleSlowLast = tn; idleLowT = 0; lively = false; idleUp = false; } } else idleLowT = Math.max(0, idleLowT - dt); }
-        else idleUp = false; }
-      // A phone that can't hold 60 (hot, Low Power Mode) gets a steady 30 instead of an uneven 35-50, which feels far worse.
-      // Only once resolution is already at its floor; retried after 20 s (40 s after a repeat failure).
-      if (settings.quality === 'auto' && fm !== 'smooth') { const now = performance.now();
-        if (lock30 && (now > lock30 || R._unlock30)) { lock30 = 0; R.fps = 60; lowT = 0; } R._unlock30 = false;
-        const floor = (R.closeCam ? (R._closeK || 1.6) <= 1.25 : (R._autoLvl || 0) >= 3) && R.softAtFloor();
-        if (!lock30 && lively && floor && R.fps < 47) { lowT += dt; if (lowT > 2.5) { lock30 = now + (now - lockEnd < 30000 ? 40000 : 20000); lowT = 0; } } else lowT = Math.max(0, lowT - dt);
-        if (lock30) { lively = false; lockEnd = now; } }
-      R.locked30 = !!lock30; R.targetFps = lively ? 60 : 30; if (lively && idleUp) R.targetFps = 47; // idle 60 is a bonus: it never pushes the resolution down by itself
-      const due = lively ? rAcc >= 1 / 62 : (n > 0 || rAcc >= 1 / 24);
-      if (due) { skip = !skip;
+      // Sustainable by default: fixed 30 fps on phones; 60 only when requested on desktop.
+      // High is protected too. Backoff is latched for the session, avoiding resolution hunting.
+      rAcc += dt; R.targetFps = desired; R.locked30 = mobile || R._thermalLevel > 0;
+      R._missSeconds = dt > (1 / desired) * 1.35 ? (R._missSeconds || 0) + dt : Math.max(0, (R._missSeconds || 0) - dt * 0.25);
+      if ((R._missSeconds > 2.5 || (cost > 1000 / desired * 0.7 && (R._costSeconds = (R._costSeconds || 0) + dt) > 2.5)) && (R._thermalLevel || 0) < 4 && now > (R._backoffAt || 0)) {
+        R._thermalLevel = (R._thermalLevel || 0) + 1; R._missSeconds = R._costSeconds = 0; R._backoffAt = now + 10000; R.resize();
+      }
+      if (cost <= 1000 / desired * 0.7) R._costSeconds = Math.max(0, (R._costSeconds || 0) - dt);
+      const due = rAcc >= 1 / desired - 0.001;
+      if (due) {
         { const t0 = performance.now(); const undo = blendIn(Replay.active ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
-      lastDt = dt;
       if (settings.perf) { const t = performance.now(); if (!perfT || t - perfT > 500) { perfT = t; let d = document.getElementById('perfro');
           if (!d) { d = document.createElement('div'); d.id = 'perfro'; d.style.cssText = 'position:fixed;left:calc(6px + env(safe-area-inset-left));top:calc(6px + env(safe-area-inset-top));z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:6px;white-space:pre'; document.body.appendChild(d); }
           d.textContent = Math.round(R.fps) + ' fps  ' + cost.toFixed(1) + ' ms cpu\n' + R.cv.width + '\u00d7' + R.cv.height + ' @' + R.k.toFixed(2) + 'x' + (R.closeCam ? ' close' : '') + (R.gp && R.gp.splitS < 1 ? '  soft ' + R.gp.splitS.toFixed(2) : '') + '\n' + (R.locked30 ? 'steady 30 (phone busy)' : R.targetFps === 60 ? 'target 60' : 'idle 30') + '  ' + (settings.fps || 'auto') + '  q:' + settings.quality + (['ptLowRes', 'ptNoSpr', 'ptNoInk', 'ptNoFx', 'ptNoBlur', 'ptGpuAtlas', 'ptOldAtlas', 'ptNoReuse'].filter(k => settings[k]).map(k => ' -' + k.slice(2)).join('')) + (R.pt ? '\nscene ' + R.pt.col.toFixed(1) + '  spr ' + R.pt.spr.toFixed(1) + '  up ' + R.pt.up.toFixed(1) + '\ngl ' + R.pt.gl.toFixed(1) + '  2d ' + R.pt.ov.toFixed(1) + '  atlas ' + (R.gp ? R.gp.atlas.width + '\u00d7' + R.gp.atlas.height : '-') + (R.gp && R.gp._gcStat && settings.gpuCrit !== false ? '\ngpu critters ' + R.gp._gcStat.gpu + (R.gp._gcStat.cpu ? ' (+' + R.gp._gcStat.cpu + ' classic)' : '') + '  shapes ' + R.gp._gcStat.shapes : settings.gpuCrit === false ? '\nclassic critters' : '') : ''); } }
@@ -341,3 +336,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })(window);
+
+

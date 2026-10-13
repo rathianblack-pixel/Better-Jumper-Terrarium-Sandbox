@@ -394,3 +394,5 @@ void main() {
 
   JT.GPUCrit = GPUCrit; JT.GCtx = GCtx; JT.GPUCritGrad = Grad;
 })(typeof window !== 'undefined' ? window : globalThis);
+
+

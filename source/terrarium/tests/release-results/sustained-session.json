@@ -1,0 +1,381 @@
+{
+  "errors": [],
+  "samples": [
+    {
+      "art": "hd2d",
+      "time": 158.86666666666582,
+      "quality": "high",
+      "w": 296,
+      "h": 641,
+      "backoff": 2,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 19,
+      "heap": 48255838
+    },
+    {
+      "art": "hd2d",
+      "time": 172.06666666666507,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 18,
+      "heap": 31801201
+    },
+    {
+      "art": "hd2d",
+      "time": 186.16666666666427,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 17,
+      "heap": 31446310
+    },
+    {
+      "art": "hd2d",
+      "time": 200.33333333333013,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 17,
+      "heap": 55498131
+    },
+    {
+      "art": "hd2d",
+      "time": 214.09999999999602,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 17,
+      "heap": 37833847
+    },
+    {
+      "art": "hd2d",
+      "time": 228.46666666666187,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 54291226
+    },
+    {
+      "art": "hd2d",
+      "time": 239.13333333332793,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 40846042
+    },
+    {
+      "art": "hd2d",
+      "time": 248.99999999999403,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 41601790
+    },
+    {
+      "art": "hd2d",
+      "time": 256.39999999999395,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 57458934
+    },
+    {
+      "art": "hd2d",
+      "time": 263.7666666666665,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 54630022
+    },
+    {
+      "art": "hd2d",
+      "time": 271.2333333333391,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 45119810
+    },
+    {
+      "art": "hd2d",
+      "time": 278.3000000000114,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 48032410
+    },
+    {
+      "art": "storybook",
+      "time": 285.6000000000172,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 53402831
+    },
+    {
+      "art": "storybook",
+      "time": 294.9000000000246,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 29659855
+    },
+    {
+      "art": "storybook",
+      "time": 302.73333333336416,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 33316734
+    },
+    {
+      "art": "storybook",
+      "time": 310.500000000037,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 31368625
+    },
+    {
+      "art": "storybook",
+      "time": 322.76666666671343,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 29331043
+    },
+    {
+      "art": "storybook",
+      "time": 335.46666666672354,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 33084004
+    },
+    {
+      "art": "storybook",
+      "time": 345.8666666667318,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 54454526
+    },
+    {
+      "art": "storybook",
+      "time": 358.4333333334085,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 29107764
+    },
+    {
+      "art": "storybook",
+      "time": 372.6333333334198,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 49245348
+    },
+    {
+      "art": "storybook",
+      "time": 386.8333333334311,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 32231855
+    },
+    {
+      "art": "storybook",
+      "time": 398.83333333344063,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 16,
+      "heap": 51148834
+    },
+    {
+      "art": "storybook",
+      "time": 411.03333333345034,
+      "quality": "high",
+      "w": 215,
+      "h": 464,
+      "backoff": 4,
+      "gpuErrors": 0,
+      "contextLost": false,
+      "spiders": 1,
+      "prey": 15,
+      "heap": 31326194
+    }
+  ],
+  "styleResourceCounts": [
+    {
+      "t": 17,
+      "b": 52,
+      "hd": true
+    },
+    {
+      "t": 12,
+      "b": 52,
+      "hd": false
+    },
+    {
+      "t": 17,
+      "b": 52,
+      "hd": true
+    },
+    {
+      "t": 12,
+      "b": 52,
+      "hd": false
+    },
+    {
+      "t": 17,
+      "b": 52,
+      "hd": true
+    },
+    {
+      "t": 12,
+      "b": 52,
+      "hd": false
+    },
+    {
+      "t": 17,
+      "b": 52,
+      "hd": true
+    },
+    {
+      "t": 12,
+      "b": 52,
+      "hd": false
+    },
+    {
+      "t": 17,
+      "b": 52,
+      "hd": true
+    },
+    {
+      "t": 12,
+      "b": 52,
+      "hd": false
+    },
+    {
+      "t": 17,
+      "b": 52,
+      "hd": true
+    },
+    {
+      "t": 12,
+      "b": 52,
+      "hd": false
+    }
+  ],
+  "contextRecovery": "PASS",
+  "result": "PASS"
+}

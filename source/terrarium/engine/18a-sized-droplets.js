@@ -5,7 +5,7 @@
   'use strict';
   const JT = root.JT, M = JT.M, HP = JT.Habitat && JT.Habitat.prototype; if (!HP) return;
   const lenOf = (h) => { const ss = h.data.spiders || []; if (!ss.length) return 6; let s = 0; for (const sp of ss) s += JT.SpiderAI.len(sp); return s / ss.length; };
-  /** droplet radius for a tank: about 0.22 (tiny sling) to 0.75 (big adult mantis) — the old drops were 0.6–1.5 */
+  
   JT.dropSize = (h) => M.clamp(0.16 * Math.sqrt(lenOf(h)), 0.22, 0.75);
   function size(h, from) {
     const ds = h.data.drops; if (!ds || !ds.length) return; from = 0; const base = JT.dropSize(h); const add = [];
@@ -34,3 +34,5 @@
     gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.35, 'rgba(190,225,245,0.72)'); gr.addColorStop(1, 'rgba(120,170,210,0.5)');
     ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], p[1] - r * 0.6, r, 0, 6.283); ctx.fill(); }; }
 })(typeof window !== 'undefined' ? window : globalThis);
+
+

@@ -340,7 +340,7 @@
       { const many = g.habs.length > 4; const show = many ? [st.active] : g.habs.map((_, i) => i); // v11: up to 30 tanks, so a long shelf collapses into the tank list
         for (const i of show) { const h = g.habs[i]; const b = el('button', i === st.active ? 'on' : '', esc(h.title)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); }
         const all = el('button', 'tk-all', g.habs.length > 1 ? 'All tanks · ' + g.habs.length : 'Tanks'); all.title = 'All your tanks'; all.onclick = () => this.tanksModal(); tabs.appendChild(all); }
-      $('habPicker').textContent = g.hab.title + ' \u25BE';
+      $('habPicker').textContent = g.hab.title;
       this.syncCams();
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
@@ -1442,20 +1442,17 @@
         for (const [v, l] of [[false, 'Off'], [true, 'On']]) { const b = el('button', !!s.perf === v ? 'on' : '', l); b.onclick = () => { s.perf = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); w.appendChild(fr); }
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Art style')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['hd2d', 'HD-2D'], ['cuphead', 'Cuphead'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Cuphead: 1930s cartoon on old film. Storybook: ink and watercolour.')); w.appendChild(fr); }
+        for (const [v, l] of [['hd2d', 'HD-2D'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resize(); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Storybook: ink and watercolour.')); w.appendChild(fr); }
       if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel size')); const sg = el('div', 'seg small');
         for (const [v, l] of [['fine', 'Fine'], ['classic', 'Classic'], ['chunky', 'Chunky']]) { const b = el('button', (s.pixel || 'classic') === v ? 'on' : '', l); b.onclick = () => { s.pixel = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); w.appendChild(fr); }
       if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
         for (const [v, l] of [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']]) { const b = el('button', (s.blur || 'light') === v ? 'on' : '', l); b.onclick = () => { s.blur = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Depth-of-field and tilt-shift blur around the edges of the view')); w.appendChild(fr); }
-      if (s.art === 'cuphead') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Old film')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['off', 'Off'], ['light', 'Light'], ['full', 'Full']]) { const b = el('button', (s.film || 'light') === v ? 'on' : '', l); b.onclick = () => { s.film = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Film grain, flicker, scratches and dust')); w.appendChild(fr); }
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Frame rate')); const sg = el('div', 'seg small');
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: 60 fps while the device keeps up, 30 when it is busy')); w.appendChild(fr); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: steady 30 fps. Smooth: up to 60 on desktop; phones stay at 30 to reduce heat.')); w.appendChild(fr); }
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Surface detail')); const sg = el('div', 'seg small');
         for (const [v, l] of [['rich', 'Rich'], ['simple', 'Simple']]) { const b = el('button', (s.detail || (JT.app && JT.app.R && JT.app.R.gp && JT.app.R.gp._swGL ? 'simple' : 'rich')) === v ? 'on' : '', l); b.onclick = () => { s.detail = v; JT.Settings.save(s); try { JT.app.R.resetCaches(); } catch (e) {} this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Rich: bark, stone, moss and wood textures on decor. Simple is lighter on older devices (Battery saver uses it too)')); w.appendChild(fr); }
@@ -1544,3 +1541,5 @@
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
+
+
