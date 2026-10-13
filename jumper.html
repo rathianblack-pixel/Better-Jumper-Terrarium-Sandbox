@@ -888,13 +888,1080 @@ body.title-preview #app{pointer-events:none}
  #app #drawer.bm-drawer .card .nm{font-size:13px!important;min-height:0;line-height:1.25;margin-top:4px}
  #app #drawer.bm-drawer .card .pr{display:none}
 }
+<style>
+/* ===== NATURALIST FIELD JOURNAL STYLES ===== */
+#app #modal.naturalist-journal {
+  width: min(940px, calc(100% - 24px))!important;
+  background: #f5f0e3!important;
+  background-image: 
+    radial-gradient(ellipse at 15% 15%, rgba(190, 160, 110, 0.14) 0%, transparent 60%),
+    radial-gradient(ellipse at 85% 85%, rgba(140, 110, 70, 0.16) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(140, 120, 90, 0.045) 28px)!important;
+  border: 1px solid #d4caa8!important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 35px rgba(110,80,40,0.12)!important;
+  border-radius: 10px!important;
+  position: relative;
+}
+#app #modal.naturalist-journal::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: 38px;
+  width: 22px;
+  height: 68px;
+  background: linear-gradient(90deg, #8b2318 0%, #aa3428 50%, #751a11 100%);
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.45);
+  border-radius: 0 0 3px 3px;
+  pointer-events: none;
+  z-index: 15;
+}
+#app #modal.naturalist-journal > .modal-head {
+  border-bottom: 1px solid rgba(140, 115, 80, 0.28)!important;
+}
+#app #modal.naturalist-journal > .modal-head h2 {
+  font-family: Georgia, "Playfair Display", "Times New Roman", serif;
+  font-size: 25px;
+  color: #231c14;
+  letter-spacing: -0.01em;
+}
+#app #modal.naturalist-journal > #modalBody,
+#app #modal.naturalist-journal > .modal-top-controls {
+  background: transparent!important;
+}
+#app #modal.naturalist-journal .sheet-tabs {
+  border-bottom: 1px solid rgba(140, 115, 80, 0.25);
+}
+#app #modal.naturalist-journal .sheet-tabs button.on {
+  color: #1a160f!important;
+  font-weight: 600!important;
+  border-bottom: 2px solid #8c5d28!important;
+}
+#app #modal.naturalist-journal .jsub {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  border-bottom: 1px dashed rgba(140, 115, 80, 0.25);
+  padding-bottom: 8px;
+}
+#app #modal.naturalist-journal .jsub button {
+  font-family: Georgia, serif;
+  font-size: 13.5px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  background: rgba(140, 110, 70, 0.08);
+  border: 1px solid rgba(140, 110, 70, 0.2);
+  color: #4a3824;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#app #modal.naturalist-journal .jsub button:hover {
+  background: rgba(140, 110, 70, 0.16);
+  color: #1f180f;
+}
+#app #modal.naturalist-journal .jsub button.on {
+  background: #2e2215!important;
+  color: #f7f1e4!important;
+  border-color: #2e2215!important;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.field-stamp {
+  border: 2px solid #9e3223;
+  color: #9e3223;
+  border-radius: 4px;
+  font-family: Georgia, serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  display: inline-block;
+  transform: rotate(-2.5deg);
+  opacity: 0.9;
+  white-space: nowrap;
+}
+.field-stamp.locked {
+  border-color: #8a7a60;
+  color: #8a7a60;
+  opacity: 0.65;
+  transform: none;
+}
+.plate-spread {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr);
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 680px) {
+  .plate-spread { grid-template-columns: 1fr; gap: 20px; }
+}
+.plate-box {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(150, 125, 90, 0.35);
+  border-radius: 6px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.05);
+}
+.plate-box canvas {
+  width: 100%;
+  max-width: 250px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  display: block;
+}
+.plate-callouts {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #3b3123;
+  margin: 12px 0;
+  border-top: 1px solid rgba(140, 115, 80, 0.22);
+  border-bottom: 1px solid rgba(140, 115, 80, 0.22);
+  padding: 10px 0;
+}
+.plate-callouts li {
+  margin-bottom: 6px;
+}
+.plate-callouts b {
+  color: #6e4e22;
+}
+.plate-quote {
+  background: rgba(140, 100, 50, 0.08);
+  border-left: 3px solid #8c5d28;
+  padding: 8px 12px;
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+  font-size: 13px;
+  color: #2c2214;
+  margin-top: 12px;
+}
+.flora-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.flora-card {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(150, 125, 90, 0.3);
+  border-radius: 6px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+.flora-icon {
+  font-size: 38px;
+  margin-bottom: 6px;
+}
 </style>
-<style>#app .bgs button{opacity:1}#app .bgs .bg-label{color:#2c302a;background:rgba(246,243,233,.95);padding:2px 6px;line-height:1.25;font-size:13px;border-radius:3px;max-width:100%}#app .bgs button.on .bg-label{background:#e7eadc}#app #photoUi #phShot{border-radius:50%!important}</style>
 </head>
 <body>
-<style>#splash{display:none!important}#trVeil{position:fixed;inset:0;z-index:2147483000;background:#080b08;display:grid;place-content:center;color:#e9eddf;font:14px/1.5 system-ui,sans-serif;pointer-events:none;transition:opacity .25s}#trVeil.out{opacity:0}@media(prefers-reduced-motion:reduce){#trVeil{transition:none}}</style>
-<div id="trVeil" aria-hidden="true">Opening your jumper’s world…</div>
-<script>window.TR_VEIL={out:function(){var v=document.getElementById('trVeil');if(v){v.classList.add('out');setTimeout(function(){v.remove()},300)}}};setTimeout(function(){TR_VEIL.out()},8000);</script>
+<style>
+#splash{display:none!important}
+#trVeil{display:none!important}
+
+/* ===== MINIMAL AESTHETIC START SCREEN: LIVE PRE-RENDERED TANK ===== */
+#titleScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  background: #080b08;
+  color: #f5f4e9;
+  font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#titleScreen.out {
+  opacity: 0;
+  transform: scale(1.03);
+  pointer-events: none;
+}
+
+/* Background Canvas: Live Tank */
+#liveTankCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+/* Cinematic Vignette & Soft Gradient Scrim */
+.title-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at 50% 50%, rgba(8,11,8,0.15) 30%, rgba(8,11,8,0.65) 80%, rgba(8,11,8,0.92) 100%),
+              linear-gradient(180deg, rgba(8,11,8,0.45) 0%, rgba(8,11,8,0.05) 35%, rgba(8,11,8,0.2) 70%, rgba(8,11,8,0.7) 100%);
+  pointer-events: none;
+}
+
+/* Minimalist Center Typographic Column */
+.title-main {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  max-width: 580px;
+  width: 100%;
+  box-sizing: border-box;
+  pointer-events: none; /* Allows click-through anywhere to titleScreen */
+}
+
+.title-kicker {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #c9bc9a;
+  margin-bottom: 10px;
+  opacity: 0.85;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.title-logo {
+  font-size: clamp(54px, 8.5vw, 98px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 0 0 10px;
+  color: #fafbed;
+  text-shadow: 0 0 24px rgba(230,210,145,0.28), 0 0 65px rgba(185,220,135,0.18), 0 2px 8px rgba(0,0,0,0.85);
+}
+
+.title-tagline {
+  font-size: clamp(14px, 2vw, 17px);
+  font-style: italic;
+  color: #d6d3c0;
+  margin: 0 0 32px;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.85);
+  opacity: 0.9;
+}
+
+/* Breathing "Tap anywhere to begin" Prompt */
+.title-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 25, 17, 0.45);
+  border: 1px solid rgba(225, 235, 205, 0.3);
+  padding: 10px 22px;
+  border-radius: 24px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  animation: promptPulse 2.8s infinite ease-in-out;
+}
+.prompt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ecd08f;
+  box-shadow: 0 0 8px #ecd08f;
+}
+.prompt-text {
+  font-family: inherit;
+  font-size: 14.5px;
+  letter-spacing: 0.04em;
+  color: #fffdec;
+}
+@keyframes promptPulse {
+  0%, 100% { opacity: 0.92; transform: translateY(0); }
+  50% { opacity: 0.65; transform: translateY(-2px); }
+}
+
+.title-save-tag {
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  color: #b5c2a3;
+  margin-top: 12px;
+  opacity: 0.85;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Bottom Minimal HUD Links */
+.title-hud-minimal {
+  position: absolute;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #b8c4aa;
+}
+.hud-link {
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  font: inherit;
+  color: #cdd6be;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.2s;
+  touch-action: manipulation;
+  border-bottom: 1px solid transparent;
+}
+.hud-link:hover {
+  opacity: 1;
+  color: #ffffff;
+  border-bottom-color: rgba(255,255,255,0.4);
+}
+.hud-sep {
+  opacity: 0.4;
+}
+
+/* Dialog for New Game Confirmation */
+#titleConfirmDialog {
+  color-scheme: light;
+  width: min(420px, calc(100% - 32px));
+  border: 1px solid #d8d7c9;
+  border-radius: 12px;
+  padding: 26px 28px;
+  background: #f6f3e9;
+  color: #2c302a;
+  text-align: left;
+  box-shadow: 0 16px 45px rgba(0,0,0,0.6);
+  font-family: inherit;
+  cursor: default;
+}
+#titleConfirmDialog::backdrop {
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(4px);
+}
+#titleConfirmDialog h2 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 12px;
+  color: #1f221e;
+}
+#titleConfirmDialog p {
+  font-family: system-ui, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #555c4d;
+  margin: 0 0 22px;
+}
+#titleConfirmDialog .dlg-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+#titleConfirmDialog button {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 0;
+  transition: all 0.2s;
+}
+#titleConfirmDialog #dlgCancel {
+  background: #e6e4d6;
+  color: #444a3e;
+}
+#titleConfirmDialog #dlgCancel:hover {
+  background: #dcdaShort;
+}
+#titleConfirmDialog #dlgCreate {
+  background: #53613b;
+  color: #fff;
+}
+#titleConfirmDialog #dlgCreate:hover {
+  background: #627446;
+}
+
+@media (max-width: 560px) {
+  .title-logo { font-size: 52px; }
+  .title-tagline { font-size: 14px; margin-bottom: 24px; }
+  .title-prompt { padding: 9px 18px; }
+  .prompt-text { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #titleScreen { transition: none!important; }
+  .title-prompt { animation: none!important; }
+}
+</style>
+
+<!-- START SCREEN OVERLAY -->
+<div id="titleScreen" aria-label="Start Screen" tabindex="0">
+  <canvas id="liveTankCanvas"></canvas>
+  <div class="title-vignette"></div>
+
+  <div class="title-main">
+    <div class="title-kicker">A Quiet Living Vivarium</div>
+    <h1 class="title-logo">Terrarium</h1>
+    <div class="title-tagline">Rest your eyes, watch the leaves, listen to the breeze.</div>
+
+    <div class="title-prompt" id="titleTapPrompt">
+      <span class="prompt-dot"></span>
+      <span class="prompt-text">Tap anywhere to begin</span>
+    </div>
+
+    <div id="titleSaveTag" class="title-save-tag"></div>
+  </div>
+
+  <div class="title-hud-minimal">
+    <button id="titleNewBtn" class="hud-link">New Terrarium</button>
+    <span class="hud-sep">·</span>
+    <button id="titleSoundBtn" class="hud-link" aria-label="Toggle Nature Ambience">
+      <span id="soundIcon">♫</span>
+      <span id="soundLabel">Nature Ambience</span>
+    </button>
+  </div>
+</div>
+
+<dialog id="titleConfirmDialog" aria-labelledby="confirmTitle">
+  <h2 id="confirmTitle">Begin a new terrarium?</h2>
+  <p>Your current habitat progress will be archived. A local backup of your previous save will be safely preserved.</p>
+  <div class="dlg-actions">
+    <button id="dlgCancel">Cancel</button>
+    <button id="dlgCreate">New Game</button>
+  </div>
+</dialog>
+
+<!-- LIVE TANK CANVAS ENGINE & INSTANT 1-CLICK LAUNCH SCRIPT -->
+<script>
+(function() {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const SAVE_KEY = 'jumperTerrarium.v14.save';
+
+  if (typeof location !== 'undefined' && location.search && new URLSearchParams(location.search).has('preview')) {
+    const ts = $('titleScreen');
+    if (ts) ts.remove();
+    return;
+  }
+
+  // ===== 1. SAVE DETECTION & MINIMAL LAUNCH LOGIC =====
+  let hasSave = false;
+  let saveHabitatName = '';
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    const data = raw && JSON.parse(raw);
+    hasSave = !!(data && data.v && data.habitats && data.habitats.length);
+    if (hasSave) {
+      saveHabitatName = (data.habitats[data.active || 0] || {}).title || 'Saved World';
+    }
+  } catch(e) {}
+
+  const tag = $('titleSaveTag');
+  if (tag) {
+    tag.textContent = hasSave ? ('Resumes in ' + saveHabitatName) : 'Starts a new peaceful terrarium';
+  }
+
+  // Instant Launch on ANY tap or click on screen
+  let launched = false;
+  const launchGame = (fresh) => {
+    if (launched) return;
+    launched = true;
+    playTransitionChord();
+    const ts = $('titleScreen');
+    if (!ts) return;
+    ts.classList.add('out');
+
+    if (fresh) {
+      try {
+        if (window.JT && JT.app && JT.app.game) {
+          const old = localStorage.getItem(SAVE_KEY);
+          if (old) localStorage.setItem(SAVE_KEY + '.before-new', old);
+          JT.app.game.newGame();
+          if (JT.UI && JT.UI.biomeWizard) setTimeout(() => JT.UI.biomeWizard(true), 350);
+        }
+      } catch(e) { console.warn('New game reset', e); }
+    }
+
+    setTimeout(() => {
+      ts.style.display = 'none';
+      stopTankLoop();
+    }, 660);
+  };
+
+  // Clicking anywhere on title screen launches game!
+  $('titleScreen').addEventListener('click', (e) => {
+    // Don't launch if clicking the bottom links or dialog
+    if (e.target.closest('#titleNewBtn') || e.target.closest('#titleSoundBtn') || e.target.closest('#titleConfirmDialog')) {
+      return;
+    }
+    launchGame(false);
+  });
+
+  // Space / Enter key launches
+  window.addEventListener('keydown', (e) => {
+    if ($('titleConfirmDialog').open) return;
+    if ($('titleScreen').style.display !== 'none' && !$('titleScreen').classList.contains('out')) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        launchGame(false);
+      }
+    }
+  });
+
+  // "New Terrarium" link
+  $('titleNewBtn').onclick = (e) => {
+    e.stopPropagation();
+    if (hasSave) {
+      $('titleConfirmDialog').showModal();
+    } else {
+      launchGame(true);
+    }
+  };
+  $('dlgCancel').onclick = (e) => {
+    e.stopPropagation();
+    $('titleConfirmDialog').close();
+  };
+  $('dlgCreate').onclick = (e) => {
+    e.stopPropagation();
+    $('titleConfirmDialog').close();
+    launchGame(true);
+  };
+
+  // In-Game Menu Return Hook
+  window.showTitleScreen = function() {
+    launched = false;
+    const ts = $('titleScreen');
+    if (!ts) return;
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      const data = raw && JSON.parse(raw);
+      hasSave = !!(data && data.v && data.habitats && data.habitats.length);
+      if (hasSave) {
+        saveHabitatName = (data.habitats[data.active || 0] || {}).title || 'Saved World';
+      }
+    } catch(e) {}
+    if (tag) tag.textContent = hasSave ? ('Resumes in ' + saveHabitatName) : 'Starts a new peaceful terrarium';
+    ts.style.display = 'flex';
+    ts.offsetHeight;
+    ts.classList.remove('out');
+    startTankLoop();
+    startAmbience();
+  };
+
+  // ===== 2. WARM AMBIENT INTRO AUDIO (SYNTHESIZED WEBAUDIO) =====
+  let audioCtx = null;
+  let breezeGain = null;
+  let chimesTimer = null;
+  let audioMuted = false;
+
+  function initAudio() {
+    if (audioCtx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      audioCtx = new AC();
+    } catch(e) {}
+  }
+
+  function startAmbience() {
+    initAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioMuted || breezeGain) return;
+
+    try {
+      const bufSize = audioCtx.sampleRate * 2;
+      const noiseBuffer = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      const out = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        out[i] = (b0 + b1 + b2) * 0.11;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      noise.loop = true;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 520;
+
+      const lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.07;
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 160;
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+      lfo.start();
+
+      breezeGain = audioCtx.createGain();
+      breezeGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      breezeGain.gain.exponentialRampToValueAtTime(0.065, audioCtx.currentTime + 2.5);
+
+      noise.connect(filter);
+      filter.connect(breezeGain);
+      breezeGain.connect(audioCtx.destination);
+      noise.start();
+
+      const PENTATONIC = [293.66, 329.63, 392.00, 440.00, 493.88, 587.33, 659.25];
+      const scheduleChime = () => {
+        if (!audioMuted && audioCtx && audioCtx.state === 'running' && !$('titleScreen').classList.contains('out')) {
+          const freq = PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)];
+          playChime(freq, 0.035 + Math.random() * 0.025);
+        }
+        chimesTimer = setTimeout(scheduleChime, 3800 + Math.random() * 3200);
+      };
+      chimesTimer = setTimeout(scheduleChime, 1800);
+    } catch(e) {}
+  }
+
+  function playChime(freq, vol) {
+    if (audioMuted || !audioCtx || audioCtx.state !== 'running') return;
+    try {
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(freq * 2.756, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(vol || 0.04, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
+      osc.connect(g); osc2.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(now); osc2.start(now);
+      osc.stop(now + 2.9); osc2.stop(now + 2.9);
+    } catch(e) {}
+  }
+
+  function playTransitionChord() {
+    if (audioMuted || !audioCtx || audioCtx.state !== 'running') return;
+    try {
+      const now = audioCtx.currentTime;
+      const chord = [110, 164.81, 220, 277.18, 440];
+      chord.forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(0.065 / (i + 1), now + 0.05 + i * 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 2.5);
+      });
+    } catch(e) {}
+  }
+
+  $('titleSoundBtn').onclick = (e) => {
+    e.stopPropagation();
+    audioMuted = !audioMuted;
+    $('titleSoundBtn').classList.toggle('muted', audioMuted);
+    $('soundLabel').textContent = audioMuted ? 'Muted' : 'Nature Ambience';
+    $('soundIcon').textContent = audioMuted ? '✕' : '♫';
+    if (breezeGain && audioCtx) {
+      breezeGain.gain.setTargetAtTime(audioMuted ? 0 : 0.065, audioCtx.currentTime, 0.1);
+    }
+    if (!audioMuted) startAmbience();
+  };
+
+  window.addEventListener('pointerdown', () => startAmbience(), { once: true });
+
+
+  // ===== 3. PRE-RENDERED LIVE TANK CANVAS ENGINE (INSTANT 60 FPS) =====
+  const canvas = $('liveTankCanvas');
+  const ctx = canvas.getContext('2d');
+  let loopAnimId = null;
+  let loopRunning = false;
+  let W = 0, H = 0, dpr = 1;
+
+  const resize = () => {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = canvas.width = Math.floor(window.innerWidth * dpr);
+    H = canvas.height = Math.floor(window.innerHeight * dpr);
+  };
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Floating ambient dust motes / vivarium spores
+  const SPORES = Array.from({ length: 36 }, () => ({
+    x: 0.2 + Math.random() * 0.6,
+    y: 0.1 + Math.random() * 0.8,
+    r: 1 + Math.random() * 2.0,
+    vx: (Math.random() - 0.45) * 0.012,
+    vy: -0.015 - Math.random() * 0.02,
+    alpha: 0.25 + Math.random() * 0.55,
+    phase: Math.random() * 6.28
+  }));
+
+  // Saccade timer for spider head-tilts
+  let headAngle = 0;
+  let targetHeadAngle = 0;
+  let headTimer = 0;
+
+  // Main Live Tank Drawing Routine
+  function drawLiveTank(ctx, w, h, t) {
+    const cx = w * 0.5;
+    const cy = h * 0.52;
+    const scale = Math.min(w, h) * 0.0022;
+
+    // Background Room Atmosphere
+    const roomBg = ctx.createRadialGradient(cx, cy * 0.7, 10, cx, cy, Math.max(w, h) * 0.75);
+    roomBg.addColorStop(0, '#131911');
+    roomBg.addColorStop(0.55, '#0b0f0b');
+    roomBg.addColorStop(1, '#050705');
+    ctx.fillStyle = roomBg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Tank Enclosure Bounds
+    const tw = Math.min(w * 0.9, 680 * scale);
+    const th = Math.min(h * 0.84, 760 * scale);
+    const tx = cx - tw * 0.5;
+    const ty = cy - th * 0.48;
+
+    // 1. Tank Back Wall (Lush Diffuse Interior)
+    const tankBg = ctx.createRadialGradient(cx, ty + th * 0.35, 15, cx, ty + th * 0.5, tw * 0.65);
+    tankBg.addColorStop(0, '#22321c');
+    tankBg.addColorStop(0.5, '#131e11');
+    tankBg.addColorStop(1, '#0a1009');
+    ctx.fillStyle = tankBg;
+    ctx.fillRect(tx, ty, tw, th);
+
+    // 2. Basking Sun Beam (Radiant Diagonal Light Cone)
+    const lampX = tx + tw * 0.72;
+    const lampY = ty;
+    const beam = ctx.createLinearGradient(lampX, lampY, cx - 80 * scale, ty + th);
+    beam.addColorStop(0, 'rgba(255, 235, 175, 0.28)');
+    beam.addColorStop(0.4, 'rgba(240, 215, 140, 0.12)');
+    beam.addColorStop(1, 'rgba(210, 190, 120, 0)');
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(lampX - 35 * scale, lampY);
+    ctx.lineTo(lampX + 35 * scale, lampY);
+    ctx.lineTo(cx + 140 * scale, ty + th);
+    ctx.lineTo(cx - 180 * scale, ty + th);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Substrate Layers at Tank Bottom
+    const subTop = ty + th - 95 * scale;
+    // Layer A: Horticultural Charcoal & LECA balls
+    ctx.fillStyle = '#1e1a17';
+    ctx.fillRect(tx, subTop + 45 * scale, tw, 50 * scale);
+    for (let i = 0; i < 24; i++) {
+      ctx.fillStyle = i % 2 ? '#4a3222' : '#322016';
+      ctx.beginPath();
+      ctx.arc(tx + 20 * scale + i * 28 * scale, subTop + 70 * scale + (i % 3) * 6 * scale, 9 * scale, 0, 6.283);
+      ctx.fill();
+    }
+    // Layer B: Rich Peat Soil
+    ctx.fillStyle = '#342417';
+    ctx.fillRect(tx, subTop, tw, 46 * scale);
+
+    // Layer C: Undulating Velvet Moss Hill
+    ctx.fillStyle = '#3f5828';
+    ctx.beginPath();
+    ctx.moveTo(tx, subTop + 10 * scale);
+    ctx.bezierCurveTo(tx + tw * 0.25, subTop - 18 * scale, tx + tw * 0.65, subTop + 12 * scale, tx + tw, subTop - 6 * scale);
+    ctx.lineTo(tx + tw, subTop + 15 * scale);
+    ctx.lineTo(tx, subTop + 15 * scale);
+    ctx.fill();
+
+    // Moss highlight stippling
+    ctx.fillStyle = '#577c38';
+    ctx.beginPath();
+    ctx.ellipse(cx - 80 * scale, subTop - 4 * scale, 90 * scale, 12 * scale, -0.05, 0, 6.283);
+    ctx.fill();
+
+    // 4. Diagonal Organic Cork Branch / Driftwood
+    ctx.save();
+    ctx.strokeStyle = '#38281a';
+    ctx.lineWidth = 32 * scale;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tx + 30 * scale, subTop - 10 * scale);
+    ctx.bezierCurveTo(cx - 90 * scale, cy + 80 * scale, cx - 20 * scale, cy - 20 * scale, cx + 110 * scale, cy - 70 * scale);
+    ctx.stroke();
+
+    // Wood Bark Highlights
+    ctx.strokeStyle = '#5a422d';
+    ctx.lineWidth = 14 * scale;
+    ctx.beginPath();
+    ctx.moveTo(tx + 40 * scale, subTop - 12 * scale);
+    ctx.bezierCurveTo(cx - 85 * scale, cy + 78 * scale, cx - 18 * scale, cy - 22 * scale, cx + 105 * scale, cy - 72 * scale);
+    ctx.stroke();
+
+    // Branch Top Lip in Warm Sun
+    ctx.strokeStyle = '#856445';
+    ctx.lineWidth = 4 * scale;
+    ctx.beginPath();
+    ctx.moveTo(cx - 60 * scale, cy + 20 * scale);
+    ctx.bezierCurveTo(cx - 10 * scale, cy - 15 * scale, cx + 40 * scale, cy - 45 * scale, cx + 90 * scale, cy - 65 * scale);
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. Living Foliage (Swaying Vines & Leaves)
+    const drawLeaf = (lx, ly, rot, sz, sway) => {
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(rot + sway);
+
+      // Leaf body
+      ctx.fillStyle = '#2f4c1e';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-22 * sz, -14 * sz, -28 * sz, -48 * sz, 0, -68 * sz);
+      ctx.bezierCurveTo(28 * sz, -48 * sz, 22 * sz, -14 * sz, 0, 0);
+      ctx.fill();
+
+      // Leaf central rib
+      ctx.strokeStyle = '#4e7534';
+      ctx.lineWidth = 2 * sz;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -62 * sz);
+      ctx.stroke();
+
+      // Translucent sun highlight
+      ctx.fillStyle = 'rgba(160, 220, 90, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-14 * sz, -20 * sz, -18 * sz, -44 * sz, 0, -64 * sz);
+      ctx.fill();
+
+      // Dewdrop on tip
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(0, -65 * sz, 2.4 * sz, 0, 6.283);
+      ctx.fill();
+
+      ctx.restore();
+    };
+
+    const sway1 = Math.sin(t * 1.3) * 0.05;
+    const sway2 = Math.cos(t * 1.5) * 0.06;
+    const sway3 = Math.sin(t * 1.1 + 1.2) * 0.04;
+
+    // Vine cluster 1 (left side)
+    drawLeaf(tx + 65 * scale, cy + 40 * scale, -0.6, scale, sway1);
+    drawLeaf(tx + 95 * scale, cy - 20 * scale, -0.3, scale * 1.15, sway2);
+    drawLeaf(tx + 40 * scale, cy - 70 * scale, -0.8, scale * 0.9, sway3);
+
+    // Vine cluster 2 (hanging from top-right)
+    drawLeaf(tx + tw - 80 * scale, ty + 120 * scale, 2.4, scale * 1.1, sway2);
+    drawLeaf(tx + tw - 50 * scale, ty + 180 * scale, 2.7, scale * 0.95, sway1);
+
+    // Cluster 3 (sprouting from central branch)
+    drawLeaf(cx - 35 * scale, cy + 2 * scale, 0.45, scale * 0.85, sway3);
+    drawLeaf(cx + 65 * scale, cy - 50 * scale, 0.85, scale * 0.95, sway1);
+
+    // 6. The Jumper Inhabitant (Regal Jumper on Branch)
+    const spX = cx + 8 * scale;
+    const spY = cy - 28 * scale;
+
+    // Head tilt update logic
+    headTimer += 0.016;
+    if (headTimer > 3.2 + Math.sin(t) * 0.8) {
+      headTimer = 0;
+      targetHeadAngle = (Math.random() - 0.5) * 0.35;
+    }
+    headAngle += (targetHeadAngle - headAngle) * 0.08;
+
+    ctx.save();
+    ctx.translate(spX, spY);
+
+    // Soft spider contact shadow on bark
+    ctx.fillStyle = 'rgba(25, 18, 12, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(0, 8 * scale, 26 * scale, 9 * scale, 0, 0, 6.283);
+    ctx.fill();
+
+    // 8 Legs gripping the branch
+    ctx.strokeStyle = '#1e1914';
+    ctx.lineWidth = 3.6 * scale;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const legs = [
+      [-1, -18, -4, -36, -20, -42, 6],
+      [-1, -12, -2, -30, -12, -38, 14],
+      [-1, 8, 4, -28, 8, -34, 22],
+      [-1, 16, 6, -24, 18, -28, 28],
+      [1, -18, -4, 36, -20, 42, 6],
+      [1, -12, -2, 30, -12, 38, 14],
+      [1, 8, 4, 28, 8, 34, 22],
+      [1, 16, 6, 24, 18, 28, 28]
+    ];
+    for (const leg of legs) {
+      ctx.beginPath();
+      ctx.moveTo(leg[3] * 0.3 * scale, leg[4] * 0.3 * scale);
+      ctx.quadraticCurveTo(leg[3] * scale, leg[4] * scale, leg[5] * scale, leg[6] * scale);
+      ctx.stroke();
+    }
+
+    // Abdomen (Opisthosoma) with gentle breathing motion
+    const breath = 1 + Math.sin(t * 2.4) * 0.035;
+    ctx.save();
+    ctx.translate(0, 15 * scale);
+    ctx.scale(breath, breath);
+    ctx.fillStyle = '#221a14';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16 * scale, 20 * scale, 0, 0, 6.283);
+    ctx.fill();
+
+    // Distinctive white heart marking
+    ctx.fillStyle = '#f6edd8';
+    ctx.beginPath();
+    ctx.ellipse(0, -4 * scale, 5.5 * scale, 7 * scale, 0, 0, 6.283);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-5 * scale, 4 * scale, 2.5 * scale, 3.5 * scale, -0.3, 0, 6.283);
+    ctx.ellipse(5 * scale, 4 * scale, 2.5 * scale, 3.5 * scale, 0.3, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+
+    // Cephalothorax with head tilt
+    ctx.save();
+    ctx.rotate(headAngle);
+    ctx.fillStyle = '#1c1611';
+    ctx.beginPath();
+    ctx.ellipse(0, -9 * scale, 17 * scale, 15 * scale, 0, 0, 6.283);
+    ctx.fill();
+
+    // Emerald Metallic Chelicerae
+    const chelGlow = ctx.createLinearGradient(-8 * scale, -2 * scale, 8 * scale, 6 * scale);
+    chelGlow.addColorStop(0, '#1cc485');
+    chelGlow.addColorStop(0.5, '#2af0b0');
+    chelGlow.addColorStop(1, '#2065b5');
+    ctx.fillStyle = chelGlow;
+    ctx.beginPath();
+    ctx.roundRect(-8 * scale, -2 * scale, 7 * scale, 11 * scale, 2 * scale);
+    ctx.roundRect(1 * scale, -2 * scale, 7 * scale, 11 * scale, 2 * scale);
+    ctx.fill();
+
+    // Soft tufted pedipalps with gentle idle twitch
+    const palpTwitch = Math.sin(t * 4.2) * 0.08;
+    ctx.fillStyle = '#f4ede0';
+    ctx.beginPath();
+    ctx.ellipse(-11 * scale, -3 * scale + palpTwitch * 5 * scale, 3.5 * scale, 7 * scale, -0.2, 0, 6.283);
+    ctx.ellipse(11 * scale, -3 * scale - palpTwitch * 5 * scale, 3.5 * scale, 7 * scale, 0.2, 0, 6.283);
+    ctx.fill();
+
+    // Big Anterior Median Eyes (AME)
+    const eyeR = 5.6 * scale;
+    for (const s of [-1, 1]) {
+      const ex = s * 6.5 * scale;
+      const ey = -13 * scale;
+
+      // Cornea
+      ctx.fillStyle = '#060608';
+      ctx.beginPath();
+      ctx.arc(ex, ey, eyeR, 0, 6.283);
+      ctx.fill();
+
+      // Iridescent rim
+      ctx.strokeStyle = 'rgba(215, 175, 100, 0.6)';
+      ctx.lineWidth = 0.8 * scale;
+      ctx.stroke();
+
+      // Primary Catchlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.beginPath();
+      ctx.arc(ex - 1.4 * scale, ey - 1.4 * scale, 1.4 * scale, 0, 6.283);
+      ctx.fill();
+
+      // Secondary Glint
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.beginPath();
+      ctx.arc(ex + 1.6 * scale, ey + 1.4 * scale, 0.8 * scale, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.restore();
+
+    // 7. Drifting Golden Vivarium Dust Motes / Spores
+    ctx.save();
+    for (const sp of SPORES) {
+      sp.x += sp.vx * 0.016 * 60;
+      sp.y += sp.vy * 0.016 * 60;
+      if (sp.y < 0.05) sp.y = 0.85;
+      if (sp.x < 0.15) sp.x = 0.85;
+      if (sp.x > 0.85) sp.x = 0.15;
+
+      const sx = tx + sp.x * tw;
+      const sy = ty + sp.y * th;
+      const pulse = 0.7 + Math.sin(t * 2 + sp.phase) * 0.3;
+      ctx.fillStyle = `rgba(240, 225, 165, ${sp.alpha * pulse * 0.65})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sp.r * dpr, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 8. Front Glass Enclosure Highlights & Frame Bevels
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220, 240, 255, 0.22)';
+    ctx.lineWidth = 2.5 * scale;
+    ctx.strokeRect(tx, ty, tw, th);
+
+    // Top Lamp Anodized Rim
+    ctx.fillStyle = '#1c221a';
+    ctx.fillRect(tx, ty - 6 * scale, tw, 7 * scale);
+
+    // Front Glass Diagonal Glare Sheen
+    const sheen = ctx.createLinearGradient(tx, ty, tx + tw * 0.6, ty + th * 0.6);
+    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.06)');
+    sheen.addColorStop(0.35, 'rgba(255, 255, 255, 0.02)');
+    sheen.addColorStop(0.7, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = sheen;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx + tw * 0.45, ty);
+    ctx.lineTo(tx, ty + th * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Animation Loop
+  let lastNow = performance.now();
+  function render(now) {
+    if (!loopRunning) return;
+    lastNow = now;
+    const t = now * 0.001;
+    ctx.clearRect(0, 0, W, H);
+    drawLiveTank(ctx, W, H, t);
+    loopAnimId = requestAnimationFrame(render);
+  }
+
+  function startTankLoop() {
+    if (loopRunning) return;
+    loopRunning = true;
+    lastNow = performance.now();
+    loopAnimId = requestAnimationFrame(render);
+  }
+
+  function stopTankLoop() {
+    loopRunning = false;
+    if (loopAnimId) cancelAnimationFrame(loopAnimId);
+  }
+
+  // First Paint immediately on Frame 1!
+  startTankLoop();
+
+})();
+</script>
 
 <div id="splash" role="dialog" aria-label="Jumper Terrarium">
   <div class="sp-still"><svg class="sp-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true">
@@ -8293,10 +9360,36 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     HP[k] = function () { const n0 = (this.data.drops || []).length; const r = f0.apply(this, arguments); size(this, Math.min(n0, (this.data.drops || []).length)); if (this.data.drops.length > 44) this.data.drops.splice(0, this.data.drops.length - 44); return r; };
   }
   // drawing: allow genuinely small beads on screen (the old minimum was 1.2 px)
-  const D = JT.Draw; if (D && D.drop) { const d0 = D.drop; D.drop = function (ctx, V, w, pos) { if (!w._sz) return d0.apply(this, arguments); const p = V.P(pos); const r = Math.max(0.7, w.r * V.s);
-    const gr = ctx.createRadialGradient(p[0] - r * 0.3, p[1] - r * 0.4, r * 0.1, p[0], p[1], r);
-    gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.35, 'rgba(190,225,245,0.72)'); gr.addColorStop(1, 'rgba(120,170,210,0.5)');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], p[1] - r * 0.6, r, 0, 6.283); ctx.fill(); }; }
+  const D = JT.Draw; if (D && D.drop) { const d0 = D.drop; D.drop = function (ctx, V, w, pos) {
+    if (!w._sz) return d0.apply(this, arguments);
+    const p = V.P(pos); const r = Math.max(0.7, w.r * V.s);
+    if (r > 1.2) {
+      ctx.fillStyle = 'rgba(10,20,30,0.24)';
+      ctx.beginPath();
+      ctx.ellipse(p[0], p[1], r * 0.85, r * 0.35, 0, 0, 6.283);
+      ctx.fill();
+    }
+    const cy = p[1] - r * 0.55;
+    const gr = ctx.createRadialGradient(p[0] - r * 0.32, cy - r * 0.32, r * 0.08, p[0], cy, r);
+    gr.addColorStop(0, 'rgba(255,255,255,0.92)');
+    gr.addColorStop(0.3, 'rgba(215,242,255,0.72)');
+    gr.addColorStop(0.7, 'rgba(140,195,230,0.4)');
+    gr.addColorStop(0.95, 'rgba(80,140,190,0.65)');
+    gr.addColorStop(1, 'rgba(40,80,120,0.8)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p[0], cy, r, 0, 6.283); ctx.fill();
+    if (r > 1.4) {
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(p[0] - r * 0.28, cy - r * 0.32, Math.max(0.4, r * 0.22), 0, 6.283);
+      ctx.fill();
+    }
+    if (r > 2.2) {
+      ctx.fillStyle = 'rgba(220,250,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(p[0] + r * 0.15, cy + r * 0.5, r * 0.45, r * 0.18, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }; }
 })(typeof window !== 'undefined' ? window : globalThis);
 
 
@@ -8537,12 +9630,12 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             }
             ctx.stroke(), ctx.restore();
         }(ctx, P, e, hp, col), o.sheen && function(ctx, P, e, V, kind, t) {
-            const h = ((57 * V.yaw + (3 === kind ? 290 : 2 === kind ? 200 : 140) + 25 * Math.sin(.7 * t)) % 360 + 360) % 360;
+            const h = ((57 * V.yaw + (4 === kind ? (165 + 40 * Math.sin(1.6 * V.yaw)) : 3 === kind ? 290 : 2 === kind ? 200 : 140) + 25 * Math.sin(.7 * t)) % 360 + 360) % 360;
             ctx.save(), ctx.beginPath(), ctx.ellipse(P[0], P[1], e.r1, e.r2, e.ang, 0, 6.283), 
             ctx.clip();
             const g = ctx.createLinearGradient(P[0] - e.r1, P[1] - e.r1, P[0] + e.r1, P[1] + e.r1);
-            g.addColorStop(0, "hsla(" + h + ",90%,60%,0)"), g.addColorStop(.45, "hsla(" + h + ",90%,62%,0.42)"), 
-            g.addColorStop(.6, "hsla(" + (h + 60) % 360 + ",90%,65%,0.3)"), g.addColorStop(1, "hsla(" + h + ",90%,60%,0)"), 
+            g.addColorStop(0, "hsla(" + h + ",95%,60%,0)"), g.addColorStop(.45, "hsla(" + h + ",95%,64%,0.48)"), 
+            g.addColorStop(.6, "hsla(" + (h + 45) % 360 + ",95%,68%,0.38)"), g.addColorStop(1, "hsla(" + h + ",95%,60%,0)"), 
             ctx.fillStyle = g, ctx.fillRect(P[0] - e.r1, P[1] - e.r1, 2 * e.r1, 2 * e.r1), ctx.restore();
         }(ctx, P, e, V, o.sheen, o.time || 0), !1 !== o.ink && R > 2.5 && (ctx.beginPath(), 
         ctx.ellipse(P[0], P[1], R, Math.max(.3, e.r2), e.ang, 0, 6.283), ctx.lineWidth = Math.max(.45, Math.min(1.5, .065 * R)), 
@@ -8596,16 +9689,25 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     }
     function wing(ctx, V, c, ax, ay, fill, edge, veins, lod) {
         const P = V.P(c), e = projEll(V, ax, ay, null);
-        if (!(e.r1 < .5) && (ctx.beginPath(), ctx.ellipse(P[0], P[1], e.r1, Math.max(.35, e.r2), e.ang, 0, 6.283), 
-        ctx.fillStyle = fill, ctx.fill(), lod > 0 && e.r1 > 3 && (ctx.lineWidth = Math.max(.4, .03 * e.r1), 
-        ctx.strokeStyle = edge, ctx.stroke(), veins && e.r1 > 6))) {
-            const r0 = V.P(M.sub(c, ax));
-            ctx.beginPath();
-            for (let k = -2; k <= 2; k++) {
-                const q = V.P(M.add(M.add(c, M.mul(ax, .75)), M.mul(ay, .38 * k)));
-                ctx.moveTo(r0[0], r0[1]), ctx.lineTo(q[0], q[1]);
+        if (!(e.r1 < .5)) {
+            ctx.beginPath(), ctx.ellipse(P[0], P[1], e.r1, Math.max(.35, e.r2), e.ang, 0, 6.283), 
+            ctx.fillStyle = fill, ctx.fill();
+            if (lod > 0 && e.r1 > 3) {
+                const wg = ctx.createLinearGradient(P[0] - e.r1 * .5, P[1] - e.r2 * .5, P[0] + e.r1 * .5, P[1] + e.r2 * .5);
+                wg.addColorStop(0, "rgba(90,210,255,0.22)"), wg.addColorStop(0.5, "rgba(255,120,220,0.18)"), 
+                wg.addColorStop(1, "rgba(130,255,170,0.22)"), ctx.fillStyle = wg, ctx.beginPath(), 
+                ctx.ellipse(P[0], P[1], e.r1, Math.max(.35, e.r2), e.ang, 0, 6.283), ctx.fill(), 
+                ctx.lineWidth = Math.max(.4, .03 * e.r1), ctx.strokeStyle = edge, ctx.stroke();
+                if (veins && e.r1 > 6) {
+                    const r0 = V.P(M.sub(c, ax));
+                    ctx.beginPath();
+                    for (let k = -2; k <= 2; k++) {
+                        const q = V.P(M.add(M.add(c, M.mul(ax, .75)), M.mul(ay, .38 * k)));
+                        ctx.moveTo(r0[0], r0[1]), ctx.lineTo(q[0], q[1]);
+                    }
+                    ctx.globalAlpha *= .7, ctx.stroke(), ctx.globalAlpha /= .7;
+                }
             }
-            ctx.globalAlpha *= .7, ctx.stroke(), ctx.globalAlpha /= .7;
         }
     }
     function Part(c, ax, ay, az) {
@@ -8801,7 +9903,9 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         var w, h;
         const one = (grow, al) => {
             if (al < .003) return;
-            if (ctx.gpuShadow) return void ctx.gpuShadow(ells, strokes, grow, col, al, 0 === art ? 1.5 / k : 1);
+            // Shadow softness scales with height above the surface: 0 (on ground) = crisp, 1 (fully elevated) = soft.
+            const heightSf = 0 === art ? 1.5 / k : M.clamp(0.35 + 1.3 * (h / Math.max(L, 0.1)), 0.35, 2.5);
+            if (ctx.gpuShadow) return void ctx.gpuShadow(ells, strokes, grow, col, al, heightSf);
             if (!B) return ctx.globalAlpha = 1, ctx.fillStyle = col.replace("rgb", "rgba").replace(")", "," + al.toFixed(3) + ")"), 
             ctx.strokeStyle = ctx.fillStyle, void shapePath(ctx, ells, strokes, 0, grow);
             const g = B.g;
@@ -9007,15 +10111,26 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                     const g = ctx.createRadialGradient(P[0], P[1], .1 * rr, P[0], P[1], rr);
                     g.addColorStop(0, big ? LK.eyeCol || "#2a1c12" : "#120c08"), g.addColorStop(.55, "#0a0705"), 
                     g.addColorStop(1, "#000"), ctx.fillStyle = g, ctx.beginPath(), ctx.arc(P[0], P[1], rr, 0, 6.283), 
-                    ctx.fill(), big && rr > 2.5 && (ctx.strokeStyle = LK.eyeCol ? "rgba(190,130,60,0.55)" : "rgba(120,90,60,0.35)", 
-                    ctx.lineWidth = Math.max(.5, .12 * rr), ctx.beginPath(), ctx.arc(P[0], P[1], .62 * rr, 0, 6.283), 
-                    ctx.stroke());
-                    const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * .55)), shine = big ? .92 : .7;
-                    big && rr > 2 && JT.HD2D && JT.HD2D.on, ctx.fillStyle = "rgba(255,255,255," + shine + ")", 
-                    ctx.beginPath(), ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(.5, rr * (big ? .32 : .35)), 0, 6.283), 
-                    ctx.fill(), big && rr > 2 && (ctx.fillStyle = "rgba(255,255,255,0.45)", ctx.beginPath(), 
-                    ctx.arc(P[0] - .7 * gp[0], P[1] - .7 * gp[1] + .15 * rr, Math.max(.4, .13 * rr), 0, 6.283), 
-                    ctx.fill());
+                    ctx.fill();
+                    if (big && rr > 2) {
+                        ctx.strokeStyle = "rgba(64,224,208,0.22)", ctx.lineWidth = Math.max(.4, .08 * rr), 
+                        ctx.beginPath(), ctx.arc(P[0], P[1], .84 * rr, 0, 6.283), ctx.stroke();
+                        ctx.strokeStyle = LK.eyeCol ? "rgba(195,135,65,0.6)" : "rgba(130,95,60,0.45)", 
+                        ctx.lineWidth = Math.max(.5, .12 * rr), ctx.beginPath(), ctx.arc(P[0], P[1], .62 * rr, 0, 6.283), 
+                        ctx.stroke();
+                    }
+                    const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * .55)), shine = big ? .95 : .75;
+                    ctx.fillStyle = "rgba(255,255,255," + shine + ")", ctx.beginPath(), 
+                    ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(.5, rr * (big ? .32 : .35)), 0, 6.283), ctx.fill();
+                    if (big && rr > 2.5) {
+                        ctx.fillStyle = "rgba(255,255,255,1.0)", ctx.beginPath(), 
+                        ctx.arc(P[0] + gp[0] * 1.05, P[1] + gp[1] * 1.05, Math.max(.35, rr * .16), 0, 6.283), ctx.fill();
+                    }
+                    if (big && rr > 2) {
+                        ctx.fillStyle = "rgba(220,240,255,0.52)", ctx.beginPath(), 
+                        ctx.arc(P[0] - .65 * gp[0], P[1] - .65 * gp[1] + .12 * rr, Math.max(.4, .14 * rr), 0, 6.283), 
+                        ctx.fill();
+                    }
                 }
                 ctx.globalAlpha = alpha, LK.tufts && lod > 0 && !under && function(ctx, V, cph, LK, L, px, fg, sg, nh, pal) {
                     const kind = LK.tufts, lw = k => Math.max(.5, L * V.s * k);
@@ -9141,7 +10256,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 f: () => blob(ctx, V, chc, M.mul(fg, .05 * L * ck), M.mul(sg, .045 * L * Math.sqrt(ck)), M.mul(n, .07 * L * ck), pal.chel, {
                     lod: lod,
                     gloss: 1,
-                    sheen: LK.irid || 0,
+                    sheen: LK.irid || 4,
                     time: t
                 })
             });
@@ -9168,7 +10283,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                         ink: "pompom" === pk
                     });
                     const rr = r * L * V.s;
-                    ("pompom" === pk || "fluffy" === pk) && rr > 2 && puff(ctx, V.P(c), rr, "pompom" === pk ? sh(pc, .15) : pc, "pompom" === pk ? 14 : 9, Math.max(.5, .12 * rr));
+                    rr > 1.8 && puff(ctx, V.P(c), rr, "pompom" === pk ? sh(pc, .18) : sh(pc, .12), "pompom" === pk ? 14 : "fluffy" === pk ? 9 : 6, Math.max(.4, .1 * rr));
                 }
             });
         }
@@ -9681,8 +10796,9 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             const N = 7;
             for (let i = 0; i < N; i++) {
                 const k = i / (N - 1), c2 = W((.32 - .62 * k) * L, 0, .1 * L), wv = L * (.24 - .16 * Math.abs(k - .4));
-                B(c2, M.mul(f, .08 * L), M.mul(s, wv), M.mul(n, .1 * L * (1 - .6 * Math.abs(k - .45))), sh(col, 37 * i % 7 / 40 - .05), {
-                    gloss: .3
+                B(c2, M.mul(f, .08 * L), M.mul(s, wv), M.mul(n, .1 * L * (1 - .6 * Math.abs(k - .45))), sh(col, i % 2 ? -.07 : .05), {
+                    gloss: .55,
+                    ink: lod > 0
                 });
             }
             for (const sd of [ -1, 1 ]) {
@@ -9695,7 +10811,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             add(el.c, () => {
                 blob(ctx, V, el.c, el.ax, el.ay, el.az, col, {
                     lod: lod,
-                    gloss: beetle ? 1 : .6,
+                    gloss: beetle ? 1.25 : .6,
                     hatch: !0
                 }), lod > 0 && decals(ctx, V, el, beetle ? [ stripe(0, .03, "dark", -.95, .95) ].concat(d.spots ? [ dot(-.2, .4, .13, "pale"), dot(-.2, -.4, .13, "pale"), dot(-.6, .2, .1, "pale"), dot(-.6, -.2, .1, "pale") ] : [ stripe(.45, .02, "dark", -.8, .8, .5), stripe(-.45, .02, "dark", -.8, .8, .5) ]) : [ band(.5, .04, "dark"), band(.2, .04, "dark"), band(-.1, .04, "dark"), band(-.4, .04, "dark"), band(-.7, .04, "dark"), stripe(.9, .06, "pale", -.6, .6, .5), stripe(-.9, .06, "pale", -.6, .6, .5) ], {
                     dark: sh(col, -.5),
@@ -10179,7 +11295,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 <script>
 !function() {
     "use strict";
-    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5) col=mix(col, vec3(0.93,0.95,0.82), 0.12);\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.05,0.8,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float w=max(aW*uLW, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; vec3 inkT=mix(uInk, vec3(0.34,0.22,0.16), 0.38); gl_FragColor=vec4(inkT*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5){ col=mix(col, vec3(0.38,0.76,0.24), 0.28); col*=1.16; }\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  float rim=pow(fr, 2.6); vec3 rimCol=mix(vec3(1.0,0.84,0.54), vec3(0.55,0.72,1.0), uNight); col+=rimCol*rim*0.16*uKD; float washEdge=smoothstep(0.46,0.95,fr); col=mix(col, col*0.82+vec3(0.04,0.02,0.01), washEdge*0.32*(1.0-uHD));\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); float mossCreep=(1.0-smoothstep(0.3,3.6+nz.g*1.6,hb))*smoothstep(-0.15,0.45,n.y)*0.46; col=mix(col, vec3(0.32,0.48,0.18), mossCreep*step(uGnd.y,0.02)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.02,0.90,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); float h1=step(1.1,mod(gl_FragCoord.x+gl_FragCoord.y,4.0))*0.75+0.25; float h2=step(1.1,mod(gl_FragCoord.x-gl_FragCoord.y,4.0))*0.75+0.25; float hatch=mix(1.0,h1,smoothstep(0.18,0.58,e)); hatch=mix(hatch,h1*h2,smoothstep(0.55,0.88,e)); c=c*hatch; o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float nib=0.76+0.48*abs(dot(nr,vec2(-0.7071,0.7071))); float w=max(aW*uLW*nib, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
     function mkCanvas(w, h) {
         const c = document.createElement("canvas");
         return c.width = Math.max(1, 0 | w), c.height = Math.max(1, 0 | h), c;
@@ -10188,10 +11304,14 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         kd: 1,
         key: [ 1, 1, 1 ],
         amb: [ 1, 1, 1 ]
-    }, towardPaper = (h, t) => {
+    };
+    const towardPaper = (h, t) => {
         JT.HD2D && JT.HD2D.on && (t *= .3);
         const c = (h => GM.rgb(h))(h);
-        return (c => "#" + c.map(x => Math.max(0, Math.min(255, Math.round(255 * x))).toString(16).padStart(2, "0")).join(""))([ c[0] + (PAPER[0] - c[0]) * t, c[1] + (PAPER[1] - c[1]) * t, c[2] + (PAPER[2] - c[2]) * t ]);
+        const SK = JT.SKY || {}, gr = SK.grade || [1,1,1];
+        const lum = Math.max(0, Math.min(1, (gr[0] + gr[1] + gr[2]) / 3));
+        const pR = 0.82 + (0.95 - 0.82) * lum, pG = 0.86 + (0.91 - 0.86) * lum, pB = 0.94 + (0.82 - 0.94) * lum;
+        return (c => "#" + c.map(x => Math.max(0, Math.min(255, Math.round(255 * x))).toString(16).padStart(2, "0")).join(""))([ c[0] + (pR - c[0]) * t, c[1] + (pG - c[1]) * t, c[2] + (pB - c[2]) * t ]);
     }, BLIT_VS = "#version 300 es\nin vec2 aXY; void main(){ gl_Position=vec4(aXY,0.5,1.0); }", BLIT_FS = "#version 300 es\nprecision highp float; uniform sampler2D uCol; uniform highp sampler2D uDep; out vec4 oC;\nvoid main(){ ivec2 p=ivec2(gl_FragCoord.xy); oC=texelFetch(uCol,p,0); gl_FragDepth=texelFetch(uDep,p,0).r; }", UPS_FS = "#version 300 es\nprecision highp float; uniform sampler2D uCol; uniform vec4 uS; out vec4 oC;\nvoid main(){ vec2 q=clamp(gl_FragCoord.xy*uS.xy, vec2(0.5), uS.zw-0.5); oC=texture(uCol, q/vec2(textureSize(uCol,0))); }";
     JT.GLPaint = class {
         constructor(canvas, R) {
@@ -10213,8 +11333,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 mesh: this.prog(MESH_VS, MESH_FS),
                 meshS: this.prog(MESH_VS, MESH_SIMPLE),
                 tex: this.prog(TEX_VS, TEX_FS),
-                scr: this.prog("attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aUV; gl_Position=vec4(aXY,0.999,1.0); }", "precision highp float; varying vec2 vUV; uniform sampler2D uTex; uniform vec4 uCol; uniform float uMode; uniform vec2 uRes; uniform vec2 uJit;\nvoid main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*uCol.rgb,1.0); return; }\n  vec2 px=vUV*uRes; float g=texture2D(uTex, (px+uJit)/256.0).r; float g2=texture2D(uTex, px/731.0+vec2(0.37,0.11)).g;\n  vec2 d=vUV-0.5; float vig=1.0-smoothstep(0.35,0.85,length(d*vec2(1.0,1.15)))*uCol.a;\n  float m=(0.9+0.1*g)*(0.95+0.05*g2)*vig; gl_FragColor=vec4(vec3(m)*uCol.rgb,1.0); }"),
-                spr: this.prog("attribute vec2 aXY; attribute float aZ; attribute vec2 aUV; attribute vec4 aT; uniform vec2 uRes; varying vec2 vUV; varying vec4 vT;\nvoid main(){ vUV=aUV; vT=aT; gl_Position=vec4(aXY.x/uRes.x*2.0-1.0, 1.0-aXY.y/uRes.y*2.0, clamp(aZ*0.0011,-0.999,0.999), 1.0); }", "precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm; uniform float uHD; uniform sampler2D uDepT; uniform vec2 uOut; uniform float uOcc; uniform float uPx; uniform float uCut;\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 p){ p=mod(floor(p),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\nvec4 S(vec2 uv){ vec4 c=texture2D(uTex,uv); if(uPm>0.5) c.rgb*=c.a; return c; }\nfloat lm(vec3 c){ return dot(c, vec3(0.3,0.59,0.11)); }\nvoid main(){ if(uOcc>0.5){ float sd=texture2D(uDepT, gl_FragCoord.xy/uOut).r; bool hid = gl_FragCoord.z > sd + 0.0004; if(uOcc<1.5 ? hid : !hid) discard; }\n  float sc=vT.a; vec3 rgb; float a;\n  if(uHD>0.5){\n    // HD-2D: the critter is resampled onto the scene's own pixel grid (one block per scene pixel), its soft painted light\n    // banded into dithered steps with a little extra colour, and given a 1-pixel dark outline\n    vec2 cell=floor(gl_FragCoord.xy/uPx); vec2 off=((cell+0.5)*uPx-gl_FragCoord.xy)*sc; vec2 uv=vUV+vec2(off.x,-off.y)*uTexel;\n    vec4 c=S(uv); if(c.a>0.4){ c.rgb/=max(c.a,0.001); c.a=1.0; } else c=vec4(0.0);\n    if(c.a>0.5){ float l=lm(c.rgb); float q=clamp(floor(l*6.0+bay4(cell))/6.0, 0.05, 1.0); vec3 sat=clamp(mix(vec3(l),c.rgb,1.22),0.0,1.0); c.rgb=clamp(sat*(q+0.08)/(l+0.08),0.0,1.0); }\n    vec2 d=uTexel*uPx*sc;\n    float an=max(max(S(uv+vec2(d.x,0.0)).a, S(uv-vec2(d.x,0.0)).a), max(S(uv+vec2(0.0,d.y)).a, S(uv-vec2(0.0,d.y)).a));\n    float ink=step(0.4,an)*(1.0-c.a)*uInkAmt; rgb=c.rgb*vT.rgb+uInk*ink; a=c.a+ink*(1.0-c.a);\n  } else {\n    vec4 c=S(vUV); vec2 d=uTexel*1.3;\n    float an=max(max(texture2D(uTex,vUV+vec2(d.x,0.0)).a, texture2D(uTex,vUV-vec2(d.x,0.0)).a), max(texture2D(uTex,vUV+vec2(0.0,d.y)).a, texture2D(uTex,vUV-vec2(0.0,d.y)).a));\n    float ink=smoothstep(0.3,0.75,an)*(1.0-smoothstep(0.05,0.6,c.a))*uInkAmt;\n    rgb=c.rgb*vT.rgb + uInk*ink*(1.0-c.a); a=c.a+ink*(1.0-c.a);\n  }\n  gl_FragColor=vec4(rgb,a)*uAlpha; }"),
+                scr: this.prog("attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aUV; gl_Position=vec4(aXY,0.999,1.0); }", "precision highp float; varying vec2 vUV; uniform sampler2D uTex; uniform vec4 uCol; uniform float uMode; uniform vec2 uRes; uniform vec2 uJit;\nvoid main(){ if(uMode<0.5){ vec4 t=texture2D(uTex,vUV); gl_FragColor=vec4(t.rgb*uCol.rgb,1.0); return; }\n  vec2 px=vUV*uRes; float g=texture2D(uTex, (px+uJit)/256.0).r; float g2=texture2D(uTex, px/731.0+vec2(0.37,0.11)).g;\n  vec2 d=vUV-0.5; float ang=atan(d.y,d.x); float deckle=(sin(ang*14.0)+sin(ang*31.0)*0.5+sin(ang*59.0)*0.25)*0.016;\n  float vig=1.0-smoothstep(0.36,0.82,length(d*vec2(1.0,1.15))+deckle)*uCol.a;\n  float m=(0.88+0.12*g)*(0.94+0.06*g2)*vig; gl_FragColor=vec4(vec3(m)*uCol.rgb,1.0); }"),
+                spr: this.prog("attribute vec2 aXY; attribute float aZ; attribute vec2 aUV; attribute vec4 aT; uniform vec2 uRes; varying vec2 vUV; varying vec4 vT;\nvoid main(){ vUV=aUV; vT=aT; gl_Position=vec4(aXY.x/uRes.x*2.0-1.0, 1.0-aXY.y/uRes.y*2.0, clamp(aZ*0.0011,-0.999,0.999), 1.0); }", "precision highp float; varying vec2 vUV; varying vec4 vT; uniform sampler2D uTex; uniform vec2 uTexel; uniform vec3 uInk; uniform float uInkAmt; uniform float uAlpha; uniform float uPm; uniform float uHD; uniform sampler2D uDepT; uniform vec2 uOut; uniform float uOcc; uniform float uPx; uniform float uCut;\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 p){ p=mod(floor(p),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\nvec4 S(vec2 uv){ vec4 c=texture2D(uTex,uv); if(uPm>0.5) c.rgb*=c.a; return c; }\nfloat lm(vec3 c){ return dot(c, vec3(0.3,0.59,0.11)); }\nvoid main(){ if(uOcc>0.5){ float sd=texture2D(uDepT, gl_FragCoord.xy/uOut).r; bool hid = gl_FragCoord.z > sd + 0.0004; if(uOcc<1.5 ? hid : !hid) discard; }\n  float sc=vT.a; vec3 rgb; float a;\n  if(uHD>0.5){\n    // HD-2D: the critter is resampled onto the scene's own pixel grid (one block per scene pixel), its soft painted light\n    // banded into dithered steps with a little extra colour, and given a 1-pixel dark outline\n    vec2 cell=floor(gl_FragCoord.xy/uPx); vec2 off=((cell+0.5)*uPx-gl_FragCoord.xy)*sc; vec2 uv=vUV+vec2(off.x,-off.y)*uTexel;\n    vec4 c=S(uv); if(c.a>0.4){ c.rgb/=max(c.a,0.001); c.a=1.0; } else c=vec4(0.0);\n    if(c.a>0.5){ float l=lm(c.rgb); float q=clamp(floor(l*6.0+bay4(cell))/6.0, 0.05, 1.0); vec3 sat=clamp(mix(vec3(l),c.rgb,1.22),0.0,1.0); c.rgb=clamp(sat*(q+0.08)/(l+0.08),0.0,1.0); }\n    vec2 d=uTexel*uPx*sc;\n    float an=max(max(S(uv+vec2(d.x,0.0)).a, S(uv-vec2(d.x,0.0)).a), max(S(uv+vec2(0.0,d.y)).a, S(uv-vec2(0.0,d.y)).a));\n    float ink=step(0.4,an)*(1.0-c.a)*uInkAmt; rgb=c.rgb*vT.rgb+uInk*ink; a=c.a+ink*(1.0-c.a);\n  } else {\n    vec4 c=S(vUV); vec2 d=uTexel*1.3;\n    float an=max(max(texture2D(uTex,vUV+vec2(d.x,0.0)).a, texture2D(uTex,vUV-vec2(d.x,0.0)).a), max(texture2D(uTex,vUV+vec2(0.0,d.y)).a, texture2D(uTex,vUV-vec2(0.0,d.y)).a));\n    float ink=smoothstep(0.3,0.75,an)*(1.0-smoothstep(0.05,0.6,c.a))*uInkAmt;\n    vec3 bleedCol=mix(uInk, vec3(0.38,0.26,0.18), 0.45);\n    vec3 inkFinal=mix(bleedCol, uInk, smoothstep(0.45,0.85,an));\n    rgb=c.rgb*vT.rgb + inkFinal*ink*(1.0-c.a); a=c.a+ink*(1.0-c.a);\n  }\n  gl_FragColor=vec4(rgb,a)*uAlpha; }"),
                 line: this.prog(LINE_VS, LINE_FS),
                 mound: this.prog(MOUND_VS, MOUND_FS),
                 wet: this.prog(WET_VS, WET_FS),
@@ -11122,12 +12242,24 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                         this._hdPost = null, this._hdF = 0;
                     }
                 }
-            } else gl.disable(gl.DEPTH_TEST), gl.enable(gl.BLEND), gl.blendFunc(gl.DST_COLOR, gl.ZERO), 
-            P = this.use(this.P.scr), gl.bindBuffer(gl.ARRAY_BUFFER, this.quad), this.attribs(P, [ [ "aXY", 2 ], [ "aUV", 2 ] ], 4), 
-            gl.activeTexture(gl.TEXTURE0), gl.bindTexture(gl.TEXTURE_2D, this.tex.paper), gl.uniform1i(P.u.uTex, 0), 
-            gl.uniform1f(P.u.uMode, 1), gl.uniform2f(P.u.uRes, W, H), gl.uniform2f(P.u.uJit, 0, 0), 
-            gl.uniform4f(P.u.uCol, 1, .985, .95, .32 + .2 * night), gl.drawArrays(gl.TRIANGLES, 0, 6), 
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            } else {
+                gl.disable(gl.DEPTH_TEST);
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+                P = this.use(this.P.scr);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+                this.attribs(P, [ [ "aXY", 2 ], [ "aUV", 2 ] ], 4);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, this.tex.paper);
+                gl.uniform1i(P.u.uTex, 0);
+                gl.uniform1f(P.u.uMode, 1);
+                gl.uniform2f(P.u.uRes, W, H);
+                gl.uniform2f(P.u.uJit, 0, 0);
+                const _bm = hab && hab.biome || "", _bp = _bm.includes("desert") || _bm.includes("arid") ? [ 1.01, .99, .95 ] : _bm.includes("rain") || _bm.includes("cloud") || _bm.includes("jungle") ? [ .98, .95, .89 ] : [ 1, .985, .95 ];
+                gl.uniform4f(P.u.uCol, _bp[0], _bp[1], _bp[2], .33 + .22 * night);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            }
             const paintEdge = px => {
                 const c = "rgb(" + px[0] + "," + px[1] + "," + px[2] + ")";
                 c !== this._edgeC && (this._edgeC = c, document.documentElement.style.backgroundColor = c, 
@@ -11971,7 +13103,16 @@ void main() {
    nearest-neighbour pixels (decor, ground and critter sprites alike, with 1-pixel ink outlines and dithered, banded light),
    then finished at full screen resolution with the modern lens effects that define the style: tilt-shift / depth-of-field
    blur, warm bloom, light shafts, a cinematic colour grade and a heavy vignette.
-   WebGL2 only (falls back to the storybook look on WebGL1). Settings → Graphics → Art style / Pixel size. */
+   WebGL2 only (falls back to the storybook look on WebGL1). Settings → Graphics → Art style / Pixel size.
+
+   v2 improvements:
+     • Dual Kawase bloom replaces Gaussian bloom (wider, softer, fewer samples, CHEAPER).
+     • Stepped / banded DoF reinforces diorama depth planes (3 bands, partial blend).
+     • Screen-space depth-edge ink rim: warm by day, cool by night.
+     • Coloured night bloom: cool-blue cast instead of white.
+     • Chromatic aberration at the vignette edge (medium/high quality only).
+     • Sub-pixel grid dither on the pixel boundary.
+     • "Fine" pixel-size mode (0.8× render scale for high-DPI). */
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M;
@@ -11981,16 +13122,42 @@ in vec2 aXY; out vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.
   const DOWN_FS = `#version 300 es
 precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel; out vec4 o;
 void main(){ vec2 d=uTexel*0.5; o=(texture(uTex,vUV+vec2(-d.x,-d.y))+texture(uTex,vUV+vec2(d.x,-d.y))+texture(uTex,vUV+vec2(-d.x,d.y))+texture(uTex,vUV+vec2(d.x,d.y)))*0.25; }`;
-  // separable 9-tap gaussian
+  // separable 9-tap gaussian  (kept for DoF blur; bloom now uses Kawase)
   const BLUR_FS = `#version 300 es
 precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uDir; out vec4 o;
 void main(){ vec4 s=texture(uTex,vUV)*0.2270;
   s+=(texture(uTex,vUV+uDir*1.3846)+texture(uTex,vUV-uDir*1.3846))*0.3162;
   s+=(texture(uTex,vUV+uDir*3.2308)+texture(uTex,vUV-uDir*3.2308))*0.0703; o=s; }`;
-  // bright pass for bloom
+  // bright pass for bloom  — coloured at night (cool-blue cast)
   const BRIGHT_FS = `#version 300 es
-precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform float uTh; out vec4 o;
-void main(){ vec3 c=texture(uTex,vUV).rgb; float l=max(c.r,max(c.g,c.b)); float k=smoothstep(uTh,uTh+0.25,l); o=vec4(c*k,1.0); }`;
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform float uTh; uniform float uNight; out vec4 o;
+void main(){
+  vec3 c=texture(uTex,vUV).rgb;
+  float l=max(c.r,max(c.g,c.b)); float k=smoothstep(uTh,uTh+0.25,l);
+  // tint bloom toward cool blue at night
+  vec3 tint=mix(vec3(1.0,0.94,0.82), vec3(0.72,0.88,1.18), uNight*0.8);
+  o=vec4(c*k*tint,1.0); }`;
+  // Dual Kawase down-sample pass (offset = iter+0.5 pixels)
+  const KAWASE_DOWN_FS = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uOff; out vec4 o;
+void main(){
+  float h=uOff+0.5;
+  o=(texture(uTex,vUV+vec2(-h,-h)*uTexel)+texture(uTex,vUV+vec2( h,-h)*uTexel)+
+     texture(uTex,vUV+vec2(-h, h)*uTexel)+texture(uTex,vUV+vec2( h, h)*uTexel))*0.25; }`;
+  // Dual Kawase up-sample pass (tent filter, 8-tap)
+  const KAWASE_UP_FS = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uOff; out vec4 o;
+void main(){
+  float h=uOff+0.5;
+  vec4 s =texture(uTex,vUV+vec2(-2.0*h,    0.0)*uTexel);
+      s+=texture(uTex,vUV+vec2(-h,      -h )*uTexel)*2.0;
+      s+=texture(uTex,vUV+vec2(  0.0,-2.0*h)*uTexel);
+      s+=texture(uTex,vUV+vec2( h,      -h )*uTexel)*2.0;
+      s+=texture(uTex,vUV+vec2( 2.0*h,   0.0)*uTexel);
+      s+=texture(uTex,vUV+vec2( h,       h )*uTexel)*2.0;
+      s+=texture(uTex,vUV+vec2(  0.0, 2.0*h)*uTexel);
+      s+=texture(uTex,vUV+vec2(-h,       h )*uTexel)*2.0;
+  o=s/12.0; }`;
   const COMP_FS = `#version 300 es
 precision highp float; in vec2 vUV;
 uniform sampler2D uScene; uniform highp sampler2D uDepth; uniform sampler2D uBlur; uniform sampler2D uBloom;
@@ -12003,28 +13170,59 @@ void main(){
   ivec2 lp=ivec2(floor(uv*uLow)); lp=clamp(lp, ivec2(0), ivec2(uLow)-1);
   vec3 sharp=texelFetch(uScene, lp, 0).rgb; float d=texelFetch(uDepth, lp, 0).r;
   vec3 blur=texture(uBlur, uv).rgb;
-  // depth of field: sharp band around the focus depth, plus the tilt-shift fall-off to the top and bottom of the screen
+  // --- depth of field: stepped bands for diorama planes ---
   float dc = d>0.99999 ? 1.0 : smoothstep(uDof.x, uDof.y, abs(d-uFocus.z));
   float ty = abs(uv.y-uFocus.y); float tc = smoothstep(0.12, 0.45, ty)*uTilt;
-  float coc = clamp(max(dc, tc), 0.0, 1.0)*uBlurK;
+  float coc_raw = clamp(max(dc, tc), 0.0, 1.0)*uBlurK;
+  // stepped DoF (3 bands) — reinforces the diorama depth-plane feel
+  float coc_stepped = floor(coc_raw*3.0+0.5)/3.0;
+  float coc = mix(coc_raw, coc_stepped, 0.62);
   vec3 c = mix(sharp, blur, coc);
-  // bloom
-  vec3 bl = texture(uBloom, uv).rgb; c += bl*mix(vec3(1.0,0.86,0.66), vec3(0.62,0.78,1.0), uNight)*1.0*uFx;
-  // light shafts falling from the sun side
+  // --- sub-pixel grid dither on the pixel edge (keeps pixels crisp but softens aliasing) ---
+  float edgeDither = (h21(gl_FragCoord.xy) - 0.5) * 0.010 * (1.0 - coc);
+  c += edgeDither;
+  // --- bloom (now from Dual Kawase; bloom colours already tinted in BRIGHT pass) ---
+  vec3 bl = texture(uBloom, uv).rgb; c += bl*uFx;
+  // --- screen-space depth-edge ink rim (warm day / cool night) ---
+  ivec2 lpr=clamp(lp+ivec2(1,0), ivec2(0), ivec2(uLow)-1);
+  ivec2 lpu=clamp(lp+ivec2(0,1), ivec2(0), ivec2(uLow)-1);
+  float dR=texelFetch(uDepth, lpr, 0).r;
+  float dU=texelFetch(uDepth, lpu, 0).r;
+  float edge=clamp((abs(d-dR)+abs(d-dU))*110.0,0.0,1.0)*(1.0-coc)*(d<0.99999?1.0:0.0);
+  vec3 inkCol=mix(vec3(1.0,0.60,0.22), vec3(0.30,0.52,1.0), uNight);
+  c = mix(c, c*0.45+inkCol*0.13, edge*uFx);
+  // --- light shafts falling from the sun side (slightly sharper noise) ---
   vec2 a = (uv-0.5)*vec2(uOut.x/uOut.y,1.0); vec2 sd = normalize(uSun); vec2 pr = vec2(-sd.y, sd.x);
   float across = dot(a, pr), along = dot(a, sd);
-  float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0); rays = smoothstep(0.25, 0.8, rays);
-  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.15*uDay*uFx;
+  float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0);
+  rays = smoothstep(0.18, 0.82, rays); // sharper contrast than before
+  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.18*uDay*uFx;
   c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.09*uDay*uFx; // warm haze on the lit side
   // (no screen-wide motes: the engine's own dust motes and biome fireflies already float inside the tank)
-  // colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast
+  // --- colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast ---
   float lum = dot(c, vec3(0.299,0.587,0.114));
   c = mix(vec3(lum), c, 1.16-0.3*uNight);
   c += vec3(-0.01,0.015,0.06)*(1.0-smoothstep(0.0,0.45,lum));
   c *= mix(vec3(1.0), vec3(1.06,1.0,0.9), smoothstep(0.45,1.0,lum));
   c = c*(1.0+c*0.12)/(1.0+c*0.12*0.9); c = clamp((c-0.5)*1.12+0.52, 0.0, 1.4);
   c = mix(c, c*vec3(0.85,0.92,1.08)+vec3(0.025,0.035,0.06), uNight*0.6);
-  // vignette (heavier at the top and bottom, like a stage)
+  // --- chromatic aberration at the vignette edge (medium/high quality only) ---
+  if (uFx > 0.9) {
+    float ca = length(uv - 0.5) * 0.007;
+    float rOff = texture(uBlur, uv + vec2( ca, 0.0)).r * coc + sharp.r * (1.0 - coc);
+    float bOff = texture(uBlur, uv - vec2( ca, 0.0)).b * coc + sharp.b * (1.0 - coc);
+    float edgeCA = smoothstep(0.30, 0.68, length(uv - 0.5));
+    c = mix(c, vec3(rOff, c.g, bOff), edgeCA * 0.65);
+  }
+  // --- diorama glass frame bevel reflection & lip gleam ---
+  vec2 edgeDist = min(uv, 1.0 - uv);
+  float glassBorder = smoothstep(0.015, 0.002, edgeDist.x) + smoothstep(0.018, 0.002, edgeDist.y);
+  float glassGleam = smoothstep(0.004, 0.001, abs(uv.y - 0.985)) * smoothstep(0.1, 0.9, uv.x);
+  c += vec3(0.85, 0.95, 1.0) * (glassGleam * 0.22 + glassBorder * 0.06) * uFx;
+  // --- micro-condensation gradient near bottom substrate ---
+  float bottomMist = (1.0 - smoothstep(0.0, 0.11, uv.y)) * smoothstep(-0.2, 0.6, sin(uv.x * 38.0) * 0.2 + 0.8);
+  c = mix(c, c * 0.88 + vec3(0.65, 0.78, 0.88) * 0.22, bottomMist * 0.35 * uFx);
+  // --- vignette (heavier at the top and bottom, like a stage) ---
   vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = smoothstep(0.98, 0.28, length(q)); c *= mix(0.58, 1.0, vg);
   c += (h21(gl_FragCoord.xy+fract(uTime))-0.5)/255.0;
   o = vec4(c, 1.0); }`;
@@ -12034,12 +13232,24 @@ void main(){
     get art() { const a = JT.app; const s = a && a.settings; return s && s.art === 'storybook' ? 'storybook' : 'hd2d'; },
     get on() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); return !s || s.art !== 'storybook'; },
     _P: null,
-    progs(gp) { if (this._P && this._P.gp === gp) return this._P; this._P = { gp, down: gp.prog(VS, DOWN_FS), blur: gp.prog(VS, BLUR_FS), bright: gp.prog(VS, BRIGHT_FS), comp: gp.prog(VS, COMP_FS) }; return this._P; },
+    progs(gp) {
+      if (this._P && this._P.gp === gp) return this._P;
+      this._P = {
+        gp,
+        down:      gp.prog(VS, DOWN_FS),
+        blur:      gp.prog(VS, BLUR_FS),
+        bright:    gp.prog(VS, BRIGHT_FS),
+        comp:      gp.prog(VS, COMP_FS),
+        kawDown:   gp.prog(VS, KAWASE_DOWN_FS),
+        kawUp:     gp.prog(VS, KAWASE_UP_FS),
+      };
+      return this._P;
+    },
     tex(gl, w, h, ifmt, fmt, type, filt) { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, type, null); return t; },
     fbo(gl, ct, dt) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ct, 0); if (dt) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dt, 0); const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return ok ? f : null; },
-    free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD']) if (T[k]) gl.deleteTexture(T[k]); },
-    /** Optional art texture, measured in render pixels rather than CSS pixels. */
-    pxSize(R) { const s = R.set || {}; return s.pixel === 'chunky' ? 1.5 : s.pixel === 'classic' ? 1.2 : 1; },
+    free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD', 'fE', 'fF']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD', 'tE', 'tF']) if (T[k]) gl.deleteTexture(T[k]); },
+    /** Render scale factor. "fine" = 0.8× (sub-pixel on hi-DPI), default = 1, "classic" = 1.2, "chunky" = 1.5. */
+    pxSize(R) { const s = R.set || {}; return s.pixel === 'chunky' ? 1.5 : s.pixel === 'classic' ? 1.2 : s.pixel === 'fine' ? 0.8 : 1; },
     blurK(R) { const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
       const key = on ? 'hd' : 'off'; if (this._was === key) return; this._was = key;
@@ -12053,14 +13263,29 @@ void main(){
       const f = M.clamp(1 / this.pxSize(gp.R), 0.08, 1); const w = Math.max(16, Math.round(W * f)), h = Math.max(16, Math.round(H * f));
       let T = gp._hdT;
       if (!T || T.w !== w || T.h !== h) { this.free(gl, T); try {
-        T = { w, h, W, H }; T.ct = this.tex(gl, w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST); T.dt = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST); T.fb = this.fbo(gl, T.ct, T.dt);
-        T.dt2 = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST); T.fb2 = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb2); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, T.dt2, 0);
+        T = { w, h, W, H };
+        T.ct = this.tex(gl, w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST);
+        T.dt = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST);
+        T.fb = this.fbo(gl, T.ct, T.dt);
+        T.dt2 = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST);
+        T.fb2 = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb2); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, T.dt2, 0);
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('fbo2');
-        T.hw = Math.max(4, Math.ceil(w / 2)); T.hh = Math.max(4, Math.ceil(h / 2)); T.qw = Math.max(4, Math.ceil(w / 4)); T.qh = Math.max(4, Math.ceil(h / 4));
-        T.tA = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); T.tB = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
-        T.tC = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); T.tD = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
-        T.fA = this.fbo(gl, T.tA); T.fB = this.fbo(gl, T.tB); T.fC = this.fbo(gl, T.tC); T.fD = this.fbo(gl, T.tD);
-        if (!T.fb || !T.fA || !T.fB || !T.fC || !T.fD) throw new Error('fbo'); this.progs(gp);
+        // DoF blur buffers (half-res)
+        T.hw = Math.max(4, Math.ceil(w / 2)); T.hh = Math.max(4, Math.ceil(h / 2));
+        T.tA = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+        T.tB = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+        T.fA = this.fbo(gl, T.tA); T.fB = this.fbo(gl, T.tB);
+        // Dual Kawase bloom buffers: two down levels + two up levels, all at quarter-res
+        T.qw = Math.max(4, Math.ceil(w / 4)); T.qh = Math.max(4, Math.ceil(h / 4));
+        T.tC = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // bright/kawase level 0
+        T.tD = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // kawase ping-pong
+        T.ew = Math.max(4, Math.ceil(w / 8)); T.eh = Math.max(4, Math.ceil(h / 8));
+        T.tE = this.tex(gl, T.ew, T.eh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // kawase level 1 down
+        T.tF = this.tex(gl, T.ew, T.eh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // kawase level 1 ping-pong
+        T.fC = this.fbo(gl, T.tC); T.fD = this.fbo(gl, T.tD);
+        T.fE = this.fbo(gl, T.tE); T.fF = this.fbo(gl, T.tF);
+        if (!T.fb || !T.fA || !T.fB || !T.fC || !T.fD || !T.fE || !T.fF) throw new Error('fbo');
+        this.progs(gp);
       } catch (e) { console.warn('HD-2D unavailable:', e && e.message); this.free(gl, T); gp._hdT = null; gp._hdBroken = true; gl.bindFramebuffer(gl.FRAMEBUFFER, null); this.sync(gp, false); return null; }
         gp._hdT = T; }
       T.f = w / W; gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); return T;
@@ -12070,17 +13295,33 @@ void main(){
     post(gp, V, hab, night, W, H) {
       const gl = gp.gl, T = gp._hdT, P = this.progs(gp); if (!T) return;
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.BLEND);
-      // depth-of-field source: half-res, blurred twice (wide, soft bokeh)
+
+      // --- DoF: half-res down-sample + 1 or 2 Gaussian passes ---
       this.pass(gp, P.down, T.fA, T.hw, T.hh, T.ct, (p) => gl.uniform2f(p.u.uTexel, 1 / T.w, 1 / T.h));
-      const bk = this.blurK(gp.R); for (const st of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
+      const bk = this.blurK(gp.R);
+      for (const st of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
         this.pass(gp, P.blur, T.fB, T.hw, T.hh, T.tA, (p) => gl.uniform2f(p.u.uDir, st / T.hw, 0));
         this.pass(gp, P.blur, T.fA, T.hw, T.hh, T.tB, (p) => gl.uniform2f(p.u.uDir, 0, st / T.hh)); }
-      // bloom: bright parts at quarter res, blurred wide
-      this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => gl.uniform1f(p.u.uTh, night > 0.5 ? 0.38 : 0.55));
-      for (const st of (JT.Device.tier === 'low' ? [1.8] : [1.0, 2.5])) {
-        this.pass(gp, P.blur, T.fD, T.qw, T.qh, T.tC, (p) => gl.uniform2f(p.u.uDir, st / T.qw, 0));
-        this.pass(gp, P.blur, T.fC, T.qw, T.qh, T.tD, (p) => gl.uniform2f(p.u.uDir, 0, st / T.qh)); }
-      // composite to the screen
+
+      // --- Dual Kawase bloom  (down × 2 then up × 2, total 4 passes, 4 taps each = 16 samples vs the old 28) ---
+      // Bright pass at quarter-res → tC; night threshold + night colour tint applied here
+      const brightTh = night > 0.5 ? 0.38 : 0.55;
+      const isLow = JT.Device.tier === 'low';
+      this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => { gl.uniform1f(p.u.uTh, brightTh); gl.uniform1f(p.u.uNight, M.clamp(night, 0, 1)); });
+      // Down iteration: tC → tE (eighth-res), skip on low tier
+      if (!isLow) {
+        this.pass(gp, P.kawDown, T.fE, T.ew, T.eh, T.tC, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 0); });
+        // Up iteration: tE → tD (back to quarter-res)
+        this.pass(gp, P.kawUp,   T.fD, T.qw, T.qh, T.tE, (p) => { gl.uniform2f(p.u.uTexel, 1/T.ew, 1/T.eh); gl.uniform1f(p.u.uOff, 0); });
+        // Final up: tD → tC (stays quarter-res, wider spread)
+        this.pass(gp, P.kawUp,   T.fC, T.qw, T.qh, T.tD, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 1); });
+      } else {
+        // Low tier: single Kawase down-sample for a simple but still soft bloom
+        this.pass(gp, P.kawDown, T.fD, T.qw, T.qh, T.tC, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 1); });
+        this.pass(gp, P.kawUp,   T.fC, T.qw, T.qh, T.tD, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 0); });
+      }
+
+      // --- Composite to the screen ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); const C = P.comp; gp.use(C); gl.bindBuffer(gl.ARRAY_BUFFER, gp.quad); gp.attribs(C, [['aXY', 2], ['uv_', 2]], 4);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.ct); gl.uniform1i(C.u.uScene, 0);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T.dt); gl.uniform1i(C.u.uDepth, 1);
@@ -13285,15 +14526,14 @@ void main(){
   WF.rainY+=fdt*(50+30*sMix);if(WF.rainY>1e6)WF.rainY-=1e6;
   const mistBase=bm.id==='cloudforest'?0.025:bm.id==='rainforest'?0.012:0,mistA=mistBase+(0.025-mistBase)*ease(F.mist||0),mist=mistA>0.0005;
   ctx.save();
-  if(rA>0.003){ctx.strokeStyle=sMix>0.5?'#cee5f8':'#bddcec';ctx.lineWidth=Math.max(0.6,this.k*0.65);ctx.globalAlpha=(0.28+0.14*sMix)*(0.35+0.65*rA);ctx.beginPath();const count=Math.min(140,Math.round((46+34*sMix)*q*rA));for(let i=0;i<count;i++){const a=i*7,x=pool[a]*dm.w,z=pool[a+1]*dm.d,y=((pool[a+2]*dm.h-WF.rainY)%dm.h+dm.h)%dm.h;const p=point(x,y,z),e=point(x-0.9,Math.max(0,y-4-pool[a+3]*6),z);ctx.moveTo(p[0],p[1]);ctx.lineTo(e[0],e[1]);}ctx.stroke();}
-  if(mist){ctx.fillStyle=bm.id==='cloudforest'?'#d7e3e8':'#bed6c8';const count=Math.round(12*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+t*(0.5+pool[a+1]))%dm.w,z=pool[a+2]*dm.d;const p=point(x,1+pool[a+3]*4,z);ctx.globalAlpha=mistA*(0.6+Math.sin(t*0.15+i)*0.3);ctx.beginPath();ctx.ellipse(p[0],p[1],(12+pool[a+4]*22)*V.s,Math.max(2,(2+pool[a+5]*3)*V.s),-0.07,0,Math.PI*2);ctx.fill();}}
+  if(rA>0.003){ctx.strokeStyle=sMix>0.5?'#cee5f8':'#bddcec';ctx.lineWidth=Math.max(0.6,this.k*0.65);ctx.globalAlpha=(0.28+0.14*sMix)*(0.35+0.65*rA);ctx.beginPath();const count=Math.min(70,Math.round((36+24*sMix)*q*rA));for(let i=0;i<count;i++){const a=i*7,x=pool[a]*dm.w,z=pool[a+1]*dm.d,y=((pool[a+2]*dm.h-WF.rainY)%dm.h+dm.h)%dm.h;const p=point(x,y,z),e=point(x-0.9,Math.max(0,y-4-pool[a+3]*6),z);ctx.moveTo(p[0],p[1]);ctx.lineTo(e[0],e[1]);}ctx.stroke();}
+  if(mist){ctx.fillStyle=bm.id==='cloudforest'?'#d7e3e8':'#bed6c8';const count=Math.round(8*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+t*(0.5+pool[a+1]))%dm.w,z=pool[a+2]*dm.d;const p=point(x,1+pool[a+3]*4,z);ctx.globalAlpha=mistA*(0.6+Math.sin(t*0.15+i)*0.3);ctx.beginPath();ctx.ellipse(p[0],p[1],(12+pool[a+4]*22)*V.s,Math.max(2,(2+pool[a+5]*3)*V.s),-0.07,0,Math.PI*2);ctx.fill();}}
   const dustHome=bm.id==='desert'||bm.id==='heath',wA=ease(F.wind||0),dA=dustHome?1:wA;WF.dustX+=fdt*(1.5+4.5*wA);if(WF.dustX>1e6)WF.dustX-=1e6;
-  if(dA>0.003){const count=Math.round(22*q*(dustHome?1:dA));for(let i=0;i<count;i++){const a=i*7,p=point(((pool[a]*dm.w+WF.dustX)%dm.w+dm.w)%dm.w,2+pool[a+1]*dm.h*0.7,pool[a+2]*dm.d);circle(p,(0.35+pool[a+3]*0.45)*V.s,'#d7c098',(0.2+pool[a+4]*0.18)*(dustHome?1:0.4+0.6*dA));}if((F.heat||0)>0.003){ctx.strokeStyle='#f5d7a1';ctx.lineWidth=Math.max(0.5,this.k*0.5);ctx.globalAlpha=0.13*ease(F.heat);for(let k=0;k<Math.round(8*q);k++){ctx.beginPath();for(let j=0;j<18;j++){const x=dm.w*j/17,z=dm.d*(k+1)/9,p=point(x,1.5+Math.sin(j*0.8+t*2+k)*0.7,z);if(!j)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}ctx.stroke();}}}
+  if(dA>0.003){const count=Math.round(16*q*(dustHome?1:dA));for(let i=0;i<count;i++){const a=i*7,p=point(((pool[a]*dm.w+WF.dustX)%dm.w+dm.w)%dm.w,2+pool[a+1]*dm.h*0.7,pool[a+2]*dm.d);circle(p,(0.35+pool[a+3]*0.45)*V.s,'#d7c098',(0.2+pool[a+4]*0.18)*(dustHome?1:0.4+0.6*dA));}if((F.heat||0)>0.003){ctx.strokeStyle='#f5d7a1';ctx.lineWidth=Math.max(0.5,this.k*0.5);ctx.globalAlpha=0.13*ease(F.heat);for(let k=0;k<Math.round(6*q);k++){ctx.beginPath();for(let j=0;j<18;j++){const x=dm.w*j/17,z=dm.d*(k+1)/9,p=point(x,1.5+Math.sin(j*0.8+t*2+k)*0.7,z);if(!j)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}ctx.stroke();}}}
   if(bm.id==='paludarium'){const ponds=JT.Biome.ponds?JT.Biome.ponds(hab):[];ctx.strokeStyle='#b4dfe4';ctx.lineWidth=Math.max(0.5,this.k*0.7);for(const inst of ponds){const g=hab.geoms[inst.id];if(!g)continue;const center=g.center||[inst.x,0,inst.z],p=point(center[0],g.baseY+1,center[2]);for(let k=0;k<3;k++){const phase=(t*0.18+k/3)%1;ctx.globalAlpha=(1-phase)*0.28;ctx.beginPath();ctx.ellipse(p[0],p[1],Math.max(1,(3+phase*7)*V.s),Math.max(0.5,(1.3+phase*3)*V.s*0.6),0,0,Math.PI*2);ctx.stroke();}}}
   const ffA=ease(Math.min(1,(F.fireflies||0)+(F.glow||0))),ffBase=bm.id==='nightmoss'?10:0;
   if(ffBase||ffA>0.003){const count=Math.round((ffBase+(38-ffBase)*ffA)*q);for(let i=0;i<count;i++){const a=i*7,x=(pool[a]*dm.w+Math.sin(t*0.23+i)*8+dm.w)%dm.w,y=4+pool[a+1]*dm.h*0.5+Math.sin(t*0.7+i)*2,z=(pool[a+2]*dm.d+Math.cos(t*0.2+i)*6+dm.d)%dm.d,p=point(x,y,z),a0=(0.3+Math.pow((Math.sin(t*2+pool[a+4]*15)+1)*0.5,3)*0.7)*(0.4+night*0.6)*(i<ffBase?1:ffA);circle(p,2.8*this.k,'#b9ef85',a0*0.06);circle(p,1.35*this.k,'#b9ef85',a0*0.25);circle(p,0.6*this.k,'#e9ffd0',a0);}}
   if(bm.id==='antkingdom'){const ants=hab._antPatrol||(hab._antPatrol={count:quality==='low'?4:9});for(let i=0;i<ants.count;i++){const a=i*7,x=(pool[a]*dm.w+t*2.5)%dm.w,z=dm.d*(0.25+0.25*Math.sin(x/dm.w*6.2))+i*0.8,p=point(x,0.8+(JT.Terrain?JT.Terrain.lift(hab,x,z,0):0),z);circle(p,0.55*this.k,'#35251b',0.75);circle([p[0]-1.1*this.k,p[1]],0.48*this.k,'#35251b',0.75);}}
-  if(bm.id==='urban'){const daylight=hab.daylight(),phase=hab.game&&hab.game.tod?hab.game.tod():t/600%1;if(daylight>0.25){const x=dm.w*(0.15+0.7*phase),p=point(x,0.4,dm.d*0.52);ctx.globalAlpha=daylight*0.085;ctx.fillStyle='#ffdc9f';ctx.beginPath();ctx.ellipse(p[0],p[1],dm.w*0.22*V.s,dm.d*0.16*V.s,0,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
  };
  if(JT.Biome){
@@ -13397,6 +14637,8 @@ void main(){
           break;
         case 'catch': this.tone('effects', 660, 0.12, { type: 'triangle', vol: 0.1 }); this.tone('effects', 990, 0.18, { type: 'triangle', vol: 0.08, delay: 0.07 }); break;
         case 'rustle': this.noise('effects', 0.35, { f: 1800, q: 0.6, vol: 0.07, att: 0.08 }); break;
+        case 'page': this.noise('effects', 0.26, { f: 1600, fTo: 750, q: 0.8, vol: 0.07, att: 0.03 }); break;
+        case 'stamp': this.noise('effects', 0.1, { ft: 'lowpass', f: 420, vol: 0.14, att: 0.002 }); this.tone('effects', 150, 0.14, { type: 'sine', vol: 0.07, to: 85 }); break;
         case 'journal': [523, 659, 784].forEach((f, i) => this.tone('effects', f, 0.5, { type: 'sine', vol: 0.07, delay: i * 0.09 })); break;
         case 'molt': this.tone('effects', 392, 1.2, { type: 'sine', vol: 0.07, att: 0.3, vib: 4, vibAmt: 3 }); break;
         case 'error': this.tone('effects', 200, 0.18, { type: 'square', vol: 0.04, lp: 900 }); break;
@@ -14427,12 +15669,13 @@ void main(){
       if (opts.sheet) this._sheet = opts.sheet; else if (!same && !this._modalBack) this._sheet = null; // pages opened from a sheet keep its highlight
       $('modalBack').classList.toggle('hidden', !this._modalBack);
       $('modalTitle').textContent = title; const b = $('modalBody'); const keep = same ? b.scrollTop : 0; b.innerHTML = ''; if (typeof body === 'string') b.innerHTML = body; else b.appendChild(body); $('modalWrap').classList.remove('hidden'); b.scrollTop = opts.keepScroll ? keep : 0;
+      const modalEl = $('modal'); if (modalEl) modalEl.classList.toggle('naturalist-journal', !!(opts && opts.sheet === 'journal'));
       if (this.tab && this.isMobile()) this.closeDrawer();
       this.refreshHeader();
     },
     /** Open a page from inside a sheet so it gets a back arrow to `from`. */
     sub(from, open) { this._nextBack = from; open(); },
-    closeModal() { const was = !$('modalWrap').classList.contains('hidden'); $('modalWrap').classList.add('hidden'); this._modalBack = null; this._nextBack = null; this._sheet = null; document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); if (was) this.refreshHeader(); },
+    closeModal() { const was = !$('modalWrap').classList.contains('hidden'); $('modalWrap').classList.add('hidden'); const modalEl = $('modal'); if (modalEl) modalEl.classList.remove('naturalist-journal'); this._modalBack = null; this._nextBack = null; this._sheet = null; document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); if (was) this.refreshHeader(); },
     traitBars(T) { return '<div class="traits">' + [['Stealth', T.stealth], ['Patience', T.patience], ['Jump', T.jump], ['Boldness', T.bold], ['Tactics', T.tactics]].map(([n, v]) => '<span>' + n + '</span><div class="bar"><i style="width:' + Math.round(v * 100) + '%"></i></div>').join('') + '</div>'; },
     collectionModal() { this.jumpersSheet('collection'); },
     journalModal() { this.jumpersSheet('journal'); },
@@ -14440,10 +15683,10 @@ void main(){
     jumpersSheet(tab) {
       const h = this.hab; tab = tab || (h.spiders.length ? 'tank' : 'collection'); this._jTab = tab;
       const w = el('div'); const seg = el('div', 'seg sheet-tabs');
-      for (const [id, lab] of [['tank', 'In this tank'], ['collection', 'Collection'], ['journal', 'Journal']]) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.jumpersSheet(id); }; seg.appendChild(b); }
+      for (const [id, lab] of [['tank', 'In this tank'], ['collection', 'Collection'], ['journal', 'Field Journal']]) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.jumpersSheet(id); }; seg.appendChild(b); }
       w.appendChild(seg);
       w.appendChild(tab === 'tank' ? this.tankJumpersBody() : tab === 'collection' ? this.collectionBody() : this.journalBody());
-      this.openModal(tab === 'journal' ? 'Field Journal' : 'Jumpers', w, { sheet: tab === 'journal' ? 'journal' : 'jumpers', back: null }); this.dockOn('jumpers');
+      this.openModal(tab === 'journal' ? "Naturalist's Field Journal" : 'Jumpers', w, { sheet: tab === 'journal' ? 'journal' : 'jumpers', back: null }); this.dockOn('jumpers');
     },
     tankJumpersBody() {
       const g = this.game, h = this.hab, AI = JT.SpiderAI; const w = el('div', 'jlist');
@@ -14510,23 +15753,203 @@ void main(){
       wrap.appendChild(grid); return wrap;
     },
     journalBody(sub) {
-      sub = sub || this._jSub || 'seen'; this._jSub = sub;
+      sub = sub || this._jSub || 'plates'; this._jSub = sub;
       const g = this.game, st = g.state, jm = st.jmeta || {}; const w = el('div', 'jrnl');
       const n = JT.JOURNAL.filter(j => st.journal[j.id]).length, N = JT.JOURNAL.length;
-      const seg = el('div', 'seg small jsub'); for (const [id, lab] of [['seen', 'Behaviours'], ['stories', 'Life stories']]) { const b = el('button', id === sub ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this._jSub = id; this.jumpersSheet('journal'); }; seg.appendChild(b); } w.appendChild(seg);
+      const seg = el('div', 'seg small jsub');
+      for (const [id, lab] of [['plates', 'Specimen Plates'], ['seen', 'Field Log (' + n + '/' + N + ')'], ['stories', 'Life Stories'], ['flora', 'Flora & Microfauna']]) {
+        const b = el('button', id === sub ? 'on' : '', lab);
+        b.onclick = () => { A().sfx('page'); this._jSub = id; this.jumpersSheet('journal'); };
+        seg.appendChild(b);
+      }
+      w.appendChild(seg);
+      if (sub === 'plates') { w.appendChild(this.platesBody()); return w; }
       if (sub === 'stories') { w.appendChild(this.storiesBody()); return w; }
-      w.appendChild(el('div', 'jprog', '<div class="jpt"><b>' + n + '</b> of ' + N + ' behaviours witnessed</div><span class="tbar"><i style="width:' + Math.round(n / N * 100) + '%"></i></span><p class="muted">Only what you actually see happen in the tank you are watching is recorded.</p>'));
+      if (sub === 'flora') { w.appendChild(this.floraBody()); return w; }
+
+      // sub === 'seen' (Field Log)
+      w.appendChild(el('div', 'jprog', '<div class="jpt" style="font-family:Georgia,serif;font-size:15px;color:#2c2014"><b>' + n + '</b> of ' + N + ' ethological behaviours documented in ink</div><span class="tbar"><i style="width:' + Math.round(n / N * 100) + '%"></i></span><p class="muted" style="font-size:12.5px;margin-top:4px">Each behavior is stamped into your field log upon first observation in active vivaria.</p>'));
+      const fCat = this._jCat || 'all';
+      const cRow = el('div', 'jcats-row');
+      cRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px';
+      for (const [cid, cname] of [['all', 'All (' + n + ')']].concat(JT.JOURNAL_CATS || [])) {
+        const isCur = cid === fCat;
+        const b = el('button', 'modal-btn' + (isCur ? ' gold' : ''), cname);
+        b.style.cssText = 'padding:3px 10px;font-size:12px;min-height:28px;min-width:auto;border-radius:4px;' + (isCur ? 'font-weight:bold;' : 'opacity:0.85;');
+        b.onclick = () => { A().sfx('page'); this._jCat = cid; this.jumpersSheet('journal'); };
+        cRow.appendChild(b);
+      }
+      w.appendChild(cRow);
+
       const META = JT.JOURNAL_META || {};
       for (const [cid, cname] of JT.JOURNAL_CATS || [['all', 'Behaviours']]) {
-        const list = JT.JOURNAL.filter(j => ((META[j.id] || [])[0] || 'life') === cid || cid === 'all'); if (!list.length) continue;
+        if (fCat !== 'all' && cid !== fCat) continue;
+        const list = JT.JOURNAL.filter(j => ((META[j.id] || [])[0] || 'life') === cid);
+        if (!list.length) continue;
         const got = list.filter(j => st.journal[j.id]).length;
-        let html = '<h4 class="jcat">' + esc(cname) + ' <span class="muted">' + got + '/' + list.length + '</span></h4>' + (cid === 'hybrid' ? '<p class="muted jnote">Hybrids appear on their own once both parent species have been raised to Adult in your care.</p>' : '') + '<div class="grid">';
-        for (const j of list) { const c = st.journal[j.id], m = jm[j.id]; let hint = (META[j.id] || [])[1];
-          if (j.hyb && !st.species.includes(j.hyb)) { const HS = JT.SPECIES_BY_ID[j.hyb]; hint = 'A mystery hybrid: raise ' + HS.unlock.parents.map(pid => (/^[AEIOU]/.test(JT.SPECIES_BY_ID[pid].name) ? 'an ' : 'a ') + JT.SPECIES_BY_ID[pid].name).join(' and ') + ' to Adult.'; }
-          html += c ? '<div class="entry"><span class="badge">' + c + '×</span><h4>' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p>' + (m ? '<p class="jfirst">First seen day ' + m.d + (m.n ? ' · ' + esc(m.n) + (JT.SPECIES_BY_ID[m.s] ? ' (' + esc(JT.SPECIES_BY_ID[m.s].name) + ')' : '') : '') + '</p>' : '') + '</div>'
-            : '<div class="entry locked"><h4>Not yet witnessed</h4><p class="muted">' + esc(hint ? 'Hint: ' + hint : 'Keep watching your jumpers.') + '</p></div>'; }
+        let html = '<h4 class="jcat" style="font-family:Georgia,serif;color:#5a4020;border-bottom:1px solid rgba(140,115,80,0.25)!important;padding-bottom:4px!important">' + esc(cname) + ' <span class="muted" style="font-size:13px;font-weight:normal">(' + got + '/' + list.length + ' witnessed)</span></h4>' + (cid === 'hybrid' ? '<p class="muted jnote">Hybrids appear on their own once both parent species have been raised to Adult in your care.</p>' : '') + '<div class="grid">';
+        for (const j of list) {
+          const c = st.journal[j.id], m = jm[j.id];
+          let hint = (META[j.id] || [])[1];
+          if (j.hyb && !st.species.includes(j.hyb)) {
+            const HS = JT.SPECIES_BY_ID[j.hyb];
+            hint = 'A mystery hybrid: raise ' + HS.unlock.parents.map(pid => (/^[AEIOU]/.test(JT.SPECIES_BY_ID[pid].name) ? 'an ' : 'a ') + JT.SPECIES_BY_ID[pid].name).join(' and ') + ' to Adult.';
+          }
+          html += c ? '<div class="entry" style="background:#fffcf5!important;border:1px solid rgba(150,125,90,0.3)!important;box-shadow:0 2px 6px rgba(0,0,0,0.04)!important">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
+            '<h4 style="margin:0!important;font-size:16px!important;color:#1e170e!important">' + esc(j.title) + '</h4>' +
+            '<span class="field-stamp">WITNESSED ' + c + '×</span>' +
+            '</div>' +
+            '<p style="font-size:13.5px;line-height:1.45;color:#3c3022">' + esc(j.text) + '</p>' +
+            (m ? '<p class="jfirst" style="font-size:11.5px;color:#785c34;margin-top:6px;border-top:1px dashed rgba(140,115,80,0.25);padding-top:4px">First documented Day ' + m.d + (m.n ? ' · ' + esc(m.n) + (JT.SPECIES_BY_ID[m.s] ? ' (' + esc(JT.SPECIES_BY_ID[m.s].name) + ')' : '') : '') + '</p>' : '') +
+            '</div>'
+            : '<div class="entry locked" style="background:rgba(235,225,205,0.35)!important;border:1px dashed rgba(150,125,90,0.3)!important">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
+            '<h4 style="margin:0!important;font-size:15px!important;color:#6e583c!important">' + esc(j.title) + '</h4>' +
+            '<span class="field-stamp locked">CLUE</span>' +
+            '</div>' +
+            '<p class="muted" style="font-size:13px;line-height:1.4;color:#6b5d49">' + esc(hint ? 'Field Note: ' + hint : 'Keep observing your vivarium.') + '</p></div>';
+        }
         const d = el('div', 'jsec'); d.innerHTML = html + '</div>'; w.appendChild(d);
       }
+      return w;
+    },
+    platesBody() {
+      const g = this.game, st = g.state;
+      const allSpecies = JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS, JT.SPECIAL_UNLOCKS || []);
+      const curId = this._plateSpecies || allSpecies[0] || 'regal';
+      this._plateSpecies = curId;
+      const S = JT.SPECIES_BY_ID[curId] || JT.SPECIES[0];
+      const unlocked = g.isUnlocked(S.id);
+      const w = el('div', 'plate-spread');
+
+      const left = el('div', 'plate-left');
+      const plateIdx = allSpecies.indexOf(curId) + 1;
+      const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV'][plateIdx - 1] || plateIdx;
+      left.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<span style="font-family:Georgia,serif;font-size:11.5px;letter-spacing:0.22em;color:#735336;font-weight:600">TAB. ' + roman + ' · FIG. 1</span>' +
+        '<span style="font-size:12px;font-style:italic;color:#6b5d49">Drawn from living subject</span>' +
+        '</div>';
+
+      const box = el('div', 'plate-box');
+      const canvas = document.createElement('canvas');
+      canvas.width = 280; canvas.height = 280;
+      const ctx = canvas.getContext('2d');
+      const rad = ctx.createRadialGradient(140, 140, 10, 140, 140, 130);
+      rad.addColorStop(0, 'rgba(215, 195, 160, 0.35)');
+      rad.addColorStop(0.8, 'rgba(215, 195, 160, 0.05)');
+      rad.addColorStop(1, 'rgba(215, 195, 160, 0)');
+      ctx.fillStyle = rad; ctx.beginPath(); ctx.arc(140, 140, 130, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(60, 42, 22, 0.2)';
+      ctx.beginPath(); ctx.ellipse(140, 215, 80, 22, 0, 0, 6.283); ctx.fill();
+
+      const pCanvas = this.R.speciesPortrait(S.id, 200);
+      if (pCanvas) {
+        if (!unlocked && S.hybrid) {
+          const tc = cloneCanvas(pCanvas);
+          const tx = tc.getContext('2d');
+          tx.globalCompositeOperation = 'source-in';
+          tx.fillStyle = 'rgba(38,28,20,0.85)';
+          tx.fillRect(0, 0, tc.width, tc.height);
+          ctx.drawImage(tc, 40, 25);
+        } else {
+          ctx.drawImage(pCanvas, 40, 25);
+        }
+      }
+
+      ctx.strokeStyle = 'rgba(120, 95, 60, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(90, 252); ctx.lineTo(190, 252);
+      for (let m = 0; m <= 10; m++) {
+        const h = m % 5 === 0 ? 5 : 2.5;
+        ctx.moveTo(90 + m * 10, 252 - h); ctx.lineTo(90 + m * 10, 252);
+      }
+      ctx.stroke();
+      ctx.font = '10px Georgia, serif';
+      ctx.fillStyle = 'rgba(110, 85, 50, 0.7)';
+      ctx.textAlign = 'center';
+      ctx.fillText('10 mm (natural scale)', 140, 264);
+
+      box.appendChild(canvas);
+      left.appendChild(box);
+
+      const caption = el('div', '', '<div style="font-family:Caveat,Georgia,cursive;font-size:20px;font-weight:bold;color:#2c2014;text-align:center;margin-top:6px">' + esc(S.name) + '</div>' +
+        '<div style="font-size:12px;font-style:italic;color:#6b5d49;text-align:center">' + (unlocked ? 'Adult ' + S.len + ' mm span · Living Record' : 'Undiscovered in your vivarium') + '</div>');
+      left.appendChild(caption);
+
+      const chips = el('div', 'species-chips', '');
+      chips.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px';
+      for (const spId of allSpecies) {
+        const spObj = JT.SPECIES_BY_ID[spId];
+        if (!spObj) continue;
+        const isCur = spObj.id === curId;
+        const isUn = g.isUnlocked(spObj.id);
+        const btn = el('button', 'modal-btn' + (isCur ? ' gold' : ''), (isUn ? '' : '🔒 ') + spObj.name);
+        btn.style.cssText = 'padding:4px 10px;font-size:12px;min-height:30px;min-width:auto;border-radius:4px;' + (isCur ? 'font-weight:bold;' : 'opacity:0.85;');
+        btn.onclick = () => {
+          A().sfx('page');
+          this._plateSpecies = spObj.id;
+          this.jumpersSheet('journal');
+        };
+        chips.appendChild(btn);
+      }
+      left.appendChild(chips);
+      w.appendChild(left);
+
+      const right = el('div', 'plate-right');
+      const stampHtml = unlocked
+        ? '<span class="field-stamp">DOCUMENTED</span>'
+        : '<span class="field-stamp locked">LOCKED SPECIMEN</span>';
+
+      right.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+        '<div><h3 style="margin:0 0 2px;font-size:22px;color:#1f180f;font-weight:normal;letter-spacing:-0.01em">' + esc(S.name) + '</h3>' +
+        '<div style="font-style:italic;font-size:13px;color:#6e502c">' + esc(S.sci) + '</div></div>' +
+        stampHtml + '</div>' +
+        '<p style="font-size:14px;line-height:1.55;color:#2e2417;margin:8px 0">' + esc(S.desc) + '</p>' +
+        '<div class="plate-callouts">' +
+        '<div style="font-size:11px;font-weight:bold;letter-spacing:0.18em;text-transform:uppercase;color:#78582a;margin-bottom:6px">Anatomical Observations</div>' +
+        '<ul style="margin:0;padding-left:18px">' +
+        '<li><b>Anterior Median Ocelli (AME):</b> High-acuity telephoto corneal optics providing binocular range-finding for pounces.</li>' +
+        '<li><b>Cheliceral Sheen:</b> Metallic interference pigments with emerald-to-cobalt angular shift under natural light.</li>' +
+        '<li><b>Scopula Spatulae:</b> Thousands of sub-microscopic adhesive setae granting sure traction across sheer vertical glass.</li>' +
+        '<li><b>Sensory Pedipalps:</b> Densely tufted brush-hairs rhythmically palpated to sample air currents before leaping.</li>' +
+        '</ul></div>' +
+        '<div style="margin-top:8px">' +
+        '<div style="font-size:11px;font-weight:bold;letter-spacing:0.18em;text-transform:uppercase;color:#78582a;margin-bottom:6px">Temperament & Natural Aptitude</div>' +
+        this.traitBars(S.traits) +
+        '</div>' +
+        '<div class="plate-quote">' +
+        '<b>Vivarium Field Note:</b><br>' +
+        '"' + (S.sig === 'nectar' ? 'Observed drinking flower nectar with delicate palp dabs, utterly peaceful.' : S.sig === 'semaphore' ? 'Flicks bright white palps rhythmically, communicating across the vivarium pane.' : 'Binocular gaze locked onto the observer; calculated pounce trajectories with razor precision.') + '"' +
+        '</div>';
+
+      w.appendChild(right);
+      return w;
+    },
+    floraBody() {
+      const w = el('div', 'flora-section');
+      w.innerHTML = '<div style="margin-bottom:14px"><h3 style="margin:0 0 4px;font-size:20px;color:#1f180f">Herbarium & Bioactive Microfauna</h3>' +
+        '<p class="muted" style="margin:0;font-size:13px">Pressed botanical cuttings, foliage cover, and beneficial cleanup organisms of living vivaria.</p></div>';
+
+      const grid = el('div', 'flora-grid');
+      const items = [
+        { icon: '🌿', name: 'Ficus Pumila', sci: 'Creeping Fig · Foliage Cover', desc: 'Clings tight to vertical bark with delicate scalloped leaves; provides jumpers with vital stealth stalking routes and shade.' },
+        { icon: '🪵', name: 'Virgin Cork Bark', sci: 'Quercus suber · Vertical Habitat', desc: 'Porous natural fissures allow effortless claw gripping; deep hollows create ideal sheltered nesting cavities for silk retreats.' },
+        { icon: '🌱', name: 'Maidenhair Fern', sci: 'Adiantum raddianum · Microclimate', desc: 'Feathery fronds catch and suspend fine mist droplets, offering natural drinking stations and raising ambient terrarium humidity.' },
+        { icon: '🟢', name: 'Cushion Moss', sci: 'Leucobryum glaucum · Living Carpet', desc: 'Velvety bioactive substrate that cushions high-velocity predatory pounces and preserves ground moisture balance.' },
+        { icon: '⚪', name: 'White Springtails', sci: 'Collembola · Bioactive Cleanup Crew', desc: 'Microscopic subterranean detritivores (1.0 mm) that feast on decaying leaves and feeder husks, preventing terrarium mold.' },
+        { icon: '🪲', name: 'Dwarf Isopods', sci: 'Trichorhina tomentosa · Soil Aerators', desc: 'Armored bioactive decomposers that burrow through substrate layers, keeping soil oxygenated and healthy.' }
+      ];
+
+      for (const item of items) {
+        const card = el('div', 'flora-card');
+        card.innerHTML = '<div class="flora-icon">' + item.icon + '</div>' +
+          '<h4 style="margin:0 0 2px;font-size:16px;color:#1f180f">' + esc(item.name) + '</h4>' +
+          '<div style="font-size:12px;font-style:italic;color:#6e502c;margin-bottom:8px">' + esc(item.sci) + '</div>' +
+          '<p style="font-size:13px;line-height:1.45;color:#3c3022;margin:0;text-align:justify">' + esc(item.desc) + '</p>';
+        grid.appendChild(card);
+      }
+      w.appendChild(grid);
       return w;
     },
     /** Every jumper's life story (this tank first), newest moments at the top. */
@@ -15149,7 +16572,7 @@ if(state.step===0)for(const id in JT.HABITATS){const t=JT.HABITATS[id];pick(id,t
 if(state.step===1){w.append(el('p','bm-note','The build drawer will follow this jumper and its chosen climate. Raise jumpers to unlock more species.'));for(const sid of g.state.species){const s=JT.SPECIES_BY_ID[sid];if(!s)continue;pick(sid,s.name,home(sid),state.sid===sid,()=>{state.sid=sid;state.bid=null;draw();});const source=U.R.speciesPortrait(sid,64),portrait=document.createElement('canvas');portrait.width=source.width;portrait.height=source.height;portrait.style.cssText='width:44px;height:44px;display:block;margin-bottom:6px';portrait.setAttribute('aria-hidden','true');portrait.getContext('2d').drawImage(source,0,0);grid.lastElementChild.prepend(portrait);}}
 if(state.step===2){if(!state.bid)state.bid=B.rank(state.sid)[0];for(const bid of B.rank(state.sid)){const b=JT.BIOMES[bid],f=B.fit(state.sid,bid);pick(bid,b.icon+' '+b.name,(f>=.95?'Recommended · ':f>=.6?'Suitable · ':'Out of place · ')+b.short,state.bid===bid,()=>{state.bid=bid;state.layout='biome';draw();});}const sel=el('select');sel.setAttribute('aria-label','Starting layout');const opt=(v,t)=>{const o=el('option','',t);o.value=v;sel.append(o);};opt('biome',state.bid==='classic'?'Classic starter layout':JT.BIOMES[state.bid].name+' layout (recommended)');opt('empty','Start from scratch — ground and background only');if(state.bid==='classic'){for(const p of JT.Presets.forType(state.type))opt('t:'+p.theme,p.name);(g.state.customPresets||[]).forEach((p,i)=>opt('c:'+i,'Custom: '+p.name));}sel.value=state.layout;sel.onchange=()=>state.layout=sel.value;w.append(sel,el('p','bm-note',B.fit(state.sid,state.bid)<.6?'This climate is not a home match. You can still experiment; comfort changes are gentle.':'You can change the biome later without removing your decor.'));}
 const row=el('div','bm-actions');row.append(btn(state.step?'Back':first?'Keep this enclosure':'Cancel',()=>{if(state.step){state.step--;draw();}else if(first){state.step=1;draw();}else{document.body.classList.remove('bm-wizard');U.closeModal();}}));const next=btn(state.step===2?'Create Tank & Enter':'Continue',()=>{if(state.step<2){state.step++;draw();return;}if(!first&&g.habs.length>=JT.MAX_HABS){U.toast('Tank limit reached (30). Delete a tank first.');return;}if(!g.isUnlocked(state.sid)){U.toast('This jumper is locked.');return;}try{const h=new JT.Habitat({type:state.type},g);B.setBiome(h,state.bid);h.data.buildSpecies=state.sid;const seed=(JT.R()*1e9)|0;if(state.layout==='biome'){if(state.bid==='classic'){const p=JT.Presets.forType(state.type)[0];if(p)JT.Presets.generate(h,p.theme,seed);}else B.layout(h,state.bid,seed);}else if(state.layout.startsWith('t:'))JT.Presets.generate(h,state.layout.slice(2),seed);else if(state.layout.startsWith('c:'))JT.Presets.applyCustom(h,g.state.customPresets[+state.layout.slice(2)]);B.applyGround(h,state.bid);const sp=h.addSpider(state.sid,{stage:1,meals:1,sat:.6,name:first?'Pip':undefined});if(!sp)throw new Error('Jumper could not be added');h.decor.forEach(x=>x.preset=true);h.addPrey((B.of(h).prey||[]).find(x=>['fruitfly','aphid','gnat','springtail'].includes(x))||'fruitfly',4);if(first)g.habs=[h];else g.habs.push(h);const targetIndex=g.habs.indexOf(h);if(first){g.state.active=targetIndex;g.selectedId=sp.id;U.R.cur=null;U.R.resetView();}else U.switchHab(targetIndex);g.selectedId=sp.id;h.data.selectedId=sp.id;g.state.biomeSetup=false;g.state.lastBiome=state.bid;g.checkUnlocks();g.save();document.body.classList.remove('bm-wizard');U._bmCreating=true;U.closeModal();U._bmCreating=false;U.switchHab(g.state.active);U.refreshHeader();U.hidePanel();U.toast('Your habitat is ready. Build, care for your jumper, or simply watch.');}catch(e){console.error('biome setup',e);U.toast('Could not create this habitat: '+e.message);}},'modal-btn gold');next.id='bmNext';row.append(next);w.append(row);U.openModal(first?'A fresh start · Biomes':'New habitat',w,{back:null});};draw();};
-const init=U.init;U.init=function(){init.apply(this,arguments);this.game.on((type,d)=>{if(type==='biome'){this.biomeHeader();if(!d.end){this.toast(B.of(this.hab).name+' · '+(JT.BIOME_EVENTS[d.ev]||{}).line);if(JT.Audio)JT.Audio.sfx('click');}}});setTimeout(()=>{if(this.game.state.biomeSetup)this.biomeWizard(true);},0);};
+const init=U.init;U.init=function(){init.apply(this,arguments);this.game.on((type,d)=>{if(type==='biome'){this.biomeHeader();if(!d.end){this.toast(B.of(this.hab).name+' · '+(JT.BIOME_EVENTS[d.ev]||{}).line);if(JT.Audio)JT.Audio.sfx('click');}}if(type==='journal'&&d&&d.entry){this.toast('Field Journal: '+d.entry.title+' witnessed!');if(JT.Audio)JT.Audio.sfx('stamp');}});setTimeout(()=>{if(this.game.state.biomeSetup)this.biomeWizard(true);},0);};
 const close=U.closeModal;U.closeModal=function(){if(this.game&&this.game.state.biomeSetup&&!this._bmCreating){this.biomeWizard(true);return;}document.body.classList.remove('bm-wizard');close.apply(this,arguments);};
 U.biomeHeader=function(){if(!this.game)return;let chip=$('biomeChip');if(!chip){chip=btn('',()=>this.biomeSheet(),'bm-chip');chip.id='biomeChip';const clock=document.querySelector('.clock');if(clock)clock.append(chip);}const id=B.id(this.hab);chip.classList.toggle('hidden',id==='classic');if(id==='classic')return;const b=B.of(this.hab),v=this.hab.data.bev,ev=v&&v.id;chip.classList.toggle('active',!!ev);chip.replaceChildren(document.createTextNode(`${b.icon} ${Math.round(B.temp(this.hab))}°C`));if(ev)chip.append(el('span','bm-event',' · '+B.weather(this.hab).name));chip.setAttribute('aria-label',b.name+', '+Math.round(B.temp(this.hab))+' degrees. Habitat details');};
 for(const key of ['refreshHeader','updateClock']){const old=U[key];U[key]=function(){old.apply(this,arguments);this.biomeHeader();};}
@@ -15810,8 +17233,7 @@ body.tank-setup #app #dock,body.tank-setup #app #top,body.tank-setup #app #camCt
     });
     function frame(now) {
       if (document.hidden) { last = workLast = now; acc = rAcc = 0; requestAnimationFrame(frame); return; }
-      const mobile = JT.Device.android || JT.Device.ios || JT.Device.coarse;
-      const desired = settings.fps === 'smooth' && !mobile && !(R._thermalLevel > 0) ? 60 : 30;
+      const desired = settings.fps === 'battery' ? 30 : 60;
       if (now - workLast < 1000 / desired - 0.7) { requestAnimationFrame(frame); return; }
       workLast = now;
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
@@ -15821,9 +17243,8 @@ body.tank-setup #app #dock,body.tank-setup #app #top,body.tank-setup #app #camCt
       else if (JT.UI.photo || JT.UI.tankSetup) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
-      // Sustainable by default: fixed 30 fps on phones; 60 only when requested on desktop.
-      // Auto alone adapts resolution. Manual presets stay at their chosen multiplier.
-      rAcc += dt; R.targetFps = desired; R.locked30 = mobile || R._thermalLevel > 0;
+      // Smooth 60 fps pacing target
+      rAcc += dt; R.targetFps = desired; R.locked30 = desired === 30;
       R._missSeconds = dt > (1 / desired) * 1.35 ? (R._missSeconds || 0) + dt : Math.max(0, (R._missSeconds || 0) - dt * 0.25);
       if (settings.quality === 'auto' && (R._missSeconds > 2.5 || (cost > 1000 / desired * 0.7 && (R._costSeconds = (R._costSeconds || 0) + dt) > 2.5)) && (R._thermalLevel || 0) < 4 && now > (R._backoffAt || 0)) {
         R._thermalLevel = (R._thermalLevel || 0) + 1; R._missSeconds = R._costSeconds = 0; R._backoffAt = now + 10000; R.resize();
@@ -15988,7 +17409,7 @@ body.tank-setup #app #dock,body.tank-setup #app #top,body.tank-setup #app #camCt
 <script>
 /* One game; no background showcase game or periodic screenshot encoding. */
 (function(root){'use strict';const JT=root.JT;if(!JT||!JT.UI)return;const sp=document.getElementById('splash');if(sp)sp.remove();
-const original=JT.UI.moreSheet;JT.UI.moreSheet=function(){const result=original.apply(this,arguments),menu=document.querySelector('#modalBody .menu')||document.getElementById('modalBody');if(menu){const section=document.createElement('div');section.className='msect';const button=document.createElement('button');button.className='mrow';button.textContent='Title screen';button.onclick=()=>{if(JT.app)JT.app.game.save();location.href='index.html'};const gameSection=Array.from(menu.querySelectorAll('.msect')).find(s=>s.querySelector('h4')?.textContent==='Game');if(gameSection)gameSection.appendChild(button);else{section.appendChild(button);menu.appendChild(section)}}return result};
+const original=JT.UI.moreSheet;JT.UI.moreSheet=function(){const result=original.apply(this,arguments),menu=document.querySelector('#modalBody .menu')||document.getElementById('modalBody');if(menu){const section=document.createElement('div');section.className='msect';const button=document.createElement('button');button.className='mrow';button.textContent='Title screen';button.onclick=()=>{if(JT.app)JT.app.game.save();if(root.showTitleScreen)root.showTitleScreen();else location.href='index.html'};const gameSection=Array.from(menu.querySelectorAll('.msect')).find(s=>s.querySelector('h4')?.textContent==='Game');if(gameSection)gameSection.appendChild(button);else{section.appendChild(button);menu.appendChild(section)}}return result};
 const ready=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{if(root.TR_VEIL)root.TR_VEIL.out()}));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();root.JT_COMBINED=true;
 })(window);
 

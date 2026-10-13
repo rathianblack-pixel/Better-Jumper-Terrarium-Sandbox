@@ -1,3 +1,906 @@
-<style>#splash{display:none!important}#trVeil{position:fixed;inset:0;z-index:2147483000;background:#080b08;display:grid;place-content:center;color:#e9eddf;font:14px/1.5 system-ui,sans-serif;pointer-events:none;transition:opacity .25s}#trVeil.out{opacity:0}@media(prefers-reduced-motion:reduce){#trVeil{transition:none}}</style>
-<div id="trVeil" aria-hidden="true">Opening your jumper’s world…</div>
-<script>window.TR_VEIL={out:function(){var v=document.getElementById('trVeil');if(v){v.classList.add('out');setTimeout(function(){v.remove()},300)}}};setTimeout(function(){TR_VEIL.out()},8000);</script>
+<style>
+#splash{display:none!important}
+#trVeil{display:none!important}
+
+/* ===== MINIMAL AESTHETIC START SCREEN: LIVE PRE-RENDERED TANK ===== */
+#titleScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  background: #080b08;
+  color: #f5f4e9;
+  font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#titleScreen.out {
+  opacity: 0;
+  transform: scale(1.03);
+  pointer-events: none;
+}
+
+/* Background Canvas: Live Tank */
+#liveTankCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+/* Cinematic Vignette & Soft Gradient Scrim */
+.title-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at 50% 50%, rgba(8,11,8,0.15) 30%, rgba(8,11,8,0.65) 80%, rgba(8,11,8,0.92) 100%),
+              linear-gradient(180deg, rgba(8,11,8,0.45) 0%, rgba(8,11,8,0.05) 35%, rgba(8,11,8,0.2) 70%, rgba(8,11,8,0.7) 100%);
+  pointer-events: none;
+}
+
+/* Minimalist Center Typographic Column */
+.title-main {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  max-width: 580px;
+  width: 100%;
+  box-sizing: border-box;
+  pointer-events: none; /* Allows click-through anywhere to titleScreen */
+}
+
+.title-kicker {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #c9bc9a;
+  margin-bottom: 10px;
+  opacity: 0.85;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.title-logo {
+  font-size: clamp(54px, 8.5vw, 98px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 0 0 10px;
+  color: #fafbed;
+  text-shadow: 0 0 24px rgba(230,210,145,0.28), 0 0 65px rgba(185,220,135,0.18), 0 2px 8px rgba(0,0,0,0.85);
+}
+
+.title-tagline {
+  font-size: clamp(14px, 2vw, 17px);
+  font-style: italic;
+  color: #d6d3c0;
+  margin: 0 0 32px;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.85);
+  opacity: 0.9;
+}
+
+/* Breathing "Tap anywhere to begin" Prompt */
+.title-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 25, 17, 0.45);
+  border: 1px solid rgba(225, 235, 205, 0.3);
+  padding: 10px 22px;
+  border-radius: 24px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  animation: promptPulse 2.8s infinite ease-in-out;
+}
+.prompt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ecd08f;
+  box-shadow: 0 0 8px #ecd08f;
+}
+.prompt-text {
+  font-family: inherit;
+  font-size: 14.5px;
+  letter-spacing: 0.04em;
+  color: #fffdec;
+}
+@keyframes promptPulse {
+  0%, 100% { opacity: 0.92; transform: translateY(0); }
+  50% { opacity: 0.65; transform: translateY(-2px); }
+}
+
+.title-save-tag {
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  color: #b5c2a3;
+  margin-top: 12px;
+  opacity: 0.85;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Bottom Minimal HUD Links */
+.title-hud-minimal {
+  position: absolute;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #b8c4aa;
+}
+.hud-link {
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  font: inherit;
+  color: #cdd6be;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.2s;
+  touch-action: manipulation;
+  border-bottom: 1px solid transparent;
+}
+.hud-link:hover {
+  opacity: 1;
+  color: #ffffff;
+  border-bottom-color: rgba(255,255,255,0.4);
+}
+.hud-sep {
+  opacity: 0.4;
+}
+
+/* Dialog for New Game Confirmation */
+#titleConfirmDialog {
+  color-scheme: light;
+  width: min(420px, calc(100% - 32px));
+  border: 1px solid #d8d7c9;
+  border-radius: 12px;
+  padding: 26px 28px;
+  background: #f6f3e9;
+  color: #2c302a;
+  text-align: left;
+  box-shadow: 0 16px 45px rgba(0,0,0,0.6);
+  font-family: inherit;
+  cursor: default;
+}
+#titleConfirmDialog::backdrop {
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(4px);
+}
+#titleConfirmDialog h2 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 12px;
+  color: #1f221e;
+}
+#titleConfirmDialog p {
+  font-family: system-ui, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #555c4d;
+  margin: 0 0 22px;
+}
+#titleConfirmDialog .dlg-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+#titleConfirmDialog button {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 0;
+  transition: all 0.2s;
+}
+#titleConfirmDialog #dlgCancel {
+  background: #e6e4d6;
+  color: #444a3e;
+}
+#titleConfirmDialog #dlgCancel:hover {
+  background: #dcdaShort;
+}
+#titleConfirmDialog #dlgCreate {
+  background: #53613b;
+  color: #fff;
+}
+#titleConfirmDialog #dlgCreate:hover {
+  background: #627446;
+}
+
+@media (max-width: 560px) {
+  .title-logo { font-size: 52px; }
+  .title-tagline { font-size: 14px; margin-bottom: 24px; }
+  .title-prompt { padding: 9px 18px; }
+  .prompt-text { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #titleScreen { transition: none!important; }
+  .title-prompt { animation: none!important; }
+}
+</style>
+
+<!-- START SCREEN OVERLAY -->
+<div id="titleScreen" aria-label="Start Screen" tabindex="0">
+  <canvas id="liveTankCanvas"></canvas>
+  <div class="title-vignette"></div>
+
+  <div class="title-main">
+    <div class="title-kicker">A Quiet Living Vivarium</div>
+    <h1 class="title-logo">Terrarium</h1>
+    <div class="title-tagline">Rest your eyes, watch the leaves, listen to the breeze.</div>
+
+    <div class="title-prompt" id="titleTapPrompt">
+      <span class="prompt-dot"></span>
+      <span class="prompt-text">Tap anywhere to begin</span>
+    </div>
+
+    <div id="titleSaveTag" class="title-save-tag"></div>
+  </div>
+
+  <div class="title-hud-minimal">
+    <button id="titleNewBtn" class="hud-link">New Terrarium</button>
+    <span class="hud-sep">·</span>
+    <button id="titleSoundBtn" class="hud-link" aria-label="Toggle Nature Ambience">
+      <span id="soundIcon">♫</span>
+      <span id="soundLabel">Nature Ambience</span>
+    </button>
+  </div>
+</div>
+
+<dialog id="titleConfirmDialog" aria-labelledby="confirmTitle">
+  <h2 id="confirmTitle">Begin a new terrarium?</h2>
+  <p>Your current habitat progress will be archived. A local backup of your previous save will be safely preserved.</p>
+  <div class="dlg-actions">
+    <button id="dlgCancel">Cancel</button>
+    <button id="dlgCreate">New Game</button>
+  </div>
+</dialog>
+
+<!-- LIVE TANK CANVAS ENGINE & INSTANT 1-CLICK LAUNCH SCRIPT -->
+<script>
+(function() {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const SAVE_KEY = 'jumperTerrarium.v14.save';
+
+  if (typeof location !== 'undefined' && location.search && new URLSearchParams(location.search).has('preview')) {
+    const ts = $('titleScreen');
+    if (ts) ts.remove();
+    return;
+  }
+
+  // ===== 1. SAVE DETECTION & MINIMAL LAUNCH LOGIC =====
+  let hasSave = false;
+  let saveHabitatName = '';
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    const data = raw && JSON.parse(raw);
+    hasSave = !!(data && data.v && data.habitats && data.habitats.length);
+    if (hasSave) {
+      saveHabitatName = (data.habitats[data.active || 0] || {}).title || 'Saved World';
+    }
+  } catch(e) {}
+
+  const tag = $('titleSaveTag');
+  if (tag) {
+    tag.textContent = hasSave ? ('Resumes in ' + saveHabitatName) : 'Starts a new peaceful terrarium';
+  }
+
+  // Instant Launch on ANY tap or click on screen
+  let launched = false;
+  const launchGame = (fresh) => {
+    if (launched) return;
+    launched = true;
+    playTransitionChord();
+    const ts = $('titleScreen');
+    if (!ts) return;
+    ts.classList.add('out');
+
+    if (fresh) {
+      try {
+        if (window.JT && JT.app && JT.app.game) {
+          const old = localStorage.getItem(SAVE_KEY);
+          if (old) localStorage.setItem(SAVE_KEY + '.before-new', old);
+          JT.app.game.newGame();
+          if (JT.UI && JT.UI.biomeWizard) setTimeout(() => JT.UI.biomeWizard(true), 350);
+        }
+      } catch(e) { console.warn('New game reset', e); }
+    }
+
+    setTimeout(() => {
+      ts.style.display = 'none';
+      stopTankLoop();
+    }, 660);
+  };
+
+  // Clicking anywhere on title screen launches game!
+  $('titleScreen').addEventListener('click', (e) => {
+    // Don't launch if clicking the bottom links or dialog
+    if (e.target.closest('#titleNewBtn') || e.target.closest('#titleSoundBtn') || e.target.closest('#titleConfirmDialog')) {
+      return;
+    }
+    launchGame(false);
+  });
+
+  // Space / Enter key launches
+  window.addEventListener('keydown', (e) => {
+    if ($('titleConfirmDialog').open) return;
+    if ($('titleScreen').style.display !== 'none' && !$('titleScreen').classList.contains('out')) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        launchGame(false);
+      }
+    }
+  });
+
+  // "New Terrarium" link
+  $('titleNewBtn').onclick = (e) => {
+    e.stopPropagation();
+    if (hasSave) {
+      $('titleConfirmDialog').showModal();
+    } else {
+      launchGame(true);
+    }
+  };
+  $('dlgCancel').onclick = (e) => {
+    e.stopPropagation();
+    $('titleConfirmDialog').close();
+  };
+  $('dlgCreate').onclick = (e) => {
+    e.stopPropagation();
+    $('titleConfirmDialog').close();
+    launchGame(true);
+  };
+
+  // In-Game Menu Return Hook
+  window.showTitleScreen = function() {
+    launched = false;
+    const ts = $('titleScreen');
+    if (!ts) return;
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      const data = raw && JSON.parse(raw);
+      hasSave = !!(data && data.v && data.habitats && data.habitats.length);
+      if (hasSave) {
+        saveHabitatName = (data.habitats[data.active || 0] || {}).title || 'Saved World';
+      }
+    } catch(e) {}
+    if (tag) tag.textContent = hasSave ? ('Resumes in ' + saveHabitatName) : 'Starts a new peaceful terrarium';
+    ts.style.display = 'flex';
+    ts.offsetHeight;
+    ts.classList.remove('out');
+    startTankLoop();
+    startAmbience();
+  };
+
+  // ===== 2. WARM AMBIENT INTRO AUDIO (SYNTHESIZED WEBAUDIO) =====
+  let audioCtx = null;
+  let breezeGain = null;
+  let chimesTimer = null;
+  let audioMuted = false;
+
+  function initAudio() {
+    if (audioCtx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      audioCtx = new AC();
+    } catch(e) {}
+  }
+
+  function startAmbience() {
+    initAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioMuted || breezeGain) return;
+
+    try {
+      const bufSize = audioCtx.sampleRate * 2;
+      const noiseBuffer = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      const out = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        out[i] = (b0 + b1 + b2) * 0.11;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      noise.loop = true;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 520;
+
+      const lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.07;
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 160;
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+      lfo.start();
+
+      breezeGain = audioCtx.createGain();
+      breezeGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      breezeGain.gain.exponentialRampToValueAtTime(0.065, audioCtx.currentTime + 2.5);
+
+      noise.connect(filter);
+      filter.connect(breezeGain);
+      breezeGain.connect(audioCtx.destination);
+      noise.start();
+
+      const PENTATONIC = [293.66, 329.63, 392.00, 440.00, 493.88, 587.33, 659.25];
+      const scheduleChime = () => {
+        if (!audioMuted && audioCtx && audioCtx.state === 'running' && !$('titleScreen').classList.contains('out')) {
+          const freq = PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)];
+          playChime(freq, 0.035 + Math.random() * 0.025);
+        }
+        chimesTimer = setTimeout(scheduleChime, 3800 + Math.random() * 3200);
+      };
+      chimesTimer = setTimeout(scheduleChime, 1800);
+    } catch(e) {}
+  }
+
+  function playChime(freq, vol) {
+    if (audioMuted || !audioCtx || audioCtx.state !== 'running') return;
+    try {
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(freq * 2.756, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(vol || 0.04, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
+      osc.connect(g); osc2.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(now); osc2.start(now);
+      osc.stop(now + 2.9); osc2.stop(now + 2.9);
+    } catch(e) {}
+  }
+
+  function playTransitionChord() {
+    if (audioMuted || !audioCtx || audioCtx.state !== 'running') return;
+    try {
+      const now = audioCtx.currentTime;
+      const chord = [110, 164.81, 220, 277.18, 440];
+      chord.forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(0.065 / (i + 1), now + 0.05 + i * 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 2.5);
+      });
+    } catch(e) {}
+  }
+
+  $('titleSoundBtn').onclick = (e) => {
+    e.stopPropagation();
+    audioMuted = !audioMuted;
+    $('titleSoundBtn').classList.toggle('muted', audioMuted);
+    $('soundLabel').textContent = audioMuted ? 'Muted' : 'Nature Ambience';
+    $('soundIcon').textContent = audioMuted ? '✕' : '♫';
+    if (breezeGain && audioCtx) {
+      breezeGain.gain.setTargetAtTime(audioMuted ? 0 : 0.065, audioCtx.currentTime, 0.1);
+    }
+    if (!audioMuted) startAmbience();
+  };
+
+  window.addEventListener('pointerdown', () => startAmbience(), { once: true });
+
+
+  // ===== 3. PRE-RENDERED LIVE TANK CANVAS ENGINE (INSTANT 60 FPS) =====
+  const canvas = $('liveTankCanvas');
+  const ctx = canvas.getContext('2d');
+  let loopAnimId = null;
+  let loopRunning = false;
+  let W = 0, H = 0, dpr = 1;
+
+  const resize = () => {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = canvas.width = Math.floor(window.innerWidth * dpr);
+    H = canvas.height = Math.floor(window.innerHeight * dpr);
+  };
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Floating ambient dust motes / vivarium spores
+  const SPORES = Array.from({ length: 36 }, () => ({
+    x: 0.2 + Math.random() * 0.6,
+    y: 0.1 + Math.random() * 0.8,
+    r: 1 + Math.random() * 2.0,
+    vx: (Math.random() - 0.45) * 0.012,
+    vy: -0.015 - Math.random() * 0.02,
+    alpha: 0.25 + Math.random() * 0.55,
+    phase: Math.random() * 6.28
+  }));
+
+  // Saccade timer for spider head-tilts
+  let headAngle = 0;
+  let targetHeadAngle = 0;
+  let headTimer = 0;
+
+  // Main Live Tank Drawing Routine
+  function drawLiveTank(ctx, w, h, t) {
+    const cx = w * 0.5;
+    const cy = h * 0.52;
+    const scale = Math.min(w, h) * 0.0022;
+
+    // Background Room Atmosphere
+    const roomBg = ctx.createRadialGradient(cx, cy * 0.7, 10, cx, cy, Math.max(w, h) * 0.75);
+    roomBg.addColorStop(0, '#131911');
+    roomBg.addColorStop(0.55, '#0b0f0b');
+    roomBg.addColorStop(1, '#050705');
+    ctx.fillStyle = roomBg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Tank Enclosure Bounds
+    const tw = Math.min(w * 0.9, 680 * scale);
+    const th = Math.min(h * 0.84, 760 * scale);
+    const tx = cx - tw * 0.5;
+    const ty = cy - th * 0.48;
+
+    // 1. Tank Back Wall (Lush Diffuse Interior)
+    const tankBg = ctx.createRadialGradient(cx, ty + th * 0.35, 15, cx, ty + th * 0.5, tw * 0.65);
+    tankBg.addColorStop(0, '#22321c');
+    tankBg.addColorStop(0.5, '#131e11');
+    tankBg.addColorStop(1, '#0a1009');
+    ctx.fillStyle = tankBg;
+    ctx.fillRect(tx, ty, tw, th);
+
+    // 2. Basking Sun Beam (Radiant Diagonal Light Cone)
+    const lampX = tx + tw * 0.72;
+    const lampY = ty;
+    const beam = ctx.createLinearGradient(lampX, lampY, cx - 80 * scale, ty + th);
+    beam.addColorStop(0, 'rgba(255, 235, 175, 0.28)');
+    beam.addColorStop(0.4, 'rgba(240, 215, 140, 0.12)');
+    beam.addColorStop(1, 'rgba(210, 190, 120, 0)');
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(lampX - 35 * scale, lampY);
+    ctx.lineTo(lampX + 35 * scale, lampY);
+    ctx.lineTo(cx + 140 * scale, ty + th);
+    ctx.lineTo(cx - 180 * scale, ty + th);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Substrate Layers at Tank Bottom
+    const subTop = ty + th - 95 * scale;
+    // Layer A: Horticultural Charcoal & LECA balls
+    ctx.fillStyle = '#1e1a17';
+    ctx.fillRect(tx, subTop + 45 * scale, tw, 50 * scale);
+    for (let i = 0; i < 24; i++) {
+      ctx.fillStyle = i % 2 ? '#4a3222' : '#322016';
+      ctx.beginPath();
+      ctx.arc(tx + 20 * scale + i * 28 * scale, subTop + 70 * scale + (i % 3) * 6 * scale, 9 * scale, 0, 6.283);
+      ctx.fill();
+    }
+    // Layer B: Rich Peat Soil
+    ctx.fillStyle = '#342417';
+    ctx.fillRect(tx, subTop, tw, 46 * scale);
+
+    // Layer C: Undulating Velvet Moss Hill
+    ctx.fillStyle = '#3f5828';
+    ctx.beginPath();
+    ctx.moveTo(tx, subTop + 10 * scale);
+    ctx.bezierCurveTo(tx + tw * 0.25, subTop - 18 * scale, tx + tw * 0.65, subTop + 12 * scale, tx + tw, subTop - 6 * scale);
+    ctx.lineTo(tx + tw, subTop + 15 * scale);
+    ctx.lineTo(tx, subTop + 15 * scale);
+    ctx.fill();
+
+    // Moss highlight stippling
+    ctx.fillStyle = '#577c38';
+    ctx.beginPath();
+    ctx.ellipse(cx - 80 * scale, subTop - 4 * scale, 90 * scale, 12 * scale, -0.05, 0, 6.283);
+    ctx.fill();
+
+    // 4. Diagonal Organic Cork Branch / Driftwood
+    ctx.save();
+    ctx.strokeStyle = '#38281a';
+    ctx.lineWidth = 32 * scale;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tx + 30 * scale, subTop - 10 * scale);
+    ctx.bezierCurveTo(cx - 90 * scale, cy + 80 * scale, cx - 20 * scale, cy - 20 * scale, cx + 110 * scale, cy - 70 * scale);
+    ctx.stroke();
+
+    // Wood Bark Highlights
+    ctx.strokeStyle = '#5a422d';
+    ctx.lineWidth = 14 * scale;
+    ctx.beginPath();
+    ctx.moveTo(tx + 40 * scale, subTop - 12 * scale);
+    ctx.bezierCurveTo(cx - 85 * scale, cy + 78 * scale, cx - 18 * scale, cy - 22 * scale, cx + 105 * scale, cy - 72 * scale);
+    ctx.stroke();
+
+    // Branch Top Lip in Warm Sun
+    ctx.strokeStyle = '#856445';
+    ctx.lineWidth = 4 * scale;
+    ctx.beginPath();
+    ctx.moveTo(cx - 60 * scale, cy + 20 * scale);
+    ctx.bezierCurveTo(cx - 10 * scale, cy - 15 * scale, cx + 40 * scale, cy - 45 * scale, cx + 90 * scale, cy - 65 * scale);
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. Living Foliage (Swaying Vines & Leaves)
+    const drawLeaf = (lx, ly, rot, sz, sway) => {
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(rot + sway);
+
+      // Leaf body
+      ctx.fillStyle = '#2f4c1e';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-22 * sz, -14 * sz, -28 * sz, -48 * sz, 0, -68 * sz);
+      ctx.bezierCurveTo(28 * sz, -48 * sz, 22 * sz, -14 * sz, 0, 0);
+      ctx.fill();
+
+      // Leaf central rib
+      ctx.strokeStyle = '#4e7534';
+      ctx.lineWidth = 2 * sz;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -62 * sz);
+      ctx.stroke();
+
+      // Translucent sun highlight
+      ctx.fillStyle = 'rgba(160, 220, 90, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-14 * sz, -20 * sz, -18 * sz, -44 * sz, 0, -64 * sz);
+      ctx.fill();
+
+      // Dewdrop on tip
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(0, -65 * sz, 2.4 * sz, 0, 6.283);
+      ctx.fill();
+
+      ctx.restore();
+    };
+
+    const sway1 = Math.sin(t * 1.3) * 0.05;
+    const sway2 = Math.cos(t * 1.5) * 0.06;
+    const sway3 = Math.sin(t * 1.1 + 1.2) * 0.04;
+
+    // Vine cluster 1 (left side)
+    drawLeaf(tx + 65 * scale, cy + 40 * scale, -0.6, scale, sway1);
+    drawLeaf(tx + 95 * scale, cy - 20 * scale, -0.3, scale * 1.15, sway2);
+    drawLeaf(tx + 40 * scale, cy - 70 * scale, -0.8, scale * 0.9, sway3);
+
+    // Vine cluster 2 (hanging from top-right)
+    drawLeaf(tx + tw - 80 * scale, ty + 120 * scale, 2.4, scale * 1.1, sway2);
+    drawLeaf(tx + tw - 50 * scale, ty + 180 * scale, 2.7, scale * 0.95, sway1);
+
+    // Cluster 3 (sprouting from central branch)
+    drawLeaf(cx - 35 * scale, cy + 2 * scale, 0.45, scale * 0.85, sway3);
+    drawLeaf(cx + 65 * scale, cy - 50 * scale, 0.85, scale * 0.95, sway1);
+
+    // 6. The Jumper Inhabitant (Regal Jumper on Branch)
+    const spX = cx + 8 * scale;
+    const spY = cy - 28 * scale;
+
+    // Head tilt update logic
+    headTimer += 0.016;
+    if (headTimer > 3.2 + Math.sin(t) * 0.8) {
+      headTimer = 0;
+      targetHeadAngle = (Math.random() - 0.5) * 0.35;
+    }
+    headAngle += (targetHeadAngle - headAngle) * 0.08;
+
+    ctx.save();
+    ctx.translate(spX, spY);
+
+    // Soft spider contact shadow on bark
+    ctx.fillStyle = 'rgba(25, 18, 12, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(0, 8 * scale, 26 * scale, 9 * scale, 0, 0, 6.283);
+    ctx.fill();
+
+    // 8 Legs gripping the branch
+    ctx.strokeStyle = '#1e1914';
+    ctx.lineWidth = 3.6 * scale;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const legs = [
+      [-1, -18, -4, -36, -20, -42, 6],
+      [-1, -12, -2, -30, -12, -38, 14],
+      [-1, 8, 4, -28, 8, -34, 22],
+      [-1, 16, 6, -24, 18, -28, 28],
+      [1, -18, -4, 36, -20, 42, 6],
+      [1, -12, -2, 30, -12, 38, 14],
+      [1, 8, 4, 28, 8, 34, 22],
+      [1, 16, 6, 24, 18, 28, 28]
+    ];
+    for (const leg of legs) {
+      ctx.beginPath();
+      ctx.moveTo(leg[3] * 0.3 * scale, leg[4] * 0.3 * scale);
+      ctx.quadraticCurveTo(leg[3] * scale, leg[4] * scale, leg[5] * scale, leg[6] * scale);
+      ctx.stroke();
+    }
+
+    // Abdomen (Opisthosoma) with gentle breathing motion
+    const breath = 1 + Math.sin(t * 2.4) * 0.035;
+    ctx.save();
+    ctx.translate(0, 15 * scale);
+    ctx.scale(breath, breath);
+    ctx.fillStyle = '#221a14';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16 * scale, 20 * scale, 0, 0, 6.283);
+    ctx.fill();
+
+    // Distinctive white heart marking
+    ctx.fillStyle = '#f6edd8';
+    ctx.beginPath();
+    ctx.ellipse(0, -4 * scale, 5.5 * scale, 7 * scale, 0, 0, 6.283);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-5 * scale, 4 * scale, 2.5 * scale, 3.5 * scale, -0.3, 0, 6.283);
+    ctx.ellipse(5 * scale, 4 * scale, 2.5 * scale, 3.5 * scale, 0.3, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+
+    // Cephalothorax with head tilt
+    ctx.save();
+    ctx.rotate(headAngle);
+    ctx.fillStyle = '#1c1611';
+    ctx.beginPath();
+    ctx.ellipse(0, -9 * scale, 17 * scale, 15 * scale, 0, 0, 6.283);
+    ctx.fill();
+
+    // Emerald Metallic Chelicerae
+    const chelGlow = ctx.createLinearGradient(-8 * scale, -2 * scale, 8 * scale, 6 * scale);
+    chelGlow.addColorStop(0, '#1cc485');
+    chelGlow.addColorStop(0.5, '#2af0b0');
+    chelGlow.addColorStop(1, '#2065b5');
+    ctx.fillStyle = chelGlow;
+    ctx.beginPath();
+    ctx.roundRect(-8 * scale, -2 * scale, 7 * scale, 11 * scale, 2 * scale);
+    ctx.roundRect(1 * scale, -2 * scale, 7 * scale, 11 * scale, 2 * scale);
+    ctx.fill();
+
+    // Soft tufted pedipalps with gentle idle twitch
+    const palpTwitch = Math.sin(t * 4.2) * 0.08;
+    ctx.fillStyle = '#f4ede0';
+    ctx.beginPath();
+    ctx.ellipse(-11 * scale, -3 * scale + palpTwitch * 5 * scale, 3.5 * scale, 7 * scale, -0.2, 0, 6.283);
+    ctx.ellipse(11 * scale, -3 * scale - palpTwitch * 5 * scale, 3.5 * scale, 7 * scale, 0.2, 0, 6.283);
+    ctx.fill();
+
+    // Big Anterior Median Eyes (AME)
+    const eyeR = 5.6 * scale;
+    for (const s of [-1, 1]) {
+      const ex = s * 6.5 * scale;
+      const ey = -13 * scale;
+
+      // Cornea
+      ctx.fillStyle = '#060608';
+      ctx.beginPath();
+      ctx.arc(ex, ey, eyeR, 0, 6.283);
+      ctx.fill();
+
+      // Iridescent rim
+      ctx.strokeStyle = 'rgba(215, 175, 100, 0.6)';
+      ctx.lineWidth = 0.8 * scale;
+      ctx.stroke();
+
+      // Primary Catchlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.beginPath();
+      ctx.arc(ex - 1.4 * scale, ey - 1.4 * scale, 1.4 * scale, 0, 6.283);
+      ctx.fill();
+
+      // Secondary Glint
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.beginPath();
+      ctx.arc(ex + 1.6 * scale, ey + 1.4 * scale, 0.8 * scale, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.restore();
+
+    // 7. Drifting Golden Vivarium Dust Motes / Spores
+    ctx.save();
+    for (const sp of SPORES) {
+      sp.x += sp.vx * 0.016 * 60;
+      sp.y += sp.vy * 0.016 * 60;
+      if (sp.y < 0.05) sp.y = 0.85;
+      if (sp.x < 0.15) sp.x = 0.85;
+      if (sp.x > 0.85) sp.x = 0.15;
+
+      const sx = tx + sp.x * tw;
+      const sy = ty + sp.y * th;
+      const pulse = 0.7 + Math.sin(t * 2 + sp.phase) * 0.3;
+      ctx.fillStyle = `rgba(240, 225, 165, ${sp.alpha * pulse * 0.65})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sp.r * dpr, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 8. Front Glass Enclosure Highlights & Frame Bevels
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220, 240, 255, 0.22)';
+    ctx.lineWidth = 2.5 * scale;
+    ctx.strokeRect(tx, ty, tw, th);
+
+    // Top Lamp Anodized Rim
+    ctx.fillStyle = '#1c221a';
+    ctx.fillRect(tx, ty - 6 * scale, tw, 7 * scale);
+
+    // Front Glass Diagonal Glare Sheen
+    const sheen = ctx.createLinearGradient(tx, ty, tx + tw * 0.6, ty + th * 0.6);
+    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.06)');
+    sheen.addColorStop(0.35, 'rgba(255, 255, 255, 0.02)');
+    sheen.addColorStop(0.7, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = sheen;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx + tw * 0.45, ty);
+    ctx.lineTo(tx, ty + th * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Animation Loop
+  let lastNow = performance.now();
+  function render(now) {
+    if (!loopRunning) return;
+    lastNow = now;
+    const t = now * 0.001;
+    ctx.clearRect(0, 0, W, H);
+    drawLiveTank(ctx, W, H, t);
+    loopAnimId = requestAnimationFrame(render);
+  }
+
+  function startTankLoop() {
+    if (loopRunning) return;
+    loopRunning = true;
+    lastNow = performance.now();
+    loopAnimId = requestAnimationFrame(render);
+  }
+
+  function stopTankLoop() {
+    loopRunning = false;
+    if (loopAnimId) cancelAnimationFrame(loopAnimId);
+  }
+
+  // First Paint immediately on Frame 1!
+  startTankLoop();
+
+})();
+</script>

@@ -844,12 +844,13 @@
       if (opts.sheet) this._sheet = opts.sheet; else if (!same && !this._modalBack) this._sheet = null; // pages opened from a sheet keep its highlight
       $('modalBack').classList.toggle('hidden', !this._modalBack);
       $('modalTitle').textContent = title; const b = $('modalBody'); const keep = same ? b.scrollTop : 0; b.innerHTML = ''; if (typeof body === 'string') b.innerHTML = body; else b.appendChild(body); $('modalWrap').classList.remove('hidden'); b.scrollTop = opts.keepScroll ? keep : 0;
+      const modalEl = $('modal'); if (modalEl) modalEl.classList.toggle('naturalist-journal', !!(opts && opts.sheet === 'journal'));
       if (this.tab && this.isMobile()) this.closeDrawer();
       this.refreshHeader();
     },
     /** Open a page from inside a sheet so it gets a back arrow to `from`. */
     sub(from, open) { this._nextBack = from; open(); },
-    closeModal() { const was = !$('modalWrap').classList.contains('hidden'); $('modalWrap').classList.add('hidden'); this._modalBack = null; this._nextBack = null; this._sheet = null; document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); if (was) this.refreshHeader(); },
+    closeModal() { const was = !$('modalWrap').classList.contains('hidden'); $('modalWrap').classList.add('hidden'); const modalEl = $('modal'); if (modalEl) modalEl.classList.remove('naturalist-journal'); this._modalBack = null; this._nextBack = null; this._sheet = null; document.querySelectorAll('#dock button').forEach(b => b.classList.remove('on')); if (was) this.refreshHeader(); },
     traitBars(T) { return '<div class="traits">' + [['Stealth', T.stealth], ['Patience', T.patience], ['Jump', T.jump], ['Boldness', T.bold], ['Tactics', T.tactics]].map(([n, v]) => '<span>' + n + '</span><div class="bar"><i style="width:' + Math.round(v * 100) + '%"></i></div>').join('') + '</div>'; },
     collectionModal() { this.jumpersSheet('collection'); },
     journalModal() { this.jumpersSheet('journal'); },
@@ -857,10 +858,10 @@
     jumpersSheet(tab) {
       const h = this.hab; tab = tab || (h.spiders.length ? 'tank' : 'collection'); this._jTab = tab;
       const w = el('div'); const seg = el('div', 'seg sheet-tabs');
-      for (const [id, lab] of [['tank', 'In this tank'], ['collection', 'Collection'], ['journal', 'Journal']]) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.jumpersSheet(id); }; seg.appendChild(b); }
+      for (const [id, lab] of [['tank', 'In this tank'], ['collection', 'Collection'], ['journal', 'Field Journal']]) { const b = el('button', id === tab ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this.jumpersSheet(id); }; seg.appendChild(b); }
       w.appendChild(seg);
       w.appendChild(tab === 'tank' ? this.tankJumpersBody() : tab === 'collection' ? this.collectionBody() : this.journalBody());
-      this.openModal(tab === 'journal' ? 'Field Journal' : 'Jumpers', w, { sheet: tab === 'journal' ? 'journal' : 'jumpers', back: null }); this.dockOn('jumpers');
+      this.openModal(tab === 'journal' ? "Naturalist's Field Journal" : 'Jumpers', w, { sheet: tab === 'journal' ? 'journal' : 'jumpers', back: null }); this.dockOn('jumpers');
     },
     tankJumpersBody() {
       const g = this.game, h = this.hab, AI = JT.SpiderAI; const w = el('div', 'jlist');
@@ -927,23 +928,203 @@
       wrap.appendChild(grid); return wrap;
     },
     journalBody(sub) {
-      sub = sub || this._jSub || 'seen'; this._jSub = sub;
+      sub = sub || this._jSub || 'plates'; this._jSub = sub;
       const g = this.game, st = g.state, jm = st.jmeta || {}; const w = el('div', 'jrnl');
       const n = JT.JOURNAL.filter(j => st.journal[j.id]).length, N = JT.JOURNAL.length;
-      const seg = el('div', 'seg small jsub'); for (const [id, lab] of [['seen', 'Behaviours'], ['stories', 'Life stories']]) { const b = el('button', id === sub ? 'on' : '', lab); b.onclick = () => { A().sfx('click'); this._jSub = id; this.jumpersSheet('journal'); }; seg.appendChild(b); } w.appendChild(seg);
+      const seg = el('div', 'seg small jsub');
+      for (const [id, lab] of [['plates', 'Specimen Plates'], ['seen', 'Field Log (' + n + '/' + N + ')'], ['stories', 'Life Stories'], ['flora', 'Flora & Microfauna']]) {
+        const b = el('button', id === sub ? 'on' : '', lab);
+        b.onclick = () => { A().sfx('page'); this._jSub = id; this.jumpersSheet('journal'); };
+        seg.appendChild(b);
+      }
+      w.appendChild(seg);
+      if (sub === 'plates') { w.appendChild(this.platesBody()); return w; }
       if (sub === 'stories') { w.appendChild(this.storiesBody()); return w; }
-      w.appendChild(el('div', 'jprog', '<div class="jpt"><b>' + n + '</b> of ' + N + ' behaviours witnessed</div><span class="tbar"><i style="width:' + Math.round(n / N * 100) + '%"></i></span><p class="muted">Only what you actually see happen in the tank you are watching is recorded.</p>'));
+      if (sub === 'flora') { w.appendChild(this.floraBody()); return w; }
+
+      // sub === 'seen' (Field Log)
+      w.appendChild(el('div', 'jprog', '<div class="jpt" style="font-family:Georgia,serif;font-size:15px;color:#2c2014"><b>' + n + '</b> of ' + N + ' ethological behaviours documented in ink</div><span class="tbar"><i style="width:' + Math.round(n / N * 100) + '%"></i></span><p class="muted" style="font-size:12.5px;margin-top:4px">Each behavior is stamped into your field log upon first observation in active vivaria.</p>'));
+      const fCat = this._jCat || 'all';
+      const cRow = el('div', 'jcats-row');
+      cRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px';
+      for (const [cid, cname] of [['all', 'All (' + n + ')']].concat(JT.JOURNAL_CATS || [])) {
+        const isCur = cid === fCat;
+        const b = el('button', 'modal-btn' + (isCur ? ' gold' : ''), cname);
+        b.style.cssText = 'padding:3px 10px;font-size:12px;min-height:28px;min-width:auto;border-radius:4px;' + (isCur ? 'font-weight:bold;' : 'opacity:0.85;');
+        b.onclick = () => { A().sfx('page'); this._jCat = cid; this.jumpersSheet('journal'); };
+        cRow.appendChild(b);
+      }
+      w.appendChild(cRow);
+
       const META = JT.JOURNAL_META || {};
       for (const [cid, cname] of JT.JOURNAL_CATS || [['all', 'Behaviours']]) {
-        const list = JT.JOURNAL.filter(j => ((META[j.id] || [])[0] || 'life') === cid || cid === 'all'); if (!list.length) continue;
+        if (fCat !== 'all' && cid !== fCat) continue;
+        const list = JT.JOURNAL.filter(j => ((META[j.id] || [])[0] || 'life') === cid);
+        if (!list.length) continue;
         const got = list.filter(j => st.journal[j.id]).length;
-        let html = '<h4 class="jcat">' + esc(cname) + ' <span class="muted">' + got + '/' + list.length + '</span></h4>' + (cid === 'hybrid' ? '<p class="muted jnote">Hybrids appear on their own once both parent species have been raised to Adult in your care.</p>' : '') + '<div class="grid">';
-        for (const j of list) { const c = st.journal[j.id], m = jm[j.id]; let hint = (META[j.id] || [])[1];
-          if (j.hyb && !st.species.includes(j.hyb)) { const HS = JT.SPECIES_BY_ID[j.hyb]; hint = 'A mystery hybrid: raise ' + HS.unlock.parents.map(pid => (/^[AEIOU]/.test(JT.SPECIES_BY_ID[pid].name) ? 'an ' : 'a ') + JT.SPECIES_BY_ID[pid].name).join(' and ') + ' to Adult.'; }
-          html += c ? '<div class="entry"><span class="badge">' + c + '×</span><h4>' + esc(j.title) + '</h4><p>' + esc(j.text) + '</p>' + (m ? '<p class="jfirst">First seen day ' + m.d + (m.n ? ' · ' + esc(m.n) + (JT.SPECIES_BY_ID[m.s] ? ' (' + esc(JT.SPECIES_BY_ID[m.s].name) + ')' : '') : '') + '</p>' : '') + '</div>'
-            : '<div class="entry locked"><h4>Not yet witnessed</h4><p class="muted">' + esc(hint ? 'Hint: ' + hint : 'Keep watching your jumpers.') + '</p></div>'; }
+        let html = '<h4 class="jcat" style="font-family:Georgia,serif;color:#5a4020;border-bottom:1px solid rgba(140,115,80,0.25)!important;padding-bottom:4px!important">' + esc(cname) + ' <span class="muted" style="font-size:13px;font-weight:normal">(' + got + '/' + list.length + ' witnessed)</span></h4>' + (cid === 'hybrid' ? '<p class="muted jnote">Hybrids appear on their own once both parent species have been raised to Adult in your care.</p>' : '') + '<div class="grid">';
+        for (const j of list) {
+          const c = st.journal[j.id], m = jm[j.id];
+          let hint = (META[j.id] || [])[1];
+          if (j.hyb && !st.species.includes(j.hyb)) {
+            const HS = JT.SPECIES_BY_ID[j.hyb];
+            hint = 'A mystery hybrid: raise ' + HS.unlock.parents.map(pid => (/^[AEIOU]/.test(JT.SPECIES_BY_ID[pid].name) ? 'an ' : 'a ') + JT.SPECIES_BY_ID[pid].name).join(' and ') + ' to Adult.';
+          }
+          html += c ? '<div class="entry" style="background:#fffcf5!important;border:1px solid rgba(150,125,90,0.3)!important;box-shadow:0 2px 6px rgba(0,0,0,0.04)!important">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
+            '<h4 style="margin:0!important;font-size:16px!important;color:#1e170e!important">' + esc(j.title) + '</h4>' +
+            '<span class="field-stamp">WITNESSED ' + c + '×</span>' +
+            '</div>' +
+            '<p style="font-size:13.5px;line-height:1.45;color:#3c3022">' + esc(j.text) + '</p>' +
+            (m ? '<p class="jfirst" style="font-size:11.5px;color:#785c34;margin-top:6px;border-top:1px dashed rgba(140,115,80,0.25);padding-top:4px">First documented Day ' + m.d + (m.n ? ' · ' + esc(m.n) + (JT.SPECIES_BY_ID[m.s] ? ' (' + esc(JT.SPECIES_BY_ID[m.s].name) + ')' : '') : '') + '</p>' : '') +
+            '</div>'
+            : '<div class="entry locked" style="background:rgba(235,225,205,0.35)!important;border:1px dashed rgba(150,125,90,0.3)!important">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
+            '<h4 style="margin:0!important;font-size:15px!important;color:#6e583c!important">' + esc(j.title) + '</h4>' +
+            '<span class="field-stamp locked">CLUE</span>' +
+            '</div>' +
+            '<p class="muted" style="font-size:13px;line-height:1.4;color:#6b5d49">' + esc(hint ? 'Field Note: ' + hint : 'Keep observing your vivarium.') + '</p></div>';
+        }
         const d = el('div', 'jsec'); d.innerHTML = html + '</div>'; w.appendChild(d);
       }
+      return w;
+    },
+    platesBody() {
+      const g = this.game, st = g.state;
+      const allSpecies = JT.UNLOCK_ORDER.concat(JT.CATCH_UNLOCKS, JT.SPECIAL_UNLOCKS || []);
+      const curId = this._plateSpecies || allSpecies[0] || 'regal';
+      this._plateSpecies = curId;
+      const S = JT.SPECIES_BY_ID[curId] || JT.SPECIES[0];
+      const unlocked = g.isUnlocked(S.id);
+      const w = el('div', 'plate-spread');
+
+      const left = el('div', 'plate-left');
+      const plateIdx = allSpecies.indexOf(curId) + 1;
+      const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV'][plateIdx - 1] || plateIdx;
+      left.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<span style="font-family:Georgia,serif;font-size:11.5px;letter-spacing:0.22em;color:#735336;font-weight:600">TAB. ' + roman + ' · FIG. 1</span>' +
+        '<span style="font-size:12px;font-style:italic;color:#6b5d49">Drawn from living subject</span>' +
+        '</div>';
+
+      const box = el('div', 'plate-box');
+      const canvas = document.createElement('canvas');
+      canvas.width = 280; canvas.height = 280;
+      const ctx = canvas.getContext('2d');
+      const rad = ctx.createRadialGradient(140, 140, 10, 140, 140, 130);
+      rad.addColorStop(0, 'rgba(215, 195, 160, 0.35)');
+      rad.addColorStop(0.8, 'rgba(215, 195, 160, 0.05)');
+      rad.addColorStop(1, 'rgba(215, 195, 160, 0)');
+      ctx.fillStyle = rad; ctx.beginPath(); ctx.arc(140, 140, 130, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(60, 42, 22, 0.2)';
+      ctx.beginPath(); ctx.ellipse(140, 215, 80, 22, 0, 0, 6.283); ctx.fill();
+
+      const pCanvas = this.R.speciesPortrait(S.id, 200);
+      if (pCanvas) {
+        if (!unlocked && S.hybrid) {
+          const tc = cloneCanvas(pCanvas);
+          const tx = tc.getContext('2d');
+          tx.globalCompositeOperation = 'source-in';
+          tx.fillStyle = 'rgba(38,28,20,0.85)';
+          tx.fillRect(0, 0, tc.width, tc.height);
+          ctx.drawImage(tc, 40, 25);
+        } else {
+          ctx.drawImage(pCanvas, 40, 25);
+        }
+      }
+
+      ctx.strokeStyle = 'rgba(120, 95, 60, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(90, 252); ctx.lineTo(190, 252);
+      for (let m = 0; m <= 10; m++) {
+        const h = m % 5 === 0 ? 5 : 2.5;
+        ctx.moveTo(90 + m * 10, 252 - h); ctx.lineTo(90 + m * 10, 252);
+      }
+      ctx.stroke();
+      ctx.font = '10px Georgia, serif';
+      ctx.fillStyle = 'rgba(110, 85, 50, 0.7)';
+      ctx.textAlign = 'center';
+      ctx.fillText('10 mm (natural scale)', 140, 264);
+
+      box.appendChild(canvas);
+      left.appendChild(box);
+
+      const caption = el('div', '', '<div style="font-family:Caveat,Georgia,cursive;font-size:20px;font-weight:bold;color:#2c2014;text-align:center;margin-top:6px">' + esc(S.name) + '</div>' +
+        '<div style="font-size:12px;font-style:italic;color:#6b5d49;text-align:center">' + (unlocked ? 'Adult ' + S.len + ' mm span · Living Record' : 'Undiscovered in your vivarium') + '</div>');
+      left.appendChild(caption);
+
+      const chips = el('div', 'species-chips', '');
+      chips.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px';
+      for (const spId of allSpecies) {
+        const spObj = JT.SPECIES_BY_ID[spId];
+        if (!spObj) continue;
+        const isCur = spObj.id === curId;
+        const isUn = g.isUnlocked(spObj.id);
+        const btn = el('button', 'modal-btn' + (isCur ? ' gold' : ''), (isUn ? '' : '🔒 ') + spObj.name);
+        btn.style.cssText = 'padding:4px 10px;font-size:12px;min-height:30px;min-width:auto;border-radius:4px;' + (isCur ? 'font-weight:bold;' : 'opacity:0.85;');
+        btn.onclick = () => {
+          A().sfx('page');
+          this._plateSpecies = spObj.id;
+          this.jumpersSheet('journal');
+        };
+        chips.appendChild(btn);
+      }
+      left.appendChild(chips);
+      w.appendChild(left);
+
+      const right = el('div', 'plate-right');
+      const stampHtml = unlocked
+        ? '<span class="field-stamp">DOCUMENTED</span>'
+        : '<span class="field-stamp locked">LOCKED SPECIMEN</span>';
+
+      right.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+        '<div><h3 style="margin:0 0 2px;font-size:22px;color:#1f180f;font-weight:normal;letter-spacing:-0.01em">' + esc(S.name) + '</h3>' +
+        '<div style="font-style:italic;font-size:13px;color:#6e502c">' + esc(S.sci) + '</div></div>' +
+        stampHtml + '</div>' +
+        '<p style="font-size:14px;line-height:1.55;color:#2e2417;margin:8px 0">' + esc(S.desc) + '</p>' +
+        '<div class="plate-callouts">' +
+        '<div style="font-size:11px;font-weight:bold;letter-spacing:0.18em;text-transform:uppercase;color:#78582a;margin-bottom:6px">Anatomical Observations</div>' +
+        '<ul style="margin:0;padding-left:18px">' +
+        '<li><b>Anterior Median Ocelli (AME):</b> High-acuity telephoto corneal optics providing binocular range-finding for pounces.</li>' +
+        '<li><b>Cheliceral Sheen:</b> Metallic interference pigments with emerald-to-cobalt angular shift under natural light.</li>' +
+        '<li><b>Scopula Spatulae:</b> Thousands of sub-microscopic adhesive setae granting sure traction across sheer vertical glass.</li>' +
+        '<li><b>Sensory Pedipalps:</b> Densely tufted brush-hairs rhythmically palpated to sample air currents before leaping.</li>' +
+        '</ul></div>' +
+        '<div style="margin-top:8px">' +
+        '<div style="font-size:11px;font-weight:bold;letter-spacing:0.18em;text-transform:uppercase;color:#78582a;margin-bottom:6px">Temperament & Natural Aptitude</div>' +
+        this.traitBars(S.traits) +
+        '</div>' +
+        '<div class="plate-quote">' +
+        '<b>Vivarium Field Note:</b><br>' +
+        '"' + (S.sig === 'nectar' ? 'Observed drinking flower nectar with delicate palp dabs, utterly peaceful.' : S.sig === 'semaphore' ? 'Flicks bright white palps rhythmically, communicating across the vivarium pane.' : 'Binocular gaze locked onto the observer; calculated pounce trajectories with razor precision.') + '"' +
+        '</div>';
+
+      w.appendChild(right);
+      return w;
+    },
+    floraBody() {
+      const w = el('div', 'flora-section');
+      w.innerHTML = '<div style="margin-bottom:14px"><h3 style="margin:0 0 4px;font-size:20px;color:#1f180f">Herbarium & Bioactive Microfauna</h3>' +
+        '<p class="muted" style="margin:0;font-size:13px">Pressed botanical cuttings, foliage cover, and beneficial cleanup organisms of living vivaria.</p></div>';
+
+      const grid = el('div', 'flora-grid');
+      const items = [
+        { icon: '🌿', name: 'Ficus Pumila', sci: 'Creeping Fig · Foliage Cover', desc: 'Clings tight to vertical bark with delicate scalloped leaves; provides jumpers with vital stealth stalking routes and shade.' },
+        { icon: '🪵', name: 'Virgin Cork Bark', sci: 'Quercus suber · Vertical Habitat', desc: 'Porous natural fissures allow effortless claw gripping; deep hollows create ideal sheltered nesting cavities for silk retreats.' },
+        { icon: '🌱', name: 'Maidenhair Fern', sci: 'Adiantum raddianum · Microclimate', desc: 'Feathery fronds catch and suspend fine mist droplets, offering natural drinking stations and raising ambient terrarium humidity.' },
+        { icon: '🟢', name: 'Cushion Moss', sci: 'Leucobryum glaucum · Living Carpet', desc: 'Velvety bioactive substrate that cushions high-velocity predatory pounces and preserves ground moisture balance.' },
+        { icon: '⚪', name: 'White Springtails', sci: 'Collembola · Bioactive Cleanup Crew', desc: 'Microscopic subterranean detritivores (1.0 mm) that feast on decaying leaves and feeder husks, preventing terrarium mold.' },
+        { icon: '🪲', name: 'Dwarf Isopods', sci: 'Trichorhina tomentosa · Soil Aerators', desc: 'Armored bioactive decomposers that burrow through substrate layers, keeping soil oxygenated and healthy.' }
+      ];
+
+      for (const item of items) {
+        const card = el('div', 'flora-card');
+        card.innerHTML = '<div class="flora-icon">' + item.icon + '</div>' +
+          '<h4 style="margin:0 0 2px;font-size:16px;color:#1f180f">' + esc(item.name) + '</h4>' +
+          '<div style="font-size:12px;font-style:italic;color:#6e502c;margin-bottom:8px">' + esc(item.sci) + '</div>' +
+          '<p style="font-size:13px;line-height:1.45;color:#3c3022;margin:0;text-align:justify">' + esc(item.desc) + '</p>';
+        grid.appendChild(card);
+      }
+      w.appendChild(grid);
       return w;
     },
     /** Every jumper's life story (this tank first), newest moments at the top. */
