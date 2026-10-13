@@ -1,5 +1,15 @@
 # Living Tanks update
 
+## Decor safety and foliage update
+- Audited all 216 registered decor definitions individually, with six complete catalog contact sheets and rotated/elevated surface checks.
+- Removed raised render-only cap centers and unsupported chipped top-ring gaps on solid bulky decor. Kept side relief and texture; matched cactus crowns and rounded-log walking strips to their physical support heights.
+- Moved decorative broken-log branch stubs away from the central walking strip.
+- Excluded low solid overhangs from underlying top navigation and support queries. Fixed the zero-direction push-out when an entity is exactly at a blocked floor polygon's center.
+- Rebuilds now query the new navigation regions rather than stale layout regions. Saved blocked supports are reconciled; occupied silk sacs follow the corrected support without resetting biological timers.
+- New molt site selection and silk creation use next-stage body size, wider edge margins and hard overhead clearance. A failed route does not silently weave inside an invalid surface.
+- Added bounded cosmetic GPU foliage sway with saved Auto / On / Off controls. Reused mesh attributes and buffers; no per-frame geometry or navigation rebuild. Auto protects Low/Battery saver and rests under sustained slow rendering.
+- Preserved Tank Setup preview, reroll, apply/cancel, saved Undo, modal spacing and button-contrast fixes.
+
 ## Tank Setup live preview
 - Added a direct **Tank Setup** button beside Switch Tank in Jumpers, plus a jumper-name shortcut menu and a Menu shortcut.
 - Added biome-only, biome + recommended layout and preset-layout modes. Existing tank-settings biome/preset buttons now open this preview rather than immediately replacing decor.

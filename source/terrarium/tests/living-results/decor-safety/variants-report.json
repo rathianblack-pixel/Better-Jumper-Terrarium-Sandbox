@@ -1,0 +1,1305 @@
+{
+  "catalog": 216,
+  "cases": 1728,
+  "samples": 9948,
+  "byDecor": [
+    {
+      "id": "corkbark",
+      "name": "Cork Bark",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "corktower",
+      "name": "Cork Tower",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "driftwood",
+      "name": "Driftwood",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "flatstone",
+      "name": "Flat Stone",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "slatestack",
+      "name": "Slate Stack",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "bonsai",
+      "name": "Mini Bonsai",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "waterdish",
+      "name": "Water Dish",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "heatlamp",
+      "name": "Basking Lamp",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "corktube",
+      "name": "Cork Tube",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "corkround",
+      "name": "Cork Round",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "corkslab",
+      "name": "Cork Slab",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "corkledge",
+      "name": "Cork Ledge",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "tallspire",
+      "name": "Tall Cork Spire",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "mossstone",
+      "name": "Moss Pole",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "rockmesa",
+      "name": "Rock Mesa",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "slatepillar",
+      "name": "Slate Pillar",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "riverstone",
+      "name": "River Stone",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "sandshelf",
+      "name": "Sandstone Shelf",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "slateledge",
+      "name": "Slate Ledge",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "dewstone",
+      "name": "Dew Stone",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "rockcave",
+      "name": "Rock Cave",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "woodhide",
+      "name": "Wood Hide",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "coconut",
+      "name": "Coconut Wood Hide",
+      "variants": 8,
+      "surfaceSamples": 104
+    },
+    {
+      "id": "maghide",
+      "name": "Magnetic Hide",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "hollowlog",
+      "name": "Hollow Log",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "feedledge",
+      "name": "Feeding Ledge",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "minruin",
+      "name": "Mini Ruin",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "flowerpot",
+      "name": "Broken Flowerpot",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "woodbridge",
+      "name": "Tiny Wooden Bridge",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "branchperch",
+      "name": "Branch Perch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "forked",
+      "name": "Forked Branch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "grapevine",
+      "name": "Grapevine",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "rootarch",
+      "name": "Root Arch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "canopybranch",
+      "name": "Canopy Branch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "vinebridge",
+      "name": "Twisted Vine Bridge",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mosswall",
+      "name": "Moss Back Wall",
+      "variants": 8,
+      "surfaceSamples": 216
+    },
+    {
+      "id": "barkwall",
+      "name": "Cork Bark Wall",
+      "variants": 8,
+      "surfaceSamples": 276
+    },
+    {
+      "id": "stonewall",
+      "name": "Fieldstone Wall",
+      "variants": 8,
+      "surfaceSamples": 272
+    },
+    {
+      "id": "leafwall",
+      "name": "Dead Leaf Wall",
+      "variants": 8,
+      "surfaceSamples": 192
+    },
+    {
+      "id": "trunkwall",
+      "name": "Tree Trunk Wall",
+      "variants": 8,
+      "surfaceSamples": 288
+    },
+    {
+      "id": "rootwall",
+      "name": "Root Tangle Wall",
+      "variants": 8,
+      "surfaceSamples": 276
+    },
+    {
+      "id": "sandwall",
+      "name": "Sandstone Wall",
+      "variants": 8,
+      "surfaceSamples": 272
+    },
+    {
+      "id": "driftwall",
+      "name": "Driftwood Wall",
+      "variants": 8,
+      "surfaceSamples": 272
+    },
+    {
+      "id": "wm_cork",
+      "name": "Cork Shelf",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wm_slate",
+      "name": "Slate Ledge",
+      "variants": 8,
+      "surfaceSamples": 84
+    },
+    {
+      "id": "wm_drift",
+      "name": "Driftwood Perch",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wm_fungi",
+      "name": "Bracket Fungi",
+      "variants": 8,
+      "surfaceSamples": 248
+    },
+    {
+      "id": "wm_pothos",
+      "name": "Pothos Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wm_staghorn",
+      "name": "Staghorn Fern",
+      "variants": 8,
+      "surfaceSamples": 40
+    },
+    {
+      "id": "wk_mosscush",
+      "name": "Moss Cushion",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_fernpocket",
+      "name": "Fern Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_maidenpocket",
+      "name": "Maidenhair Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_glowcaps",
+      "name": "Glow Caps",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_brompocket",
+      "name": "Bromeliad Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_redbrom",
+      "name": "Red Bromeliad Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_tilly",
+      "name": "Air Plant Stub",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_orchidpocket",
+      "name": "Orchid Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_flowerpocket",
+      "name": "Flower Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_ivy",
+      "name": "Ivy Trail",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_hangvine",
+      "name": "Hanging Vines",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_roots",
+      "name": "Hanging Roots",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_wirevine",
+      "name": "Wire Vine",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_lichen",
+      "name": "Lichen Patch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_mossband",
+      "name": "Moss Band",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_minimoss",
+      "name": "Mini Moss",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_leafpad",
+      "name": "Dry Leaf Cluster",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_pods",
+      "name": "Seed Pods",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_succpocket",
+      "name": "Succulent Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_echpocket",
+      "name": "Echeveria Pocket",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_rockfern",
+      "name": "Rock Fern",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_inkpocket",
+      "name": "Ink Caps",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_monpocket",
+      "name": "Monstera Sprig",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_drypocket",
+      "name": "Dried Flowers",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_grasspocket",
+      "name": "Grass Tuft",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_stub",
+      "name": "Branch Stub",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_twig",
+      "name": "Twig",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_cholla",
+      "name": "Cholla Stick",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_rootloop",
+      "name": "Root Loop",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_longbranch",
+      "name": "Long Branch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wk_stoneledge",
+      "name": "Stone Ledge",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_woodledge",
+      "name": "Wood Ledge",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_sandledge",
+      "name": "Sandstone Ledge",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_ledgerun",
+      "name": "Long Ledge",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_tinyledge",
+      "name": "Tiny Ledge",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "wk_brownbracket",
+      "name": "Brown Brackets",
+      "variants": 8,
+      "surfaceSamples": 160
+    },
+    {
+      "id": "wk_orangebracket",
+      "name": "Orange Brackets",
+      "variants": 8,
+      "surfaceSamples": 232
+    },
+    {
+      "id": "wk_whitebracket",
+      "name": "Oyster Shelves",
+      "variants": 8,
+      "surfaceSamples": 160
+    },
+    {
+      "id": "wk_shellfungi",
+      "name": "Shell Fungi",
+      "variants": 8,
+      "surfaceSamples": 232
+    },
+    {
+      "id": "beadvine",
+      "name": "Cork Bead Vine",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mossmound",
+      "name": "Moss Mound",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "mangrove",
+      "name": "Mangrove Root",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "tinytree",
+      "name": "Tiny Tree",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "grandtree",
+      "name": "Grand Habitat Tree",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "ficus",
+      "name": "Mini Ficus",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "fern",
+      "name": "Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "maidenhair",
+      "name": "Maidenhair Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "palmetto",
+      "name": "Dwarf Palmetto",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "minipalm",
+      "name": "Mini Palm",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "spiderplant",
+      "name": "Spider Plant",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "tallgrass",
+      "name": "Tall Grass",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "airplant",
+      "name": "Air Plant",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "monstera",
+      "name": "Mini Monstera",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "calathea",
+      "name": "Calathea",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "pothos",
+      "name": "Pothos",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "broadshelter",
+      "name": "Broad Leaf Shelter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "fittonia",
+      "name": "Fittonia",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "dewcup",
+      "name": "Dew Cup Plant",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "bromeliad",
+      "name": "Bromeliad",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "redbromeliad",
+      "name": "Red Bromeliad",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "succulent",
+      "name": "Succulent",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mossrosette",
+      "name": "Moss Rosette",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "toadstools",
+      "name": "Toadstools",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "echeveria",
+      "name": "Echeveria",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "glowshroom",
+      "name": "Glow Mushrooms",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "climbvine",
+      "name": "Climbing Vine",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "creepfig",
+      "name": "Creeping Fig",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "ivy",
+      "name": "Creeping Ivy",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "pinkflowers",
+      "name": "Pink Flowers",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "daisies",
+      "name": "Daisies",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "lavender",
+      "name": "Lavender",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wildflowers",
+      "name": "Red Wildflowers",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "orchid",
+      "name": "Jungle Orchid",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "miniorchid",
+      "name": "Mini Orchid",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "driedflowers",
+      "name": "Dried Flowers",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mosspatch",
+      "name": "Moss Patch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "leaflitter",
+      "name": "Leaf Litter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "oaklitter",
+      "name": "Oak Leaf Litter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "magnolia",
+      "name": "Magnolia Leaves",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "pebbles",
+      "name": "Pebbles",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "seedpods",
+      "name": "Seed Pods",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "pinecones",
+      "name": "Pinecones",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "barkchips",
+      "name": "Bark Chips",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "lichen",
+      "name": "Lichen Patch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "twigs",
+      "name": "Twig Scatter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "cushionmoss",
+      "name": "Cushion Moss",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "clover",
+      "name": "Clover Patch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "baskrock",
+      "name": "Basking Boulder",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "sandsteps",
+      "name": "Sandstone Steps",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "chollawood",
+      "name": "Cholla Wood",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "desertarch",
+      "name": "Desert Root Arch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "tallficus",
+      "name": "Canopy Ficus",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "bambooperch",
+      "name": "Bamboo Perch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "skybridge",
+      "name": "Canopy Vine Bridge",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "liana",
+      "name": "Hanging Liana",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "birdsnest",
+      "name": "Bird's Nest Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "tillandsia",
+      "name": "Tillandsia Cluster",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mossystump",
+      "name": "Tree Stump",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "fallenlog",
+      "name": "Fallen Log",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "bluebells",
+      "name": "Bluebells",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "inkcaps",
+      "name": "Ink Cap Mushrooms",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "nanoledge",
+      "name": "Nano Cork Ledge",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "pebblehide",
+      "name": "Pebble Hide",
+      "variants": 8,
+      "surfaceSamples": 104
+    },
+    {
+      "id": "twigperch",
+      "name": "Twig Perch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "babytears",
+      "name": "Baby's Tears",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "longlog",
+      "name": "Long Hollow Log",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "slateridge",
+      "name": "Slate Ridge",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "grassbank",
+      "name": "Grass Bank",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "birchlog",
+      "name": "Birch Log",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "charredbranch",
+      "name": "Charred Branch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "lichenstone",
+      "name": "Lichen Stone",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "limestone",
+      "name": "Limestone Block",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "mottledtrunk",
+      "name": "Mottled Bark Trunk",
+      "variants": 8,
+      "surfaceSamples": 96
+    },
+    {
+      "id": "orangelichen",
+      "name": "Orange Lichen Branch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "terracottaledge",
+      "name": "Terracotta Ledge",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "redcroton",
+      "name": "Red Croton",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "glassleaf",
+      "name": "Glass Leaf Plant",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "emeraldfern",
+      "name": "Emerald Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "bluefescue",
+      "name": "Blue Fescue",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "marigolds",
+      "name": "Orange Marigolds",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "deadleafclump",
+      "name": "Dead-Leaf Hanging Clump",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "autumnlitter",
+      "name": "Autumn Leaf Litter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "peperomia",
+      "name": "Peperomia",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "fittonia",
+      "name": "Nerve Plant",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "earthstar",
+      "name": "Earth Star",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "firebromeliad",
+      "name": "Fire Bromeliad",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "silverfern",
+      "name": "Silver Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "lacefern",
+      "name": "Lace Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "marigold",
+      "name": "Marigolds",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "foxglove",
+      "name": "Foxglove",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "buttercups",
+      "name": "Buttercups",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "flyagaric",
+      "name": "Fly Agaric",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "bluecaps",
+      "name": "Blue Glow Caps",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mosscurtain",
+      "name": "Moss Curtain",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "jadetree",
+      "name": "Jade Bonsai",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "olivetree",
+      "name": "Little Olive",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "fanpalm",
+      "name": "Fan Palm",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "sedge",
+      "name": "Sedge Tuft",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "lichenboulder",
+      "name": "Lichen Boulder",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "sandmesa",
+      "name": "Sandstone Mesa",
+      "variants": 8,
+      "surfaceSamples": 80
+    },
+    {
+      "id": "rivercairn",
+      "name": "River Cairn",
+      "variants": 8,
+      "surfaceSamples": 120
+    },
+    {
+      "id": "birchperch",
+      "name": "Birch Perch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "vinebranch",
+      "name": "Twisted Vine Branch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "birchtube",
+      "name": "Birch Tube",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "claypipe",
+      "name": "Clay Pipe",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "stonecave",
+      "name": "Stone Cave",
+      "variants": 8,
+      "surfaceSamples": 104
+    },
+    {
+      "id": "riverhide",
+      "name": "River Rock Hide",
+      "variants": 8,
+      "surfaceSamples": 72
+    },
+    {
+      "id": "sphagnum",
+      "name": "Sphagnum Moss",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "birchleaves",
+      "name": "Birch Leaf Litter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "acorns",
+      "name": "Acorns",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "gravelpatch",
+      "name": "Gravel Patch",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "cocochips",
+      "name": "Coconut Chips",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "heliconia",
+      "name": "Heliconia",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "dripvine",
+      "name": "Drip Vine",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wetlitter",
+      "name": "Wet Leaf Litter",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "saguaro",
+      "name": "Saguaro",
+      "variants": 8,
+      "surfaceSamples": 408
+    },
+    {
+      "id": "barrelcactus",
+      "name": "Barrel Cactus",
+      "variants": 8,
+      "surfaceSamples": 136
+    },
+    {
+      "id": "sandarch",
+      "name": "Sandstone Arch",
+      "variants": 8,
+      "surfaceSamples": 40
+    },
+    {
+      "id": "pond",
+      "name": "Shallow Pond",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "lilypond",
+      "name": "Lily Pond",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "cattails",
+      "name": "Cattails",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "mudflat",
+      "name": "Mudflat",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "glowmoss",
+      "name": "Glow Moss",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "bluefungus",
+      "name": "Blue Fungus",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "ghostfern",
+      "name": "Ghost Fern",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "acacia",
+      "name": "Ant Acacia",
+      "variants": 8,
+      "surfaceSamples": 0
+    },
+    {
+      "id": "wovenleaf",
+      "name": "Woven Leaves",
+      "variants": 8,
+      "surfaceSamples": 0
+    }
+  ],
+  "failures": [],
+  "result": "PASS"
+}

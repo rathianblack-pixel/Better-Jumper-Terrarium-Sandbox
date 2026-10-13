@@ -50,6 +50,19 @@ Test environment: headless Chromium / Playwright on Linux, using SwiftShader sof
 
 Structured evidence: `source/terrarium/tests/living-results/*.json`. Feature/layout screenshots are included as samples. The scripts are included for reproduction; use a local HTTP server.
 
+## Decor safety and foliage validation
+- **216 / 216 definitions** built with finite mesh data and rendered individually through the real decor-thumbnail pipeline. All six contact sheets were visually inspected.
+- **1,728 catalog variants**: two seeds × two rotations × two base elevations for each definition; **9,948 supported hard-cap samples** checked against the rendered triangles. No failed samples. Supports blocked by higher solid layers are excluded, not treated as usable cap surfaces.
+- The full-mesh audit has no missing sampled top surfaces or invalid meshes. Its remaining raised-surface entries on walls/planters describe decorative moss, foliage or ornamental mushroom caps over the support, not a hard-cap mismatch.
+- Deterministic fixtures cover blocked-floor centroid escape, occupied-molt silk alignment without resetting state progress, next-stage retreat size, edge rejection, overhead rejection, refusal to weave on an unsafe face and immediate legacy retreat repair under a blocked low overhang without advancing care or growth counters.
+- Foliage tests cover changing wind uniforms, rigid decor exclusion, cached mesh/navigation reuse, Auto-off on Low, slow-render rest and explicit Off. Both Storybook and HD-2D render the feature with no reported WebGL errors.
+- A small controlled Off/On diagnostic is included, using software SwiftShader and two moving plants at Low resolution. It is not a representative device benchmark and does **not** establish zero cost, mobile FPS, battery life or temperature.
+
+Evidence: `source/terrarium/tests/living-results/decor-safety/` contains per-definition audit records, the variant and behavior reports, the software-renderer diagnostic and six catalog contact sheets. `decor-audit.js`, `decor-variants.js`, `decor-safety.test.js` and `foliage-performance.js` reproduce these checks.
+
+### Scope limits
+The audit samples surfaces and selected geometry variants; it is not an exhaustive proof for every seed, every stacked furnishing arrangement or every animation pose. Dense imported layouts may still need manual clearing. Real visual openings remain, but hollow artwork does not gain new interior pathfinding. Existing biological progress is preserved rather than restarted when legacy occupied silk is moved to corrected support. Sway is deliberately subtle and cosmetic; physics and jumper paths remain static, and shadows use the existing approximate renderer.
+
 ## Original-versus-upgraded AI fixture
 A deliberately missed, fixed-launch pounce is repeated until the hunter disengages:
 

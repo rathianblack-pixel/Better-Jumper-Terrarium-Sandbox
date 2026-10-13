@@ -32,7 +32,7 @@
       "undo": {
         "enabled": true,
         "ok": true,
-        "age": 0.2509722222222222,
+        "age": 0.25125,
         "sat": 0.41,
         "hyd": 0.66,
         "time": true,
@@ -144,7 +144,7 @@
       "undo": {
         "enabled": true,
         "ok": true,
-        "age": 0.25104166666666666,
+        "age": 0.25145833333333334,
         "sat": 0.41,
         "hyd": 0.66,
         "time": true,

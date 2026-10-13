@@ -13,28 +13,28 @@
     {
       "species": "bold",
       "finite": true,
-      "state": "feed",
-      "memories": 5,
+      "state": "subdue",
+      "memories": 4,
       "visualMemories": 7
     },
     {
       "species": "regal",
       "finite": true,
-      "state": "feed",
-      "memories": 10,
+      "state": "watch",
+      "memories": 4,
       "visualMemories": 8
     },
     {
       "species": "canopy",
       "finite": true,
-      "state": "rest",
-      "memories": 3,
+      "state": "feed",
+      "memories": 8,
       "visualMemories": 8
     },
     {
       "species": "zebra",
       "finite": true,
-      "state": "track",
+      "state": "feed",
       "memories": 7,
       "visualMemories": 6
     },
@@ -42,8 +42,8 @@
       "species": "graywall",
       "finite": true,
       "state": "feed",
-      "memories": 4,
-      "visualMemories": 6
+      "memories": 9,
+      "visualMemories": 5
     }
   ],
   "result": "PASS",

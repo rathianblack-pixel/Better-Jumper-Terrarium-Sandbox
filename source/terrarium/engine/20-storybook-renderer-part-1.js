@@ -23,10 +23,11 @@
   class MB {
     constructor(g) { this.v = []; this.i = []; this.n = 0; this.lines = []; this.g = g; const H = g ? Math.max(4, g.height) : 10; this.base = g ? g.baseY : 0; this.H = H; }
     sw(p) { const k = Math.min(1.2, Math.max(0, (p[1] - this.base) / this.H)); return k * k; }
-    vert(p, n, o, c, c2, f) { const v = this.v; v.push(p[0], p[1], p[2], n[0], n[1], n[2], o[0], o[1], o[2], c[0], c[1], c[2], c2[0], c2[1], c2[2], this.sw(p), f || 0); return this.n++; }
+    vert(p, n, o, c, c2, f) { const v = this.v; v.push(p[0], p[1], p[2], n[0], n[1], n[2], o[0], o[1], o[2], c[0], c[1], c[2], c2[0], c2[1], c2[2], this.sw(p), (f || 0) + this.windAt(p) / 4); return this.n++; }
+    windAt(p) { const w=this.wind?M.clamp(this.wind(p),0,1):0;if(w>0)this.hasWind=true;return w; }
     tri(a, b, c) { this.i.push(a, b, c); }
     quad(a, b, c, d) { this.i.push(a, b, c, a, c, d); }
-    line(a, b, w, al, col) { this.lines.push([a, b, w, al == null ? 0.8 : al, col || null]); }
+    line(a, b, w, al, col) { this.lines.push([a, b, w, al == null ? 0.8 : al, col || null, this.windAt(a), this.windAt(b)]); }
     polyline(pts, w, al, col) { for (let i = 0; i + 1 < pts.length; i++) this.line(pts[i], pts[i + 1], w, al, col); }
   }
 
@@ -51,16 +52,19 @@
   }
   function hexOf(c) { return '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join(''); }
   /** Tube along a polyline, radius r0 -> r1. */
-  function tube(mb, pts, r0, r1, col, col2, f, sides, caps, ink, colEnd) {
+  function tube(mb, pts, r0, r1, col, col2, f, sides, caps, ink, colEnd, crown) {
     const n = pts.length; if (n < 2) return; sides = sides || 6; let nrm = null; const rings = [];
     for (let i = 0; i < n; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)]; let t = M.sub(b, a); if (M.len(t) < 1e-6) t = [0, 1, 0]; t = M.norm(t);
       nrm = nrm ? M.norm(M.sub(nrm, M.mul(t, M.dot(nrm, t)))) : perp(t); if (!M.finite3(nrm) || M.len(nrm) < 0.5) nrm = perp(t);
       const bin = M.norm(M.cross(t, nrm)); const r = M.lerp(r0, r1, i / (n - 1)); const row = [];
       const cc = colEnd ? mixc(col, colEnd, i / (n - 1)) : col;
-      for (let k = 0; k < sides; k++) { const a2 = k / sides * Math.PI * 2; const d = M.add(M.mul(nrm, Math.cos(a2)), M.mul(bin, Math.sin(a2))); row.push(mb.vert(M.add(pts[i], M.mul(d, r)), d, M.mul(d, ink == null ? 1 : ink), cc, col2 || col, f)); }
+      const upAngle=Math.atan2(bin[1],nrm[1]),wrap=a=>(a+Math.PI*4)%(Math.PI*2);
+      const angles = crown ? Array.from({length:sides},(_,k)=>k/sides*Math.PI*2).concat([wrap(upAngle+Math.asin(.35)),wrap(upAngle-Math.asin(.35))]).sort((a,b)=>a-b) : Array.from({length:sides},(_,k)=>k/sides*Math.PI*2);
+      for (const a2 of angles) { const d = M.add(M.mul(nrm, Math.cos(a2)), M.mul(bin, Math.sin(a2))), point=M.add(pts[i],M.mul(d,r)); const flat=crown&&d[1]>0&&Math.abs(Math.sin(a2-upAngle))<=.350001;if(flat)point[1]=crown.y;const normal=flat?[0,1,0]:d;row.push(mb.vert(point, normal, M.mul(normal, ink == null ? 1 : ink), cc, col2 || col, f)); }
       rings.push({ row, t, c: pts[i], r });
     }
+    sides=rings[0].row.length;
     for (let i = 0; i + 1 < n; i++) for (let k = 0; k < sides; k++) { const k2 = (k + 1) % sides; mb.quad(rings[i].row[k], rings[i].row[k2], rings[i + 1].row[k2], rings[i + 1].row[k]); }
     if (caps) for (const [R, s] of [[rings[0], -1], [rings[n - 1], 1]]) { const nn = M.mul(R.t, s); const ci = mb.vert(R.c, nn, M.mul(nn, 0.6), caps === true ? col : caps, col2 || col, f); for (let k = 0; k < sides; k++) { const p = mb.v; const id = R.row[k], id2 = R.row[(k + 1) % sides]; const P1 = [p[id * STRIDE], p[id * STRIDE + 1], p[id * STRIDE + 2]], P2 = [p[id2 * STRIDE], p[id2 * STRIDE + 1], p[id2 * STRIDE + 2]]; const a = mb.vert(P1, nn, M.norm(M.sub(P1, R.c)), caps === true ? col : caps, col2 || col, f), b = mb.vert(P2, nn, M.norm(M.sub(P2, R.c)), caps === true ? col : caps, col2 || col, f); mb.tri(ci, a, b); } }
     return rings;
@@ -88,7 +92,7 @@
     // subdivide: every edge gets a midpoint (rocks: pushed out a little; cactus: ribs and valleys)
     const B0 = [], T0 = []; const NR = cact ? Math.max(12, n0) : n0 * 2;
     if (cact) { const rx = Math.max(...base0.map(q => Math.abs(q[0] - c0[0]))), rz = Math.max(...base0.map(q => Math.abs(q[1] - c0[1]))); const tx = Math.max(...top0.map(q => Math.abs(q[0] - c1[0]))), tz = Math.max(...top0.map(q => Math.abs(q[1] - c1[1])));
-      for (let i = 0; i < NR * 2; i++) { const a = i / (NR * 2) * 6.2832, k = i % 2 ? 0.84 : 1.02; B0.push([c0[0] + Math.cos(a) * rx * k, c0[1] + Math.sin(a) * rz * k]); T0.push([c1[0] + Math.cos(a) * tx * k, c1[1] + Math.sin(a) * tz * k]); } }
+      for (let i = 0; i < NR * 2; i++) { const a = i / (NR * 2) * 6.2832, k = i % 2 ? 0.84 : 1.02; B0.push([c0[0] + Math.cos(a) * rx * k, c0[1] + Math.sin(a) * rz * k]); const u=i/(NR*2)*n0,j=Math.floor(u),f=u-j;T0.push([M.lerp(top0[j][0],top0[(j+1)%n0][0],f),M.lerp(top0[j][1],top0[(j+1)%n0][1],f)]); } }
     else for (let i = 0; i < n0; i++) { const j = (i + 1) % n0; B0.push(base0[i], [(base0[i][0] + base0[j][0]) / 2, (base0[i][1] + base0[j][1]) / 2]); T0.push(top0[i], [(top0[i][0] + top0[j][0]) / 2, (top0[i][1] + top0[j][1]) / 2]); }
     const n = B0.length;
     const rad = (P, c, i) => { const dx = P[i][0] - c[0], dz = P[i][1] - c[1]; const l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; };
@@ -100,7 +104,8 @@
     const P = rows.map(([y, v, ins], k) => { const row = []; for (let i = 0; i < n; i++) { const b = B0[i], t = T0[i]; const x = M.lerp(b[0], t[0], v), z = M.lerp(b[1], t[1], v); const cc = [M.lerp(c0[0], c1[0], v), M.lerp(c0[1], c1[1], v)]; const r = rad([[x, z]], cc, 0);
       const mid = i % 2 && !cact ? 0.35 : 0; const bul = amp * (0.55 * Math.sin(Math.PI * Math.min(1, v * 1.15)) + 0.7 * (hh(sd, i, k) - 0.5) + mid) * (k === 0 ? 0.3 : 1);
       const chip = k === rows.length - 1 && !cact ? amp * 1.2 * Math.max(0, hh(sd, i, 99) - 0.55) : 0; const d = bul - ins - chip;
-      row.push([x + r[0] * d, y - (k === rows.length - 1 ? chip * 0.6 : 0), z + r[1] * d]); } return row; });
+      // Walkable cap follows the generator's top polygon/height exactly; relief stays below it.
+      row.push(k === rows.length - 1 ? [t[0], pr.y1, t[1]] : [x + r[0] * d, y, z + r[1] * d]); } return row; });
     const R = P.length; const side = rgb(st.side), topC = rgb(st.top), mark = rgb(st.mark), hi = rgb(st.hi); const dark = shade(st.side, -0.18); const f = FL(pr.style);
     const ids = P.map((row, k) => row.map((q, i) => {
       const a = row[(i + 1) % n], b = row[(i - 1 + n) % n], u = P[Math.min(R - 1, k + 1)][i], d = P[Math.max(0, k - 1)][i];
@@ -108,7 +113,7 @@
       const v = rows[k][1]; const cc = k >= R - 2 ? mixc(side, mixc(topC, hi, 0.2), k === R - 1 ? 0.7 : 0.35) : mixc(dark, side, Math.min(1, v * 2.2));
       const o = M.norm([nn[0], 0.15 + Math.max(0, nn[1]) * 0.5, nn[2]]); return mb.vert(q, nn, o, cc, mark, f); }));
     for (let k = 0; k + 1 < R; k++) for (let i = 0; i < n; i++) { const j = (i + 1) % n; mb.quad(ids[k][i], ids[k][j], ids[k + 1][j], ids[k + 1][i]); }
-    const topR = P[R - 1]; const ct = [0, 0, 0]; for (const q of topR) { ct[0] += q[0] / n; ct[2] += q[2] / n; } ct[1] = pr.y1 + Math.min(cact ? bev * 0.6 : 2.2, H * 0.1);
+    const topR = P[R - 1]; const ct = [0, 0, 0]; for (const q of topR) { ct[0] += q[0] / n; ct[2] += q[2] / n; } ct[1] = pr.y1;
     const ci = mb.vert(ct, [0, 1, 0], [0, 1, 0], mixc(mixc(topC, hi, 0.25), hi, 0.2), mark, f); for (let i = 0; i < n; i++) mb.tri(ci, ids[R - 1][i], ids[R - 1][(i + 1) % n]);
     if (pr.y0 > g.baseY + 0.4) { const cb = mb.vert([c0[0], pr.y0, c0[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, f); const rb = P[0].map(q => mb.vert(q, [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, f)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
     if (cact) { // areoles: little tufts of pale spines along every rib crest
@@ -198,7 +203,7 @@
       return;
     }
     const tc = smooth ? mixc(topC, hi, 0.25) : topC;
-    const ci = mb.vert([ct[0], pr.y1 + (smooth ? Math.min(2.5, H * 0.12) : 0), ct[1]], [0, 1, 0], [0, 1, 0], mixc(tc, hi, 0.2), mark, pf);
+    const ci = mb.vert([ct[0], pr.y1, ct[1]], [0, 1, 0], [0, 1, 0], mixc(tc, hi, 0.2), mark, pf);
     const rim = top.map((q, i) => mb.vert([q[0], pr.y1, q[1]], smooth ? M.norm([vn[i][0] * 0.45, 1, vn[i][2] * 0.45]) : [0, 1, 0], M.norm([vn[i][0], 0.15, vn[i][2]]), tc, mark, pf));
     for (let i = 0; i < n; i++) mb.tri(ci, rim[i], rim[(i + 1) % n]);
     if (bottomLift) { const cb = mb.vert([c[0], pr.y0, c[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, pf); const rb = base.map((q, i) => mb.vert([q[0], pr.y0, q[1]], [0, -1, 0], M.norm([vn[i][0], -0.2, vn[i][2]]), shade(st.side, -0.35), mark, pf)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
@@ -323,13 +328,13 @@
   };
   B.log = function (mb, pr, g) {
     const STY = JT.Draw.STY; const st = STY[pr.style] || STY.wood; const r = pr.r; const col = rgb(st.side);
-    const lf = FL(pr.style) || PAT.grain; tube(mb, [pr.a, M.lerp3(pr.a, pr.b, 0.33), M.lerp3(pr.a, pr.b, 0.66), pr.b], r, r * 0.96, col, rgb(st.mark), lf, 14, rgb(st.top), 1);
+    const lf = FL(pr.style) || PAT.grain; tube(mb, [pr.a, M.lerp3(pr.a, pr.b, 0.33), M.lerp3(pr.a, pr.b, 0.66), pr.b], r, r, col, rgb(st.mark), lf, 14, rgb(st.top), 1, null, {y:pr.a[1]+r*(pr.half?.98:.96)});
     const ax = M.norm(M.sub(pr.b, pr.a)); const s = perp(ax), t = M.cross(ax, s);
     for (const [e, sg] of [[pr.a, -1], [pr.b, 1]]) { const c = M.add(e, M.mul(ax, sg * 0.05)); for (const rr of [0.4, 0.7]) { const pts = []; for (let k = 0; k <= 12; k++) { const a = k / 12 * 6.283; pts.push(M.add(c, M.add(M.mul(s, Math.cos(a) * r * rr), M.mul(t, Math.sin(a) * r * rr)))); } mb.polyline(pts, 0.5, 0.45); }
       if (pr.hollow) disc(mb, M.add(c, M.mul(ax, sg * 0.05)), M.mul(s, r * 0.7), M.mul(t, r * 0.7), M.mul(ax, sg), rgb('#160d06'), 0, 12, 0); }
     const rng = JT.makeRng(JT.hashStr(String(g.id) + 'log')); for (let k = 0; k < 7; k++) { const a = rng() * 6.28; const off = M.add(M.mul(s, Math.cos(a) * r * 1.01), M.mul(t, Math.sin(a) * r * 1.01)); const t0 = rng() * 0.6, t1 = t0 + 0.15 + rng() * 0.3; mb.line(M.add(M.lerp3(pr.a, pr.b, t0), off), M.add(M.lerp3(pr.a, pr.b, t1), off), 0.6, 0.45); }
     // v28: snapped-off branch stubs on the upper side, with pale broken tips
-    if (!pr.half && r > 1.5) for (let k = 0; k < 2; k++) { const tt = 0.22 + k * 0.4 + rng() * 0.15; let off = M.add(M.mul(s, Math.cos(rng() * 6.28)), M.mul(t, Math.sin(rng() * 6.28))); off = M.norm([off[0], Math.abs(off[1]) + 0.5, off[2]]);
+    if (!pr.half && r > 1.5) for (let k = 0; k < 2; k++) { const tt = 0.22 + k * 0.4 + rng() * 0.15; let off = M.add(M.mul(s, Math.cos(rng() * 6.28)), M.mul(t, Math.sin(rng() * 6.28))); off = M.norm(M.add(M.mul(M.norm(M.cross(ax,[0,1,0])),rng()<.5?-1:1),[0,.15,0]));
       const p0 = M.add(M.lerp3(pr.a, pr.b, tt), M.mul(off, r * 0.85)); const d = M.norm(M.add(off, M.mul(ax, rng() < 0.5 ? 0.5 : -0.5))); const L = r * (0.6 + rng() * 0.5);
       tube(mb, [p0, M.add(p0, M.mul(d, L * 0.6)), M.add(p0, M.mul(d, L))], r * 0.3, r * 0.2, col, rgb(st.mark), lf, 7, rgb(st.top), 1); }
   };
@@ -380,15 +385,24 @@
     if (g._mesh && g._mesh.lampOn === g.lampOn) return g._mesh;
     if (g._mesh && g._mesh.gl && g._mesh.vb) g._mesh.gl.free(g._mesh);
     const mb = new MB(g);
-    for (const pr of g.prims) { const f = B[pr.t]; if (!f) continue; try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); } }
+    for (const pr of g.prims) { const f = B[pr.t]; if (!f) continue;
+      // Fractional flag bits carry a separate cosmetic wind weight (integer material flags stay unchanged).
+      const soft=['flower','grass','fern','broadleaf','rosette','vine'].includes(g.def.arche), height=p=>Math.pow(M.clamp((p[1]-g.baseY)/Math.max(4,g.height),0,1),2)*.45;
+      if(g.def.cat!=='ground'&&pr.t==='leaf'&&pr.h!==0){const a=pr.a,den=M.dot(a,a)||1;mb.wind=p=>(soft?height(pr.o):0)+.55*Math.pow(M.clamp(M.dot(M.sub(p,pr.o),a)/den,0,1),2);}
+      else if(pr.t==='bloom')mb.wind=p=>height(pr.o)+.12*M.clamp(M.dist(p,pr.o)/Math.max(1,pr.r),0,1);
+      else if(soft&&pr.t==='tube'&&['stem','blade','vine'].includes(pr.style))mb.wind=height;
+      else mb.wind=null;
+      try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); }finally{mb.wind=null;}
+    }
     try { dress(mb, g); } catch (e) { if (JT.DEV) console.warn('dress', e); }
     const verts = new Float32Array(mb.v); const idx = mb.n > 65000 ? new Uint32Array(mb.i) : new Uint16Array(mb.i);
     // ink strokes -> ribbon vertices (a, b, side/end, width, alpha, colour, sway a/b)
     const L = mb.lines; const lv = new Float32Array(L.length * 4 * 15); const li = (L.length * 4 > 65000 ? new Uint32Array(L.length * 6) : new Uint16Array(L.length * 6)); let o = 0;
-    L.forEach((s, i) => { const [a, b, w, al, col] = s; const c = col || [0.16, 0.12, 0.09]; const wa = mb.sw(a), wb = mb.sw(b);
+    L.forEach((s, i) => { const [a, b, w, al, col, windA=0, windB=0] = s; const c = col || [0.16, 0.12, 0.09]; // aSw uses low [0,2) for impulse weight, high bits for 8-bit wind weight.
+      const wa = mb.sw(a)+Math.round(windA*255)*2, wb = mb.sw(b)+Math.round(windB*255)*2;
       for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 1]]) { lv.set([a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, c[0], c[1], c[2], wa, wb], o); o += 15; }
       const k = i * 4; li.set([k, k + 1, k + 2, k, k + 2, k + 3], i * 6); });
-    g._mesh = { verts, idx, n: mb.n, lines: lv, lidx: li, nl: L.length, lampOn: g.lampOn };
+    g._mesh = { verts, idx, n: mb.n, lines: lv, lidx: li, nl: L.length, wind:!!mb.hasWind, lampOn: g.lampOn };
     return g._mesh;
   }
   JT.GLMesh = { build, rgb, STRIDE, PAT, TWO, GLOW, MB, ell, tube, disc };

@@ -2706,7 +2706,7 @@ body.title-preview #app{pointer-events:none}
   /** Build the navigation graph for a habitat from its decor geometry. */
   Nav.build = function (hab) {
     const nav = { nodes: [], adj: [], regions: {}, pathIndex: {}, perches: [], flowers: [], water: [], version: (hab._navVersion = (hab._navVersion || 0) + 1) };
-    const geoms = hab.geoms;
+    const geoms = hab.geoms; hab.nav=nav; // support queries during graph construction use the new regions, not a stale layout
     const region = (key, y, poly) => nav.regions[key] || (nav.regions[key] = { key, y, poly: poly || null, nodes: [], obstacles: [] });
     region('F', 0, null);
     const supRegion = (inst) => inst.parent ? 'T|' + inst.parent + '|' + (inst.parentTop || 0) : 'F';
@@ -2723,8 +2723,8 @@ body.title-preview #app{pointer-events:none}
     // a piece's own higher layers standing on one of its tops (slate stacks, wall tiers, steps) block that part of the top
     for (const inst of hab.decor) { const g = geoms[inst.id]; if (!g) continue;
       g.tops.forEach((t, i) => { const r = nav.regions['T|' + inst.id + '|' + i]; if (!r) return;
-        for (const pr of g.prims) { if (pr.t !== 'prism' || !pr.poly || !(pr.y0 <= t.y + 0.3 && pr.y1 > t.y + 0.8)) continue;
-          const h = G.hull(pr.poly.concat(pr.topPoly || [])); if (h.length < 3) continue; h.soft = true; r.obstacles.push(h); } }); }
+        for (const pr of g.prims) { if (pr.t !== 'prism' || !pr.poly || !(pr.y0 < t.y + 8 && pr.y1 > t.y + 0.8)) continue;
+          const h = G.hull(pr.poly.concat(pr.topPoly || [])); if (h.length < 3) continue; h.soft = pr.y0 <= t.y + .3; r.obstacles.push(h); } }); }
     const addNode = (n) => { n.id = nav.nodes.length; nav.nodes.push(n); nav.adj.push([]); if (n.region) nav.regions[n.region].nodes.push(n.id); return n.id; };
     const addEdge = (a, b, e) => { nav.adj[a].push(Object.assign({ to: b }, e)); };
     const both = (a, b, e) => { addEdge(a, b, e); addEdge(b, a, Object.assign({}, e, e.s != null ? { rev: true } : {})); };
@@ -2912,7 +2912,7 @@ body.title-preview #app{pointer-events:none}
     let best = null;
     for (const inst of hab.decor) {
       const g = hab.geoms[inst.id]; if (!g || inst.id === excludeDecor) continue;
-      g.tops.forEach((t, i) => { if (t.y <= pos[1] + 0.6 && G.pointInPoly(pos[0], pos[2], t.poly) && (!best || t.y > best.pos[1])) best = { pos: [pos[0], t.y, pos[2]], sup: { k: 'top', d: inst.id, i } }; });
+      g.tops.forEach((t, i) => { const region=hab.nav&&hab.nav.regions['T|'+inst.id+'|'+i],blocked=region&&region.obstacles.some(o=>G.pointInPoly(pos[0],pos[2],o));if (!blocked && t.y <= pos[1] + 0.6 && G.pointInPoly(pos[0], pos[2], t.poly) && (!best || t.y > best.pos[1])) best = { pos: [pos[0], t.y, pos[2]], sup: { k: 'top', d: inst.id, i } }; });
     }
     if (best) return best;
     let [x, z] = Nav.clampInside(hab, pos[0], pos[2], 3);
@@ -2920,9 +2920,9 @@ body.title-preview #app{pointer-events:none}
     for (const inst of hab.decor) {
       const g = hab.geoms[inst.id]; if (!g || inst.parent) continue;
       for (const s of g.solids.concat(g.soft || [])) if (G.pointInPoly(x, z, s)) { // v16: also trunks / stems / logs (soft footprints): never land inside a tree
-        const c = G.centroid(s); let dx = x - c[0], dz = z - c[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-        for (let k = 0; k < 60 && G.pointInPoly(x, z, s); k++) { x += dx * 1.5; z += dz * 1.5; }
-        [x, z] = Nav.clampInside(hab, x, z, 3);
+        const c = G.centroid(s); let best=null,dist=Infinity;
+        for(let i=0;i<s.length;i++){const a=s[i],b=s[(i+1)%s.length],dx=b[0]-a[0],dz=b[1]-a[1],q=M.clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1),0,1),px=a[0]+dx*q,pz=a[1]+dz*q;let ox=px-c[0],oz=pz-c[1],len=Math.hypot(ox,oz);if(len<1e-6){ox=dz;oz=-dx;len=Math.hypot(ox,oz)||1;}const nx=px+ox/len*.9,nz=pz+oz/len*.9,dd=Math.hypot(nx-x,nz-z);if(Nav.inside(hab,nx,nz,3)&&!G.pointInPoly(nx,nz,s)&&dd<dist){best=[nx,nz];dist=dd;}}
+        if(best){x=best[0];z=best[1];}else{let dx=x-c[0],dz=z-c[1],len=Math.hypot(dx,dz);if(len<1e-6){dx=1;dz=0;len=1;}for(let k=0;k<60&&G.pointInPoly(x,z,s);k++){x+=dx/len*1.5;z+=dz/len*1.5;}[x,z]=Nav.clampInside(hab,x,z,3);}
       }
     }
     return { pos: [x, 0, z], sup: { k: 'floor' } };
@@ -3359,11 +3359,13 @@ body.title-preview #app{pointer-events:none}
         if (e.sup && e.sup.k === 'air') return;
         if (!Nav.validSup(this, e.sup)) { const b = Nav.supportBelow(this, e.pos); e.pos = b.pos; e.sup = b.sup; }
         else e.pos = Nav.supPos(this, e.sup, e.pos);
-        if (e.sup.k === 'floor' || e.sup.k === 'top') { const b = Nav.supportBelow(this, [e.pos[0], e.pos[1] + 0.5, e.pos[2]]); if (Nav.regionKey(b.sup) !== Nav.regionKey(e.sup) && b.pos[1] >= e.pos[1] - 0.5) { e.pos = b.pos; e.sup = b.sup; } }
+        if(e.sup.k==='top'){const region=this.nav&&this.nav.regions[Nav.regionKey(e.sup)];if(region&&region.obstacles.some(o=>G.pointInPoly(e.pos[0],e.pos[2],o))){const b=Nav.supportBelow(this,[e.pos[0],this.dims.h+20,e.pos[2]]);e.pos=b.pos;e.sup=b.sup;}}
+        if (e.sup.k === 'floor' || e.sup.k === 'top') { const b = Nav.supportBelow(this, [e.pos[0], e.pos[1] + 0.5, e.pos[2]]); if ((e.sup.k === 'floor' && b.sup.k === 'floor') || (Nav.regionKey(b.sup) !== Nav.regionKey(e.sup) && b.pos[1] >= e.pos[1] - 0.5)) { e.pos = b.pos; e.sup = b.sup; } }
         e._route = null; e._air = null;
       };
       this.data.spiders.forEach(s => { fix(s); if (s.retreat && !this.geoms[s.retreat.d] && s.retreat.d) s.retreat = null; });
       this.data.prey.forEach(p => { if (!p.owner) fix(p); });
+      for(const n of this.data.nests||[]){const s=this.spider(n.owner);if(s&&s.nest===n.id&&JT.SpiderAI&&JT.SpiderAI.NEST_STATES.has(s.state)&&Nav.validSup(this,s.sup)){n.sup=JT.deepClone(s.sup);n.pos=s.pos.slice();n.len=Math.max(n.len||0,JT.SpiderAI.len(s));if(s.retreat)s.retreat.pos=s.pos.slice();}}
       this.data.remains.forEach(fix);
       this.data.drops = this.data.drops.filter(d => Nav.validSup(this, d.sup));
       this.data.drops.forEach(d => { d.pos = Nav.supPos(this, d.sup, d.pos); });
@@ -4936,7 +4938,8 @@ body.title-preview #app{pointer-events:none}
   const NEST_BAN_ARCHE = new Set(['wallmount', 'dish', 'scatter']);
   const NEST_BAN_TYPE = new Set(['flowerpot', 'waterdish']);
   function edgeDist(x, z, poly) { let d = 1e9; for (let i = 0, n = poly.length; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; const ex = b[0] - a[0], ez = b[1] - a[1]; const l2 = ex * ex + ez * ez || 1e-9; const t = M.clamp(((x - a[0]) * ex + (z - a[1]) * ez) / l2, 0, 1); d = Math.min(d, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t)); } return d; }
-  AI.nestRoom = (L) => L * 0.6 + 0.4;
+  AI.nestRoom = (L) => L * .95 + .8;
+  AI.nestLength = (sp,kind) => sp_(sp).len * JT.STAGE_SCALE[M.clamp(sp.stage + (kind === 'molt' ? 1 : 0),0,5)];
   AI.nestSiteOK = function (hab, sup, pos, L) {
     if (!sup || !pos) return false; const r = AI.nestRoom(L); let region;
     if (sup.k === 'floor') { if (!Nav.inside(hab, pos[0], pos[2], r)) return false; region = hab.nav && hab.nav.regions.F; }
@@ -4951,15 +4954,15 @@ body.title-preview #app{pointer-events:none}
     return true;
   };
   /** Nearest reachable allowed spot (used when the jumper is somewhere it can't build). */
-  AI.nearestNestSite = function (hab, sp) {
-    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const L = AI.len(sp); let best = null, bc = 1e9;
+  AI.nearestNestSite = function (hab, sp, kind) {
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const L = AI.nestLength(sp,kind || (/^molt/.test(sp.state)?'molt':'sleep')); let best = null, bc = 1e9;
     for (const n of hab.nav.nodes) { const c = dj.dist[n.id]; if (!isFinite(c) || c >= bc) continue; if (!AI.nestSiteOK(hab, n.sup, n.pos, L)) continue; bc = c; best = n; }
     if (!best) return null; const route = Nav.buildRoute(hab, dj, best.sup, best.pos); return route ? { node: best, route, high: best.y > 12, plant: false } : null;
   };
   AI.chooseSpot = function (hab, sp, mode, carry, avoid) {
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp, carry));
     const H0 = hab.dims.h; const S = sp_(sp);
-    let best = null, bs = -1e9; const nesting = mode === 'sleep' || mode === 'molt'; const Ls = AI.len(sp);
+    let best = null, bs = -1e9; const nesting = mode === 'sleep' || mode === 'molt'; const Ls = nesting ? AI.nestLength(sp,mode) : AI.len(sp);
     const others = hab.data.spiders.filter(o => o !== sp);
     const preyLive = hab.data.prey.filter(p => !p.owner && !p.buried);
     for (const n of hab.nav.nodes) {
@@ -5157,8 +5160,8 @@ body.title-preview #app{pointer-events:none}
   // ---- molting (absolute priority once ready) ----
   function startMoltSeek(hab, sp) {
     AI.dropTarget(hab, sp); sp._seen = {}; sp._route = null; sp._plan = null;
-    const okHere = AI.nestSiteOK(hab, sp.sup, sp.pos, AI.len(sp));
-    const spot = AI.chooseSpot(hab, sp, 'molt') || (okHere ? null : AI.nearestNestSite(hab, sp));
+    const okHere = AI.nestSiteOK(hab, sp.sup, sp.pos, AI.nestLength(sp,'molt'));
+    const spot = AI.chooseSpot(hab, sp, 'molt') || (okHere ? null : AI.nearestNestSite(hab, sp,'molt'));
     if (!spot || (okHere && M.dist(spot.node.pos, sp.pos) < 3)) { sp.retreat = { d: sp.sup.d || null, pos: sp.pos.slice() }; setState(sp, 'moltSilk', 'Pre-molt — weaving a molting hammock right here.'); return; }
     sp._route = spot.route; sp._routeStart = hab.time; sp.retreat = { d: spot.node.decor || null, pos: spot.node.pos.slice() };
     setState(sp, 'moltSeek', spot.high ? 'Pre-molt — climbing to the safest high retreat.' : 'Pre-molt — no high shelter here, heading for a quiet sheltered refuge.');
@@ -5182,11 +5185,12 @@ body.title-preview #app{pointer-events:none}
   const SPIN = AI.SPIN = { sleep: { dur: 6, turns: 1 }, molt: { dur: 10, turns: 2 }, patch: { dur: 3, turns: 1 } };
   function startBuild(n, kind) { const c = SPIN[kind] || SPIN.sleep; n.build = { dur: c.dur, turns: c.turns, t: 0, from: n.prog || 0 }; n.spinA = 0; }
   function makeNest(hab, sp, kind) {
+    if(!AI.nestSiteOK(hab,sp.sup,sp.pos,AI.nestLength(sp,kind)))return null;
     const d = hab.data; d.nests = d.nests || [];
     let n = d.nests.find(x => !x.owner && M.dist(x.pos, sp.pos) < AI.len(sp) * 0.5 && x.age < 1500);
     if (n) { n.owner = sp.id; n.hole = null; n.prog = Math.min(n.prog, 0.5); n.age = 0; n.kind = kind; startBuild(n, 'patch'); }
     else {
-      n = { id: JT.newId('n'), owner: sp.id, pos: sp.pos.slice(), sup: JT.deepClone(sp.sup), fwd: (sp.fwd || [1, 0, 0]).slice(), len: AI.len(sp), prog: 0, hole: null, age: 0, kind, seed: (JT.R() * 1e6) | 0 };
+      n = { id: JT.newId('n'), owner: sp.id, pos: sp.pos.slice(), sup: JT.deepClone(sp.sup), fwd: (sp.fwd || [1, 0, 0]).slice(), len: AI.nestLength(sp,kind), prog: 0, hole: null, age: 0, kind, seed: (JT.R() * 1e6) | 0 };
       d.nests.push(n); while (d.nests.length > 8) d.nests.shift(); startBuild(n, kind);
     }
     sp.nest = n.id; return n;
@@ -6377,7 +6381,7 @@ body.title-preview #app{pointer-events:none}
 
   // Cosmetic settings: isolated from critical game state; malformed values never break the save.
   JT.Settings = {
-    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, haptics: true, tips: true, tipsSeen: {}, keepAwake: true, art: 'hd2d', pixel: 'fine', notebookQualityV2: false, blur: 'light' },
+    defaults: { quality: 'auto', fps: 'auto', music: 0.35, ambience: 0.5, effects: 0.6, muted: false, haptics: true, tips: true, tipsSeen: {}, keepAwake: true, art: 'hd2d', pixel: 'fine', notebookQualityV2: false, blur: 'light', foliageSway:'auto' },
     load() { let s = {}; try { s = JSON.parse(Store.get(SET_KEY) || '{}') || {}; } catch (e) { s = {}; } const out = Object.assign({}, this.defaults); for (const k in this.defaults) if (typeof s[k] === typeof this.defaults[k] && s[k] !== null) out[k] = s[k]; out.tipsSeen = Object.assign({}, out.tipsSeen); return out; },
     save(s) { try { Store.set(SET_KEY, JSON.stringify(s)); } catch (e) { } },
   };
@@ -9784,10 +9788,11 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   class MB {
     constructor(g) { this.v = []; this.i = []; this.n = 0; this.lines = []; this.g = g; const H = g ? Math.max(4, g.height) : 10; this.base = g ? g.baseY : 0; this.H = H; }
     sw(p) { const k = Math.min(1.2, Math.max(0, (p[1] - this.base) / this.H)); return k * k; }
-    vert(p, n, o, c, c2, f) { const v = this.v; v.push(p[0], p[1], p[2], n[0], n[1], n[2], o[0], o[1], o[2], c[0], c[1], c[2], c2[0], c2[1], c2[2], this.sw(p), f || 0); return this.n++; }
+    vert(p, n, o, c, c2, f) { const v = this.v; v.push(p[0], p[1], p[2], n[0], n[1], n[2], o[0], o[1], o[2], c[0], c[1], c[2], c2[0], c2[1], c2[2], this.sw(p), (f || 0) + this.windAt(p) / 4); return this.n++; }
+    windAt(p) { const w=this.wind?M.clamp(this.wind(p),0,1):0;if(w>0)this.hasWind=true;return w; }
     tri(a, b, c) { this.i.push(a, b, c); }
     quad(a, b, c, d) { this.i.push(a, b, c, a, c, d); }
-    line(a, b, w, al, col) { this.lines.push([a, b, w, al == null ? 0.8 : al, col || null]); }
+    line(a, b, w, al, col) { this.lines.push([a, b, w, al == null ? 0.8 : al, col || null, this.windAt(a), this.windAt(b)]); }
     polyline(pts, w, al, col) { for (let i = 0; i + 1 < pts.length; i++) this.line(pts[i], pts[i + 1], w, al, col); }
   }
 
@@ -9812,16 +9817,19 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   }
   function hexOf(c) { return '#' + c.map(x => Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).padStart(2, '0')).join(''); }
   /** Tube along a polyline, radius r0 -> r1. */
-  function tube(mb, pts, r0, r1, col, col2, f, sides, caps, ink, colEnd) {
+  function tube(mb, pts, r0, r1, col, col2, f, sides, caps, ink, colEnd, crown) {
     const n = pts.length; if (n < 2) return; sides = sides || 6; let nrm = null; const rings = [];
     for (let i = 0; i < n; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)]; let t = M.sub(b, a); if (M.len(t) < 1e-6) t = [0, 1, 0]; t = M.norm(t);
       nrm = nrm ? M.norm(M.sub(nrm, M.mul(t, M.dot(nrm, t)))) : perp(t); if (!M.finite3(nrm) || M.len(nrm) < 0.5) nrm = perp(t);
       const bin = M.norm(M.cross(t, nrm)); const r = M.lerp(r0, r1, i / (n - 1)); const row = [];
       const cc = colEnd ? mixc(col, colEnd, i / (n - 1)) : col;
-      for (let k = 0; k < sides; k++) { const a2 = k / sides * Math.PI * 2; const d = M.add(M.mul(nrm, Math.cos(a2)), M.mul(bin, Math.sin(a2))); row.push(mb.vert(M.add(pts[i], M.mul(d, r)), d, M.mul(d, ink == null ? 1 : ink), cc, col2 || col, f)); }
+      const upAngle=Math.atan2(bin[1],nrm[1]),wrap=a=>(a+Math.PI*4)%(Math.PI*2);
+      const angles = crown ? Array.from({length:sides},(_,k)=>k/sides*Math.PI*2).concat([wrap(upAngle+Math.asin(.35)),wrap(upAngle-Math.asin(.35))]).sort((a,b)=>a-b) : Array.from({length:sides},(_,k)=>k/sides*Math.PI*2);
+      for (const a2 of angles) { const d = M.add(M.mul(nrm, Math.cos(a2)), M.mul(bin, Math.sin(a2))), point=M.add(pts[i],M.mul(d,r)); const flat=crown&&d[1]>0&&Math.abs(Math.sin(a2-upAngle))<=.350001;if(flat)point[1]=crown.y;const normal=flat?[0,1,0]:d;row.push(mb.vert(point, normal, M.mul(normal, ink == null ? 1 : ink), cc, col2 || col, f)); }
       rings.push({ row, t, c: pts[i], r });
     }
+    sides=rings[0].row.length;
     for (let i = 0; i + 1 < n; i++) for (let k = 0; k < sides; k++) { const k2 = (k + 1) % sides; mb.quad(rings[i].row[k], rings[i].row[k2], rings[i + 1].row[k2], rings[i + 1].row[k]); }
     if (caps) for (const [R, s] of [[rings[0], -1], [rings[n - 1], 1]]) { const nn = M.mul(R.t, s); const ci = mb.vert(R.c, nn, M.mul(nn, 0.6), caps === true ? col : caps, col2 || col, f); for (let k = 0; k < sides; k++) { const p = mb.v; const id = R.row[k], id2 = R.row[(k + 1) % sides]; const P1 = [p[id * STRIDE], p[id * STRIDE + 1], p[id * STRIDE + 2]], P2 = [p[id2 * STRIDE], p[id2 * STRIDE + 1], p[id2 * STRIDE + 2]]; const a = mb.vert(P1, nn, M.norm(M.sub(P1, R.c)), caps === true ? col : caps, col2 || col, f), b = mb.vert(P2, nn, M.norm(M.sub(P2, R.c)), caps === true ? col : caps, col2 || col, f); mb.tri(ci, a, b); } }
     return rings;
@@ -9849,7 +9857,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     // subdivide: every edge gets a midpoint (rocks: pushed out a little; cactus: ribs and valleys)
     const B0 = [], T0 = []; const NR = cact ? Math.max(12, n0) : n0 * 2;
     if (cact) { const rx = Math.max(...base0.map(q => Math.abs(q[0] - c0[0]))), rz = Math.max(...base0.map(q => Math.abs(q[1] - c0[1]))); const tx = Math.max(...top0.map(q => Math.abs(q[0] - c1[0]))), tz = Math.max(...top0.map(q => Math.abs(q[1] - c1[1])));
-      for (let i = 0; i < NR * 2; i++) { const a = i / (NR * 2) * 6.2832, k = i % 2 ? 0.84 : 1.02; B0.push([c0[0] + Math.cos(a) * rx * k, c0[1] + Math.sin(a) * rz * k]); T0.push([c1[0] + Math.cos(a) * tx * k, c1[1] + Math.sin(a) * tz * k]); } }
+      for (let i = 0; i < NR * 2; i++) { const a = i / (NR * 2) * 6.2832, k = i % 2 ? 0.84 : 1.02; B0.push([c0[0] + Math.cos(a) * rx * k, c0[1] + Math.sin(a) * rz * k]); const u=i/(NR*2)*n0,j=Math.floor(u),f=u-j;T0.push([M.lerp(top0[j][0],top0[(j+1)%n0][0],f),M.lerp(top0[j][1],top0[(j+1)%n0][1],f)]); } }
     else for (let i = 0; i < n0; i++) { const j = (i + 1) % n0; B0.push(base0[i], [(base0[i][0] + base0[j][0]) / 2, (base0[i][1] + base0[j][1]) / 2]); T0.push(top0[i], [(top0[i][0] + top0[j][0]) / 2, (top0[i][1] + top0[j][1]) / 2]); }
     const n = B0.length;
     const rad = (P, c, i) => { const dx = P[i][0] - c[0], dz = P[i][1] - c[1]; const l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; };
@@ -9861,7 +9869,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const P = rows.map(([y, v, ins], k) => { const row = []; for (let i = 0; i < n; i++) { const b = B0[i], t = T0[i]; const x = M.lerp(b[0], t[0], v), z = M.lerp(b[1], t[1], v); const cc = [M.lerp(c0[0], c1[0], v), M.lerp(c0[1], c1[1], v)]; const r = rad([[x, z]], cc, 0);
       const mid = i % 2 && !cact ? 0.35 : 0; const bul = amp * (0.55 * Math.sin(Math.PI * Math.min(1, v * 1.15)) + 0.7 * (hh(sd, i, k) - 0.5) + mid) * (k === 0 ? 0.3 : 1);
       const chip = k === rows.length - 1 && !cact ? amp * 1.2 * Math.max(0, hh(sd, i, 99) - 0.55) : 0; const d = bul - ins - chip;
-      row.push([x + r[0] * d, y - (k === rows.length - 1 ? chip * 0.6 : 0), z + r[1] * d]); } return row; });
+      // Walkable cap follows the generator's top polygon/height exactly; relief stays below it.
+      row.push(k === rows.length - 1 ? [t[0], pr.y1, t[1]] : [x + r[0] * d, y, z + r[1] * d]); } return row; });
     const R = P.length; const side = rgb(st.side), topC = rgb(st.top), mark = rgb(st.mark), hi = rgb(st.hi); const dark = shade(st.side, -0.18); const f = FL(pr.style);
     const ids = P.map((row, k) => row.map((q, i) => {
       const a = row[(i + 1) % n], b = row[(i - 1 + n) % n], u = P[Math.min(R - 1, k + 1)][i], d = P[Math.max(0, k - 1)][i];
@@ -9869,7 +9878,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       const v = rows[k][1]; const cc = k >= R - 2 ? mixc(side, mixc(topC, hi, 0.2), k === R - 1 ? 0.7 : 0.35) : mixc(dark, side, Math.min(1, v * 2.2));
       const o = M.norm([nn[0], 0.15 + Math.max(0, nn[1]) * 0.5, nn[2]]); return mb.vert(q, nn, o, cc, mark, f); }));
     for (let k = 0; k + 1 < R; k++) for (let i = 0; i < n; i++) { const j = (i + 1) % n; mb.quad(ids[k][i], ids[k][j], ids[k + 1][j], ids[k + 1][i]); }
-    const topR = P[R - 1]; const ct = [0, 0, 0]; for (const q of topR) { ct[0] += q[0] / n; ct[2] += q[2] / n; } ct[1] = pr.y1 + Math.min(cact ? bev * 0.6 : 2.2, H * 0.1);
+    const topR = P[R - 1]; const ct = [0, 0, 0]; for (const q of topR) { ct[0] += q[0] / n; ct[2] += q[2] / n; } ct[1] = pr.y1;
     const ci = mb.vert(ct, [0, 1, 0], [0, 1, 0], mixc(mixc(topC, hi, 0.25), hi, 0.2), mark, f); for (let i = 0; i < n; i++) mb.tri(ci, ids[R - 1][i], ids[R - 1][(i + 1) % n]);
     if (pr.y0 > g.baseY + 0.4) { const cb = mb.vert([c0[0], pr.y0, c0[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, f); const rb = P[0].map(q => mb.vert(q, [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, f)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
     if (cact) { // areoles: little tufts of pale spines along every rib crest
@@ -9959,7 +9968,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       return;
     }
     const tc = smooth ? mixc(topC, hi, 0.25) : topC;
-    const ci = mb.vert([ct[0], pr.y1 + (smooth ? Math.min(2.5, H * 0.12) : 0), ct[1]], [0, 1, 0], [0, 1, 0], mixc(tc, hi, 0.2), mark, pf);
+    const ci = mb.vert([ct[0], pr.y1, ct[1]], [0, 1, 0], [0, 1, 0], mixc(tc, hi, 0.2), mark, pf);
     const rim = top.map((q, i) => mb.vert([q[0], pr.y1, q[1]], smooth ? M.norm([vn[i][0] * 0.45, 1, vn[i][2] * 0.45]) : [0, 1, 0], M.norm([vn[i][0], 0.15, vn[i][2]]), tc, mark, pf));
     for (let i = 0; i < n; i++) mb.tri(ci, rim[i], rim[(i + 1) % n]);
     if (bottomLift) { const cb = mb.vert([c[0], pr.y0, c[1]], [0, -1, 0], [0, -1, 0], shade(st.side, -0.35), mark, pf); const rb = base.map((q, i) => mb.vert([q[0], pr.y0, q[1]], [0, -1, 0], M.norm([vn[i][0], -0.2, vn[i][2]]), shade(st.side, -0.35), mark, pf)); for (let i = 0; i < n; i++) mb.tri(cb, rb[(i + 1) % n], rb[i]); }
@@ -10084,13 +10093,13 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
   };
   B.log = function (mb, pr, g) {
     const STY = JT.Draw.STY; const st = STY[pr.style] || STY.wood; const r = pr.r; const col = rgb(st.side);
-    const lf = FL(pr.style) || PAT.grain; tube(mb, [pr.a, M.lerp3(pr.a, pr.b, 0.33), M.lerp3(pr.a, pr.b, 0.66), pr.b], r, r * 0.96, col, rgb(st.mark), lf, 14, rgb(st.top), 1);
+    const lf = FL(pr.style) || PAT.grain; tube(mb, [pr.a, M.lerp3(pr.a, pr.b, 0.33), M.lerp3(pr.a, pr.b, 0.66), pr.b], r, r, col, rgb(st.mark), lf, 14, rgb(st.top), 1, null, {y:pr.a[1]+r*(pr.half?.98:.96)});
     const ax = M.norm(M.sub(pr.b, pr.a)); const s = perp(ax), t = M.cross(ax, s);
     for (const [e, sg] of [[pr.a, -1], [pr.b, 1]]) { const c = M.add(e, M.mul(ax, sg * 0.05)); for (const rr of [0.4, 0.7]) { const pts = []; for (let k = 0; k <= 12; k++) { const a = k / 12 * 6.283; pts.push(M.add(c, M.add(M.mul(s, Math.cos(a) * r * rr), M.mul(t, Math.sin(a) * r * rr)))); } mb.polyline(pts, 0.5, 0.45); }
       if (pr.hollow) disc(mb, M.add(c, M.mul(ax, sg * 0.05)), M.mul(s, r * 0.7), M.mul(t, r * 0.7), M.mul(ax, sg), rgb('#160d06'), 0, 12, 0); }
     const rng = JT.makeRng(JT.hashStr(String(g.id) + 'log')); for (let k = 0; k < 7; k++) { const a = rng() * 6.28; const off = M.add(M.mul(s, Math.cos(a) * r * 1.01), M.mul(t, Math.sin(a) * r * 1.01)); const t0 = rng() * 0.6, t1 = t0 + 0.15 + rng() * 0.3; mb.line(M.add(M.lerp3(pr.a, pr.b, t0), off), M.add(M.lerp3(pr.a, pr.b, t1), off), 0.6, 0.45); }
     // v28: snapped-off branch stubs on the upper side, with pale broken tips
-    if (!pr.half && r > 1.5) for (let k = 0; k < 2; k++) { const tt = 0.22 + k * 0.4 + rng() * 0.15; let off = M.add(M.mul(s, Math.cos(rng() * 6.28)), M.mul(t, Math.sin(rng() * 6.28))); off = M.norm([off[0], Math.abs(off[1]) + 0.5, off[2]]);
+    if (!pr.half && r > 1.5) for (let k = 0; k < 2; k++) { const tt = 0.22 + k * 0.4 + rng() * 0.15; let off = M.add(M.mul(s, Math.cos(rng() * 6.28)), M.mul(t, Math.sin(rng() * 6.28))); off = M.norm(M.add(M.mul(M.norm(M.cross(ax,[0,1,0])),rng()<.5?-1:1),[0,.15,0]));
       const p0 = M.add(M.lerp3(pr.a, pr.b, tt), M.mul(off, r * 0.85)); const d = M.norm(M.add(off, M.mul(ax, rng() < 0.5 ? 0.5 : -0.5))); const L = r * (0.6 + rng() * 0.5);
       tube(mb, [p0, M.add(p0, M.mul(d, L * 0.6)), M.add(p0, M.mul(d, L))], r * 0.3, r * 0.2, col, rgb(st.mark), lf, 7, rgb(st.top), 1); }
   };
@@ -10141,15 +10150,24 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     if (g._mesh && g._mesh.lampOn === g.lampOn) return g._mesh;
     if (g._mesh && g._mesh.gl && g._mesh.vb) g._mesh.gl.free(g._mesh);
     const mb = new MB(g);
-    for (const pr of g.prims) { const f = B[pr.t]; if (!f) continue; try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); } }
+    for (const pr of g.prims) { const f = B[pr.t]; if (!f) continue;
+      // Fractional flag bits carry a separate cosmetic wind weight (integer material flags stay unchanged).
+      const soft=['flower','grass','fern','broadleaf','rosette','vine'].includes(g.def.arche), height=p=>Math.pow(M.clamp((p[1]-g.baseY)/Math.max(4,g.height),0,1),2)*.45;
+      if(g.def.cat!=='ground'&&pr.t==='leaf'&&pr.h!==0){const a=pr.a,den=M.dot(a,a)||1;mb.wind=p=>(soft?height(pr.o):0)+.55*Math.pow(M.clamp(M.dot(M.sub(p,pr.o),a)/den,0,1),2);}
+      else if(pr.t==='bloom')mb.wind=p=>height(pr.o)+.12*M.clamp(M.dist(p,pr.o)/Math.max(1,pr.r),0,1);
+      else if(soft&&pr.t==='tube'&&['stem','blade','vine'].includes(pr.style))mb.wind=height;
+      else mb.wind=null;
+      try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); }finally{mb.wind=null;}
+    }
     try { dress(mb, g); } catch (e) { if (JT.DEV) console.warn('dress', e); }
     const verts = new Float32Array(mb.v); const idx = mb.n > 65000 ? new Uint32Array(mb.i) : new Uint16Array(mb.i);
     // ink strokes -> ribbon vertices (a, b, side/end, width, alpha, colour, sway a/b)
     const L = mb.lines; const lv = new Float32Array(L.length * 4 * 15); const li = (L.length * 4 > 65000 ? new Uint32Array(L.length * 6) : new Uint16Array(L.length * 6)); let o = 0;
-    L.forEach((s, i) => { const [a, b, w, al, col] = s; const c = col || [0.16, 0.12, 0.09]; const wa = mb.sw(a), wb = mb.sw(b);
+    L.forEach((s, i) => { const [a, b, w, al, col, windA=0, windB=0] = s; const c = col || [0.16, 0.12, 0.09]; // aSw uses low [0,2) for impulse weight, high bits for 8-bit wind weight.
+      const wa = mb.sw(a)+Math.round(windA*255)*2, wb = mb.sw(b)+Math.round(windB*255)*2;
       for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 1]]) { lv.set([a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, c[0], c[1], c[2], wa, wb], o); o += 15; }
       const k = i * 4; li.set([k, k + 1, k + 2, k, k + 2, k + 3], i * 6); });
-    g._mesh = { verts, idx, n: mb.n, lines: lv, lidx: li, nl: L.length, lampOn: g.lampOn };
+    g._mesh = { verts, idx, n: mb.n, lines: lv, lidx: li, nl: L.length, wind:!!mb.hasWind, lampOn: g.lampOn };
     return g._mesh;
   }
   JT.GLMesh = { build, rgb, STRIDE, PAT, TWO, GLOW, MB, ell, tube, disc };
@@ -10161,7 +10179,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 <script>
 !function() {
     "use strict";
-    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW; vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=vF; float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5) col=mix(col, vec3(0.93,0.95,0.82), 0.12);\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.05,0.8,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*aSw.x, pb=aB+uSway*aSw.y; vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float w=max(aW*uLW, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; gl_FragColor=vec4(uInk*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5) col=mix(col, vec3(0.93,0.95,0.82), 0.12);\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.05,0.8,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float w=max(aW*uLW, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
     function mkCanvas(w, h) {
         const c = document.createElement("canvas");
         return c.width = Math.max(1, 0 | w), c.height = Math.max(1, 0 | h), c;
@@ -10950,7 +10968,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 for (const pass of PT.ptNoInk ? [ 1 ] : [ 0, 1 ]) {
                     gl.uniform1f(P.u.uPass, pass ? 0 : 1);
                     for (const o of list) {
-                        const sw = o.inst._sw;
+                        const sw = o.inst._sw, wind=o._wind||[0,0,0];gl.uniform3f(P.u.uWind,wind[0],wind[1],wind[2]);
                         gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0), gl.uniform2f(P.u.uGnd, "ground" === o.g.def.cat || "wallmount" === o.g.def.arche ? 0 : 1, o.g.baseY), 
                         this.drawMesh(P, o.m);
                     }
@@ -10960,7 +10978,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 gl.enable(gl.BLEND), gl.depthMask(!1);
                 for (const o of list) {
                     if (!o.m.lb || PT.ptNoInk) continue;
-                    const sw = o.inst._sw;
+                    const sw = o.inst._sw, wind=o._wind||[0,0,0];gl.uniform3f(P.u.uWind,wind[0],wind[1],wind[2]);
                     gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0), this.drawLines(P, o.m.lb, o.m.lib, o.m.nl);
                 }
             }, statics = (list, part) => {
@@ -11015,7 +11033,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 }
                 LL.length && this.lampPools(V, hab, LL, night), "ground" !== part && decorPass(list);
             }, live = [];
-            for (const o of drawList) o.inst._sw && live.push(o);
+            JT.Foliage && JT.Foliage.prepare(this.R,hab,drawList);
+            for (const o of drawList) (o.inst._sw||o._wind) && live.push(o);
             const mode = this.cacheMode(V, hab, hg, gt, PT, live, night, VW, VH);
             this._direct = "direct" === mode;
             const SS = this._direct ? this.splitScale(HDT, PT) : 0;
@@ -11052,7 +11071,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 if ("build" === mode && (gl.bindFramebuffer(gl.FRAMEBUFFER, C.ms), gl.viewport(0, 0, VW, VH), 
                 gl.clearColor(CLR[0], CLR[1], CLR[2], 1), gl.clearDepth(1), gl.depthMask(!0), gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT), 
                 gl.disable(gl.CULL_FACE), gl.enable(gl.BLEND), gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA), 
-                gl.disable(gl.DEPTH_TEST), gl.depthMask(!1), statics(live.length ? drawList.filter(o => !o.inst._sw) : drawList), 
+                gl.disable(gl.DEPTH_TEST), gl.depthMask(!1), statics(live.length ? drawList.filter(o => !o.inst._sw && !o._wind) : drawList), 
                 gl.bindFramebuffer(gl.READ_FRAMEBUFFER, C.ms), gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, C.rs), 
                 gl.blitFramebuffer(0, 0, VW, VH, 0, 0, VW, VH, gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, gl.NEAREST), 
                 gl.bindFramebuffer(gl.FRAMEBUFFER, this._tgtFB || null), gl.viewport(0, 0, VW, VH), 
@@ -11215,12 +11234,12 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 this.view(P, W2), this.light(P), gl.uniform3f(P.u.uL, Lg[0], Lg[1], Lg[2]), gl.uniform3f(P.u.uToCam, W2.toCam[0], W2.toCam[1], W2.toCam[2]), 
                 gl.activeTexture(gl.TEXTURE0), gl.bindTexture(gl.TEXTURE_2D, this.tex.noise), gl.uniform1i(P.u.uNoise, 0), 
                 gl.uniform3f(P.u.uInk, .17, .13, .1), gl.uniform1f(P.u.uOut, M.clamp(S / 110, 1.4, 3)), 
-                gl.uniform1f(P.u.uAlpha, 1), gl.uniform4f(P.u.uGhost, 0, 0, 0, 0), gl.uniform3f(P.u.uSway, 0, 0, 0), 
+                gl.uniform1f(P.u.uAlpha, 1), gl.uniform4f(P.u.uGhost, 0, 0, 0, 0), gl.uniform3f(P.u.uWind, 0, 0, 0), gl.uniform3f(P.u.uSway, 0, 0, 0), 
                 gl.uniform2f(P.u.uGnd, 0, 0), gl.uniform3f(P.u.uSoil, .5, .4, .3);
                 for (const pass of [ 1, 0 ]) gl.uniform1f(P.u.uPass, pass), this.drawMesh(P, m);
                 m.lb && (P = this.use(this.P.line), this.view(P, W2), this.light(P), gl.uniform1f(P.u.uLW, M.clamp(S / 90, 1, 2.4)), 
                 gl.uniform1f(P.u.uMinW, 1), gl.uniform1f(P.u.uAlpha, 1), gl.uniform1f(P.u.uLitL, 0), 
-                gl.uniform3f(P.u.uSway, 0, 0, 0), gl.enable(gl.BLEND), gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA), 
+                gl.uniform3f(P.u.uWind, 0, 0, 0), gl.uniform3f(P.u.uSway, 0, 0, 0), gl.enable(gl.BLEND), gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA), 
                 gl.depthMask(!1), this.drawLines(P, m.lb, m.lib, m.nl));
                 const px = new Uint8Array(S * S * 4);
                 gl.readPixels(0, 0, S, S, gl.RGBA, gl.UNSIGNED_BYTE, px);
@@ -11285,7 +11304,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             if (!m.n) return;
             m.vb && m.gl === this || (m.gl = this, m.vb = this.buf(m.verts), m.ib = this.buf(m.idx, "idx"));
             const P = this.use(this.meshProg());
-            this.view(P, V), this.light(P), gl.enable(gl.BLEND), gl.depthMask(!1), gl.uniform3f(P.u.uSway, 0, 0, 0), 
+            this.view(P, V), this.light(P), gl.enable(gl.BLEND), gl.depthMask(!1), gl.uniform3f(P.u.uWind, 0, 0, 0), gl.uniform3f(P.u.uSway, 0, 0, 0), 
             gl.uniform2f(P.u.uGnd, 0, 0), gl.uniform1f(P.u.uAlpha, gh.ok ? .8 : .5), gl.uniform4f(P.u.uGhost, gh.ok ? .45 : .9, gh.ok ? .85 : .3, gh.ok ? .45 : .25, .3), 
             gl.uniform1f(P.u.uPass, 0), this.drawMesh(P, m), gl.uniform1f(P.u.uAlpha, 1), gl.uniform4f(P.u.uGhost, 0, 0, 0, 0);
         }
@@ -11537,7 +11556,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             if (!v.length) return;
             const gl = this.gl, P = this.use(this.P.line);
             this.view(P, V), this.light(P), gl.uniform1f(P.u.uLW, V.s), gl.uniform1f(P.u.uMinW, this._hdF ? .9 / this._hdF : .6 * this.R.k), 
-            gl.uniform1f(P.u.uAlpha, 1), gl.uniform1f(P.u.uLitL, 1), gl.uniform3f(P.u.uSway, 0, 0, 0), 
+            gl.uniform1f(P.u.uAlpha, 1), gl.uniform1f(P.u.uLitL, 1), gl.uniform3f(P.u.uWind, 0, 0, 0), gl.uniform3f(P.u.uSway, 0, 0, 0), 
             gl.enable(gl.DEPTH_TEST), gl.depthMask(!1), gl.enable(gl.BLEND), gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf("silk", new Float32Array(v))), 
             this.attribs(P, [ [ "aA", 3 ], [ "aB", 3 ], [ "aS", 2 ], [ "aW", 1 ], [ "aAl", 1 ], [ "aCol", 3 ], [ "aSw", 2 ] ], 15), 
             gl.drawArrays(gl.TRIANGLES, 0, v.length / 15);
@@ -15027,6 +15046,9 @@ void main(){
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Surface detail')); const sg = el('div', 'seg small');
         for (const [v, l] of [['rich', 'Rich'], ['simple', 'Simple']]) { const b = el('button', (s.detail || (JT.app && JT.app.R && JT.app.R.gp && JT.app.R.gp._swGL ? 'simple' : 'rich')) === v ? 'on' : '', l); b.onclick = () => { s.detail = v; JT.Settings.save(s); try { JT.app.R.resetCaches(); } catch (e) {} this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Rich: bark, stone, moss and wood textures on decor. Simple is lighter on older devices (Battery saver uses it too)')); w.appendChild(fr); }
+      { const fr=el('div','form-row');fr.appendChild(el('label','','Foliage sway'));const sg=el('div','seg small');
+        for(const [v,l]of [['auto','Auto'],['on','On'],['off','Off']]){const b=el('button',(s.foliageSway||'auto')===v?'on':'',l);b.onclick=()=>{s.foliageSway=v;JT.Settings.save(s);this.R.resetCaches();this.settingsModal();};sg.appendChild(b);}
+        fr.appendChild(sg);fr.appendChild(el('span','muted','Subtle GPU leaf and flower motion. Auto pauses it on Low, Battery saver or sustained slow rendering; On still limits the number of moving plants.'));w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       w.appendChild(el('h4', '', 'Feel & help'));
       { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }
@@ -15565,6 +15587,38 @@ body.tank-setup #app #dock,body.tank-setup #app #top,body.tank-setup #app #camCt
 @media(max-width:560px){#app .tank-name-menu{left:16px}#app .tank-setup-tray{left:12px;right:12px;bottom:calc(12px + var(--sab));width:auto;max-height:52dvh;padding:12px}#app .setup-field{grid-template-columns:1fr;gap:6px}#app .setup-actions{gap:6px}#app .setup-button{padding:8px 10px}}
 @media(max-height:500px) and (orientation:landscape){#app .tank-setup-tray{right:12px;bottom:12px;max-height:calc(100dvh - 24px);width:min(420px,50%)}#app .setup-head{padding-bottom:6px}#app .setup-body{margin:6px 0;padding:6px 2px}#app .setup-field{margin-bottom:8px}}
 `;D.head.append(style);
+})(window);
+
+</script>
+<script>
+/* Geometry-matched retreat clearance and bounded cosmetic GPU foliage motion. */
+(function(root){
+ 'use strict';const J=root.JT,M=J.M,G=J.G,N=J.Nav,A=J.SpiderAI,U=J.UI;
+ J.Foliage={prepare(R,h,list){
+  const setting=R.set.foliageSway||'auto',quality=R.set.quality==='auto'?R.quality:R.set.quality;let cap=setting==='off'?0:setting==='on'?(quality==='low'?2:6):(quality==='low'||R.set.fps==='saver'?0:quality==='medium'?4:6);
+  const now=performance.now();if(setting==='auto'&&cap){if(R.frameMs>26){R._windSlowAt=R._windSlowAt||now;if(now-R._windSlowAt>2500)R._windRestUntil=now+15000;}else R._windSlowAt=0;if(now<(R._windRestUntil||0))cap=0;}
+  const choices=list.filter(o=>o.m.wind).sort((a,b)=>M.dist(a.g.center||[a.inst.x,0,a.inst.z],R.V.c)-M.dist(b.g.center||[b.inst.x,0,b.inst.z],R.V.c)||String(a.inst.id).localeCompare(String(b.inst.id))).slice(0,cap),selected=new Set(choices);
+  for(const o of list){o._wind=null;if(!selected.has(o))continue;const phase=(o.inst._windPhase==null?(o.inst._windPhase=(J.hashStr(o.inst.id+'leaf')%6283)/1000):o.inst._windPhase),t=h.time;let amp=.8;
+   if(h.spiders.some(s=>s.sup&&s.sup.d===o.inst.id))amp*=.25;
+   o._wind=[amp*(.7*Math.sin(t*.72+phase)+.3*Math.sin(t*1.13+phase*.7)),0,amp*.6*Math.sin(t*.64+phase*1.3)];
+  }
+  R._foliageMoving=choices.length;
+ }};
+ // Test the space occupied by the whole sac/body, including overhead hard geometry.
+ const nestOK=A.nestSiteOK;
+ A.nestSiteOK=function(h,sup,pos,L){
+  if(!nestOK.apply(this,arguments))return false;const r=A.nestRoom(L),ceiling=pos[1]+L*.8+.6;
+  for(const g of Object.values(h.geoms))for(const pr of g.prims){
+   if(pr.t==='prism'&&pr.y1>pos[1]+.3&&pr.y0<ceiling){const poly=G.hull(pr.poly.concat(pr.topPoly||[]));if(G.pointInPoly(pos[0],pos[2],poly))return false;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],v=[b[0]-a[0],b[1]-a[1]],q=M.clamp(((pos[0]-a[0])*v[0]+(pos[2]-a[1])*v[1])/(v[0]*v[0]+v[1]*v[1]||1),0,1);if(Math.hypot(pos[0]-a[0]-v[0]*q,pos[2]-a[1]-v[1]*q)<r)return false;}}
+   if(pr.t==='tube'&&!['blade','stem','vine'].includes(pr.style))for(let i=0;i<pr.pts.length-1;i++){const a=pr.pts[i],b=pr.pts[i+1],rad=Math.max(pr.r0,pr.r1);if(Math.max(a[1],b[1])+rad<pos[1]+.3||Math.min(a[1],b[1])-rad>ceiling)continue;const d=M.sub(b,a),v=M.sub([pos[0],pos[1]+L*.35,pos[2]],a),q=M.clamp(M.dot(v,d)/(M.dot(d,d)||1),0,1),p=M.lerp3(a,b,q);if(Math.hypot(p[0]-pos[0],p[2]-pos[2])<r+rad)return false;}
+  }
+  return true;
+ };
+ // Failed routes must never end by building inside a forbidden surface.
+ const molt=A.H.moltSilk;
+ A.H.moltSilk=function(h,s,dt){if(!A.nestOf(h,s)&&!A.nestSiteOK(h,s.sup,s.pos,A.nestLength(s,'molt'))){const spot=A.nearestNestSite(h,s,'molt');if(spot&&spot.route){s._route=spot.route;s._routeStart=h.time;s.retreat={d:spot.node.decor||null,pos:spot.node.pos.slice()};s._moltReplans=0;A.setState(s,'moltSeek','Finding enough clear space for the larger post-molt body.');}else{s._route=null;s.thought='Pre-molt — needs a clear, roomy floor or solid perch for its hammock.';}return;}return molt(h,s,dt);};
+ // Keep old saved/occupied silk sacs on the same corrected exterior support, without resetting molt progress.
+ const nests=A.updateNests;A.updateNests=function(h,dt){for(const n of h.data.nests||[]){const s=n.owner&&h.spider(n.owner);if(s&&s.nest===n.id&&A.NEST_STATES.has(s.state)&&N.validSup(h,s.sup)){n.sup=J.deepClone(s.sup);n.pos=N.supPos(h,s.sup,s.pos);n.len=Math.max(n.len||0,A.len(s));}}return nests(h,dt);};
 })(window);
 
 </script>

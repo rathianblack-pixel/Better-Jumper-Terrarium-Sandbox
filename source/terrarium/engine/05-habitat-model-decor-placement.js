@@ -239,11 +239,13 @@
         if (e.sup && e.sup.k === 'air') return;
         if (!Nav.validSup(this, e.sup)) { const b = Nav.supportBelow(this, e.pos); e.pos = b.pos; e.sup = b.sup; }
         else e.pos = Nav.supPos(this, e.sup, e.pos);
-        if (e.sup.k === 'floor' || e.sup.k === 'top') { const b = Nav.supportBelow(this, [e.pos[0], e.pos[1] + 0.5, e.pos[2]]); if (Nav.regionKey(b.sup) !== Nav.regionKey(e.sup) && b.pos[1] >= e.pos[1] - 0.5) { e.pos = b.pos; e.sup = b.sup; } }
+        if(e.sup.k==='top'){const region=this.nav&&this.nav.regions[Nav.regionKey(e.sup)];if(region&&region.obstacles.some(o=>G.pointInPoly(e.pos[0],e.pos[2],o))){const b=Nav.supportBelow(this,[e.pos[0],this.dims.h+20,e.pos[2]]);e.pos=b.pos;e.sup=b.sup;}}
+        if (e.sup.k === 'floor' || e.sup.k === 'top') { const b = Nav.supportBelow(this, [e.pos[0], e.pos[1] + 0.5, e.pos[2]]); if ((e.sup.k === 'floor' && b.sup.k === 'floor') || (Nav.regionKey(b.sup) !== Nav.regionKey(e.sup) && b.pos[1] >= e.pos[1] - 0.5)) { e.pos = b.pos; e.sup = b.sup; } }
         e._route = null; e._air = null;
       };
       this.data.spiders.forEach(s => { fix(s); if (s.retreat && !this.geoms[s.retreat.d] && s.retreat.d) s.retreat = null; });
       this.data.prey.forEach(p => { if (!p.owner) fix(p); });
+      for(const n of this.data.nests||[]){const s=this.spider(n.owner);if(s&&s.nest===n.id&&JT.SpiderAI&&JT.SpiderAI.NEST_STATES.has(s.state)&&Nav.validSup(this,s.sup)){n.sup=JT.deepClone(s.sup);n.pos=s.pos.slice();n.len=Math.max(n.len||0,JT.SpiderAI.len(s));if(s.retreat)s.retreat.pos=s.pos.slice();}}
       this.data.remains.forEach(fix);
       this.data.drops = this.data.drops.filter(d => Nav.validSup(this, d.sup));
       this.data.drops.forEach(d => { d.pos = Nav.supPos(this, d.sup, d.pos); });

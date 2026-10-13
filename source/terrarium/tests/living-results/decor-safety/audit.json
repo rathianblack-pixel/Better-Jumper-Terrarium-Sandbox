@@ -1,0 +1,4801 @@
+{
+  "catalogCount": 216,
+  "rows": [
+    {
+      "id": "corkbark",
+      "name": "Cork Bark",
+      "arche": "slab",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 517,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "corktower",
+      "name": "Cork Tower",
+      "arche": "tower",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 576,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "driftwood",
+      "name": "Driftwood",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 435,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "flatstone",
+      "name": "Flat Stone",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 484,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "slatestack",
+      "name": "Slate Stack",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 787,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "bonsai",
+      "name": "Mini Bonsai",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3829,
+      "primitives": [
+        "tube",
+        "pot",
+        "leaf"
+      ]
+    },
+    {
+      "id": "waterdish",
+      "name": "Water Dish",
+      "arche": "dish",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 86,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "heatlamp",
+      "name": "Basking Lamp",
+      "arche": "lamp",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 226,
+      "primitives": [
+        "lampfoot",
+        "tube",
+        "lamp"
+      ]
+    },
+    {
+      "id": "corktube",
+      "name": "Cork Tube",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 633,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "corkround",
+      "name": "Cork Round",
+      "arche": "tower",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 454,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "corkslab",
+      "name": "Cork Slab",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 413,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "corkledge",
+      "name": "Cork Ledge",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 478,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "tallspire",
+      "name": "Tall Cork Spire",
+      "arche": "tower",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 482,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "mossstone",
+      "name": "Moss Pole",
+      "arche": "tower",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 190,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "rockmesa",
+      "name": "Rock Mesa",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 739,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "slatepillar",
+      "name": "Slate Pillar",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 982,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "riverstone",
+      "name": "River Stone",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 390,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "sandshelf",
+      "name": "Sandstone Shelf",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 721,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "slateledge",
+      "name": "Slate Ledge",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 581,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "dewstone",
+      "name": "Dew Stone",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 419,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "rockcave",
+      "name": "Rock Cave",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 490,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "woodhide",
+      "name": "Wood Hide",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 428,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "coconut",
+      "name": "Coconut Wood Hide",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 37,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 371,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "maghide",
+      "name": "Magnetic Hide",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 344,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "hollowlog",
+      "name": "Hollow Log",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 675,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "feedledge",
+      "name": "Feeding Ledge",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 375,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "minruin",
+      "name": "Mini Ruin",
+      "arche": "ruin",
+      "cat": "decor",
+      "tops": 2,
+      "samples": 26,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 417,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "flowerpot",
+      "name": "Broken Flowerpot",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 522,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "woodbridge",
+      "name": "Tiny Wooden Bridge",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 250,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "branchperch",
+      "name": "Branch Perch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 343,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "forked",
+      "name": "Forked Branch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 502,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "grapevine",
+      "name": "Grapevine",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 467,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "rootarch",
+      "name": "Root Arch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 495,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "canopybranch",
+      "name": "Canopy Branch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 638,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "vinebridge",
+      "name": "Twisted Vine Bridge",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 933,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "mosswall",
+      "name": "Moss Back Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 4,
+      "samples": 83,
+      "raised": 4,
+      "holes": 0,
+      "maxRaised": 2.7473033286638042,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": -33,
+          "z": -2.75,
+          "y": 140,
+          "best": 141.38273199201788,
+          "raised": true
+        },
+        {
+          "x": -48,
+          "z": -4,
+          "y": 140,
+          "best": 141.03811675574335,
+          "raised": true
+        },
+        {
+          "x": 33,
+          "z": -2.75,
+          "y": 140,
+          "best": 142.7473033286638,
+          "raised": true
+        },
+        {
+          "x": 48,
+          "z": -4,
+          "y": 140,
+          "best": 142.21580627279036,
+          "raised": true
+        }
+      ],
+      "vertices": 15746,
+      "primitives": [
+        "prism",
+        "tuft",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "barkwall",
+      "name": "Cork Bark Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 4,
+      "samples": 104,
+      "raised": 27,
+      "holes": 0,
+      "maxRaised": 2.5707794331692924,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0,
+          "z": -3.5206131637812805,
+          "y": 140,
+          "best": 141.1295865423287,
+          "raised": true
+        },
+        {
+          "x": -33,
+          "z": -4.334275923701576,
+          "y": 140,
+          "best": 140.51988078343658,
+          "raised": true
+        },
+        {
+          "x": -48,
+          "z": -4.704122632756256,
+          "y": 140,
+          "best": 141.03248641528307,
+          "raised": true
+        },
+        {
+          "x": -11.25,
+          "z": -4.0277446189966915,
+          "y": 140,
+          "best": 141.49672913646765,
+          "raised": true
+        },
+        {
+          "x": -24.750000000000004,
+          "z": -4.636302365255184,
+          "y": 140,
+          "best": 141.05959224680421,
+          "raised": true
+        }
+      ],
+      "vertices": 12444,
+      "primitives": [
+        "prism",
+        "tuft",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "stonewall",
+      "name": "Fieldstone Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 5,
+      "samples": 104,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3386,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "leafwall",
+      "name": "Dead Leaf Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 2,
+      "samples": 72,
+      "raised": 30,
+      "holes": 0,
+      "maxRaised": 2.8134979512772134,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0,
+          "z": -3.177203647649059,
+          "y": 140,
+          "best": 140.32155595136993,
+          "raised": true
+        },
+        {
+          "x": -15,
+          "z": -3.6329027357367942,
+          "y": 140,
+          "best": 142.27412217967338,
+          "raised": true
+        },
+        {
+          "x": -33,
+          "z": -4.179741641442076,
+          "y": 140,
+          "best": 141.89286576630826,
+          "raised": true
+        },
+        {
+          "x": -48,
+          "z": -4.635440729529812,
+          "y": 140,
+          "best": 142.8134979512772,
+          "raised": true
+        },
+        {
+          "x": -11.25,
+          "z": -3.7061967331772814,
+          "y": 140,
+          "best": 140.9077683920993,
+          "raised": true
+        }
+      ],
+      "vertices": 16716,
+      "primitives": [
+        "prism",
+        "tuft",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "trunkwall",
+      "name": "Tree Trunk Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 4,
+      "samples": 104,
+      "raised": 21,
+      "holes": 0,
+      "maxRaised": 2.5555855247827424,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": -48,
+          "z": -5.010989595534137,
+          "y": 140,
+          "best": 140.90318132066423,
+          "raised": true
+        },
+        {
+          "x": -36,
+          "z": -6.965759991438916,
+          "y": 140,
+          "best": 141.7208502812234,
+          "raised": true
+        },
+        {
+          "x": -7.5,
+          "z": -6.1492172852642115,
+          "y": 140,
+          "best": 141.25379392016433,
+          "raised": true
+        },
+        {
+          "x": -16.5,
+          "z": -7.462340454376446,
+          "y": 140,
+          "best": 140.95402129947698,
+          "raised": true
+        },
+        {
+          "x": -24,
+          "z": -8.556609761969973,
+          "y": 140,
+          "best": 141.36891766841424,
+          "raised": true
+        }
+      ],
+      "vertices": 12444,
+      "primitives": [
+        "prism",
+        "tuft",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "rootwall",
+      "name": "Root Tangle Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 4,
+      "samples": 103,
+      "raised": 5,
+      "holes": 0,
+      "maxRaised": 1.5070720948978078,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": -12,
+          "z": -5.777620378125173,
+          "y": 140,
+          "best": 140.81312450074995,
+          "raised": true
+        },
+        {
+          "x": 3.75,
+          "z": -4.169367234645268,
+          "y": 140,
+          "best": 141.28984014018022,
+          "raised": true
+        },
+        {
+          "x": 12,
+          "z": -6.17381756274746,
+          "y": 140,
+          "best": 140.51912926338252,
+          "raised": true
+        },
+        {
+          "x": 24,
+          "z": -5.250803080189687,
+          "y": 140,
+          "best": 140.47627376999912,
+          "raised": true
+        },
+        {
+          "x": 48,
+          "z": -4.6516506898288545,
+          "y": 140,
+          "best": 141.5070720948978,
+          "raised": true
+        }
+      ],
+      "vertices": 4710,
+      "primitives": [
+        "prism",
+        "tube"
+      ]
+    },
+    {
+      "id": "sandwall",
+      "name": "Sandstone Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 5,
+      "samples": 104,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3386,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "driftwall",
+      "name": "Driftwood Wall",
+      "arche": "backwall",
+      "cat": "walls",
+      "tops": 4,
+      "samples": 104,
+      "raised": 28,
+      "holes": 0,
+      "maxRaised": 2.5707794331692924,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0,
+          "z": -3.0258314826382464,
+          "y": 140,
+          "best": 141.7950641164169,
+          "raised": true
+        },
+        {
+          "x": -15,
+          "z": -3.519373611978685,
+          "y": 140,
+          "best": 141.0330610108821,
+          "raised": true
+        },
+        {
+          "x": -33,
+          "z": -4.111624167187211,
+          "y": 140,
+          "best": 140.99365098931003,
+          "raised": true
+        },
+        {
+          "x": -48,
+          "z": -4.605166296527649,
+          "y": 140,
+          "best": 140.99031971251355,
+          "raised": true
+        },
+        {
+          "x": -11.25,
+          "z": -3.537162983779294,
+          "y": 140,
+          "best": 141.7928353779355,
+          "raised": true
+        }
+      ],
+      "vertices": 16610,
+      "primitives": [
+        "prism",
+        "tuft",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wm_cork",
+      "name": "Cork Shelf",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 17,
+      "holes": 0,
+      "maxRaised": 2.766244722068933,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.01349006710526559,
+          "z": -3.628220865166801,
+          "y": 65,
+          "best": 66.29049393895178,
+          "raised": true
+        },
+        {
+          "x": -1.7494777476578927,
+          "z": -2.8300122748301053,
+          "y": 65,
+          "best": 67.70022172878672,
+          "raised": true
+        },
+        {
+          "x": -3.8650391253736824,
+          "z": -1.8721619664260698,
+          "y": 65,
+          "best": 66.9864099365419,
+          "raised": true
+        },
+        {
+          "x": -1.528358823095991,
+          "z": -3.547115863696579,
+          "y": 65,
+          "best": 67.13711586023737,
+          "raised": true
+        },
+        {
+          "x": -3.378577491337499,
+          "z": -3.4497898619323117,
+          "y": 65,
+          "best": 66.79026539412851,
+          "raised": true
+        }
+      ],
+      "vertices": 868,
+      "primitives": [
+        "prism",
+        "tuft"
+      ]
+    },
+    {
+      "id": "wm_slate",
+      "name": "Slate Ledge",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 31,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 124,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wm_drift",
+      "name": "Driftwood Perch",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 136,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wm_fungi",
+      "name": "Bracket Fungi",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 3,
+      "samples": 88,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 384,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wm_pothos",
+      "name": "Pothos Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 26,
+      "holes": 0,
+      "maxRaised": 3.639960251827361,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.006323468955593144,
+          "z": -3.7434765884530647,
+          "y": 65,
+          "best": 66.5257527220743,
+          "raised": true
+        },
+        {
+          "x": -1.5887702681974705,
+          "z": -2.9479878134067885,
+          "y": 65,
+          "best": 66.69830113861407,
+          "raised": true
+        },
+        {
+          "x": -3.5028827527811472,
+          "z": -1.9934012833512573,
+          "y": 65,
+          "best": 66.73234835256663,
+          "raised": true
+        },
+        {
+          "x": -1.4279957803206602,
+          "z": -3.6602572834107368,
+          "y": 65,
+          "best": 66.84061713949433,
+          "raised": true
+        },
+        {
+          "x": -3.1491788794521645,
+          "z": -3.5603941173599436,
+          "y": 65,
+          "best": 67.36626561311937,
+          "raised": true
+        }
+      ],
+      "vertices": 1018,
+      "primitives": [
+        "prism",
+        "leaf",
+        "tube"
+      ]
+    },
+    {
+      "id": "wm_staghorn",
+      "name": "Staghorn Fern",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 13,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 746,
+      "primitives": [
+        "prism",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_mosscush",
+      "name": "Moss Cushion",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2196,
+      "primitives": [
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_fernpocket",
+      "name": "Fern Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 32,
+      "holes": 0,
+      "maxRaised": 3.9231250714349244,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 66.71982572753996,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 66.5114507947047,
+          "raised": true
+        },
+        {
+          "x": -2.856931009733552,
+          "z": -1.7978279103231614,
+          "y": 65,
+          "best": 67.98276473911143,
+          "raised": true
+        },
+        {
+          "x": -4.158027077685855,
+          "z": -1.1557465137791754,
+          "y": 65,
+          "best": 68.92312507143492,
+          "raised": true
+        },
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 67.12435280552273,
+          "raised": true
+        }
+      ],
+      "vertices": 4340,
+      "primitives": [
+        "prism",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_maidenpocket",
+      "name": "Maidenhair Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 29,
+      "holes": 0,
+      "maxRaised": 3.98949855388733,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 67.02238664772787,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 68.87862099550276,
+          "raised": true
+        },
+        {
+          "x": -2.856931009733552,
+          "z": -1.7978279103231614,
+          "y": 65,
+          "best": 68.84447231310614,
+          "raised": true
+        },
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 68.49362862799207,
+          "raised": true
+        },
+        {
+          "x": -2.568419615018147,
+          "z": -3.076002457279266,
+          "y": 65,
+          "best": 68.80917747427048,
+          "raised": true
+        }
+      ],
+      "vertices": 2112,
+      "primitives": [
+        "prism",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_glowcaps",
+      "name": "Glow Caps",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 4,
+      "holes": 0,
+      "maxRaised": 3.275054948834665,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": -3.518330604195724,
+          "z": -0.9638414557152462,
+          "y": 65,
+          "best": 66.20758560763758,
+          "raised": true
+        },
+        {
+          "x": 2.395402780226351,
+          "z": -3.836321517021734,
+          "y": 65,
+          "best": 66.41929970207781,
+          "raised": true
+        },
+        {
+          "x": -2.4174031620822367,
+          "z": -0.8833089311126041,
+          "y": 65,
+          "best": 67.05172556682197,
+          "raised": true
+        },
+        {
+          "x": -3.518330604195724,
+          "z": -0.06784145571524514,
+          "y": 65,
+          "best": 68.27505494883466,
+          "raised": true
+        }
+      ],
+      "vertices": 640,
+      "primitives": [
+        "prism",
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "wk_brompocket",
+      "name": "Bromeliad Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 19,
+      "holes": 0,
+      "maxRaised": 3.7430850580934276,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 65.88917826514617,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 68.36574668250763,
+          "raised": true
+        },
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 67.35202124263171,
+          "raised": true
+        },
+        {
+          "x": -0.8857252930253411,
+          "z": -3.6364570639774074,
+          "y": 65,
+          "best": 66.20927778938585,
+          "raised": true
+        },
+        {
+          "x": -1.9551720523695677,
+          "z": -4.14771716148638,
+          "y": 65,
+          "best": 67.74925414861993,
+          "raised": true
+        }
+      ],
+      "vertices": 468,
+      "primitives": [
+        "prism",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_redbrom",
+      "name": "Red Bromeliad Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 19,
+      "holes": 0,
+      "maxRaised": 3.7430850580934276,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 65.88917826514617,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 68.36574668250763,
+          "raised": true
+        },
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 67.35202124263171,
+          "raised": true
+        },
+        {
+          "x": -0.8857252930253411,
+          "z": -3.6364570639774074,
+          "y": 65,
+          "best": 66.20927778938585,
+          "raised": true
+        },
+        {
+          "x": -1.9551720523695677,
+          "z": -4.14771716148638,
+          "y": 65,
+          "best": 67.74925414861993,
+          "raised": true
+        }
+      ],
+      "vertices": 468,
+      "primitives": [
+        "prism",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_tilly",
+      "name": "Air Plant Stub",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 609,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_orchidpocket",
+      "name": "Orchid Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 21,
+      "holes": 0,
+      "maxRaised": 3.7861699872649837,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 65.23261122778028,
+          "raised": true
+        },
+        {
+          "x": -2.856931009733552,
+          "z": -1.7978279103231614,
+          "y": 65,
+          "best": 65.57094126396446,
+          "raised": true
+        },
+        {
+          "x": -4.158027077685855,
+          "z": -1.1557465137791754,
+          "y": 65,
+          "best": 65.71826468115172,
+          "raised": true
+        },
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 65.35040946431889,
+          "raised": true
+        },
+        {
+          "x": -2.568419615018147,
+          "z": -3.076002457279266,
+          "y": 65,
+          "best": 65.90212641436993,
+          "raised": true
+        }
+      ],
+      "vertices": 690,
+      "primitives": [
+        "prism",
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "wk_flowerpocket",
+      "name": "Flower Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 17,
+      "holes": 0,
+      "maxRaised": 3.2203462785174963,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 66.43964193943802,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 65.66111588521531,
+          "raised": true
+        },
+        {
+          "x": -0.8857252930253411,
+          "z": -3.6364570639774074,
+          "y": 65,
+          "best": 66.06331288791559,
+          "raised": true
+        },
+        {
+          "x": -0.4803868724654126,
+          "z": -3.9727348715618507,
+          "y": 65,
+          "best": 67.70075241021208,
+          "raised": true
+        },
+        {
+          "x": -1.063427527137725,
+          "z": -4.887528338172155,
+          "y": 65,
+          "best": 65.69480855674605,
+          "raised": true
+        }
+      ],
+      "vertices": 1358,
+      "primitives": [
+        "prism",
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "wk_ivy",
+      "name": "Ivy Trail",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 719,
+      "primitives": [
+        "tube",
+        "leaf",
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_hangvine",
+      "name": "Hanging Vines",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1212,
+      "primitives": [
+        "tube",
+        "leaf",
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_roots",
+      "name": "Hanging Roots",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 388,
+      "primitives": [
+        "tube",
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_wirevine",
+      "name": "Wire Vine",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 399,
+      "primitives": [
+        "tube",
+        "leaf",
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_lichen",
+      "name": "Lichen Patch",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2562,
+      "primitives": [
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_mossband",
+      "name": "Moss Band",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2928,
+      "primitives": [
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_minimoss",
+      "name": "Mini Moss",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1281,
+      "primitives": [
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_leafpad",
+      "name": "Dry Leaf Cluster",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 316,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_pods",
+      "name": "Seed Pods",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1464,
+      "primitives": [
+        "tuft"
+      ]
+    },
+    {
+      "id": "wk_succpocket",
+      "name": "Succulent Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 32,
+      "holes": 0,
+      "maxRaised": 2.522162780305223,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.004637210567435268,
+          "z": -2.6773373769867934,
+          "y": 65,
+          "best": 65.16416015809317,
+          "raised": true
+        },
+        {
+          "x": -1.0962902315460519,
+          "z": -2.141869901589435,
+          "y": 65,
+          "best": 65.88821422717568,
+          "raised": true
+        },
+        {
+          "x": -2.4174031620822367,
+          "z": -1.4993089311126047,
+          "y": 65,
+          "best": 66.57034830652003,
+          "raised": true
+        },
+        {
+          "x": -3.518330604195724,
+          "z": -0.9638414557152462,
+          "y": 65,
+          "best": 67.31565669598936,
+          "raised": true
+        },
+        {
+          "x": -0.9853243105016652,
+          "z": -2.6334754965725518,
+          "y": 65,
+          "best": 65.71522958773417,
+          "raised": true
+        }
+      ],
+      "vertices": 424,
+      "primitives": [
+        "prism",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_echpocket",
+      "name": "Echeveria Pocket",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 34,
+      "holes": 0,
+      "maxRaised": 3.008000917854517,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.004637210567435268,
+          "z": -2.6773373769867934,
+          "y": 65,
+          "best": 65.17079820537963,
+          "raised": true
+        },
+        {
+          "x": -1.0962902315460519,
+          "z": -2.141869901589435,
+          "y": 65,
+          "best": 66.01060096773088,
+          "raised": true
+        },
+        {
+          "x": -2.4174031620822367,
+          "z": -1.4993089311126047,
+          "y": 65,
+          "best": 67.07182711246011,
+          "raised": true
+        },
+        {
+          "x": -3.518330604195724,
+          "z": -0.9638414557152462,
+          "y": 65,
+          "best": 67.93793748833527,
+          "raised": true
+        },
+        {
+          "x": -0.9853243105016652,
+          "z": -2.6334754965725518,
+          "y": 65,
+          "best": 65.75859509518507,
+          "raised": true
+        }
+      ],
+      "vertices": 548,
+      "primitives": [
+        "prism",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_rockfern",
+      "name": "Rock Fern",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 33,
+      "holes": 0,
+      "maxRaised": 3.9573896220350093,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.004637210567435268,
+          "z": -2.6773373769867934,
+          "y": 65,
+          "best": 66.75511880083154,
+          "raised": true
+        },
+        {
+          "x": -1.0962902315460519,
+          "z": -2.141869901589435,
+          "y": 65,
+          "best": 67.66498490131767,
+          "raised": true
+        },
+        {
+          "x": -2.4174031620822367,
+          "z": -1.4993089311126047,
+          "y": 65,
+          "best": 68.95738962203501,
+          "raised": true
+        },
+        {
+          "x": -0.9853243105016652,
+          "z": -2.6334754965725518,
+          "y": 65,
+          "best": 67.2051231299568,
+          "raised": true
+        },
+        {
+          "x": -2.173278135784586,
+          "z": -2.580841240075462,
+          "y": 65,
+          "best": 67.04367931240994,
+          "raised": true
+        }
+      ],
+      "vertices": 3628,
+      "primitives": [
+        "prism",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_inkpocket",
+      "name": "Ink Caps",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 2,
+      "holes": 0,
+      "maxRaised": 2.5139943126380473,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 2.395402780226351,
+          "z": -3.836321517021734,
+          "y": 65,
+          "best": 66.37423441126138,
+          "raised": true
+        },
+        {
+          "x": -3.518330604195724,
+          "z": -0.06784145571524514,
+          "y": 65,
+          "best": 67.51399431263805,
+          "raised": true
+        }
+      ],
+      "vertices": 604,
+      "primitives": [
+        "prism",
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "wk_monpocket",
+      "name": "Monstera Sprig",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 11,
+      "holes": 0,
+      "maxRaised": 3.6027450987796357,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 66.41677825270301,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 67.54203385600022,
+          "raised": true
+        },
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 66.52298711734466,
+          "raised": true
+        },
+        {
+          "x": -0.8857252930253411,
+          "z": -3.6364570639774074,
+          "y": 65,
+          "best": 67.87544603717815,
+          "raised": true
+        },
+        {
+          "x": -0.4803868724654126,
+          "z": -3.9727348715618507,
+          "y": 65,
+          "best": 65.73689831337201,
+          "raised": true
+        }
+      ],
+      "vertices": 449,
+      "primitives": [
+        "prism",
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_drypocket",
+      "name": "Dried Flowers",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 17,
+      "holes": 0,
+      "maxRaised": 3.85689922123062,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": 0.005480339761514327,
+          "z": -3.2104069827199306,
+          "y": 65,
+          "best": 66.77200161073135,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.568325586175945,
+          "y": 65,
+          "best": 65.66111588521531,
+          "raised": true
+        },
+        {
+          "x": -0.8857252930253411,
+          "z": -3.6364570639774074,
+          "y": 65,
+          "best": 66.34833618194672,
+          "raised": true
+        },
+        {
+          "x": -0.4803868724654126,
+          "z": -3.9727348715618507,
+          "y": 65,
+          "best": 68.24763725635835,
+          "raised": true
+        },
+        {
+          "x": -1.063427527137725,
+          "z": -4.887528338172155,
+          "y": 65,
+          "best": 65.69480855674605,
+          "raised": true
+        }
+      ],
+      "vertices": 748,
+      "primitives": [
+        "prism",
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "wk_grasspocket",
+      "name": "Grass Tuft",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 3,
+      "holes": 0,
+      "maxRaised": 3.493226840429287,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [
+        {
+          "x": -1.1644741851383316,
+          "z": -3.1493140166105373,
+          "y": 65,
+          "best": 68.49322684042929,
+          "raised": true
+        },
+        {
+          "x": 1.3043842718092116,
+          "z": -2.5683255861759444,
+          "y": 65,
+          "best": 67.81514551222553,
+          "raised": true
+        },
+        {
+          "x": -1.2956157281907885,
+          "z": -2.2883255861759446,
+          "y": 65,
+          "best": 66.9723019292374,
+          "raised": true
+        }
+      ],
+      "vertices": 278,
+      "primitives": [
+        "prism",
+        "tube"
+      ]
+    },
+    {
+      "id": "wk_stub",
+      "name": "Branch Stub",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 79,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "wk_twig",
+      "name": "Twig",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 55,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "wk_cholla",
+      "name": "Cholla Stick",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 99,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "wk_rootloop",
+      "name": "Root Loop",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 77,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "wk_longbranch",
+      "name": "Long Branch",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 201,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wk_stoneledge",
+      "name": "Stone Ledge",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 136,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_woodledge",
+      "name": "Wood Ledge",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 136,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_sandledge",
+      "name": "Sandstone Ledge",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 136,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_ledgerun",
+      "name": "Long Ledge",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 136,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_tinyledge",
+      "name": "Tiny Ledge",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 136,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_brownbracket",
+      "name": "Brown Brackets",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 2,
+      "samples": 59,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 272,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_orangebracket",
+      "name": "Orange Brackets",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 3,
+      "samples": 82,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 384,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_whitebracket",
+      "name": "Oyster Shelves",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 2,
+      "samples": 59,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 272,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "wk_shellfungi",
+      "name": "Shell Fungi",
+      "arche": "wallmount",
+      "cat": "walls",
+      "tops": 3,
+      "samples": 82,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 384,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "beadvine",
+      "name": "Cork Bead Vine",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2190,
+      "primitives": [
+        "tube",
+        "log",
+        "leaf"
+      ]
+    },
+    {
+      "id": "mossmound",
+      "name": "Moss Mound",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 391,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "mangrove",
+      "name": "Mangrove Root",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1380,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "tinytree",
+      "name": "Tiny Tree",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3579,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "grandtree",
+      "name": "Grand Habitat Tree",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 10695,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "ficus",
+      "name": "Mini Ficus",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2247,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "fern",
+      "name": "Fern",
+      "arche": "fern",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 5159,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "maidenhair",
+      "name": "Maidenhair Fern",
+      "arche": "fern",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2529,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "palmetto",
+      "name": "Dwarf Palmetto",
+      "arche": "palm",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3104,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "minipalm",
+      "name": "Mini Palm",
+      "arche": "palm",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2405,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "spiderplant",
+      "name": "Spider Plant",
+      "arche": "grass",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 436,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "tallgrass",
+      "name": "Tall Grass",
+      "arche": "grass",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 490,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "airplant",
+      "name": "Air Plant",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 603,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "monstera",
+      "name": "Mini Monstera",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 793,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "calathea",
+      "name": "Calathea",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 648,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "pothos",
+      "name": "Pothos",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 727,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "broadshelter",
+      "name": "Broad Leaf Shelter",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 409,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "fittonia",
+      "name": "Fittonia",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 757,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "dewcup",
+      "name": "Dew Cup Plant",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 544,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "bromeliad",
+      "name": "Bromeliad",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 568,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "redbromeliad",
+      "name": "Red Bromeliad",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 607,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "succulent",
+      "name": "Succulent",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 690,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "mossrosette",
+      "name": "Moss Rosette",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 555,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "toadstools",
+      "name": "Toadstools",
+      "arche": "mushroom",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1082,
+      "primitives": [
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "echeveria",
+      "name": "Echeveria",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 894,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "glowshroom",
+      "name": "Glow Mushrooms",
+      "arche": "mushroom",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 941,
+      "primitives": [
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "climbvine",
+      "name": "Climbing Vine",
+      "arche": "vine",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 756,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "creepfig",
+      "name": "Creeping Fig",
+      "arche": "vine",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1301,
+      "primitives": [
+        "leaf",
+        "tube"
+      ]
+    },
+    {
+      "id": "ivy",
+      "name": "Creeping Ivy",
+      "arche": "vine",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1113,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "pinkflowers",
+      "name": "Pink Flowers",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1903,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "daisies",
+      "name": "Daisies",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1061,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "lavender",
+      "name": "Lavender",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2620,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "wildflowers",
+      "name": "Red Wildflowers",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 874,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "orchid",
+      "name": "Jungle Orchid",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1006,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "miniorchid",
+      "name": "Mini Orchid",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 787,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "driedflowers",
+      "name": "Dried Flowers",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 936,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "mosspatch",
+      "name": "Moss Patch",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1650,
+      "primitives": [
+        "moss"
+      ]
+    },
+    {
+      "id": "leaflitter",
+      "name": "Leaf Litter",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 880,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "oaklitter",
+      "name": "Oak Leaf Litter",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 720,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "magnolia",
+      "name": "Magnolia Leaves",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 450,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "pebbles",
+      "name": "Pebbles",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 640,
+      "primitives": [
+        "pebble"
+      ]
+    },
+    {
+      "id": "seedpods",
+      "name": "Seed Pods",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 280,
+      "primitives": [
+        "pebble"
+      ]
+    },
+    {
+      "id": "pinecones",
+      "name": "Pinecones",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 200,
+      "primitives": [
+        "pebble"
+      ]
+    },
+    {
+      "id": "barkchips",
+      "name": "Bark Chips",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 384,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "lichen",
+      "name": "Lichen Patch",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1650,
+      "primitives": [
+        "moss"
+      ]
+    },
+    {
+      "id": "twigs",
+      "name": "Twig Scatter",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 90,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "cushionmoss",
+      "name": "Cushion Moss",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1650,
+      "primitives": [
+        "moss"
+      ]
+    },
+    {
+      "id": "clover",
+      "name": "Clover Patch",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1482,
+      "primitives": [
+        "moss"
+      ]
+    },
+    {
+      "id": "baskrock",
+      "name": "Basking Boulder",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 539,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "sandsteps",
+      "name": "Sandstone Steps",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 907,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "chollawood",
+      "name": "Cholla Wood",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 443,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "desertarch",
+      "name": "Desert Root Arch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 452,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "tallficus",
+      "name": "Canopy Ficus",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2442,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "bambooperch",
+      "name": "Bamboo Perch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 332,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "skybridge",
+      "name": "Canopy Vine Bridge",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 959,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "liana",
+      "name": "Hanging Liana",
+      "arche": "vine",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 768,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "birdsnest",
+      "name": "Bird's Nest Fern",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 877,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "tillandsia",
+      "name": "Tillandsia Cluster",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 831,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "mossystump",
+      "name": "Tree Stump",
+      "arche": "tower",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 483,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "fallenlog",
+      "name": "Fallen Log",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 649,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "bluebells",
+      "name": "Bluebells",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2339,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "inkcaps",
+      "name": "Ink Cap Mushrooms",
+      "arche": "mushroom",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 941,
+      "primitives": [
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "nanoledge",
+      "name": "Nano Cork Ledge",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 318,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "pebblehide",
+      "name": "Pebble Hide",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 37,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 229,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "twigperch",
+      "name": "Twig Perch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 285,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "babytears",
+      "name": "Baby's Tears",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 468,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "longlog",
+      "name": "Long Hollow Log",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 667,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "slateridge",
+      "name": "Slate Ridge",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 699,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "grassbank",
+      "name": "Grass Bank",
+      "arche": "grass",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 748,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "birchlog",
+      "name": "Birch Log",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 629,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "charredbranch",
+      "name": "Charred Branch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 917,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "lichenstone",
+      "name": "Lichen Stone",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 504,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "limestone",
+      "name": "Limestone Block",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 590,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "mottledtrunk",
+      "name": "Mottled Bark Trunk",
+      "arche": "tower",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 34,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 334,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "orangelichen",
+      "name": "Orange Lichen Branch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 849,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "terracottaledge",
+      "name": "Terracotta Ledge",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 358,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "redcroton",
+      "name": "Red Croton",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 751,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "glassleaf",
+      "name": "Glass Leaf Plant",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 661,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "emeraldfern",
+      "name": "Emerald Fern",
+      "arche": "fern",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 5174,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "bluefescue",
+      "name": "Blue Fescue",
+      "arche": "grass",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 652,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "marigolds",
+      "name": "Orange Marigolds",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1901,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "deadleafclump",
+      "name": "Dead-Leaf Hanging Clump",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1011,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "autumnlitter",
+      "name": "Autumn Leaf Litter",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 800,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "peperomia",
+      "name": "Peperomia",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 722,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "fittonia",
+      "name": "Nerve Plant",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 757,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "earthstar",
+      "name": "Earth Star",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 660,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "firebromeliad",
+      "name": "Fire Bromeliad",
+      "arche": "rosette",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 684,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "silverfern",
+      "name": "Silver Fern",
+      "arche": "fern",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 5155,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "lacefern",
+      "name": "Lace Fern",
+      "arche": "fern",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2791,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "marigold",
+      "name": "Marigolds",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1090,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "foxglove",
+      "name": "Foxglove",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2356,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "buttercups",
+      "name": "Buttercups",
+      "arche": "flower",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 918,
+      "primitives": [
+        "leaf",
+        "tube",
+        "bloom"
+      ]
+    },
+    {
+      "id": "flyagaric",
+      "name": "Fly Agaric",
+      "arche": "mushroom",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 943,
+      "primitives": [
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "bluecaps",
+      "name": "Blue Glow Caps",
+      "arche": "mushroom",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 935,
+      "primitives": [
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "mosscurtain",
+      "name": "Moss Curtain",
+      "arche": "vine",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1084,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "jadetree",
+      "name": "Jade Bonsai",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3849,
+      "primitives": [
+        "tube",
+        "pot",
+        "leaf"
+      ]
+    },
+    {
+      "id": "olivetree",
+      "name": "Little Olive",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3558,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "fanpalm",
+      "name": "Fan Palm",
+      "arche": "palm",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2689,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "sedge",
+      "name": "Sedge Tuft",
+      "arche": "grass",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 393,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "lichenboulder",
+      "name": "Lichen Boulder",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 575,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "sandmesa",
+      "name": "Sandstone Mesa",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 28,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 824,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "rivercairn",
+      "name": "River Cairn",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 43,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 468,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "birchperch",
+      "name": "Birch Perch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 268,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "vinebranch",
+      "name": "Twisted Vine Branch",
+      "arche": "branch",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 419,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "birchtube",
+      "name": "Birch Tube",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 703,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "claypipe",
+      "name": "Clay Pipe",
+      "arche": "log",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 650,
+      "primitives": [
+        "log"
+      ]
+    },
+    {
+      "id": "stonecave",
+      "name": "Stone Cave",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 37,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 411,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "riverhide",
+      "name": "River Rock Hide",
+      "arche": "hide",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 25,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 459,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "sphagnum",
+      "name": "Sphagnum Moss",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1650,
+      "primitives": [
+        "moss"
+      ]
+    },
+    {
+      "id": "birchleaves",
+      "name": "Birch Leaf Litter",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 720,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "acorns",
+      "name": "Acorns",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 240,
+      "primitives": [
+        "pebble"
+      ]
+    },
+    {
+      "id": "gravelpatch",
+      "name": "Gravel Patch",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 800,
+      "primitives": [
+        "pebble"
+      ]
+    },
+    {
+      "id": "cocochips",
+      "name": "Coconut Chips",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 384,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "heliconia",
+      "name": "Heliconia",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 820,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "dripvine",
+      "name": "Drip Vine",
+      "arche": "vine",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 834,
+      "primitives": [
+        "tube",
+        "leaf",
+        "cap"
+      ]
+    },
+    {
+      "id": "wetlitter",
+      "name": "Wet Leaf Litter",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 950,
+      "primitives": [
+        "leaf"
+      ]
+    },
+    {
+      "id": "saguaro",
+      "name": "Saguaro",
+      "arche": "cactus",
+      "cat": "plants",
+      "tops": 3,
+      "samples": 147,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1268,
+      "primitives": [
+        "prism",
+        "tube"
+      ]
+    },
+    {
+      "id": "barrelcactus",
+      "name": "Barrel Cactus",
+      "arche": "cactus",
+      "cat": "plants",
+      "tops": 1,
+      "samples": 49,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 534,
+      "primitives": [
+        "prism",
+        "tube"
+      ]
+    },
+    {
+      "id": "sandarch",
+      "name": "Sandstone Arch",
+      "arche": "rock",
+      "cat": "decor",
+      "tops": 1,
+      "samples": 13,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1038,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "pond",
+      "name": "Shallow Pond",
+      "arche": "dish",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 146,
+      "primitives": [
+        "prism"
+      ]
+    },
+    {
+      "id": "lilypond",
+      "name": "Lily Pond",
+      "arche": "dish",
+      "cat": "decor",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 366,
+      "primitives": [
+        "prism",
+        "leaf"
+      ]
+    },
+    {
+      "id": "cattails",
+      "name": "Cattails",
+      "arche": "grass",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 564,
+      "primitives": [
+        "tube"
+      ]
+    },
+    {
+      "id": "mudflat",
+      "name": "Mudflat",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 601,
+      "primitives": [
+        "pebble",
+        "prism"
+      ]
+    },
+    {
+      "id": "glowmoss",
+      "name": "Glow Moss",
+      "arche": "scatter",
+      "cat": "ground",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2310,
+      "primitives": [
+        "moss",
+        "cap"
+      ]
+    },
+    {
+      "id": "bluefungus",
+      "name": "Blue Fungus",
+      "arche": "mushroom",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 1150,
+      "primitives": [
+        "tube",
+        "cap"
+      ]
+    },
+    {
+      "id": "ghostfern",
+      "name": "Ghost Fern",
+      "arche": "fern",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 2232,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "acacia",
+      "name": "Ant Acacia",
+      "arche": "tree",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 3660,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    },
+    {
+      "id": "wovenleaf",
+      "name": "Woven Leaves",
+      "arche": "broadleaf",
+      "cat": "plants",
+      "tops": 0,
+      "samples": 0,
+      "raised": 0,
+      "holes": 0,
+      "maxRaised": 0,
+      "meshFinite": true,
+      "errors": [],
+      "examples": [],
+      "vertices": 643,
+      "primitives": [
+        "tube",
+        "leaf"
+      ]
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "raisedDecor": [
+      "mosswall",
+      "barkwall",
+      "leafwall",
+      "trunkwall",
+      "rootwall",
+      "driftwall",
+      "wm_cork",
+      "wm_pothos",
+      "wk_fernpocket",
+      "wk_maidenpocket",
+      "wk_glowcaps",
+      "wk_brompocket",
+      "wk_redbrom",
+      "wk_orchidpocket",
+      "wk_flowerpocket",
+      "wk_succpocket",
+      "wk_echpocket",
+      "wk_rockfern",
+      "wk_inkpocket",
+      "wk_monpocket",
+      "wk_drypocket",
+      "wk_grasspocket"
+    ],
+    "holeDecor": [],
+    "invalid": []
+  }
+}

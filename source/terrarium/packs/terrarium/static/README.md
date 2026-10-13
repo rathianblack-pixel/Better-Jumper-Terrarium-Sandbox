@@ -14,6 +14,18 @@ Create tanks from the top left of **Jumpers**. Choose an enclosure, an unlocked 
 
 Smarter sensory attention, remembered locations, failed-hunt adaptation, post-molt hunger/recovery, ambient prey routines and a clearer compact care card are included. See **CHANGELOG_LIVING_TANKS.md** for the complete changes and **QA_REPORT.md** for measured checks and limitations.
 
+## Decor safety and gentle foliage
+The solid tops of cork blocks, rocks, stacks, ledges and other bulky decor now match their walkable surfaces. Rounded logs have a matching crown strip, and cactus crowns match their physical top. Clear visual arches and hide entrances remain; this update does not add new interior navigation to hollow artwork.
+
+New molt retreats require room for the **next growth stage**, including edge and overhead clearance. Invalid saved supports are moved onto a usable exterior surface or clear floor; occupied silk follows the jumper without resetting molt progress. In a very crowded tank, provide a clear floor patch or roomy solid perch if a jumper cannot find a safe weaving site.
+
+**Menu → Settings → Foliage sway** controls subtle leaf, stem and flower motion:
+- **Auto** (default): off on Low or Battery saver; limited to four moving plants on Medium or six on higher quality. Sustained slow rendering pauses sway temporarily.
+- **On**: at most two moving plants on Low, otherwise six.
+- **Off**: disables ambient foliage motion.
+
+Motion is cosmetic and uses existing GPU mesh buffers. It does not rebuild navigation each frame; rocks, pots and rigid trunks stay still. Sway pauses with the tank and is reduced on plants supporting a jumper. Animated plants still require extra rendering work, so no universal zero-cost, phone-FPS or battery guarantee is made.
+
 ## Quick Tank Setup
 Tap the jumper name at the top left → **Tank Setup**, or use **Jumpers → Tank Setup** beside Switch Tank.
 

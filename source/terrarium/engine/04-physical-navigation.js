@@ -35,7 +35,7 @@
   /** Build the navigation graph for a habitat from its decor geometry. */
   Nav.build = function (hab) {
     const nav = { nodes: [], adj: [], regions: {}, pathIndex: {}, perches: [], flowers: [], water: [], version: (hab._navVersion = (hab._navVersion || 0) + 1) };
-    const geoms = hab.geoms;
+    const geoms = hab.geoms; hab.nav=nav; // support queries during graph construction use the new regions, not a stale layout
     const region = (key, y, poly) => nav.regions[key] || (nav.regions[key] = { key, y, poly: poly || null, nodes: [], obstacles: [] });
     region('F', 0, null);
     const supRegion = (inst) => inst.parent ? 'T|' + inst.parent + '|' + (inst.parentTop || 0) : 'F';
@@ -52,8 +52,8 @@
     // a piece's own higher layers standing on one of its tops (slate stacks, wall tiers, steps) block that part of the top
     for (const inst of hab.decor) { const g = geoms[inst.id]; if (!g) continue;
       g.tops.forEach((t, i) => { const r = nav.regions['T|' + inst.id + '|' + i]; if (!r) return;
-        for (const pr of g.prims) { if (pr.t !== 'prism' || !pr.poly || !(pr.y0 <= t.y + 0.3 && pr.y1 > t.y + 0.8)) continue;
-          const h = G.hull(pr.poly.concat(pr.topPoly || [])); if (h.length < 3) continue; h.soft = true; r.obstacles.push(h); } }); }
+        for (const pr of g.prims) { if (pr.t !== 'prism' || !pr.poly || !(pr.y0 < t.y + 8 && pr.y1 > t.y + 0.8)) continue;
+          const h = G.hull(pr.poly.concat(pr.topPoly || [])); if (h.length < 3) continue; h.soft = pr.y0 <= t.y + .3; r.obstacles.push(h); } }); }
     const addNode = (n) => { n.id = nav.nodes.length; nav.nodes.push(n); nav.adj.push([]); if (n.region) nav.regions[n.region].nodes.push(n.id); return n.id; };
     const addEdge = (a, b, e) => { nav.adj[a].push(Object.assign({ to: b }, e)); };
     const both = (a, b, e) => { addEdge(a, b, e); addEdge(b, a, Object.assign({}, e, e.s != null ? { rev: true } : {})); };
@@ -241,7 +241,7 @@
     let best = null;
     for (const inst of hab.decor) {
       const g = hab.geoms[inst.id]; if (!g || inst.id === excludeDecor) continue;
-      g.tops.forEach((t, i) => { if (t.y <= pos[1] + 0.6 && G.pointInPoly(pos[0], pos[2], t.poly) && (!best || t.y > best.pos[1])) best = { pos: [pos[0], t.y, pos[2]], sup: { k: 'top', d: inst.id, i } }; });
+      g.tops.forEach((t, i) => { const region=hab.nav&&hab.nav.regions['T|'+inst.id+'|'+i],blocked=region&&region.obstacles.some(o=>G.pointInPoly(pos[0],pos[2],o));if (!blocked && t.y <= pos[1] + 0.6 && G.pointInPoly(pos[0], pos[2], t.poly) && (!best || t.y > best.pos[1])) best = { pos: [pos[0], t.y, pos[2]], sup: { k: 'top', d: inst.id, i } }; });
     }
     if (best) return best;
     let [x, z] = Nav.clampInside(hab, pos[0], pos[2], 3);
@@ -249,9 +249,9 @@
     for (const inst of hab.decor) {
       const g = hab.geoms[inst.id]; if (!g || inst.parent) continue;
       for (const s of g.solids.concat(g.soft || [])) if (G.pointInPoly(x, z, s)) { // v16: also trunks / stems / logs (soft footprints): never land inside a tree
-        const c = G.centroid(s); let dx = x - c[0], dz = z - c[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-        for (let k = 0; k < 60 && G.pointInPoly(x, z, s); k++) { x += dx * 1.5; z += dz * 1.5; }
-        [x, z] = Nav.clampInside(hab, x, z, 3);
+        const c = G.centroid(s); let best=null,dist=Infinity;
+        for(let i=0;i<s.length;i++){const a=s[i],b=s[(i+1)%s.length],dx=b[0]-a[0],dz=b[1]-a[1],q=M.clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1),0,1),px=a[0]+dx*q,pz=a[1]+dz*q;let ox=px-c[0],oz=pz-c[1],len=Math.hypot(ox,oz);if(len<1e-6){ox=dz;oz=-dx;len=Math.hypot(ox,oz)||1;}const nx=px+ox/len*.9,nz=pz+oz/len*.9,dd=Math.hypot(nx-x,nz-z);if(Nav.inside(hab,nx,nz,3)&&!G.pointInPoly(nx,nz,s)&&dd<dist){best=[nx,nz];dist=dd;}}
+        if(best){x=best[0];z=best[1];}else{let dx=x-c[0],dz=z-c[1],len=Math.hypot(dx,dz);if(len<1e-6){dx=1;dz=0;len=1;}for(let k=0;k<60&&G.pointInPoly(x,z,s);k++){x+=dx/len*1.5;z+=dz/len*1.5;}[x,z]=Nav.clampInside(hab,x,z,3);}
       }
     }
     return { pos: [x, 0, z], sup: { k: 'floor' } };

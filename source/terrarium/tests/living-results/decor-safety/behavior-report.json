@@ -1,0 +1,34 @@
+{
+  "result": "PASS",
+  "behavior": {
+    "escaped": true,
+    "progress": true,
+    "future": true,
+    "room": 3.15125,
+    "edgeReject": true,
+    "noUnsafeNest": true,
+    "overhead": true,
+    "legacyRepair": true,
+    "flags": 4,
+    "changing": true,
+    "rigid": true,
+    "bufferReuse": true,
+    "lowOff": true,
+    "slowOff": true,
+    "off": true
+  },
+  "render": [
+    {
+      "art": "storybook",
+      "wind": 2,
+      "glError": 0
+    },
+    {
+      "art": "hd2d",
+      "wind": 2,
+      "glError": 0
+    }
+  ],
+  "errors": [],
+  "catalog": 216
+}

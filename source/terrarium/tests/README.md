@@ -11,7 +11,7 @@ GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node regression.js
 `TEST_OUTPUT` optionally selects the output folder. Defaults to `tests/results`.
 Tests cover desktop 1280×720, phone 390×844 at DPR 3, and phone landscape 844×390; HD-2D and Storybook with all four quality settings; live unsaved title preview; Start/New/Continue; confirmation/cancellation and local backup; onboarding, notebook screens, contextual jumper details, Observe and photo pause. Screenshots and a JSON report are written to the output folder.
 
-Included `release-results` are from headless Chromium with SwiftShader software rendering. They are not measurements of physical phone performance. The old pixel-budget/intro-story tests were replaced because those behaviors were intentionally removed.
+Included `living-results/regression` reports are from headless Chromium with SwiftShader software rendering. They are not measurements of physical phone performance. The old pixel-budget/intro-story tests were replaced because those behaviors were intentionally removed.
 
 Additional final-build save/defaults/offline checks: `GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node final-check.js`.
 
@@ -35,3 +35,17 @@ Shared sheet/drawer spacing audits: `node modal-spacing.js` and `node drawer-spa
 Tank Setup preview/apply/cancel/Undo, saved Undo, inactive freeze, custom presets, occupied molt retreat and both renderer framing checks: `node tank-setup.js`. Evidence is under `living-results/tank-setup/`.
 
 Post-apply simulation and legacy/Menu shortcut checks: `node tank-setup-soak.js` (controlled adult fixtures, 30 simulated seconds per mode).
+
+## Decor safety and foliage
+Run against the hosted final build, with the same `GAME_URL` and `CHROMIUM` options:
+
+```sh
+node decor-audit.js
+node decor-variants.js
+node decor-safety.test.js
+node foliage-performance.js
+```
+
+`decor-audit.js` builds all 216 definitions and records full-mesh samples; decorative foliage/moss/ornamental cap overlaps are reported separately from missing surfaces. `decor-variants.js` checks hard-cap support heights across 1,728 seed/rotation/elevation cases. `decor-safety.test.js` checks retreat clearance, unsafe-site refusal, legacy occupied-retreat reconciliation, wind/cache/quality controls and both real renderer paths. It also renders all 216 catalog thumbnails into six contact sheets. `SKIP_ATLAS=1` skips regenerating those sheets.
+
+Evidence is in `living-results/decor-safety/`. `foliage-performance.js` is a small software-GPU diagnostic, not a phone-performance or zero-cost guarantee. Automated checks do not prove every possible stacked layout or animation pose is clipping-free. The release includes compact reports and selected screenshots; larger screenshot sets are generated when you rerun the tests.

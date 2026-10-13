@@ -1463,6 +1463,9 @@
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Surface detail')); const sg = el('div', 'seg small');
         for (const [v, l] of [['rich', 'Rich'], ['simple', 'Simple']]) { const b = el('button', (s.detail || (JT.app && JT.app.R && JT.app.R.gp && JT.app.R.gp._swGL ? 'simple' : 'rich')) === v ? 'on' : '', l); b.onclick = () => { s.detail = v; JT.Settings.save(s); try { JT.app.R.resetCaches(); } catch (e) {} this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Rich: bark, stone, moss and wood textures on decor. Simple is lighter on older devices (Battery saver uses it too)')); w.appendChild(fr); }
+      { const fr=el('div','form-row');fr.appendChild(el('label','','Foliage sway'));const sg=el('div','seg small');
+        for(const [v,l]of [['auto','Auto'],['on','On'],['off','Off']]){const b=el('button',(s.foliageSway||'auto')===v?'on':'',l);b.onclick=()=>{s.foliageSway=v;JT.Settings.save(s);this.R.resetCaches();this.settingsModal();};sg.appendChild(b);}
+        fr.appendChild(sg);fr.appendChild(el('span','muted','Subtle GPU leaf and flower motion. Auto pauses it on Low, Battery saver or sustained slow rendering; On still limits the number of moving plants.'));w.appendChild(fr); }
       const tog = (key, label, hint) => { const r = el('div', 'form-row'); const id = 'set_' + key; r.innerHTML = '<label for="' + id + '">' + label + '</label>'; const c = el('input'); c.type = 'checkbox'; c.id = id; c.checked = !!s[key]; c.onchange = () => { s[key] = c.checked; JT.Settings.save(s); }; r.appendChild(c); if (hint) r.appendChild(el('span', 'muted', hint)); w.appendChild(r); return c; };
       w.appendChild(el('h4', '', 'Feel & help'));
       { const c = tog('haptics', 'Vibration', this.hapticsInfo()); c.checked = s.haptics !== false; c.addEventListener('change', () => { if (c.checked) this.buzz('tap', true); }); }

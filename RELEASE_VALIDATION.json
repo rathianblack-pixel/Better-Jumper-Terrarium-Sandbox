@@ -1,0 +1,12 @@
+{
+  "edition": "Decor Safety and Foliage Update",
+  "decorDefinitions": 216,
+  "variantCases": 1728,
+  "supportedCapSamples": 9948,
+  "runtimeSHA256": {
+    "index.html": "7a1458b281d19f22f2ac998143f98303a7ec1ae8474864c01adb4f708b264e85",
+    "jumper.html": "e3c95523dd7c25dc799e1548e45959a8ebe029738d92ac4503949c0287665b1f",
+    "sw.js": "27c764d20eb3ccc137e2d5bc3834165e6a37677d81a0364b76d2a269c9829f67"
+  },
+  "validation": "Headless Chromium / SwiftShader; see QA_REPORT.md for scope and limits."
+}

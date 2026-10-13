@@ -1254,7 +1254,8 @@
   const NEST_BAN_ARCHE = new Set(['wallmount', 'dish', 'scatter']);
   const NEST_BAN_TYPE = new Set(['flowerpot', 'waterdish']);
   function edgeDist(x, z, poly) { let d = 1e9; for (let i = 0, n = poly.length; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; const ex = b[0] - a[0], ez = b[1] - a[1]; const l2 = ex * ex + ez * ez || 1e-9; const t = M.clamp(((x - a[0]) * ex + (z - a[1]) * ez) / l2, 0, 1); d = Math.min(d, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t)); } return d; }
-  AI.nestRoom = (L) => L * 0.6 + 0.4;
+  AI.nestRoom = (L) => L * .95 + .8;
+  AI.nestLength = (sp,kind) => sp_(sp).len * JT.STAGE_SCALE[M.clamp(sp.stage + (kind === 'molt' ? 1 : 0),0,5)];
   AI.nestSiteOK = function (hab, sup, pos, L) {
     if (!sup || !pos) return false; const r = AI.nestRoom(L); let region;
     if (sup.k === 'floor') { if (!Nav.inside(hab, pos[0], pos[2], r)) return false; region = hab.nav && hab.nav.regions.F; }
@@ -1269,15 +1270,15 @@
     return true;
   };
   /** Nearest reachable allowed spot (used when the jumper is somewhere it can't build). */
-  AI.nearestNestSite = function (hab, sp) {
-    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const L = AI.len(sp); let best = null, bc = 1e9;
+  AI.nearestNestSite = function (hab, sp, kind) {
+    const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp)); const L = AI.nestLength(sp,kind || (/^molt/.test(sp.state)?'molt':'sleep')); let best = null, bc = 1e9;
     for (const n of hab.nav.nodes) { const c = dj.dist[n.id]; if (!isFinite(c) || c >= bc) continue; if (!AI.nestSiteOK(hab, n.sup, n.pos, L)) continue; bc = c; best = n; }
     if (!best) return null; const route = Nav.buildRoute(hab, dj, best.sup, best.pos); return route ? { node: best, route, high: best.y > 12, plant: false } : null;
   };
   AI.chooseSpot = function (hab, sp, mode, carry, avoid) {
     const dj = Nav.dijkstra(hab, sp.sup, sp.pos, AI.caps(sp, carry));
     const H0 = hab.dims.h; const S = sp_(sp);
-    let best = null, bs = -1e9; const nesting = mode === 'sleep' || mode === 'molt'; const Ls = AI.len(sp);
+    let best = null, bs = -1e9; const nesting = mode === 'sleep' || mode === 'molt'; const Ls = nesting ? AI.nestLength(sp,mode) : AI.len(sp);
     const others = hab.data.spiders.filter(o => o !== sp);
     const preyLive = hab.data.prey.filter(p => !p.owner && !p.buried);
     for (const n of hab.nav.nodes) {
@@ -1475,8 +1476,8 @@
   // ---- molting (absolute priority once ready) ----
   function startMoltSeek(hab, sp) {
     AI.dropTarget(hab, sp); sp._seen = {}; sp._route = null; sp._plan = null;
-    const okHere = AI.nestSiteOK(hab, sp.sup, sp.pos, AI.len(sp));
-    const spot = AI.chooseSpot(hab, sp, 'molt') || (okHere ? null : AI.nearestNestSite(hab, sp));
+    const okHere = AI.nestSiteOK(hab, sp.sup, sp.pos, AI.nestLength(sp,'molt'));
+    const spot = AI.chooseSpot(hab, sp, 'molt') || (okHere ? null : AI.nearestNestSite(hab, sp,'molt'));
     if (!spot || (okHere && M.dist(spot.node.pos, sp.pos) < 3)) { sp.retreat = { d: sp.sup.d || null, pos: sp.pos.slice() }; setState(sp, 'moltSilk', 'Pre-molt — weaving a molting hammock right here.'); return; }
     sp._route = spot.route; sp._routeStart = hab.time; sp.retreat = { d: spot.node.decor || null, pos: spot.node.pos.slice() };
     setState(sp, 'moltSeek', spot.high ? 'Pre-molt — climbing to the safest high retreat.' : 'Pre-molt — no high shelter here, heading for a quiet sheltered refuge.');
@@ -1500,11 +1501,12 @@
   const SPIN = AI.SPIN = { sleep: { dur: 6, turns: 1 }, molt: { dur: 10, turns: 2 }, patch: { dur: 3, turns: 1 } };
   function startBuild(n, kind) { const c = SPIN[kind] || SPIN.sleep; n.build = { dur: c.dur, turns: c.turns, t: 0, from: n.prog || 0 }; n.spinA = 0; }
   function makeNest(hab, sp, kind) {
+    if(!AI.nestSiteOK(hab,sp.sup,sp.pos,AI.nestLength(sp,kind)))return null;
     const d = hab.data; d.nests = d.nests || [];
     let n = d.nests.find(x => !x.owner && M.dist(x.pos, sp.pos) < AI.len(sp) * 0.5 && x.age < 1500);
     if (n) { n.owner = sp.id; n.hole = null; n.prog = Math.min(n.prog, 0.5); n.age = 0; n.kind = kind; startBuild(n, 'patch'); }
     else {
-      n = { id: JT.newId('n'), owner: sp.id, pos: sp.pos.slice(), sup: JT.deepClone(sp.sup), fwd: (sp.fwd || [1, 0, 0]).slice(), len: AI.len(sp), prog: 0, hole: null, age: 0, kind, seed: (JT.R() * 1e6) | 0 };
+      n = { id: JT.newId('n'), owner: sp.id, pos: sp.pos.slice(), sup: JT.deepClone(sp.sup), fwd: (sp.fwd || [1, 0, 0]).slice(), len: AI.nestLength(sp,kind), prog: 0, hole: null, age: 0, kind, seed: (JT.R() * 1e6) | 0 };
       d.nests.push(n); while (d.nests.length > 8) d.nests.shift(); startBuild(n, kind);
     }
     sp.nest = n.id; return n;
