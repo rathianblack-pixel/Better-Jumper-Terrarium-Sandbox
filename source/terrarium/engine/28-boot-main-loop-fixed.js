@@ -185,8 +185,7 @@
     });
     function frame(now) {
       if (document.hidden) { last = workLast = now; acc = rAcc = 0; requestAnimationFrame(frame); return; }
-      const mobile = JT.Device.android || JT.Device.ios || JT.Device.coarse;
-      const desired = settings.fps === 'smooth' && !mobile && !(R._thermalLevel > 0) ? 60 : 30;
+      const desired = settings.fps === 'battery' ? 30 : 60;
       if (now - workLast < 1000 / desired - 0.7) { requestAnimationFrame(frame); return; }
       workLast = now;
       let dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
@@ -196,9 +195,8 @@
       else if (JT.UI.photo || JT.UI.tankSetup) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
-      // Sustainable by default: fixed 30 fps on phones; 60 only when requested on desktop.
-      // Auto alone adapts resolution. Manual presets stay at their chosen multiplier.
-      rAcc += dt; R.targetFps = desired; R.locked30 = mobile || R._thermalLevel > 0;
+      // Smooth 60 fps pacing target
+      rAcc += dt; R.targetFps = desired; R.locked30 = desired === 30;
       R._missSeconds = dt > (1 / desired) * 1.35 ? (R._missSeconds || 0) + dt : Math.max(0, (R._missSeconds || 0) - dt * 0.25);
       if (settings.quality === 'auto' && (R._missSeconds > 2.5 || (cost > 1000 / desired * 0.7 && (R._costSeconds = (R._costSeconds || 0) + dt) > 2.5)) && (R._thermalLevel || 0) < 4 && now > (R._backoffAt || 0)) {
         R._thermalLevel = (R._thermalLevel || 0) + 1; R._missSeconds = R._costSeconds = 0; R._backoffAt = now + 10000; R.resize();
