@@ -80,8 +80,6 @@
           break;
         case 'catch': this.tone('effects', 660, 0.12, { type: 'triangle', vol: 0.1 }); this.tone('effects', 990, 0.18, { type: 'triangle', vol: 0.08, delay: 0.07 }); break;
         case 'rustle': this.noise('effects', 0.35, { f: 1800, q: 0.6, vol: 0.07, att: 0.08 }); break;
-        case 'page': this.noise('effects', 0.26, { f: 1600, fTo: 750, q: 0.8, vol: 0.07, att: 0.03 }); break;
-        case 'stamp': this.noise('effects', 0.1, { ft: 'lowpass', f: 420, vol: 0.14, att: 0.002 }); this.tone('effects', 150, 0.14, { type: 'sine', vol: 0.07, to: 85 }); break;
         case 'journal': [523, 659, 784].forEach((f, i) => this.tone('effects', f, 0.5, { type: 'sine', vol: 0.07, delay: i * 0.09 })); break;
         case 'molt': this.tone('effects', 392, 1.2, { type: 'sine', vol: 0.07, att: 0.3, vib: 4, vibAmt: 3 }); break;
         case 'error': this.tone('effects', 200, 0.18, { type: 'square', vol: 0.04, lp: 900 }); break;
