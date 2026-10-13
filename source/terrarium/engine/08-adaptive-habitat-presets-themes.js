@@ -127,3 +127,5 @@
     hab.decor.forEach(d => { d.novel = false; });
   };
 })(typeof window !== 'undefined' ? window : globalThis);
+
+

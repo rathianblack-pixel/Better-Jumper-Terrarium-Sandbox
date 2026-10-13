@@ -214,6 +214,17 @@
     });
     // plain face: the texture comes from the material; dressing is the player's (free wall decorations)
     const p0 = B.prims.length;
+    // v28: a little life spilling over the crest — moss tufts along the top edge, strands of moss, roots or ivy hanging down the face
+    const SPILL = { mosswall: ['#5f7f3a', 'moss'], rootwall: ['#5a4232', 'root'], barkwall: ['#4f7a34', 'ivy'], trunkwall: ['#4f7a34', 'ivy'], leafwall: ['#6a7a3a', 'moss'], driftwall: ['#7a8a5a', 'moss'] }[S];
+    if (SPILL) { const [sc2, kind] = SPILL;
+      if (kind !== 'root') { const nt = Math.round((x1 - x0) / 5.5); for (let k = 0; k < nt; k++) { const x = x0 + 3 + (x1 - x0 - 6) * (k + rng() * 0.8) / nt; B.prim({ t: 'tuft', o: [x, h - 0.4, zAt(x) * 0.85], r: 2.6 + rng() * 2.2, col: shade(sc2, (rng() - 0.5) * 0.25), nv: [0, 1, 0], seed: (rng() * 1e6) | 0 }); } }
+      const ns = Math.max(4, Math.round(w / (kind === 'root' ? 14 : 11)));
+      for (let k = 0; k < ns; k++) { const xc = x0 + 6 + (x1 - x0 - 12) * (k + 0.2 + rng() * 0.6) / ns; const nst = kind === 'root' ? 1 : 2 + ((rng() * 2) | 0);
+        for (let m = 0; m < nst; m++) { const x = xc + (rng() - 0.5) * 4; const zf = zAt(x); const len = (kind === 'root' ? 20 : 6) + rng() * Math.min(kind === 'root' ? 60 : 28, h * (kind === 'root' ? 0.45 : 0.2)); const col = shade(sc2, (rng() - 0.5) * 0.25);
+          const st = []; const NQ = kind === 'root' ? 12 : 8; const sway = kind === 'root' ? 5 + rng() * 6 : 1.2; for (let q = 0; q <= NQ; q++) { const u = q / NQ; st.push([x + Math.sin(u * (kind === 'root' ? 3 : 4) + k + m) * sway * u, h + 0.3 - u * len, zf + (kind === 'root' ? 0.35 : -0.4 - Math.sin(u * Math.PI) * 0.7)]); }
+          B.prim({ t: 'tube', pts: [[x, h + 0.5, zf * 0.6]].concat(st), r0: kind === 'root' ? 1.5 + rng() * 0.6 : 0.4, r1: kind === 'root' ? 0.35 : 0.14, col, style: kind === 'root' ? 'bark' : 'vine' });
+          if (kind === 'root') { if (rng() < 0.6) { const j0 = 4 + ((rng() * 5) | 0); const s0 = st[j0]; const br = []; for (let q = 0; q <= 5; q++) { const u = q / 5; br.push([s0[0] + (rng() < 0.5 ? -1 : 1) * u * 6, s0[1] - u * 10, zf + 0.35]); } B.prim({ t: 'tube', pts: br, r0: 0.7, r1: 0.2, col, style: 'bark' }); } continue; }
+          for (let q = 1; q <= NQ; q++) { const nl = kind === 'ivy' ? (rng() < 0.85 ? 1 : 0) : 2; for (let l = 0; l < nl; l++) leaf(B, st[q], rng() * 6.28, kind === 'ivy' ? 3.4 + rng() : 2.4 + rng() * 1.2, kind === 'ivy' ? 2.6 : 0.55, shade(sc2, (rng() - 0.5) * 0.25), null, kind === 'ivy' ? 'ivy' : 'lance', kind === 'ivy' ? 0.2 : -1.35, st[q][1]); } } } }
     // keep every tuft, shelf, leaf and root inside the wall's left / right edges (slide inward along the face)
     const lim = x1 - 0.5;
     for (let i = p0; i < B.prims.length; i++) { const q = B.prims[i]; let lo, hi;
@@ -437,12 +448,15 @@
     for (let i = 0; i < p.n; i++) {
       const a = i / p.n * Math.PI * 2 + rng() * 0.5; const L = p.L * (0.75 + rng() * 0.35), H = p.h * sc * (0.75 + rng() * 0.4);
       const pts = []; for (let s = 0; s <= 7; s++) { const t = s / 7; const hz = L * t; pts.push([Math.cos(a) * hz, 0.4 + Math.sin(t * Math.PI * 0.82) * H, Math.sin(a) * hz * 0.85]); }
-      B.prim({ t: 'tube', pts, r0: 0.7, r1: 0.25, col: shade(p.leaf, -0.25), style: 'stem' });
+      B.prim({ t: 'tube', pts, r0: 0.5, r1: 0.14, col: shade(p.leaf, -0.25), style: 'stem' });
       B.path(pts, 0.6, 'frond', { flex: 0.9 });
-      for (let s = 1; s <= 7; s++) {
-        const q = pts[s]; const t = s / 7; const lw = (p.fine ? 2.2 : 3.4) * (1.1 - t * 0.6);
-        const dir = Math.atan2(pts[s][2] - pts[s - 1][2], pts[s][0] - pts[s - 1][0]);
-        for (const sd of [-1, 1]) leaf(B, q, dir + sd * 1.25, lw * (p.fine ? 1.1 : 1.7), lw * (p.fine ? 0.7 : 0.38), shade(p.leaf, (rng() - 0.5) * 0.2), null, p.fine ? 'round' : 'lance', 0.15 - t * 0.6, q[1]);
+      // v28: a real frond: many leaflets (pinnae) on both sides, small at the base, longest a third of the way out, tiny at the tip
+      const fc = shade(p.leaf, (rng() - 0.5) * 0.16); const NS = p.fine ? 9 : 12;
+      for (let s = 1; s <= NS; s++) {
+        const t = s / NS; const x = t * 7, i0 = Math.min(6, Math.floor(x)), fr = x - i0; const q = M.lerp3(pts[i0], pts[i0 + 1], fr);
+        const prof = Math.sin(Math.PI * Math.min(1, 0.18 + t * 0.9)); const lw = (p.fine ? 2.3 : 3.5) * (0.3 + 0.8 * prof);
+        const dir = Math.atan2(pts[i0 + 1][2] - pts[i0][2], pts[i0 + 1][0] - pts[i0][0]);
+        for (const sd of [-1, 1]) leaf(B, q, dir + sd * (p.fine ? 1.2 : 0.95), lw * (p.fine ? 1.1 : 1.6), lw * (p.fine ? 0.7 : 0.4), shade(fc, (rng() - 0.5) * 0.1 + t * 0.06), null, p.fine ? 'round' : 'lance', 0.1 - t * 0.75, q[1]);
       }
     }
     B.height = p.h * sc + 3; B.coverR = p.L * 0.9;
@@ -508,15 +522,18 @@
   ARCH.mushroom = function (B, p, sc) {
     const rng = B.rng;
     for (let i = 0; i < p.n; i++) {
-      const a = rng() * 6.28, rr = rng() * 6; const H = p.h * (0.4 + rng() * 0.7);
+      const a = i / p.n * 6.28 + rng() * 1.2, rr = (p.n > 1 ? 2.5 : 0) + rng() * 4.5; const H = p.h * (0.4 + rng() * 0.7) * (i === 0 ? 1.1 : 1);
       const base = [Math.cos(a) * rr, 0, Math.sin(a) * rr];
       const pts = bez(base, [base[0], H * 0.6, base[2]], [base[0] + (rng() - .5) * 2, H, base[2]], 4);
       const capR = p.cap * (0.6 + rng() * 0.6);
       B.prim({ t: 'tube', pts, r0: capR * (p.spots ? 0.22 : 0.32), r1: capR * (p.spots ? 0.18 : 0.24), col: p.stem || '#e8e0c8', style: 'stem' });
-      B.prim({ t: 'cap', o: pts[4], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, cone: !!p.spots, h: H });
+      B.prim({ t: 'cap', o: pts[4], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, dome: !!p.spots, h: H });
       pts.push([pts[4][0], H + capR * 0.5, pts[4][2]]);
       B.path(pts, capR * 0.2, 'stem', { flex: 0.05 });
     }
+    // v28: a couple of young buttons pushing up at the foot of the clump (render only)
+    for (let i = 0; i < 2; i++) { const a = rng() * 6.28, rr = 3 + rng() * 5; const H = p.h * (0.12 + rng() * 0.1); const base = [Math.cos(a) * rr, 0, Math.sin(a) * rr]; const capR = p.cap * (0.3 + rng() * 0.2);
+      B.prim({ t: 'tube', pts: [base, [base[0], H, base[2]]], r0: capR * 0.4, r1: capR * 0.32, col: p.stem || '#e8e0c8', style: 'stem' }); B.prim({ t: 'cap', o: [base[0], H, base[2]], r: capR, col: p.col, glow: p.glow, spots: !!p.spots, dome: true, h: H }); }
     B.height = p.h * 1.2; B.coverR = 8;
   };
   ARCH.vine = function (B, p, sc) {
@@ -611,6 +628,13 @@
     }
   };
 
+  // v28: no two copies of a plant alike — a seeded nudge to size, leaf count and colour per instance
+  const VARY = { fern: 1, palm: 1, grass: 1, rosette: 1, broadleaf: 1, mushroom: 1, vine: 1, flower: 1, tree: 0.5, bamboo: 1, leafcluster: 1 };
+  function vary(p0, seed, k) { const r = JT.makeRng(seed * 7919 + 13); const q = Object.assign({}, p0); const j = (a) => 1 + (r() - 0.5) * 2 * a * k;
+    if (q.n > 2) q.n = Math.max(2, Math.round(q.n * j(0.22))); if (q.h) q.h *= j(0.12); for (const f of ['L', 'leafL', 'leafW', 'spread', 'cap']) if (q[f]) q[f] *= j(0.1);
+    const jit = (hex) => { const c = toHsl(hexRgb(hex)); return rgbHex(fromHsl([(c[0] + (r() - 0.5) * 0.05 * k + 1) % 1, M.clamp(c[1] + (r() - 0.5) * 0.12 * k, 0, 1), M.clamp(c[2] + (r() - 0.5) * 0.1 * k, 0.04, 0.96)])); };
+    for (const f of ['leaf', 'petal', 'col']) if (typeof q[f] === 'string' && q[f][0] === '#' && q[f].length === 7) q[f] = jit(q[f]);
+    return q; }
   // ---- world transform ----
   function makeXf(inst, baseY) {
     const a = (inst.rot || 0) * Math.PI / 2, c = Math.round(Math.cos(a)), s = Math.round(Math.sin(a));
@@ -625,7 +649,8 @@
     const def = JT.DECOR_BY_ID[inst.type];
     const rng = JT.makeRng(inst.seed || 1);
     const B = new Builder(rng); B.inst = inst;
-    const pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h, arc: inst.arc || null, cols: JT.wallCols(inst.sub) }) : def.p; // back walls span the whole back of their tank
+    let pp = def.arche === 'backwall' && inst.ww ? Object.assign({}, def.p, { w: inst.ww, h: inst.wh || def.p.h, arc: inst.arc || null, cols: JT.wallCols(inst.sub) }) : def.p; // back walls span the whole back of their tank
+    if (VARY[def.arche] && def.cat === 'plants') pp = vary(pp, inst.seed || 1, VARY[def.arche]);
     const nominal = pp.h || 10;
     const sc = Math.min(1, Math.max(0.35, (maxH - baseY - 6) / nominal));
     ARCH[def.arche](B, pp, sc);
@@ -769,3 +794,5 @@
     const L = Math.hypot(gx, gy, gz); return L > 1e-6 ? [gx / L, gy / L, gz / L] : [0, 1, 0];
   };
 })(typeof window !== 'undefined' ? window : globalThis);
+
+
