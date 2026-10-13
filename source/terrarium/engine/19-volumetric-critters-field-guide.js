@@ -319,7 +319,9 @@
         var w, h;
         const one = (grow, al) => {
             if (al < .003) return;
-            if (ctx.gpuShadow) return void ctx.gpuShadow(ells, strokes, grow, col, al, 0 === art ? 1.5 / k : 1);
+            // Shadow softness scales with height above the surface: 0 (on ground) = crisp, 1 (fully elevated) = soft.
+            const heightSf = 0 === art ? 1.5 / k : M.clamp(0.35 + 1.3 * (h / Math.max(L, 0.1)), 0.35, 2.5);
+            if (ctx.gpuShadow) return void ctx.gpuShadow(ells, strokes, grow, col, al, heightSf);
             if (!B) return ctx.globalAlpha = 1, ctx.fillStyle = col.replace("rgb", "rgba").replace(")", "," + al.toFixed(3) + ")"), 
             ctx.strokeStyle = ctx.fillStyle, void shapePath(ctx, ells, strokes, 0, grow);
             const g = B.g;

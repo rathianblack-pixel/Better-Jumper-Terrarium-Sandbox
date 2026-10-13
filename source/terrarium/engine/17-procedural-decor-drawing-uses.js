@@ -77,6 +77,12 @@
     const c = JT.G.centroid(fp); const solid = g.solids.length > 0;
     const r = solid ? Math.sqrt(JT.G.polyArea(fp) / Math.PI) * 1.1 : Math.min(18, g.coverR * 0.55);
     const day = 1 - night * 0.6;
+    // 0) wide ambient-occlusion halo: soft pool of darkness under solid objects (rocks, hides, cork).
+    //    Capped at r*2 (max 14) so it never floods the island. Solid only — foliage skips this.
+    if (solid && r > 2.5) {
+      const aoR = Math.min(r * 2.0, 14);
+      softEll(ctx, V, [c[0], g.baseY + 0.03, c[1]], [aoR, 0, 0], [0, 0, aoR], 0.019 * day, 0.25);
+    }
     // 1) tight contact occlusion where the object meets the ground
     softEll(ctx, V, [c[0], g.baseY + 0.05, c[1]], [r * 1.02, 0, 0], [0, 0, r * 1.02], 0.42 * (solid ? 1 : 0.75) - night * 0.12, 0.35);
     // 2) long soft cast shadow thrown away from the light, scaled by object height

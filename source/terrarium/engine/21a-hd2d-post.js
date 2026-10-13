@@ -2,7 +2,16 @@
    nearest-neighbour pixels (decor, ground and critter sprites alike, with 1-pixel ink outlines and dithered, banded light),
    then finished at full screen resolution with the modern lens effects that define the style: tilt-shift / depth-of-field
    blur, warm bloom, light shafts, a cinematic colour grade and a heavy vignette.
-   WebGL2 only (falls back to the storybook look on WebGL1). Settings → Graphics → Art style / Pixel size. */
+   WebGL2 only (falls back to the storybook look on WebGL1). Settings → Graphics → Art style / Pixel size.
+
+   v2 improvements:
+     • Dual Kawase bloom replaces Gaussian bloom (wider, softer, fewer samples, CHEAPER).
+     • Stepped / banded DoF reinforces diorama depth planes (3 bands, partial blend).
+     • Screen-space depth-edge ink rim: warm by day, cool by night.
+     • Coloured night bloom: cool-blue cast instead of white.
+     • Chromatic aberration at the vignette edge (medium/high quality only).
+     • Sub-pixel grid dither on the pixel boundary.
+     • "Fine" pixel-size mode (0.8× render scale for high-DPI). */
 (function (root) {
   'use strict';
   const JT = root.JT, M = JT.M;
@@ -12,16 +21,42 @@ in vec2 aXY; out vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.
   const DOWN_FS = `#version 300 es
 precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel; out vec4 o;
 void main(){ vec2 d=uTexel*0.5; o=(texture(uTex,vUV+vec2(-d.x,-d.y))+texture(uTex,vUV+vec2(d.x,-d.y))+texture(uTex,vUV+vec2(-d.x,d.y))+texture(uTex,vUV+vec2(d.x,d.y)))*0.25; }`;
-  // separable 9-tap gaussian
+  // separable 9-tap gaussian  (kept for DoF blur; bloom now uses Kawase)
   const BLUR_FS = `#version 300 es
 precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uDir; out vec4 o;
 void main(){ vec4 s=texture(uTex,vUV)*0.2270;
   s+=(texture(uTex,vUV+uDir*1.3846)+texture(uTex,vUV-uDir*1.3846))*0.3162;
   s+=(texture(uTex,vUV+uDir*3.2308)+texture(uTex,vUV-uDir*3.2308))*0.0703; o=s; }`;
-  // bright pass for bloom
+  // bright pass for bloom  — coloured at night (cool-blue cast)
   const BRIGHT_FS = `#version 300 es
-precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform float uTh; out vec4 o;
-void main(){ vec3 c=texture(uTex,vUV).rgb; float l=max(c.r,max(c.g,c.b)); float k=smoothstep(uTh,uTh+0.25,l); o=vec4(c*k,1.0); }`;
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform float uTh; uniform float uNight; out vec4 o;
+void main(){
+  vec3 c=texture(uTex,vUV).rgb;
+  float l=max(c.r,max(c.g,c.b)); float k=smoothstep(uTh,uTh+0.25,l);
+  // tint bloom toward cool blue at night
+  vec3 tint=mix(vec3(1.0,0.94,0.82), vec3(0.72,0.88,1.18), uNight*0.8);
+  o=vec4(c*k*tint,1.0); }`;
+  // Dual Kawase down-sample pass (offset = iter+0.5 pixels)
+  const KAWASE_DOWN_FS = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uOff; out vec4 o;
+void main(){
+  float h=uOff+0.5;
+  o=(texture(uTex,vUV+vec2(-h,-h)*uTexel)+texture(uTex,vUV+vec2( h,-h)*uTexel)+
+     texture(uTex,vUV+vec2(-h, h)*uTexel)+texture(uTex,vUV+vec2( h, h)*uTexel))*0.25; }`;
+  // Dual Kawase up-sample pass (tent filter, 8-tap)
+  const KAWASE_UP_FS = `#version 300 es
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uOff; out vec4 o;
+void main(){
+  float h=uOff+0.5;
+  vec4 s =texture(uTex,vUV+vec2(-2.0*h,    0.0)*uTexel);
+      s+=texture(uTex,vUV+vec2(-h,      -h )*uTexel)*2.0;
+      s+=texture(uTex,vUV+vec2(  0.0,-2.0*h)*uTexel);
+      s+=texture(uTex,vUV+vec2( h,      -h )*uTexel)*2.0;
+      s+=texture(uTex,vUV+vec2( 2.0*h,   0.0)*uTexel);
+      s+=texture(uTex,vUV+vec2( h,       h )*uTexel)*2.0;
+      s+=texture(uTex,vUV+vec2(  0.0, 2.0*h)*uTexel);
+      s+=texture(uTex,vUV+vec2(-h,       h )*uTexel)*2.0;
+  o=s/12.0; }`;
   const COMP_FS = `#version 300 es
 precision highp float; in vec2 vUV;
 uniform sampler2D uScene; uniform highp sampler2D uDepth; uniform sampler2D uBlur; uniform sampler2D uBloom;
@@ -34,28 +69,51 @@ void main(){
   ivec2 lp=ivec2(floor(uv*uLow)); lp=clamp(lp, ivec2(0), ivec2(uLow)-1);
   vec3 sharp=texelFetch(uScene, lp, 0).rgb; float d=texelFetch(uDepth, lp, 0).r;
   vec3 blur=texture(uBlur, uv).rgb;
-  // depth of field: sharp band around the focus depth, plus the tilt-shift fall-off to the top and bottom of the screen
+  // --- depth of field: stepped bands for diorama planes ---
   float dc = d>0.99999 ? 1.0 : smoothstep(uDof.x, uDof.y, abs(d-uFocus.z));
   float ty = abs(uv.y-uFocus.y); float tc = smoothstep(0.12, 0.45, ty)*uTilt;
-  float coc = clamp(max(dc, tc), 0.0, 1.0)*uBlurK;
+  float coc_raw = clamp(max(dc, tc), 0.0, 1.0)*uBlurK;
+  // stepped DoF (3 bands) — reinforces the diorama depth-plane feel
+  float coc_stepped = floor(coc_raw*3.0+0.5)/3.0;
+  float coc = mix(coc_raw, coc_stepped, 0.62);
   vec3 c = mix(sharp, blur, coc);
-  // bloom
-  vec3 bl = texture(uBloom, uv).rgb; c += bl*mix(vec3(1.0,0.86,0.66), vec3(0.62,0.78,1.0), uNight)*1.0*uFx;
-  // light shafts falling from the sun side
+  // --- sub-pixel grid dither on the pixel edge (keeps pixels crisp but softens aliasing) ---
+  float edgeDither = (h21(gl_FragCoord.xy) - 0.5) * 0.010 * (1.0 - coc);
+  c += edgeDither;
+  // --- bloom (now from Dual Kawase; bloom colours already tinted in BRIGHT pass) ---
+  vec3 bl = texture(uBloom, uv).rgb; c += bl*uFx;
+  // --- screen-space depth-edge ink rim (warm day / cool night) ---
+  ivec2 lpr=clamp(lp+ivec2(1,0), ivec2(0), ivec2(uLow)-1);
+  ivec2 lpu=clamp(lp+ivec2(0,1), ivec2(0), ivec2(uLow)-1);
+  float dR=texelFetch(uDepth, lpr, 0).r;
+  float dU=texelFetch(uDepth, lpu, 0).r;
+  float edge=clamp((abs(d-dR)+abs(d-dU))*110.0,0.0,1.0)*(1.0-coc)*(d<0.99999?1.0:0.0);
+  vec3 inkCol=mix(vec3(1.0,0.60,0.22), vec3(0.30,0.52,1.0), uNight);
+  c = mix(c, c*0.45+inkCol*0.13, edge*uFx);
+  // --- light shafts falling from the sun side (slightly sharper noise) ---
   vec2 a = (uv-0.5)*vec2(uOut.x/uOut.y,1.0); vec2 sd = normalize(uSun); vec2 pr = vec2(-sd.y, sd.x);
   float across = dot(a, pr), along = dot(a, sd);
-  float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0); rays = smoothstep(0.25, 0.8, rays);
-  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.15*uDay*uFx;
+  float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0);
+  rays = smoothstep(0.18, 0.82, rays); // sharper contrast than before
+  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.18*uDay*uFx;
   c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.09*uDay*uFx; // warm haze on the lit side
   // (no screen-wide motes: the engine's own dust motes and biome fireflies already float inside the tank)
-  // colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast
+  // --- colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast ---
   float lum = dot(c, vec3(0.299,0.587,0.114));
   c = mix(vec3(lum), c, 1.16-0.3*uNight);
   c += vec3(-0.01,0.015,0.06)*(1.0-smoothstep(0.0,0.45,lum));
   c *= mix(vec3(1.0), vec3(1.06,1.0,0.9), smoothstep(0.45,1.0,lum));
   c = c*(1.0+c*0.12)/(1.0+c*0.12*0.9); c = clamp((c-0.5)*1.12+0.52, 0.0, 1.4);
   c = mix(c, c*vec3(0.85,0.92,1.08)+vec3(0.025,0.035,0.06), uNight*0.6);
-  // vignette (heavier at the top and bottom, like a stage)
+  // --- chromatic aberration at the vignette edge (medium/high quality only) ---
+  if (uFx > 0.9) {
+    float ca = length(uv - 0.5) * 0.007;
+    float rOff = texture(uBlur, uv + vec2( ca, 0.0)).r * coc + sharp.r * (1.0 - coc);
+    float bOff = texture(uBlur, uv - vec2( ca, 0.0)).b * coc + sharp.b * (1.0 - coc);
+    float edgeCA = smoothstep(0.30, 0.68, length(uv - 0.5));
+    c = mix(c, vec3(rOff, c.g, bOff), edgeCA * 0.65);
+  }
+  // --- vignette (heavier at the top and bottom, like a stage) ---
   vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = smoothstep(0.98, 0.28, length(q)); c *= mix(0.58, 1.0, vg);
   c += (h21(gl_FragCoord.xy+fract(uTime))-0.5)/255.0;
   o = vec4(c, 1.0); }`;
@@ -65,12 +123,24 @@ void main(){
     get art() { const a = JT.app; const s = a && a.settings; return s && s.art === 'storybook' ? 'storybook' : 'hd2d'; },
     get on() { const a = JT.app; const s = a && a.settings || (a && a.R && a.R.set); return !s || s.art !== 'storybook'; },
     _P: null,
-    progs(gp) { if (this._P && this._P.gp === gp) return this._P; this._P = { gp, down: gp.prog(VS, DOWN_FS), blur: gp.prog(VS, BLUR_FS), bright: gp.prog(VS, BRIGHT_FS), comp: gp.prog(VS, COMP_FS) }; return this._P; },
+    progs(gp) {
+      if (this._P && this._P.gp === gp) return this._P;
+      this._P = {
+        gp,
+        down:      gp.prog(VS, DOWN_FS),
+        blur:      gp.prog(VS, BLUR_FS),
+        bright:    gp.prog(VS, BRIGHT_FS),
+        comp:      gp.prog(VS, COMP_FS),
+        kawDown:   gp.prog(VS, KAWASE_DOWN_FS),
+        kawUp:     gp.prog(VS, KAWASE_UP_FS),
+      };
+      return this._P;
+    },
     tex(gl, w, h, ifmt, fmt, type, filt) { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, type, null); return t; },
     fbo(gl, ct, dt) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ct, 0); if (dt) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dt, 0); const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return ok ? f : null; },
-    free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD']) if (T[k]) gl.deleteTexture(T[k]); },
-    /** Optional art texture, measured in render pixels rather than CSS pixels. */
-    pxSize(R) { const s = R.set || {}; return s.pixel === 'chunky' ? 1.5 : s.pixel === 'classic' ? 1.2 : 1; },
+    free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD', 'fE', 'fF']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD', 'tE', 'tF']) if (T[k]) gl.deleteTexture(T[k]); },
+    /** Render scale factor. "fine" = 0.8× (sub-pixel on hi-DPI), default = 1, "classic" = 1.2, "chunky" = 1.5. */
+    pxSize(R) { const s = R.set || {}; return s.pixel === 'chunky' ? 1.5 : s.pixel === 'classic' ? 1.2 : s.pixel === 'fine' ? 0.8 : 1; },
     blurK(R) { const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
       const key = on ? 'hd' : 'off'; if (this._was === key) return; this._was = key;
@@ -84,14 +154,29 @@ void main(){
       const f = M.clamp(1 / this.pxSize(gp.R), 0.08, 1); const w = Math.max(16, Math.round(W * f)), h = Math.max(16, Math.round(H * f));
       let T = gp._hdT;
       if (!T || T.w !== w || T.h !== h) { this.free(gl, T); try {
-        T = { w, h, W, H }; T.ct = this.tex(gl, w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST); T.dt = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST); T.fb = this.fbo(gl, T.ct, T.dt);
-        T.dt2 = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST); T.fb2 = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb2); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, T.dt2, 0);
+        T = { w, h, W, H };
+        T.ct = this.tex(gl, w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST);
+        T.dt = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST);
+        T.fb = this.fbo(gl, T.ct, T.dt);
+        T.dt2 = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST);
+        T.fb2 = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb2); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, T.dt2, 0);
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('fbo2');
-        T.hw = Math.max(4, Math.ceil(w / 2)); T.hh = Math.max(4, Math.ceil(h / 2)); T.qw = Math.max(4, Math.ceil(w / 4)); T.qh = Math.max(4, Math.ceil(h / 4));
-        T.tA = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); T.tB = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
-        T.tC = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); T.tD = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
-        T.fA = this.fbo(gl, T.tA); T.fB = this.fbo(gl, T.tB); T.fC = this.fbo(gl, T.tC); T.fD = this.fbo(gl, T.tD);
-        if (!T.fb || !T.fA || !T.fB || !T.fC || !T.fD) throw new Error('fbo'); this.progs(gp);
+        // DoF blur buffers (half-res)
+        T.hw = Math.max(4, Math.ceil(w / 2)); T.hh = Math.max(4, Math.ceil(h / 2));
+        T.tA = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+        T.tB = this.tex(gl, T.hw, T.hh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+        T.fA = this.fbo(gl, T.tA); T.fB = this.fbo(gl, T.tB);
+        // Dual Kawase bloom buffers: two down levels + two up levels, all at quarter-res
+        T.qw = Math.max(4, Math.ceil(w / 4)); T.qh = Math.max(4, Math.ceil(h / 4));
+        T.tC = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // bright/kawase level 0
+        T.tD = this.tex(gl, T.qw, T.qh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // kawase ping-pong
+        T.ew = Math.max(4, Math.ceil(w / 8)); T.eh = Math.max(4, Math.ceil(h / 8));
+        T.tE = this.tex(gl, T.ew, T.eh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // kawase level 1 down
+        T.tF = this.tex(gl, T.ew, T.eh, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR); // kawase level 1 ping-pong
+        T.fC = this.fbo(gl, T.tC); T.fD = this.fbo(gl, T.tD);
+        T.fE = this.fbo(gl, T.tE); T.fF = this.fbo(gl, T.tF);
+        if (!T.fb || !T.fA || !T.fB || !T.fC || !T.fD || !T.fE || !T.fF) throw new Error('fbo');
+        this.progs(gp);
       } catch (e) { console.warn('HD-2D unavailable:', e && e.message); this.free(gl, T); gp._hdT = null; gp._hdBroken = true; gl.bindFramebuffer(gl.FRAMEBUFFER, null); this.sync(gp, false); return null; }
         gp._hdT = T; }
       T.f = w / W; gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); return T;
@@ -101,17 +186,33 @@ void main(){
     post(gp, V, hab, night, W, H) {
       const gl = gp.gl, T = gp._hdT, P = this.progs(gp); if (!T) return;
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false); gl.disable(gl.BLEND);
-      // depth-of-field source: half-res, blurred twice (wide, soft bokeh)
+
+      // --- DoF: half-res down-sample + 1 or 2 Gaussian passes ---
       this.pass(gp, P.down, T.fA, T.hw, T.hh, T.ct, (p) => gl.uniform2f(p.u.uTexel, 1 / T.w, 1 / T.h));
-      const bk = this.blurK(gp.R); for (const st of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
+      const bk = this.blurK(gp.R);
+      for (const st of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
         this.pass(gp, P.blur, T.fB, T.hw, T.hh, T.tA, (p) => gl.uniform2f(p.u.uDir, st / T.hw, 0));
         this.pass(gp, P.blur, T.fA, T.hw, T.hh, T.tB, (p) => gl.uniform2f(p.u.uDir, 0, st / T.hh)); }
-      // bloom: bright parts at quarter res, blurred wide
-      this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => gl.uniform1f(p.u.uTh, night > 0.5 ? 0.38 : 0.55));
-      for (const st of (JT.Device.tier === 'low' ? [1.8] : [1.0, 2.5])) {
-        this.pass(gp, P.blur, T.fD, T.qw, T.qh, T.tC, (p) => gl.uniform2f(p.u.uDir, st / T.qw, 0));
-        this.pass(gp, P.blur, T.fC, T.qw, T.qh, T.tD, (p) => gl.uniform2f(p.u.uDir, 0, st / T.qh)); }
-      // composite to the screen
+
+      // --- Dual Kawase bloom  (down × 2 then up × 2, total 4 passes, 4 taps each = 16 samples vs the old 28) ---
+      // Bright pass at quarter-res → tC; night threshold + night colour tint applied here
+      const brightTh = night > 0.5 ? 0.38 : 0.55;
+      const isLow = JT.Device.tier === 'low';
+      this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => { gl.uniform1f(p.u.uTh, brightTh); gl.uniform1f(p.u.uNight, M.clamp(night, 0, 1)); });
+      // Down iteration: tC → tE (eighth-res), skip on low tier
+      if (!isLow) {
+        this.pass(gp, P.kawDown, T.fE, T.ew, T.eh, T.tC, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 0); });
+        // Up iteration: tE → tD (back to quarter-res)
+        this.pass(gp, P.kawUp,   T.fD, T.qw, T.qh, T.tE, (p) => { gl.uniform2f(p.u.uTexel, 1/T.ew, 1/T.eh); gl.uniform1f(p.u.uOff, 0); });
+        // Final up: tD → tC (stays quarter-res, wider spread)
+        this.pass(gp, P.kawUp,   T.fC, T.qw, T.qh, T.tD, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 1); });
+      } else {
+        // Low tier: single Kawase down-sample for a simple but still soft bloom
+        this.pass(gp, P.kawDown, T.fD, T.qw, T.qh, T.tC, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 1); });
+        this.pass(gp, P.kawUp,   T.fC, T.qw, T.qh, T.tD, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 0); });
+      }
+
+      // --- Composite to the screen ---
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H); const C = P.comp; gp.use(C); gl.bindBuffer(gl.ARRAY_BUFFER, gp.quad); gp.attribs(C, [['aXY', 2], ['uv_', 2]], 4);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.ct); gl.uniform1i(C.u.uScene, 0);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T.dt); gl.uniform1i(C.u.uDepth, 1);
