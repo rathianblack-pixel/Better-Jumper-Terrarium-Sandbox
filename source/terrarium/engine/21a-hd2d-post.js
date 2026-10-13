@@ -69,8 +69,8 @@ void main(){
     tex(gl, w, h, ifmt, fmt, type, filt) { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filt); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, type, null); return t; },
     fbo(gl, ct, dt) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ct, 0); if (dt) gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dt, 0); const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; return ok ? f : null; },
     free(gl, T) { if (!T) return; for (const k of ['fb', 'fb2', 'fA', 'fB', 'fC', 'fD']) if (T[k]) gl.deleteFramebuffer(T[k]); for (const k of ['ct', 'dt', 'dt2', 'tA', 'tB', 'tC', 'tD']) if (T[k]) gl.deleteTexture(T[k]); },
-    /** Pixel size in CSS px: ~2 px on a laptop, a little finer on phones. */
-    pxSize(R) { const s = R.set || {}; const base = M.clamp((R.cssW || 800) / 800, 1.25, 1.75); return s.pixel === 'fine' ? 1 : s.pixel === 'chunky' ? base * 1.5 : base; },
+    /** Optional art texture, measured in render pixels rather than CSS pixels. */
+    pxSize(R) { const s = R.set || {}; return s.pixel === 'chunky' ? 1.5 : s.pixel === 'classic' ? 1.2 : 1; },
     blurK(R) { const b = (R.set || {}).blur; return b === 'off' ? 0 : b === 'strong' ? 1 : 0.2; },
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
       const key = on ? 'hd' : 'off'; if (this._was === key) return; this._was = key;
@@ -81,7 +81,7 @@ void main(){
       const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.remove('art-sketch', 'art-ukiyo'); } },
     begin(gp, W, H) {
       const gl = gp.gl; const on = gp.gl2 && this.on && !gp._hdBroken; this.sync(gp, on); if (!on) { if (gp._hdT) { this.free(gl, gp._hdT); gp._hdT = null; } return null; }
-      const f = M.clamp(1 / (this.pxSize(gp.R) * (gp.R.k || 1)), 0.08, 1); const w = Math.max(16, Math.round(W * f)), h = Math.max(16, Math.round(H * f));
+      const f = M.clamp(1 / this.pxSize(gp.R), 0.08, 1); const w = Math.max(16, Math.round(W * f)), h = Math.max(16, Math.round(H * f));
       let T = gp._hdT;
       if (!T || T.w !== w || T.h !== h) { this.free(gl, T); try {
         T = { w, h, W, H }; T.ct = this.tex(gl, w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST); T.dt = this.tex(gl, w, h, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST); T.fb = this.fbo(gl, T.ct, T.dt);

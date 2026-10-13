@@ -1,10 +1,16 @@
-# Browser regression checks
+# Browser regression tests
 
-Serve the delivered game folder on port 8000. Install Playwright separately for testing (not needed to play). Set CHROMIUM to your Chromium executable path if it differs from /usr/local/bin/chromium. GAME_URL overrides the game URL; TEST_OUTPUT overrides the writable output folder (default: tests/results).
+Requires Node, Playwright and Chromium. The game itself does not require these tools.
 
-Run `node regression.js` for the 24-case device-profile/quality/style matrix and gameplay checks.
-Run `node soak.js` for graphics resource cycling, context recovery and a six-minute sustained High-quality session (three minutes per style). SOAK_SECONDS sets the duration in seconds per style; use a multiple of 15.
+Host the built release and run:
 
-The profiles emulate viewport, input and browser/device reports in Chromium. They do not run Android or iOS operating systems or native Safari, and do not measure real device temperature.
+```sh
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node regression.js
+```
 
-Optional TEST_ORIGINAL=1 in regression.js imports a save from the original build if you separately serve its jumper.html at http://localhost:8001. The original build is not included in this jumper-only edition.
+`TEST_OUTPUT` optionally selects the output folder. Defaults to `tests/results`.
+Tests cover desktop 1280×720, phone 390×844 at DPR 3, and phone landscape 844×390; HD-2D and Storybook with all four quality settings; live unsaved title preview; Start/New/Continue; confirmation/cancellation and local backup; onboarding, notebook screens, contextual jumper details, Observe and photo pause. Screenshots and a JSON report are written to the output folder.
+
+Included `release-results` are from headless Chromium with SwiftShader software rendering. They are not measurements of physical phone performance. The old pixel-budget/intro-story tests were replaced because those behaviors were intentionally removed.
+
+Additional final-build save/defaults/offline checks: `GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node final-check.js`.

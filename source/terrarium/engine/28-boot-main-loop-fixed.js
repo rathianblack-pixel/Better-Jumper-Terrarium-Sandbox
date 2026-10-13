@@ -118,9 +118,14 @@
   })();
   JT.Replay = Replay;
   function boot() {
+    const preview = new URLSearchParams(location.search).get('preview') === '1';
+    const freshEntry = new URLSearchParams(location.search).get('new') === '1';
     const settings = JT.Settings.load();
+    if (!settings.notebookQualityV2) { settings.pixel = 'fine'; settings.notebookQualityV2 = true; }
+    if (preview) { settings.muted = true; settings.keepAwake = false; settings.tips = false; settings.quality = 'medium'; settings.art = 'hd2d'; }
+
     if (!['hd2d', 'storybook'].includes(settings.art)) settings.art = 'storybook';
-    delete settings.film; JT.Settings.save(settings);
+    delete settings.film; if (!preview) JT.Settings.save(settings);
     // v1.3: keep the screen awake while the game is open and visible (Settings → Keep screen awake, on by default).
     // Screen Wake Lock API where available (re-taken after every return to the app, since the system drops it when hidden);
     // No hidden looping video on unsupported browsers: avoid decoder work and heat.
@@ -136,16 +141,24 @@
       for (const ev of ['pointerdown', 'touchend', 'keydown', 'click']) document.addEventListener(ev, sync, { passive: true, capture: true });
       JT.Wake = { sync, held: () => !!(WL.s && !WL.s.released) }; setTimeout(sync, 0); }
     const game = new JT.Game();
-    let restored = false; try { restored = game.load(); } catch (e) { console.error(e); }
+    // The title preview is disposable: it never reads or writes the player's save.
+    if (preview) game.save = () => {};
+    if (freshEntry && !preview) { const old = localStorage.getItem('jumperTerrarium.v14.save'); if (old) localStorage.setItem('jumperTerrarium.v14.save.before-new', old); }
+    let restored = false; try { if (!preview && !freshEntry) restored = game.load(); } catch (e) { console.error(e); }
+
     if (!restored) game.newGame();
-    game._biomeOnboard = !restored;
+    if (preview) game.state.biomeSetup = false;
+    game._biomeOnboard = !restored && !preview;
     if (game._biomeOnboard) game.state.biomeSetup = true;
     if (!game.hab.spider(game.selectedId)) game.selectedId = game.hab.spiders[0] ? game.hab.spiders[0].id : null;
     const R = new JT.Renderer(document.getElementById('view'), game, settings);
     JT.Audio.init(settings);
     JT.UI.init(game, R, settings);
     JT.app = { game, R, settings, UI: JT.UI };
-    const welcome = (fresh) => setTimeout(() => { if (fresh) { game._biomeOnboard = true; if (game._biomeOnboard) game.state.biomeSetup = true; } JT.UI.toast('Welcome to the biome revamp. Choose your first jumper, then build its home or start with a recommended layout.', '', 6000); if (game.state.biomeSetup) JT.UI.biomeWizard(true); }, 600);
+    if (preview) { document.body.classList.add('title-preview'); R.cam.zoom = 1.12; }
+    if (freshEntry) history.replaceState(null, '', location.pathname);
+
+    const welcome = (fresh) => setTimeout(() => { if (fresh) { game._biomeOnboard = true; if (game._biomeOnboard) game.state.biomeSetup = true; } if (game.state.biomeSetup) JT.UI.biomeWizard(true); }, 600);
     const AT = { on: false, g: null }; // the start screen's live showcase (a separate, never-saved game)
     document.addEventListener('visibilitychange', () => { game.viewing = !document.hidden; if (document.hidden) game.save(); });
     { const save0 = game.save.bind(game); game.save = (...a) => { if (Replay.active) Replay.stop(); return save0(...a); }; } // never save a replay frame
@@ -184,13 +197,21 @@
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // Sustainable by default: fixed 30 fps on phones; 60 only when requested on desktop.
-      // High is protected too. Backoff is latched for the session, avoiding resolution hunting.
+      // Auto alone adapts resolution. Manual presets stay at their chosen multiplier.
       rAcc += dt; R.targetFps = desired; R.locked30 = mobile || R._thermalLevel > 0;
       R._missSeconds = dt > (1 / desired) * 1.35 ? (R._missSeconds || 0) + dt : Math.max(0, (R._missSeconds || 0) - dt * 0.25);
-      if ((R._missSeconds > 2.5 || (cost > 1000 / desired * 0.7 && (R._costSeconds = (R._costSeconds || 0) + dt) > 2.5)) && (R._thermalLevel || 0) < 4 && now > (R._backoffAt || 0)) {
+      if (settings.quality === 'auto' && (R._missSeconds > 2.5 || (cost > 1000 / desired * 0.7 && (R._costSeconds = (R._costSeconds || 0) + dt) > 2.5)) && (R._thermalLevel || 0) < 4 && now > (R._backoffAt || 0)) {
         R._thermalLevel = (R._thermalLevel || 0) + 1; R._missSeconds = R._costSeconds = 0; R._backoffAt = now + 10000; R.resize();
       }
       if (cost <= 1000 / desired * 0.7) R._costSeconds = Math.max(0, (R._costSeconds || 0) - dt);
+      if (settings.quality === 'auto') {
+        const healthy = dt < 1 / desired * 1.15 && cost < 1000 / desired * 0.45;
+        R._healthySeconds = healthy ? (R._healthySeconds || 0) + dt : 0;
+        if (R._healthySeconds > 20 && R._thermalLevel > 0 && now > (R._backoffAt || 0)) {
+          R._thermalLevel--; R._healthySeconds = 0; R._backoffAt = now + 15000; R.resize();
+        }
+      }
+
       const due = rAcc >= 1 / desired - 0.001;
       if (due) {
         { const t0 = performance.now(); const undo = blendIn(Replay.active ? 1 : M.clamp(acc / STEP, 0, 1)); /* a replay draws its recorded frames as they are */ try { R.render(Replay.active ? rAcc * Replay.speed() : rAcc); } catch (e) { console.error('render', e); } finally { undo(); } rAcc = 0; const ms = performance.now() - t0; cost = cost * 0.9 + ms * 0.1; R.frameMs = cost; } }
@@ -210,7 +231,7 @@
     {
       const SP = document.getElementById('splash'); const force = /[?&]splash=1/.test(location.search);
       if (SP && navigator.webdriver && !force) { SP.remove(); if (!restored) welcome(false); }
-      else if (!SP) { if (!restored) welcome(false); }
+      else if (!SP) { if (!restored && !preview) welcome(false); }
       else {
         const $s = (id) => document.getElementById(id);
         const go = $s('splashGo'), choices = $s('spChoices'), cont = $s('spCont'), nw = $s('spNew'), note = $s('spNote'), foot = $s('spFoot'), veil = $s('spVeil');

@@ -742,37 +742,150 @@ body.tv #app>:not(canvas):not(#tvVeil):not(#tvCatch),body.tv #tip{opacity:0!impo
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button:focus:not(:focus-visible){outline:none}
 
-/* ---------- HD-2D theme (Octopath-style): deep navy menu windows with a thin gilt frame, cream text, gold highlights ---------- */
-body.story.hd2d{--ink:#f3ead2;--dim:rgba(243,234,210,.84);--faint:rgba(243,234,210,.58);--rule:rgba(214,186,120,.32);--accent:#e8c675;--warm:#f1b45e;--ok:#a9d68c;--bad:#f39a86;
- --scrim:rgba(6,8,18,.82);--scrim2:rgba(6,8,18,.6);--shadow:0 1px 0 #000,0 0 3px rgba(0,0,0,.85);background:#0d0f16;
- --pill:rgba(10,13,28,.84);--pillLine:rgba(214,186,120,.6);--pillSh:0 4px 16px rgba(0,0,0,.5);
- --gA:rgba(20,26,50,.86);--gB:rgba(8,10,24,.86);--gF:rgba(16,20,40,.92);--gF2:rgba(8,10,22,.9);--gBlur:blur(2px);--gFBlur:blur(3px);
- --gRim:rgba(240,220,160,.14);--gEdge:rgba(206,176,108,.78);--gShade:0 5px 18px rgba(0,0,0,.5);--gTxt:0 1px 0 #000,0 0 3px rgba(0,0,0,.85);--gLens:rgba(232,198,117,.22)}
-body.story.hd2d #top,body.story.hd2d #toolbar,body.story.hd2d #drawer,body.story.hd2d #dock,body.story.hd2d #toasts,body.story.hd2d #modeBar,body.story.hd2d #obsHud{background-image:none}
-body.hd2d #app .tb-left,body.hd2d #app .clock,body.hd2d #app .tb-right,body.hd2d #app .toast,body.hd2d #app #obsHud,body.hd2d #app #modeBar,body.hd2d #app #dock,body.hd2d #app #toolbar .gl-bar,body.hd2d #app #camCtl button,
-body.hd2d #app #spiderPanel,body.hd2d #app #modal,body.hd2d #app #topMenu,body.hd2d #app #drawer,body.hd2d #app #popover{
- background:linear-gradient(180deg,var(--gA),var(--gB));border:1px solid var(--gEdge);border-radius:3px;
- box-shadow:inset 0 0 0 1px rgba(0,0,0,.65),inset 0 0 0 2px var(--gRim),inset 0 14px 18px -12px rgba(120,150,255,.16),var(--gShade);text-shadow:var(--gTxt);color:var(--ink)}
-body.hd2d #app #spiderPanel,body.hd2d #app #modal,body.hd2d #app #topMenu,body.hd2d #app #drawer,body.hd2d #app #popover{background:linear-gradient(180deg,var(--gF),var(--gF2))}
-body.hd2d #app #camCtl button{border-radius:3px}
-body.hd2d #app .lens{border-radius:2px;background:linear-gradient(90deg,rgba(232,198,117,0),rgba(232,198,117,.26) 25%,rgba(232,198,117,.26) 75%,rgba(232,198,117,0));box-shadow:inset 0 1px 0 rgba(232,198,117,.55),inset 0 -1px 0 rgba(232,198,117,.55)}
-body.hd2d #app #modalWrap{background:rgba(3,5,12,.55)}
-body.hd2d button{text-shadow:var(--shadow)}
-body.hd2d #app #top .seg button.on,body.hd2d #app .tabs button.on,body.hd2d #app #toolbar button.on,body.hd2d #app #dock button.on{color:var(--accent)}
-body.hd2d #app #top .seg button.on::before,body.hd2d #app .tabs button.on::before{content:"";position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-3px;background:var(--accent);transform:rotate(45deg);box-shadow:0 0 6px rgba(232,198,117,.8)}
-body.hd2d #app #spiderPanel h3,body.hd2d #app #modal h2,body.hd2d #app #modal h4{color:#f6e7bf;letter-spacing:.06em}
-body.hd2d #app #modal h4{border-bottom:1px solid var(--rule);padding-bottom:3px}
-body.hd2d .menu .mseg .seg button.on,body.hd2d #app .seg button.on{background:linear-gradient(180deg,rgba(232,198,117,.32),rgba(232,198,117,.12));color:#fff4d6;box-shadow:inset 0 0 0 1px rgba(232,198,117,.7);border-radius:2px}
-body.hd2d #tip{background:linear-gradient(180deg,rgba(20,26,50,.95),rgba(8,10,24,.95));border:1px solid rgba(206,176,108,.78);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.65),inset 0 0 0 2px rgba(240,220,160,.14),0 5px 18px rgba(0,0,0,.5)}
-body.hd2d #tip button.ok{background:linear-gradient(180deg,#e8c675,#b8913f);color:#1a1408;border-radius:2px}
-body.hd2d .card canvas{image-rendering:pixelated}
-body.hd2d .menu .msect{border-radius:2px;background:linear-gradient(180deg,rgba(40,50,90,.35),rgba(10,12,28,.35));box-shadow:inset 0 0 0 1px rgba(206,176,108,.35)}
-body.hd2d .menu .msect h4{color:#d9bd7a!important;letter-spacing:.1em}
-body.hd2d #app #camToggle,body.hd2d #app #camRecentre,body.hd2d #app #camList,body.hd2d #app #camList button{border-radius:3px!important;background:linear-gradient(180deg,rgba(20,26,50,.88),rgba(8,10,24,.88));border:1px solid rgba(206,176,108,.78);box-shadow:inset 0 0 0 1px rgba(0,0,0,.65),inset 0 0 0 2px rgba(240,220,160,.14),0 4px 14px rgba(0,0,0,.45);color:var(--ink)}
+
 
 /* Draw the mobile picker caret without a font-dependent glyph. */
 #habPicker::after{content:"";position:static;display:inline-block;width:7px;height:7px;left:auto;right:auto;bottom:auto;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;background:none;transform:rotate(45deg);margin:0 0 3px 10px;opacity:1;transition:none}
 </style>
+<style>
+/* Frameless HUD + field notebook. Shared by HD-2D and Storybook. */
+body,body.story,body.story.hd2d{--ink:#2c302a;--dim:#555b4e;--faint:#656a60;--rule:#d8d7c9;--accent:#53613b;--warm:#8b673a;--ok:#506b3e;--bad:#963f35;--serif:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--shadow:none;--gTxt:none;--gA:none;--gB:none;--gF:#f6f3e9;--gF2:#f6f3e9;--gShade:none;--gRim:transparent;--gEdge:transparent;--pill:transparent;--pillLine:transparent;--pillSh:none;--gBlur:none;--gFBlur:none;--blur:none;--tap:44px;font-family:var(--serif);background:#11160f;color:var(--ink)}
+#app button,#app input,#app select{font-family:var(--serif);font-variant:normal!important;letter-spacing:0!important;text-transform:none!important;text-shadow:none!important;min-height:44px}
+#app button{font-size:14px;border-radius:6px;transition:color .15s,background .15s}
+#app button:focus-visible{outline:2px solid #657449;outline-offset:3px}
+#app button::after,#app .seg button::before,#app .lens{display:none!important}
+#app button.on{color:#53613b!important;background:#e7eadc!important;box-shadow:none!important}
+#app h2,#app h3,#app h4,#app .jcat,#app .msect h4{font-variant:normal!important;text-transform:none!important;letter-spacing:0!important;color:#2c302a!important;font-weight:500}
+#app #top{padding:calc(16px + var(--sat)) calc(24px + var(--sar)) 0 calc(24px + var(--sal));background:none!important;gap:12px;flex-wrap:nowrap}
+#app #top .brand,#app #top .tb-left,#app #top .tb-right{display:none!important}
+#app #top .clock{margin-left:auto;position:static;transform:none;display:flex;gap:12px;align-items:center;font:14px/1.4 var(--serif);padding:4px 8px;background:rgba(246,243,233,.8)!important;border:0!important;border-radius:4px!important;box-shadow:none!important;backdrop-filter:none!important;text-shadow:none!important;color:#2c302a!important}
+#app #jumperControl{display:flex;align-items:center;gap:8px;padding:0 10px;margin-left:-10px;background:none;pointer-events:auto;color:#2c302a}
+#app #jumperControl span{padding:3px 6px;background:rgba(246,243,233,.8);border-radius:3px;font-weight:500}
+#app #jumperControl svg{background:rgba(246,243,233,.8);border-radius:3px}
+#app #toolbar{display:none!important}
+#app #dock{display:flex!important;position:absolute;top:auto;bottom:calc(14px + var(--sab));left:50%;right:auto;transform:translateX(-50%);width:min(430px,calc(100% - 32px));height:64px;padding:0;gap:8px;justify-content:center;align-items:center;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;text-shadow:none!important;z-index:15}
+#app #dock button{flex:1;min-width:48px;min-height:60px;padding:5px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#f8f6ec!important;background:none!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,.9));border:0;box-shadow:none!important}
+#app #dock button span{font-size:13px;line-height:1.3;background:rgba(12,18,10,.48);padding:1px 4px;border-radius:2px}
+#app #dock button.on svg{stroke:#d6e4b8;stroke-width:2.2}
+#app #dock button.on span{color:#e3edce;text-decoration:underline;text-underline-offset:4px}
+#app #dock svg{width:22px;height:22px;flex:none}
+#app #modal,#app #drawer,#app #spiderPanel,#app #popover,#app #topMenu,#app #tip,#app #camList{background:#f6f3e9!important;color:#2c302a!important;border:1px solid #d8d7c9!important;border-radius:8px!important;box-shadow:0 2px 8px rgba(0,0,0,.08)!important;backdrop-filter:none!important;text-shadow:none!important}
+#app #modalWrap{background:rgba(10,17,10,.38)!important;backdrop-filter:none!important;padding:24px;align-items:center}
+#app #modal{width:min(780px,100%);max-height:calc(100dvh - 48px - var(--sat) - var(--sab));padding:24px 28px 6px}
+#app .modal-head{padding:0 0 12px;gap:12px;border-bottom:1px solid var(--rule)}
+#app .modal-head h2{font-size:24px;line-height:1.3}
+#app #modalBody{padding:20px 0 24px;font-size:15px;line-height:1.55}
+#app #modal h4{font-size:16px;margin:24px 0 12px;border:0!important;padding:0!important}
+#app .menu .msect{background:none!important;border:0!important;border-bottom:1px solid var(--rule)!important;border-radius:0!important;box-shadow:none!important;padding:12px 0 18px!important;margin:0 0 12px}
+#app .menu .msect h4{color:#53613b!important;font-size:16px}
+#app .menu .mrow{padding:10px 0;min-height:48px}
+#app .form-row{padding:14px 0;border-bottom:1px solid var(--rule);gap:12px;flex-wrap:wrap}
+#app .form-row label{color:#2c302a;font-size:15px}
+#app .form-row .muted{font-size:14px;line-height:1.5}
+#app .seg{gap:4px;flex-wrap:wrap}
+#app .seg button{background:none;box-shadow:none!important;border:0}
+#app .seg button.on{background:#e7eadc!important;color:#53613b!important;border-radius:6px!important}
+#app #drawer{left:24px;right:24px;bottom:calc(94px + var(--sab));padding:16px 20px;max-height:52dvh;display:flex;flex-direction:column;z-index:16;overflow:hidden}
+#app #drawer .drawer-head{gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:8px;flex:none}
+#app #drawer .cards{overflow:auto;min-height:0;padding-top:12px;gap:16px}
+#app .card{border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;padding:8px}
+#app .card canvas{image-rendering:auto!important}
+#app #drawerTitle{color:#656a60;text-shadow:none;font-style:normal}
+#app #drawerClose{margin-left:auto}
+#app #spiderPanel{top:calc(76px + var(--sat));right:24px;left:auto;bottom:auto;width:300px;padding:18px;max-height:calc(100dvh - 180px - var(--sat));font-size:14px;overflow:auto}
+#app #spiderPanel h3{font-size:22px;line-height:1.25;padding-right:48px}
+#app #spiderPanel .sci{font-size:14px;line-height:1.5}
+#app #spiderPanel .x{top:6px;right:6px}
+#app #camCtl{right:24px;bottom:calc(96px + var(--sab));left:auto;top:auto;transform:none}
+#app #camToggle,#app #camRecentre,#app #camList button{background:rgba(246,243,233,.8)!important;border:0!important;border-radius:4px!important;box-shadow:none!important;color:#2c302a!important}
+#app .toast,#app #obsHud,#app #modeBar{background:rgba(246,243,233,.94)!important;border:0!important;box-shadow:none!important;border-radius:6px!important;color:#2c302a!important;text-shadow:none!important;backdrop-filter:none!important}
+#app #obsHud{bottom:calc(20px + var(--sab));max-width:calc(100% - 32px)}
+#app #modeBar{bottom:calc(94px + var(--sab));top:auto;max-width:calc(100% - 32px);border:1px solid var(--rule)!important;z-index:18}
+#app #tip button.ok{background:#53613b!important;color:#fff!important;border-radius:6px!important}
+body.observe #app #dock,body.photo #app #dock{display:none!important}
+body.title-preview #app>*:not(canvas):not(#wxVeil){display:none!important}
+body.title-preview #app{pointer-events:none}
+@media(max-width:560px){
+ #app #top{padding:calc(12px + var(--sat)) 16px 0;gap:4px}
+ #app #top .clock{font-size:13px;gap:8px;padding:4px 6px}
+ #app #jumperControl span{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #app #dock{bottom:calc(10px + var(--sab));width:calc(100% - 24px);gap:2px}
+ #app #drawer{left:12px;right:12px;bottom:calc(88px + var(--sab));padding:12px;max-height:58dvh}
+ #app #drawerTitle{display:none}
+ #app #modalWrap{padding:12px}
+ #app #modal{padding:16px 18px 4px;max-height:calc(100dvh - 24px - var(--sat) - var(--sab))}
+ #app .modal-head h2{font-size:21px}
+ #app #spiderPanel{left:12px;right:12px;width:auto;top:calc(68px + var(--sat));padding:16px;max-height:calc(100dvh - 164px - var(--sat))}
+ #app #camCtl{right:16px;bottom:calc(88px + var(--sab))}
+}
+@media(max-height:500px) and (orientation:landscape){
+ #app #dock{left:50%;right:auto;top:auto;bottom:calc(6px + var(--sab));height:54px;flex-direction:row;width:min(400px,60vw)}
+ #app #dock button{min-height:48px;gap:2px}
+ #app #drawer{bottom:calc(66px + var(--sab));max-height:calc(100dvh - 130px);left:16px;right:16px}
+ #app #camCtl{bottom:calc(66px + var(--sab))}
+ #app #spiderPanel{top:calc(64px + var(--sat));max-height:calc(100dvh - 132px)}
+}
+@media(prefers-reduced-motion:reduce){#app *{transition:none!important;scroll-behavior:auto!important}}
+
+</style>
+<style>/* Reset legacy small-caps and late biome-pack dark styling. */
+#app *{font-variant:normal!important;letter-spacing:normal!important;text-transform:none!important;text-shadow:none!important}
+#app #top .clock{margin:0 0 0 auto;min-height:0;height:auto;padding:4px 8px;line-height:1.4}
+#app #top .clock #dayLbl,#app #top .clock #timeLbl{font:14px/1.4 var(--serif);color:#2c302a}
+#app #top #biomeChip,#app #top #b14Chip{display:none!important}
+#app #drawer button,#app #drawer .card .nm,#app #drawer .sect{color:#2c302a!important}
+#app #drawer .card .pr{color:#555b4e!important}
+#app #drawer .sect{font-size:14px;line-height:1.4;border:0!important;padding:8px!important}
+#app #drawer.bm-drawer{bottom:calc(94px + var(--sab))!important;padding-bottom:16px!important}
+#app #drawer .bm-controls{gap:8px;margin:8px 0}
+#app input,#app select,#app textarea{color:#2c302a!important;background:#eeede2!important;border:1px solid #c4c7b8!important;border-radius:6px!important;font:14px/1.5 var(--serif);padding:8px 12px}
+#app input::placeholder,#app textarea::placeholder{color:#656a60;opacity:1}
+#app #drawer .chips button{border-radius:4px!important;background:none!important;font-size:14px}
+#app #drawer .cards{gap:12px!important}
+#app #drawer .card canvas{filter:none}
+#app #drawer .card .nm{font-size:14px!important;line-height:1.35}
+#app .menu{align-items:start;gap:24px}
+#app .menu .msect h4{font-size:16px!important;margin:0 0 12px!important}
+#app .bm-actions,#app .bm-sheet .bm-footer{background:#f6f3e9!important;border-top:1px solid #d8d7c9;border-radius:0!important}
+#app .bm-actions button,#app .bm-footer button{background:#e7eadc!important;color:#53613b!important;font-weight:500}
+#app .bm-actions .gold{background:#53613b!important;color:white!important}
+#app .bm-badge,#app .b14-pill,#app .v14-native-card .b14-summary .b14-pill{background:#e7eadc!important;color:#53613b!important;border:0!important;border-radius:4px}
+#app .v14-native-card{box-shadow:none!important;outline:none!important}
+#app .bm-collection .entry{border:0!important;border-bottom:1px solid #d8d7c9!important;border-radius:0!important}
+@media(max-width:560px){#app #top .clock #dayLbl,#app #top .clock #timeLbl{font-size:13px}#app #drawer.bm-drawer{bottom:calc(88px + var(--sab))!important}#app .bm-controls button{padding:0 12px}#app #drawer .cards{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))!important}}
+@media(max-height:500px) and (orientation:landscape){#app #drawer.bm-drawer{bottom:calc(66px + var(--sab))!important;max-height:calc(100dvh - 130px)!important}#app #drawer .bm-controls{margin:4px 0}#app #drawer .chips{min-height:44px!important;padding:0}#app #drawer .cards{max-height:none!important}}
+</style>
+<style>#app #modal .seg{background:none!important;border:0!important;border-radius:0!important;padding:0!important}
+#app .jrow,#app .jrow.sel,#app .tkrow,#app .entry.hybrid{background:none!important;box-shadow:none!important;border-radius:0!important;border:0!important;border-bottom:1px solid #d8d7c9!important;padding:16px 0}
+#app .entry.locked{opacity:1}
+#app .entry.locked h4{color:#555b4e!important}
+#app .entry.locked p{color:#656a60}
+#app .form-row .muted{font-style:normal}
+#app #drawer{max-height:60dvh}
+#app #drawer.bm-drawer{max-height:60dvh!important}
+#app #drawer .cards .sect{margin:0!important;min-height:0;line-height:1.4;padding:4px 8px!important}
+@media(max-width:560px){#app #drawer,#app #drawer.bm-drawer{max-height:60dvh!important}}
+@media(max-height:500px) and (orientation:landscape){#app #drawer,#app #drawer.bm-drawer{max-height:calc(100dvh - 90px)!important}#app #drawer .cards .sect{margin:0!important}}
+</style>
+<style>#app .menu{align-items:stretch}#app .menu .mrow{width:100%;padding:10px 12px!important}#app .menu .mrow small{white-space:normal}#app .menu .msect{min-width:0}</style>
+<style>
+#app #photoUi{--ink:#f6f4e9;--dim:#e1e5d7;--faint:#c8cfbd;--accent:#e6edda;--rule:rgba(246,244,233,.45);color:#f6f4e9}
+#app #photoUi button{color:#f6f4e9!important;background:rgba(10,17,9,.45)!important}
+#app #photoUi button.on{color:#2c302a!important;background:#f6f3e9!important}
+#app #photoUi .ph-top{color:#f6f4e9!important}
+#app #photoUi #phName,#app #photoUi .ph-hint{color:#e1e5d7!important;background:rgba(10,17,9,.5);padding:3px 8px;border-radius:3px}
+#app #photoUi #phShot{background:rgba(10,17,9,.5)!important;border-color:#f6f4e9!important}
+#app #photoUi #phShot i{background:#f6f4e9!important}
+#app #modal .gold{color:#53613b!important}
+@media(max-height:500px) and (orientation:landscape){
+ #app #drawer.bm-drawer .cards .sect{display:none!important}
+ #app #drawer.bm-drawer .card{padding:4px!important}
+ #app #drawer.bm-drawer .card canvas,#app #drawer.bm-drawer .card .sw{width:44px!important;height:44px!important}
+ #app #drawer.bm-drawer .card .nm{font-size:13px!important;min-height:0;line-height:1.25;margin-top:4px}
+ #app #drawer.bm-drawer .card .pr{display:none}
+}
+</style>
+<style>#app .bgs button{opacity:1}#app .bgs .bg-label{color:#2c302a;background:rgba(246,243,233,.95);padding:2px 6px;line-height:1.25;font-size:13px;border-radius:3px;max-width:100%}#app .bgs button.on .bg-label{background:#e7eadc}#app #photoUi #phShot{border-radius:50%!important}</style>
 </head>
 <body>
 <div id="splash" role="dialog" aria-label="Jumper Terrarium">
@@ -867,6 +980,7 @@ body.hd2d #app #camToggle,body.hd2d #app #camRecentre,body.hd2d #app #camList,bo
   <div id="wxVeil" aria-hidden="true"></div>
 
   <header id="top">
+    <button id="jumperControl" aria-label="Choose a jumper"><span>Pip</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
     <div class="brand"><span class="brand-name">Jumper Terrarium</span></div>
     <div class="tb-left">
     <nav id="habTabs" class="tabs" aria-label="Habitats"></nav>
@@ -943,11 +1057,11 @@ body.hd2d #app #camToggle,body.hd2d #app #camRecentre,body.hd2d #app #camList,bo
   <div id="tip" class="hidden" role="status" aria-live="polite"></div>
 
   <nav id="dock" class="mobile-only" aria-label="Main"><span class="lens"></span>
-    <button data-dock="build">Build</button>
-    <button data-dock="care">Care</button>
-    <button data-dock="observe" class="obsBtn">Observe</button>
-    <button data-dock="jumpers">Jumpers</button>
-    <button data-dock="more">Menu</button>
+    <button data-dock="build"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 19 5-5M14 10l5-5M14 4l6 6M4 14l6 6"/><path d="m6 4 14 14-2 2L4 6z"/></svg><span>Build</span></button>
+    <button data-dock="care"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3C9 7 6 10 6 14a6 6 0 0 0 12 0c0-4-3-7-6-11Z"/><path d="M9 15a3 3 0 0 0 3 3"/></svg><span>Care</span></button>
+    <button data-dock="observe" class="obsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>Observe</span></button>
+    <button data-dock="jumpers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="13" rx="4" ry="5"/><path d="M8 10 4 7M8 13H3m5 3-4 3m12-9 4-3m-4 6h5m-5 3 4 3M10 8V5m4 3V5"/></svg><span>Jumpers</span></button>
+    <button data-dock="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15M6 12h15M6 18h15"/><path d="M2 6h.01M2 12h.01M2 18h.01"/></svg><span>Menu</span></button>
   </nav>
 
   <div id="modalWrap" class="hidden"><div id="modal" role="dialog" aria-modal="true"><div class="modal-head"><button class="txt back hidden" id="modalBack" title="Back" aria-label="Back"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="modalTitle"></h2><button class="txt close" id="modalClose" title="Close">Close</button></div><div id="modalBody"></div></div></div>

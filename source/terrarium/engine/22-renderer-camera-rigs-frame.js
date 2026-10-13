@@ -77,18 +77,21 @@
             this.time = 0;
             {
                 const t = JT.Device.tier;
-                "low" === t ? (this._autoLvl = 1, this._closeK = 1.4, this.softS = .7) : "mid" === t && (this._autoLvl = 0, 
-                this._closeK = 1.6, this.softS = .8);
+                "low" === t ? (this._autoLvl = 1, this._closeK = 1.4, this.softS = 1) : "mid" === t && (this._autoLvl = 0, 
+                this._closeK = 1.6, this.softS = 1);
             }
             this.V = new JT.View(.5, .6, 1, 0, 0, [ 0, 0, 0 ]), this.glc = root.document && root.document.getElementById("glview"), 
             this.gp = null, this.initGL(), this.resize();
         }
         get qualityScale() {
-            const D = JT.Device, mobile = D.android || D.ios || D.coarse, q = this.set.quality || "auto", area = Math.max(1, (this.cssW || root.innerWidth) * (this.cssH || root.innerHeight)), budget = "low" === D.tier ? 38e4 : mobile ? 6e5 : "mid" === D.tier ? 9e5 : 12e5, base = "low" === q ? .72 : "medium" === q ? .9 : "high" === q ? mobile ? 1 : 1.25 : mobile ? .9 : 1, level = Math.min(4, this._thermalLevel || 0);
-            return Math.max(.3, Math.min(root.devicePixelRatio || 1, base, Math.sqrt(budget / area)) * [ 1, .88, .76, .65, .55 ][level]);
+            const q = this.set.quality || "auto";
+            // CSS-pixel multipliers, independent of device DPR and screen area.
+            // Explicit presets never degrade under load; Auto has the same floor as Low.
+            return q === "high" ? 2 : q === "medium" ? 1.5 : q === "low" ? 1 :
+                [2, 1.75, 1.5, 1.25, 1][Math.min(4, this._thermalLevel || 0)];
         }
         get quality() {
-            return "auto" === this.set.quality ? this._autoLow ? "low" : "medium" : this.set.quality;
+            return this.set.quality === "auto" ? this.qualityScale >= 1.75 ? "high" : this.qualityScale >= 1.25 ? "medium" : "low" : this.set.quality;
         }
         resize() {
             const r = this.cv.getBoundingClientRect();
@@ -98,7 +101,7 @@
             this.bgCache = {}, this._skPrev = null), !this.gp || this.glc.width === w && this.glc.height === h || (this.glc.width = w, 
             this.glc.height = h), this.k = k, this._cw = this.cv.clientWidth, this._ch = this.cv.clientHeight;
             const dock = root.document && root.document.getElementById("dock"), side = root.matchMedia && root.matchMedia("(max-height:500px) and (orientation:landscape)").matches;
-            this.insetL = side && dock && !this.attract ? Math.max(0, Math.min(.4 * this.cssW, dock.getBoundingClientRect().right)) : 0;
+            this.insetL = false && side && dock && !this.attract ? Math.max(0, Math.min(.4 * this.cssW, dock.getBoundingClientRect().right)) : 0;
         }
         resetCaches() {
             this._baseL = null, this._st = null, this._skPrev = null, this.bgCache = {}, this.motes = null, 
@@ -226,29 +229,11 @@
             const dm = hab.dims;
             return "circle" === dm.shape ? G.circlePoly(dm.w / 2, dm.d / 2, dm.w / 2, dm.d / 2, 44) : [ [ 0, 0 ], [ dm.w, 0 ], [ dm.w, dm.d ], [ 0, dm.d ] ];
         }
-        softOK() {
-            const gp = this.gp;
-            return !(!gp || !gp.gl2 || gp._splitBroken || this.set.perf && this.set.ptNoSplit || JT.HD2D && JT.HD2D.on);
-        }
-        softAtFloor() {
-            return !this.softOK() || (this.softS || 1) <= this.softMin() + .001;
-        }
-        softMin() {
-            return "low" === JT.Device.tier ? .5 : .55;
-        }
-        softCtl(dt) {
-            const st = this.set;
-            if (st.perf && st.ptSoft) return void (this.softS = M.clamp(+st.ptSoft || 1, .5, 1));
-            if (!this.softOK() || !this.gp._direct || dt <= 0 || dt > .25) return;
-            const now = this.time, slow = dt > 1 / (.88 * (this.targetFps || 60));
-            if (this._sMiss = .9 * this._sMiss + (slow ? .1 : 0), this._sHold = Math.max(0, this._sHold - dt), 
-            this._sMiss > .3 && !this._sHold && this.softS > this.softMin() + .001) return this.softS = Math.max(this.softMin(), +(this.softS - .08).toFixed(3)), 
-            this._sHold = .35, this._sGood = 0, this._sMiss = .15, now - this._sUpT < 3 && (this._sUpWait = Math.min(60, 2 * this._sUpWait)), 
-            void (this._sDownT = now);
-            now - this._sDownT > 15 && (this._sUpWait = 30), this._sGood = this._sMiss < .04 ? this._sGood + dt : 0, 
-            this._sGood > this._sUpWait && this.softS < 1 && (this.softS = Math.min(1, +(this.softS + .04).toFixed(3)), 
-            this._sGood = 0, this._sUpT = now);
-        }
+        // A second hidden resolution controller would undermine the quality floor.
+        softOK() { return false; }
+        softAtFloor() { return true; }
+        softMin() { return 1; }
+        softCtl(dt) { this.softS = 1; }
         render(dt) {
             {
                 const c = this.cv, cw = c.clientWidth, ch = c.clientHeight;

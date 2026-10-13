@@ -1,9 +1,5 @@
-# Jumper Terrarium source
+# Editable Terrarium source
 
-- `engine/`: game, simulation, camera, graphics and interface modules. `order.json` sets script order.
-- `packs/jumper/shell/`: gameplay HTML/CSS shell.
-- `packs/terrarium/`: title screen, Storybook opening, jumper-only navigation and static files.
-- `build.js`: rebuilds the app into `dist/terrarium`.
-- `tests/`: this release’s browser regression checks.
+Run `node build.js` to generate `dist/terrarium`. The release launcher lives in `packs/terrarium/launcher.html`; shared game HTML/CSS is in `packs/jumper/shell/head.html`. `engine/order.json` gives script order. `engine/22-renderer-camera-rigs-frame.js` defines resolution presets; `engine/21a-hd2d-post.js` handles HD-2D scene sampling; `engine/28-boot-main-loop-fixed.js` handles Auto adaptation and safe preview/New Game boot.
 
-Run `node build.js` with Node 18+. No runtime dependencies are needed to build or play. Tests use Playwright and a system Chromium executable. The shipping app is the contents of `dist/terrarium`; the source tree is included for editing.
+Only generated `dist` and top-level release files should be hosted. See the release README and tests README for play and validation instructions.

@@ -935,7 +935,7 @@
             if (HDT) {
                 if (this._tgtFB = null, this._hd = 0, this._hdF = 0, JT.HD2D.post(this, V, hab, night, W, H), 
                 gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA), scene && !PT.ptNoSpr && HDT.dt2) {
-                    this._hdPost = HDT, this._hdF = 1 / Math.max(1, k);
+                    this._hdPost = HDT, this._hdF = 1;
                     try {
                         this.sprites(V, hab, scene, night);
                     } finally {

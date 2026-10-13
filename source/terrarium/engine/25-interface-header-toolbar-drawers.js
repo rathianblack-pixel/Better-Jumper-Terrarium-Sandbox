@@ -126,7 +126,7 @@
       this.game = game; this.R = R; this.set = settings; this.cv = $('view'); this._bootAt = performance.now();
       this.bind(); this.refreshHeader();
       game.on((t, d) => this.onGame(t, d));
-      const sp = game.hab.spider(game.selectedId); if (sp) this.showPanel(sp.id);
+      this.hidePanel();
     },
     get hab() { return this.game.hab; },
     isMobile() { return root.matchMedia && root.matchMedia(UI.MOBILE_MQ).matches; },
@@ -148,6 +148,7 @@
       $('btnHelp').onclick = () => this.helpModal();
       $('btnManage').onclick = () => this.manageModal();
       $('habPicker').onclick = () => this.habPickerModal();
+      $('jumperControl').onclick = () => this.jumpersSheet();
       $('drawerClose').onclick = () => this.closeDrawer();
       $('modalClose').onclick = () => this.closeModal();
       $('modalWrap').addEventListener('pointerdown', (e) => { if (e.target === $('modalWrap')) this.closeModal(); });
@@ -341,6 +342,9 @@
         for (const i of show) { const h = g.habs[i]; const b = el('button', i === st.active ? 'on' : '', esc(h.title)); b.title = JT.HABITATS[h.data.type].name + ' · ' + h.spiders.length + ' jumper(s)'; b.onclick = () => this.switchHab(i); tabs.appendChild(b); }
         const all = el('button', 'tk-all', g.habs.length > 1 ? 'All tanks · ' + g.habs.length : 'Tanks'); all.title = 'All your tanks'; all.onclick = () => this.tanksModal(); tabs.appendChild(all); }
       $('habPicker').textContent = g.hab.title;
+      const nameControl = $('jumperControl');
+      if (nameControl) { const sp = g.hab.spider(g.selectedId) || g.hab.spiders[0]; nameControl.querySelector('span').textContent = sp ? sp.name : 'Choose a jumper'; nameControl.title = g.hab.title + ' · Choose a jumper'; }
+
       this.syncCams();
       document.querySelectorAll('#timeMode button').forEach(b => b.classList.toggle('on', b.dataset.tm === st.timeMode));
       $('btnSound').textContent = this.set.muted ? 'Muted' : 'Sound';
@@ -376,7 +380,7 @@
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); this.undoClear && this.undoClear(); const rep = g.activate(i);
       const h = g.hab; g.selectedId = h.spiders[0] ? h.spiders[0].id : null; this.R.cur = null; this.R.resetView();
       if (rep && rep.meals.length) setTimeout(() => this.toast('While you were away: ' + rep.meals.map(([x, n]) => '<b>' + esc(x.name) + '</b> caught ' + (n === 1 ? 'a meal' : n + ' meals')).join(', ') + '.', 'quiet', 4200), 350);
-      if (g.selectedId && !this.isMobile()) this.showPanel(g.selectedId); else this.hidePanel();
+      this.hidePanel();
       if (this.obs) this.obs.sub = null;
       if (this.tab) this.openDrawer(this.tab); this.refreshHeader(); A().sfx('click');
     },
@@ -1429,12 +1433,12 @@
       const s = this.set, h = this.hab; const w = el('div');
       w.appendChild(el('h4', '', 'Background for ' + esc(h.title)));
       const bgs = el('div', 'bgs');
-      for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { if (h === this.hab && h.data.bg !== id) this.undoPush('Background: ' + B.name); h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
+      for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.textContent = ''; b.appendChild(el('span', 'bg-label', B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { if (h === this.hab && h.data.bg !== id) this.undoPush('Background: ' + B.name); h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
       w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
-      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
-      q.appendChild(seg); w.appendChild(q);
+      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; this.R._thermalLevel = 0; this.R._healthySeconds = this.R._missSeconds = this.R._costSeconds = 0; this.R.softS = 1; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
+      q.appendChild(seg); q.appendChild(el('span', 'muted', 'High 2.0× · Medium 1.5× · Low 1.0×. Auto adjusts from 2.0× down to 1.0×, never below Low.')); w.appendChild(q);
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Critter painting')); const sg = el('div', 'seg small'); const on = s.gpuCrit !== false; // v33
         for (const [v, l] of [[true, 'GPU (fast)'], [false, 'Classic']]) { const b = el('button', on === v ? 'on' : '', l); b.onclick = () => { s.gpuCrit = v; this.R._gcOff = false; if (this.R.gp) this.R.gp._gcOff = false; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'GPU: the graphics chip paints critters directly, which is much lighter on the processor. Classic: the original painter, for comparison.')); w.appendChild(fr); }
@@ -1444,9 +1448,9 @@
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Art style')); const sg = el('div', 'seg small');
         for (const [v, l] of [['hd2d', 'HD-2D'], ['storybook', 'Storybook']]) { const b = el('button', JT.HD2D.art === v ? 'on' : '', l); b.onclick = () => { s.art = v; JT.Settings.save(s); this.R.resize(); this.R.resetCaches(); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'HD-2D: pixel-art diorama with lens blur, bloom and light shafts. Storybook: ink and watercolour.')); w.appendChild(fr); }
-      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel size')); const sg = el('div', 'seg small');
-        for (const [v, l] of [['fine', 'Fine'], ['classic', 'Classic'], ['chunky', 'Chunky']]) { const b = el('button', (s.pixel || 'classic') === v ? 'on' : '', l); b.onclick = () => { s.pixel = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); w.appendChild(fr); }
+      if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Pixel texture')); const sg = el('div', 'seg small');
+        for (const [v, l] of [['fine', 'Fine'], ['classic', 'Classic'], ['chunky', 'Chunky']]) { const b = el('button', (s.pixel || 'fine') === v ? 'on' : '', l); b.onclick = () => { s.pixel = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Fine uses the full render resolution. Classic and Chunky are optional coarser pixel-art effects.')); w.appendChild(fr); }
       if (JT.HD2D.art === 'hd2d') { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Lens blur')); const sg = el('div', 'seg small');
         for (const [v, l] of [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']]) { const b = el('button', (s.blur || 'light') === v ? 'on' : '', l); b.onclick = () => { s.blur = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Depth-of-field and tilt-shift blur around the edges of the view')); w.appendChild(fr); }
