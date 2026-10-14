@@ -3,9 +3,9 @@
  if (root.JT.Biome && root.JT.Biome.ensure) return;
  'use strict';const J=root.JT,B=J.Biome,WX=J.WEATHER,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),sid=s=>typeof s==='string'?s:s&&s.species;
  J.SUBSTRATES.dune=Object.assign({},J.SUBSTRATES.desert,{name:'Raked Dune Sand',moist:0.06});J.SUBSTRATES.mud=Object.assign({},J.SUBSTRATES.peat,{name:'Wet Mud',moist:0.95});
- J.BACKGROUNDS.dunes=Object.assign({},J.BACKGROUNDS.twilight,{name:'Desert Dunes',sky:['#dfa760','#e5c18b','#dcc8a1'],blobs:['#af8051','#c4945f','#ddb886','#947556'],light:'#ffe3a5'});
- J.BACKGROUNDS.mangrove=Object.assign({},J.BACKGROUNDS.misty,{name:'Mangrove Roots',sky:['#456e64','#699b87','#a4b8a0'],blobs:['#345549','#587465','#74948a','#a3b7a0']});
- J.BACKGROUNDS.moonwood=Object.assign({},J.BACKGROUNDS.twilight,{name:'Moonlit Moss Forest',sky:['#171b33','#273148','#475365'],blobs:['#253b35','#354958','#536579','#31483d'],light:'#b8d5ed',shafts:0.15});
+ if(!J.BACKGROUNDS.dunes)J.BACKGROUNDS.dunes=Object.assign({},J.BACKGROUNDS.twilight,{name:'Desert Dunes',sky:['#dfa760','#e5c18b','#dcc8a1'],blobs:['#af8051','#c4945f','#ddb886','#947556'],light:'#ffe3a5'});
+ if(!J.BACKGROUNDS.mangrove)J.BACKGROUNDS.mangrove=Object.assign({},J.BACKGROUNDS.misty,{name:'Mangrove Roots',sky:['#456e64','#699b87','#a4b8a0'],blobs:['#345549','#587465','#74948a','#a3b7a0']});
+ if(!J.BACKGROUNDS.moonwood)J.BACKGROUNDS.moonwood=Object.assign({},J.BACKGROUNDS.twilight,{name:'Moonlit Moss Forest',sky:['#171b33','#273148','#475365'],blobs:['#253b35','#354958','#536579','#31483d'],light:'#b8d5ed',shafts:0.15});
  const targets={rainforest:0.85,desert:0.22,paludarium:0.92,nightmoss:0.80};
  const grades={rainforest:[0.96,1.02,0.95],desert:[1.07,1,0.88],paludarium:[0.94,1,1.03],nightmoss:[0.8,0.86,1.06],antkingdom:[1.01,1.02,0.94],heath:[1.04,1.02,0.95],oldbark:[0.99,1,0.95],urban:[1.03,1.02,1],prairie:[1.01,1.04,0.96],cloudforest:[0.94,1.01,1.05]};
  for(const id of J.BIOME_ORDER){const b=J.BIOMES[id];b.tint=grades[id]||[1,1,1];b.dusk=id==='nightmoss'?0.62:0;}

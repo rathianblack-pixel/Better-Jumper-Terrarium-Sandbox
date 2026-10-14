@@ -10,7 +10,7 @@ python -m http.server 8000
 Open http://localhost:8000. WebGL is required; HD-2D uses WebGL2. Older WebGL1 devices fall back to Storybook.
 
 ## Living Tanks update
-Create tanks from the top left of **Jumpers**. Choose an enclosure, an unlocked species (a new jumper is spawned), and its recommended biome. Use **Switch Tank** or **Previous Tank** to move between your 30-tank shelf. Inactive tanks—including local day/night and weather—freeze completely without catch-up.
+Create tanks from the top left of **Jumpers**. Choose an enclosure, an unlocked species (a new jumper is spawned), and its recommended biome. Use **Switch Tank** or **Previous Tank** to move between your 30-tank shelf. Inactive tanks run no continuous AI. When you revisit or check the tank shelf, their needs and ongoing activities catch up using bounded elapsed time.
 
 Smarter sensory attention, remembered locations, failed-hunt adaptation, post-molt hunger/recovery, ambient prey routines and a clearer compact care card are included. See **CHANGELOG_LIVING_TANKS.md** for the complete changes and **QA_REPORT.md** for measured checks and limitations.
 
@@ -24,7 +24,7 @@ New molt retreats require room for the **next growth stage**, including edge and
 - **On**: at most two moving plants on Low, otherwise six.
 - **Off**: disables ambient foliage motion.
 
-Motion is cosmetic and uses existing GPU mesh buffers. It does not rebuild navigation each frame; rocks, pots and rigid trunks stay still. Sway pauses with the tank and is reduced on plants supporting a jumper. Animated plants still require extra rendering work, so no universal zero-cost, phone-FPS or battery guarantee is made.
+Motion is cosmetic and uses existing GPU mesh buffers. It does not rebuild navigation each frame; rocks, pots and rigid trunks stay still. Sway only animates in the viewed tank and is reduced on plants supporting a jumper. Animated plants still require extra rendering work, so no universal zero-cost, phone-FPS or battery guarantee is made.
 
 ## Quick Tank Setup
 Tap the jumper name at the top left → **Tank Setup**, or use **Jumpers → Tank Setup** beside Switch Tank.
@@ -76,3 +76,13 @@ node build.js
 ```
 
 Copy **dist/terrarium** to your hosting folder. Runtime assets are local; no CDN or package download is needed to play. Browser regression tests require Playwright and Chromium; see **source/terrarium/tests/README.md**. See **QA_REPORT.md** for tested scenarios and limitations.
+
+## HD-2D critters, calmer attention, and background care
+- Fixed an HD-only shadow helper that referenced out-of-scope body length/height variables, aborting grounded critter drawing before their bodies were painted. The intended HD-2D pixel sprites, depth occlusion and bloom remain intact. Texture cleanup and CPU fallback uploads explicitly use the correct GPU textures.
+- Springtails and isopods are ignored by incidental glances, peripheral inspection, lunges and vibration cues. Real prey still attract attention, but a short focus hold and vibration cooldown prevent constant direction switching. A starving jumper can still deliberately hunt a springtail in front of it.
+- Only the viewed tank runs full locomotion/hunting AI. Revisit or open the tank shelf to reconcile other tanks in one bounded pass; no per-second inactive simulation.
+- Hunger, hydration, age, local time, mist droplets and old remains progress. Meals already being held finish normally; premolt, weaving, molt and skin hardening advance through their existing state transitions. Fractional feeding progress is saved.
+- No invented offscreen hunts, cannibalism or deaths. Unowned live food stays available; the simplified away model does not replay animal movement or every weather event.
+- A game day lasts 480 seconds. Absence uses elapsed game time while playing, and elapsed real seconds after closing/hiding the app. Catch-up is capped at **3 game days (24 minutes)** per reconciliation. Away-only fullness/hydration floors are **12% / 25%** (already-lower values are not magically refilled). These are gentle care reminders, not an unattended death penalty.
+- Closing/reopening or hiding/resuming applies offline time once. Legacy saves without timestamps start this policy at their first load, without retroactive punishment. The holding cup is not a simulated habitat. Photo, replay and Tank Setup remain intentionally paused.
+- Rehosting: replace the whole release folder, including `sw.js`; its cache version changed. If an installed copy still shows the old behavior, close it and reopen after the update, or refresh the site. Back up an exported save before deployment.

@@ -1,12 +1,18 @@
 {
-  "edition": "Decor Safety and Foliage Update",
-  "decorDefinitions": 216,
-  "variantCases": 1728,
-  "supportedCapSamples": 9948,
-  "runtimeSHA256": {
-    "index.html": "7a1458b281d19f22f2ac998143f98303a7ec1ae8474864c01adb4f708b264e85",
-    "jumper.html": "e3c95523dd7c25dc799e1548e45959a8ebe029738d92ac4503949c0287665b1f",
-    "sw.js": "27c764d20eb3ccc137e2d5bc3834165e6a37677d81a0364b76d2a269c9829f67"
+  "edition": "HD-2D critter fix, calmer sensory attention, bounded background care",
+  "result": "PASS",
+  "jumper_sha256": "d22b04b96999ea31160bff3227b0470fca4bf36be3528ecff115b932a5fa524b",
+  "current_test_reports": {
+    "source/terrarium/tests/fix-results/rendering-background-report.json": "PASS",
+    "source/terrarium/tests/fix-results/regression/revamp-test-report.json": "PASS",
+    "source/terrarium/tests/fix-results/living/living-tanks-report.json": "PASS",
+    "source/terrarium/tests/fix-results/offline/final-check-report.json": "PASS",
+    "source/terrarium/tests/fix-results/behavior-final/rendering-background-report.json": "PASS",
+    "source/terrarium/tests/fix-results/ai/ai-edge-cases.json": "PASS"
   },
-  "validation": "Headless Chromium / SwiftShader; see QA_REPORT.md for scope and limits."
+  "limitations": [
+    "Headless Chromium/SwiftShader, not physical-phone benchmarks",
+    "Background care is an event-based approximation, not full unseen locomotion/hunting",
+    "Absence capped to three game days with gentle away-only need floors"
+  ]
 }

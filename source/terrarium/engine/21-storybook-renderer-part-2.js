@@ -1,6 +1,29 @@
 !function() {
     "use strict";
-    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; vec3 inkT=mix(uInk, vec3(0.34,0.22,0.16), 0.38); gl_FragColor=vec4(inkT*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5){ col=mix(col, vec3(0.38,0.76,0.24), 0.28); col*=1.16; }\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  float rim=pow(fr, 2.6); vec3 rimCol=mix(vec3(1.0,0.84,0.54), vec3(0.55,0.72,1.0), uNight); col+=rimCol*rim*0.16*uKD; float washEdge=smoothstep(0.46,0.95,fr); col=mix(col, col*0.82+vec3(0.04,0.02,0.01), washEdge*0.32*(1.0-uHD));\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); float mossCreep=(1.0-smoothstep(0.3,3.6+nz.g*1.6,hb))*smoothstep(-0.15,0.45,n.y)*0.46; col=mix(col, vec3(0.32,0.48,0.18), mossCreep*step(uGnd.y,0.02)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.02,0.90,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); float h1=step(1.1,mod(gl_FragCoord.x+gl_FragCoord.y,4.0))*0.75+0.25; float h2=step(1.1,mod(gl_FragCoord.x-gl_FragCoord.y,4.0))*0.75+0.25; float hatch=mix(1.0,h1,smoothstep(0.18,0.58,e)); hatch=mix(hatch,h1*h2,smoothstep(0.55,0.88,e)); c=c*hatch; o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float nib=0.76+0.48*abs(dot(nr,vec2(-0.7071,0.7071))); float w=max(aW*uLW*nib, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<uGnd.y-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; vec3 inkT=mix(uInk, vec3(0.34,0.22,0.16), 0.38); gl_FragColor=vec4(inkT*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5){ col=mix(col, vec3(0.38,0.76,0.24), 0.28); col*=1.16; }\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  float rim=pow(fr, 2.6); vec3 rimCol=mix(vec3(1.0,0.84,0.54), vec3(0.55,0.72,1.0), uNight); col+=rimCol*rim*0.16*uKD; float washEdge=smoothstep(0.46,0.95,fr); col=mix(col, col*0.82+vec3(0.04,0.02,0.01), washEdge*0.32*(1.0-uHD));\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); float mossCreep=(1.0-smoothstep(0.3,3.6+nz.g*1.6,hb))*smoothstep(-0.15,0.45,n.y)*0.46; col=mix(col, vec3(0.32,0.48,0.18), mossCreep*step(uGnd.y,0.02)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec4 s=texture2D(uTex,vUV); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.02,0.90,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); float h1=step(1.1,mod(gl_FragCoord.x+gl_FragCoord.y,4.0))*0.75+0.25; float h2=step(1.1,mod(gl_FragCoord.x-gl_FragCoord.y,4.0))*0.75+0.25; float hatch=mix(1.0,h1,smoothstep(0.18,0.58,e)); hatch=mix(hatch,h1*h2,smoothstep(0.55,0.88,e)); c=c*hatch; o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float nib=0.76+0.48*abs(dot(nr,vec2(-0.7071,0.7071))); float w=max(aW*uLW*nib, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+    const PAN_VS = `attribute vec2 aXY; attribute vec2 aUV;
+      uniform float uYaw; uniform float uPitch; uniform vec2 uRes;
+      varying vec2 vFarUV; varying vec2 vMidUV;
+      void main(){
+        float normYaw = uYaw / 6.2831853;
+        float pitchOff = (uPitch - 0.45) * 0.28;
+        float aspect = uRes.x / max(1.0, uRes.y);
+        float spanU = aspect * 0.42;
+        vFarUV = vec2((aUV.x - 0.5) * spanU - normYaw * 0.30 + 0.5, aUV.y + pitchOff * 0.55);
+        vMidUV = vec2((aUV.x - 0.5) * spanU - normYaw * 1.00 + 0.5, aUV.y + pitchOff);
+        gl_Position = vec4(aXY, 0.999, 1.0);
+      }`;
+    const PAN_FS = `precision highp float;
+      varying vec2 vFarUV; varying vec2 vMidUV;
+      uniform sampler2D uFar; uniform sampler2D uMid;
+      uniform vec4 uCol;
+      void main(){
+        vec4 far = texture2D(uFar, vFarUV);
+        vec4 mid = texture2D(uMid, vMidUV);
+        vec3 col = mix(far.rgb, mid.rgb, mid.a * 0.88);
+        col *= uCol.rgb;
+        gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+      }`;
     function mkCanvas(w, h) {
         const c = document.createElement("canvas");
         return c.width = Math.max(1, 0 | w), c.height = Math.max(1, 0 | h), c;
@@ -43,7 +66,8 @@
                 line: this.prog(LINE_VS, LINE_FS),
                 mound: this.prog(MOUND_VS, MOUND_FS),
                 wet: this.prog(WET_VS, WET_FS),
-                mark: this.prog(MARK_VS, MARK_FS)
+                mark: this.prog(MARK_VS, MARK_FS),
+                pan:  this.prog(PAN_VS, PAN_FS)
             };
             const extra = {
                 smask: [ SMASK_VS, SMASK_FS ],
@@ -335,13 +359,221 @@
         }
         bgTexture(id) {
             if (this.bgT = this.bgT || {}, this.bgT[id]) return this.bgT[id];
-            if (JT.HD2D && JT.HD2D.on && this.gl2) return this.bgT[id] = this.texFrom(JT.HD2D.bgCanvas(id), !1);
-            const B = JT.BACKGROUNDS[id] || JT.BACKGROUNDS.mossy, W = 768, H = 512, c = mkCanvas(W, H), g = c.getContext("2d"), rng = JT.makeRng(JT.hashStr("bg" + id)), gr = g.createLinearGradient(0, 0, 0, H);
-            gr.addColorStop(0, towardPaper(B.sky[0], .8)), gr.addColorStop(.6, towardPaper(B.sky[1], .78)), 
-            gr.addColorStop(1, towardPaper(B.sky[2], .74)), g.fillStyle = gr, g.fillRect(0, 0, W, H);
-            for (let i = 0; i < 26; i++) this.wash(g, rng() * W, rng() * H * .9, 30 + 90 * rng(), towardPaper(rng.pick(B.blobs), .5 + .2 * rng()), .12 + .12 * rng(), rng, .75 + .4 * rng());
-            for (let i = 0; i < 10; i++) this.wash(g, rng() * W, rng() * H * .6, 6 + 14 * rng(), towardPaper(B.light, .3), .18, rng);
-            return this.bgT[id] = this.texFrom(c, !1);
+            const B = JT.BACKGROUNDS[id] || JT.BACKGROUNDS.mossy;
+            const gl = this.gl;
+            const texRepeat = (cv) => {
+                const t = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, t);
+                gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                return t;
+            };
+
+            // HD-2D mode: uses HD2D.bgCanvas for both far and mid layers
+            if (JT.HD2D && JT.HD2D.on && this.gl2) {
+                const farC = JT.HD2D.bgCanvas(id, 'far');
+                const midC = JT.HD2D.bgCanvas(id, 'mid');
+                const far = texRepeat(farC);
+                const mid = texRepeat(midC);
+                return this.bgT[id] = { far, mid, t: far, B };
+            }
+
+            // Storybook mode: generates panoramic far & mid canvases
+            const W = 1536, H = 512;
+            const cFar = mkCanvas(W, H), gFar = cFar.getContext('2d');
+            const rngF = JT.makeRng(JT.hashStr('sbF_' + id));
+            const grFar = gFar.createLinearGradient(0, 0, 0, H);
+            grFar.addColorStop(0,    towardPaper(B.sky[0], 0.85));
+            grFar.addColorStop(0.52, towardPaper(B.sky[1], 0.80));
+            grFar.addColorStop(1,    towardPaper(B.sky[2], 0.74));
+            gFar.fillStyle = grFar; gFar.fillRect(0, 0, W, H);
+            // Distant rolling mountain ridges (seamless horizontal sine wave)
+            for (let r = 0; r < 2; r++) {
+                const hillY = H * (0.45 + r * 0.12);
+                gFar.fillStyle = towardPaper(B.fog || B.sky[1], 0.5 + r * 0.2);
+                gFar.beginPath(); gFar.moveTo(0, H);
+                for (let x = 0; x <= W; x += 16) {
+                    const t = (x / W) * Math.PI * 2;
+                    gFar.lineTo(x, hillY + Math.sin(t * (3 + r) + r) * (20 - r * 8));
+                }
+                gFar.lineTo(W, H); gFar.closePath(); gFar.fill();
+            }
+            for (let i = 0; i < 20; i++)
+                this.wash(gFar, rngF() * W, H * 0.5 + rngF() * H * 0.5, 60 + 130 * rngF(), towardPaper(B.fog || B.sky[1], 0.4), 0.10 + 0.08 * rngF(), rngF, 0.6 + 0.5 * rngF());
+
+            const cMid = mkCanvas(W, H), gMid = cMid.getContext('2d');
+            const rngM = JT.makeRng(JT.hashStr('sbM_' + id));
+            gMid.clearRect(0, 0, W, H);
+            for (let i = 0; i < 38; i++) {
+                const x = rngM() * W, y = H * 0.25 + rngM() * H * 0.75;
+                const r = 40 + 120 * rngM();
+                const col = towardPaper(rngM.pick(B.blobs), 0.5 + 0.2 * rngM());
+                this.wash(gMid, x, y, r, col, 0.16 + 0.18 * rngM(), rngM, 0.6 + 0.5 * rngM());
+            }
+            if (B.near) {
+                for (let i = 0; i < 16; i++) {
+                    const x = rngM() * W, y = H * 0.62 + rngM() * H * 0.38;
+                    this.wash(gMid, x, y, 25 + 75 * rngM(), towardPaper(rngM.pick(B.near), 0.5), 0.24 + 0.18 * rngM(), rngM, 0.55);
+                }
+            }
+            for (let i = 0; i < 12; i++)
+                this.wash(gMid, rngM() * W, rngM() * H * 0.65, 8 + 18 * rngM(), towardPaper(B.light, 0.28), 0.18, rngM);
+
+            const far = texRepeat(cFar);
+            const mid = texRepeat(cMid);
+            return this.bgT[id] = { far, mid, t: far, B };
+        }
+        buildGroundAnchor(hab) {
+            if (!GM || !GM.MB) return null;
+            const W = hab.dims.w, D = hab.dims.d;
+            const bgId = hab.data.bg || 'mossy';
+            const B = JT.BACKGROUNDS[bgId] || JT.BACKGROUNDS.mossy;
+            const anchorType = B.anchor || 'water_rocks';
+            const mb = new GM.MB({ height: 18, baseY: -18 });
+            const rng = JT.makeRng(JT.hashStr('anchor_' + bgId + '_' + W + 'x' + D));
+
+            const rgbOf = c => GM.rgb ? GM.rgb(c) : [0.5, 0.5, 0.5];
+            const groundCol = rgbOf(B.ground || '#223824');
+            const rockCol = [0.46, 0.44, 0.40];
+            const mossCol = [0.32, 0.48, 0.22];
+            const waterCol = [0.18, 0.38, 0.42];
+
+            const isWater = anchorType.startsWith('water');
+            const isMoss = anchorType.includes('moss') || anchorType.includes('grass') || anchorType.includes('root');
+            const isStone = anchorType.startsWith('stone');
+            const isDesert = anchorType.includes('sand') || anchorType.includes('desert') || anchorType.includes('dune');
+            const isSnow = anchorType.includes('snow') || anchorType.includes('frost');
+            const isBasalt = anchorType.includes('basalt') || anchorType.includes('spring') || anchorType.includes('rock');
+
+            const M1 = 36;
+            const baseY = isWater ? -14.2 : -15.0;
+            const edgeY = baseY - (isWater ? 0.3 : 1.4);
+            const skirtCol = isWater ? waterCol : isSnow ? [0.85, 0.90, 0.96] : isDesert ? [0.72, 0.54, 0.32] : isStone ? [0.44, 0.42, 0.38] : groundCol;
+            const skirtEdgeCol = [skirtCol[0] * 0.82, skirtCol[1] * 0.82, skirtCol[2] * 0.82];
+            const normUp = [0, 1, 0];
+            const fMat = isWater ? 0 : isStone ? 64 : 160;
+
+            if (hab.dims.shape === 'circle') {
+                const cx = W / 2, cz = D / 2, rx = W / 2, rz = D / 2;
+                const segs = 24;
+                for (let k = 0; k < segs; k++) {
+                    const a0 = (k / segs) * Math.PI * 2, a1 = ((k + 1) / segs) * Math.PI * 2;
+                    const in0 = [cx + Math.cos(a0) * rx, baseY, cz + Math.sin(a0) * rz];
+                    const in1 = [cx + Math.cos(a1) * rx, baseY, cz + Math.sin(a1) * rz];
+                    const out0 = [cx + Math.cos(a0) * (rx + M1), edgeY, cz + Math.sin(a0) * (rz + M1)];
+                    const out1 = [cx + Math.cos(a1) * (rx + M1), edgeY, cz + Math.sin(a1) * (rz + M1)];
+                    const v0 = mb.vert(in0, normUp, normUp, skirtCol, skirtCol, fMat);
+                    const v1 = mb.vert(in1, normUp, normUp, skirtCol, skirtCol, fMat);
+                    const v2 = mb.vert(out1, normUp, normUp, skirtEdgeCol, skirtEdgeCol, fMat);
+                    const v3 = mb.vert(out0, normUp, normUp, skirtEdgeCol, skirtEdgeCol, fMat);
+                    mb.quad(v0, v1, v2, v3);
+                }
+            } else {
+                const addQ = (p0, p1, p2, p3, c0, c1) => {
+                    const v0 = mb.vert(p0, normUp, normUp, c0, c1, fMat);
+                    const v1 = mb.vert(p1, normUp, normUp, c0, c1, fMat);
+                    const v2 = mb.vert(p2, normUp, normUp, c0, c1, fMat);
+                    const v3 = mb.vert(p3, normUp, normUp, c0, c1, fMat);
+                    mb.quad(v0, v1, v2, v3);
+                };
+                addQ([-M1, edgeY, -M1], [W + M1, edgeY, -M1], [W, baseY, 0], [0, baseY, 0], skirtEdgeCol, skirtCol);
+                addQ([0, baseY, D], [W, baseY, D], [W + M1, edgeY, D + M1], [-M1, edgeY, D + M1], skirtCol, skirtEdgeCol);
+                addQ([-M1, edgeY, -M1], [0, baseY, 0], [0, baseY, D], [-M1, edgeY, D + M1], skirtEdgeCol, skirtCol);
+                addQ([W, baseY, 0], [W + M1, edgeY, -M1], [W + M1, edgeY, D + M1], [W, baseY, D], skirtCol, skirtEdgeCol);
+            }
+
+            // Outline of the foundation apron
+            mb.line([-M1, edgeY, -M1], [W + M1, edgeY, -M1], 0.6, 0.45, skirtEdgeCol);
+            mb.line([W + M1, edgeY, -M1], [W + M1, edgeY, D + M1], 0.6, 0.45, skirtEdgeCol);
+            mb.line([W + M1, edgeY, D + M1], [-M1, edgeY, D + M1], 0.6, 0.45, skirtEdgeCol);
+            mb.line([-M1, edgeY, D + M1], [-M1, edgeY, -M1], 0.6, 0.45, skirtEdgeCol);
+
+            if (isWater) {
+                for (const dr of [4, 10, 18]) {
+                    mb.polyline([
+                        [-dr, baseY + 0.05, -dr],
+                        [W + dr, baseY + 0.05, -dr],
+                        [W + dr, baseY + 0.05, D + dr],
+                        [-dr, baseY + 0.05, D + dr],
+                        [-dr, baseY + 0.05, -dr]
+                    ], 0.5, 0.35, [0.75, 0.92, 0.95]);
+                }
+            }
+
+            // 14 natural 3D river stones / boulders clustered against base walls
+            const rockSpots = [
+                [W * 0.20, baseY, -2, 7.5, 4.5, 5.5],
+                [W * 0.58, baseY, -3, 9.0, 5.0, 7.0],
+                [W * 0.82, baseY, -1.5, 6.0, 3.8, 5.0],
+                [W + 2, baseY, D * 0.28, 8.0, 5.2, 6.5],
+                [W + 3, baseY, D * 0.72, 7.0, 4.0, 8.0],
+                [W * 0.85, baseY, D + 2.5, 8.5, 5.5, 6.5],
+                [W * 0.45, baseY, D + 3, 11.0, 6.5, 8.0],
+                [W * 0.18, baseY, D + 2, 7.0, 4.2, 6.0],
+                [-2.5, baseY, D * 0.70, 8.5, 5.0, 7.0],
+                [-2, baseY, D * 0.32, 6.5, 3.8, 6.0],
+                [-3, baseY, -2, 9.5, 6.0, 8.5],
+                [W + 2.5, baseY, -2.5, 8.0, 5.0, 7.5],
+                [W + 3, baseY, D + 2, 10.0, 6.2, 8.5],
+                [-2.5, baseY, D + 2.5, 8.5, 5.5, 7.5]
+            ];
+
+            for (let i = 0; i < rockSpots.length; i++) {
+                const [rx, ry, rz, sx, sy, sz] = rockSpots[i];
+                const rVar = 0.85 + 0.30 * rng();
+                const ax = [sx * rVar, 0, 0], ay = [0, sy * rVar, 0], az = [0, 0, sz * rVar];
+                const hasMoss = (isWater || isMoss) && (i % 2 === 0);
+                const topCol = hasMoss ? mossCol : isSnow ? [0.82, 0.88, 0.92] : isDesert ? [0.68, 0.48, 0.30] : isBasalt ? [0.24, 0.16, 0.14] : rockCol;
+                const shadeCol = [topCol[0] * 0.60, topCol[1] * 0.60, topCol[2] * 0.60];
+                GM.ell(mb, [rx, ry + sy * 0.22, rz], ax, ay, az, topCol, shadeCol, hasMoss ? 160 : 64, null, 8, 4, true, 0.65);
+            }
+
+            // Gnarled roots for moss/forest biomes
+            if (isMoss) {
+                const rootPts = [
+                    [[W * 0.3, baseY + 4, -1], [W * 0.25, baseY + 1, -5], [W * 0.15, baseY - 0.5, -14], [W * 0.08, baseY - 1, -22]],
+                    [[W + 1, baseY + 5, D * 0.4], [W + 4, baseY + 2, D * 0.45], [W + 12, baseY - 0.2, D * 0.5], [W + 20, baseY - 1, D * 0.55]],
+                    [[-1, baseY + 6, D * 0.6], [-4, baseY + 2.5, D * 0.62], [-14, baseY, D * 0.65], [-24, baseY - 1, D * 0.68]]
+                ];
+                const rootCol = [0.38, 0.26, 0.16];
+                for (const pts of rootPts) {
+                    GM.tube(mb, pts, 2.2, 0.8, rootCol, [0.22, 0.14, 0.08], 96, 6, true, 0.7);
+                }
+            }
+
+            const verts = new Float32Array(mb.v);
+            const idx = mb.n > 65000 ? new Uint32Array(mb.i) : new Uint16Array(mb.i);
+            const L = mb.lines;
+            const lv = new Float32Array(L.length * 4 * 15);
+            const li = (L.length * 4 > 65000 ? new Uint32Array(L.length * 6) : new Uint16Array(L.length * 6));
+            let o = 0;
+            L.forEach((s, i) => {
+                const [a, b, w, al, col] = s;
+                const c = col || [0.16, 0.12, 0.09];
+                for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 1]]) {
+                    lv.set([a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, c[0], c[1], c[2], 0, 0], o);
+                    o += 15;
+                }
+                const k = i * 4;
+                li.set([k, k + 1, k + 2, k, k + 2, k + 3], i * 6);
+            });
+
+            const mesh = {
+                verts, idx, n: mb.n,
+                lines: lv, lidx: li, nl: L.length,
+                vb: this.buf(verts),
+                ib: this.buf(idx, "idx"),
+                lb: L.length ? this.buf(lv) : null,
+                lib: L.length ? this.buf(li, "idx") : null,
+                del: []
+            };
+            mesh.del = [mesh.vb, mesh.ib];
+            if (mesh.lb) mesh.del.push(mesh.lb, mesh.lib);
+            return mesh;
         }
         groundTexture(hab) {
             const S = JT.SUBSTRATES[hab.data.substrate] || JT.SUBSTRATES.coco, key = hab.data.substrate + "|" + hab.data.type + "|" + hab.dims.w + "x" + hab.dims.d;
@@ -377,7 +609,7 @@
             }, this.gT;
         }
         habGeom(hab) {
-            const R = this.R, TR = JT.Terrain, ter = TR ? TR.get(hab) : null, tq = "low" === R.quality ? 2 : 1, key = hab.data.id + "|" + hab._geomVersion + "|" + hab.dims.w + "|" + hab.dims.d + "|" + hab.data.type + "|" + (ter ? ter.key : "") + "|" + tq;
+            const R = this.R, TR = JT.Terrain, ter = TR ? TR.get(hab) : null, tq = "low" === R.quality ? 2 : 1, bgId = hab.data.bg || "mossy", key = hab.data.id + "|" + hab._geomVersion + "|" + hab.dims.w + "|" + hab.dims.d + "|" + hab.data.type + "|" + bgId + "|" + (ter ? ter.key : "") + "|" + tq;
             if (this.hg && this.hg.key === key) return this.hg;
             const gl = this.gl;
             if (this.hg) {
@@ -385,7 +617,7 @@
                 this.hg.cs && this.hg.cs.b && gl.deleteBuffer(this.hg.cs.b), this.hg.tm && (gl.deleteBuffer(this.hg.tm.vb), 
                 gl.deleteBuffer(this.hg.tm.ib));
             }
-            const hAt = (x, z) => ter && ter.max > 0 ? TR.at(hab, x, z) : 0, del = [], poly = R.floorPoly(hab), n = poly.length, c = G.centroid(poly), dm = hab.dims, fl = [], V5 = q => [ q[0], 0, q[1], q[0] / dm.w, q[1] / dm.d ];
+            const hAt = (x, z) => ter && ter.max > 0 ? TR.at(hab, x, z) : 0, del = [], groundAnchor = this.buildGroundAnchor(hab); if (groundAnchor && groundAnchor.del) for (const b of groundAnchor.del) if (b) del.push(b); const poly = R.floorPoly(hab), n = poly.length, c = G.centroid(poly), dm = hab.dims, fl = [], V5 = q => [ q[0], 0, q[1], q[0] / dm.w, q[1] / dm.d ];
             for (let i = 0; i < n; i++) fl.push(...V5(c), ...V5(poly[i]), ...V5(poly[(i + 1) % n]));
             const floor = this.buf(new Float32Array(fl));
             del.push(floor);
@@ -491,7 +723,8 @@
                 nm: mv.length / 7,
                 ter: ter && ter.max > 0 ? ter : null,
                 tq: tq,
-                poly: poly
+                poly: poly,
+                groundAnchor: groundAnchor
             }, this.hg;
         }
         liftQuad(hab, out, cx, y, cz, ax, az, a) {
@@ -807,21 +1040,71 @@
                     gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0), this.drawLines(P, o.m.lb, o.m.lib, o.m.nl);
                 }
             }, statics = (list, part) => {
-                let P = this.use(this.P.scr);
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.quad), this.attribs(P, [ [ "aXY", 2 ], [ "aUV", 2 ] ], 4), 
-                gl.activeTexture(gl.TEXTURE0), gl.bindTexture(gl.TEXTURE_2D, this.bgTexture(hab.data.bg)), 
-                gl.uniform1i(P.u.uTex, 0), gl.uniform1f(P.u.uMode, 0), gl.uniform4f(P.u.uCol, .98 * grade[0], .98 * grade[1], grade[2], 1), 
-                gl.drawArrays(gl.TRIANGLES, 0, 6), P = this.use(this.P.tex), this.view(P, V), this.light(P), 
-                gl.uniform1i(P.u.uTex, 0), gl.uniform1f(P.u.uZ, 0), gl.bindTexture(gl.TEXTURE_2D, gt.s), 
-                gl.bindBuffer(gl.ARRAY_BUFFER, hg.side), this.attribs(P, [ [ "aP", 3 ], [ "aUV", 2 ] ], 5), 
-                gl.uniform1f(P.u.uLit, 1), hg.sides.forEach((s, i) => {
+                const bgBuf = this.bgTexture(hab.data.bg);
+                if (bgBuf && bgBuf.far && this.P.pan) {
+                    let P = this.use(this.P.pan);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+                    this.attribs(P, [ [ "aXY", 2 ], [ "aUV", 2 ] ], 4);
+                    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, bgBuf.far); gl.uniform1i(P.u.uFar, 0);
+                    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, bgBuf.mid); gl.uniform1i(P.u.uMid, 1);
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.uniform1f(P.u.uYaw, V.yaw);
+                    gl.uniform1f(P.u.uPitch, V.pitch);
+                    gl.uniform2f(P.u.uRes, VW, VH);
+                    gl.uniform4f(P.u.uCol, .98 * grade[0], .98 * grade[1], grade[2], 1);
+                    gl.disable(gl.DEPTH_TEST); gl.depthMask(!1);
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
+                } else {
+                    let P = this.use(this.P.scr);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+                    this.attribs(P, [ [ "aXY", 2 ], [ "aUV", 2 ] ], 4);
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, bgBuf && bgBuf.far ? bgBuf.far : (bgBuf || this.tex.paper));
+                    gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uMode, 0);
+                    gl.uniform4f(P.u.uCol, .98 * grade[0], .98 * grade[1], grade[2], 1);
+                    gl.disable(gl.DEPTH_TEST); gl.depthMask(!1);
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
+                }
+                gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(!0);
+                let P = this.use(this.P.tex); this.view(P, V); this.light(P);
+                gl.uniform1i(P.u.uTex, 0); gl.uniform1f(P.u.uZ, 0); gl.bindTexture(gl.TEXTURE_2D, gt.s);
+                gl.bindBuffer(gl.ARRAY_BUFFER, hg.side); this.attribs(P, [ [ "aP", 3 ], [ "aUV", 2 ] ], 5);
+                gl.uniform1f(P.u.uLit, 1); hg.sides.forEach((s, i) => {
                     if (s[0] * V.toCam[0] + s[1] * V.toCam[2] <= 0) return;
                     const dd = s[0] * Lg[0] + s[1] * Lg[2], lit = M.clamp(.72 + .4 * dd * SK.kd, .45, 1.1), tw = M.clamp(.5 + dd, 0, 1) * SK.kd;
-                    gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1), 
+                    gl.uniform4f(P.u.uCol, lit * (SK.amb[0] + (SK.key[0] - SK.amb[0]) * tw), lit * (SK.amb[1] + (SK.key[1] - SK.amb[1]) * tw), lit * (SK.amb[2] + (SK.key[2] - SK.amb[2]) * tw), 1);
                     gl.drawArrays(gl.TRIANGLES, null != s[2] ? s[2] : 6 * i, s[3] || 6);
-                }), gl.bindTexture(gl.TEXTURE_2D, gt.t), gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor), 
-                this.attribs(P, [ [ "aP", 3 ], [ "aUV", 2 ] ], 5), gl.uniform4f(P.u.uCol, 1, 1, 1, 1), 
+                }); gl.bindTexture(gl.TEXTURE_2D, gt.t); gl.bindBuffer(gl.ARRAY_BUFFER, hg.floor);
+                this.attribs(P, [ [ "aP", 3 ], [ "aUV", 2 ] ], 5); gl.uniform4f(P.u.uCol, 1, 1, 1, 1);
                 gl.drawArrays(gl.TRIANGLES, 0, hg.nf);
+                if (hg.groundAnchor && hg.groundAnchor.n) {
+                    let Pm = this.use(this.meshProg());
+                    this.view(Pm, V); this.light(Pm);
+                    gl.uniform3f(Pm.u.uL, Lg[0], Lg[1], Lg[2]);
+                    gl.uniform3f(Pm.u.uToCam, V.toCam[0], V.toCam[1], V.toCam[2]);
+                    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.tex.noise); gl.uniform1i(Pm.u.uNoise, 0);
+                    gl.uniform3f(Pm.u.uInk, .17, .13, .1); gl.uniform1f(Pm.u.uBoil, 0); gl.uniform1f(Pm.u.uOut, outPx);
+                    gl.uniform1f(Pm.u.uAlpha, 1); gl.uniform4f(Pm.u.uGhost, 0, 0, 0, 0);
+                    gl.uniform3f(Pm.u.uSoil, gt.avg[0], gt.avg[1], gt.avg[2]);
+                    gl.uniform1f(Pm.u.uHD, this._hd);
+                    gl.uniform3f(Pm.u.uWind, 0, 0, 0); gl.uniform3f(Pm.u.uSway, 0, 0, 0);
+                    gl.uniform2f(Pm.u.uGnd, 0, -50.0);
+                    for (const pass of (PT.ptNoInk ? [ 1 ] : [ 0, 1 ])) {
+                        gl.uniform1f(Pm.u.uPass, pass ? 0 : 1);
+                        this.drawMesh(Pm, hg.groundAnchor);
+                    }
+                    if (hg.groundAnchor.lb && !PT.ptNoInk) {
+                        let Pl = this.use(this.P.line);
+                        this.view(Pl, V); this.light(Pl);
+                        gl.uniform1f(Pl.u.uLW, lw);
+                        gl.uniform1f(Pl.u.uMinW, HDT ? .9 / PXF : .6 * k);
+                        gl.uniform1f(Pl.u.uAlpha, 1); gl.uniform1f(Pl.u.uLitL, 0);
+                        gl.uniform3f(Pl.u.uWind, 0, 0, 0); gl.uniform3f(Pl.u.uSway, 0, 0, 0);
+                        gl.enable(gl.BLEND); gl.depthMask(!1);
+                        this.drawLines(Pl, hg.groundAnchor.lb, hg.groundAnchor.lib, hg.groundAnchor.nl);
+                    }
+                }
+                gl.disable(gl.DEPTH_TEST); gl.depthMask(!1);
                 {
                     const TR = JT.Terrain, tm = hg.ter && !(this.R.set.perf ? this.R.set : {}).ptNoTer ? this.terrainMesh(hab, hg) : null, L8 = [ [ "aP", 3 ], [ "aUV", 2 ], [ "aA", 1 ], [ "aS", 1 ], [ "aW", 1 ] ];
                     if (tm && tm.n) {
@@ -1244,6 +1527,8 @@
             let upT = 0;
             const GC = direct && this.gl2 && !1 !== R.set.gpuCrit && !this._gcOff ? this.gpuCrit() : null, later = [];
             GC && (GC.beginFrame(), GC.aw = ATW, GC.ah = ATH);
+            // Creating GPUCrit allocates/unbinds textures. CPU fallback uploads must never rely on that state.
+            gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex);
             const paintCPU = s => {
                 let g = g0, ox = 0, oy = 0, sc0 = null;
                 const S = 2 * s.rp + 2;
@@ -1275,6 +1560,7 @@
                 if (g.restore(), g.globalAlpha = 1, g.globalCompositeOperation = "source-over", 
                 direct) {
                     const t1 = performance.now();
+                    gl.activeTexture(gl.TEXTURE0), gl.bindTexture(gl.TEXTURE_2D, this.atex),
                     gl.texSubImage2D(gl.TEXTURE_2D, 0, s.ax - 1, s.ay - 1, gl.RGBA, gl.UNSIGNED_BYTE, sc0.c), 
                     upT += performance.now() - t1;
                 }

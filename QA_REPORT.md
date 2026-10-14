@@ -1,3 +1,33 @@
+# Follow-up verification: HD critters, calmer attention, background care
+
+This section describes the current build. The older QA notes below are historical; their full-freeze behavior has been replaced.
+
+## Confirmed root cause and repairs
+The HD shadow helper used `L` outside the scope where body length was defined (and confused helper canvas height with animal height). Grounded animal painting threw before painting its body, and the renderer's fallback swallowed the exception. The helper now derives height softness from its existing normalized `soft` argument. HD pixel-art sprites, bloom, focus and depth occlusion are preserved. Background texture retirement deletes the actual `far`/`mid`/`t` textures once; CPU fallback uploads explicitly bind the sprite atlas after GPU atlas initialization and before each upload.
+
+## Verified
+- Targeted regression: **28 behavior/painter checks, 28 art/quality/pixel/GPU-CPU combinations**, zero collected runtime/graphics errors.
+- Direct painters for a grounded jumper plus springtail, isopod, aphid, fruitfly, gnat and cricket produce opaque body pixels in both art styles. A synthetic sprite contributes visible output pixels in both full pipelines.
+- Final-engine behavior-only run: **28 checks**, including partially completed emergence and restored molt-site-search intent.
+- Existing full UI regression: desktop, phone portrait and landscape; **24 quality/style cases**, zero collected errors.
+- Updated Living Tanks compatibility suite: **5 groups passed**, including creation/cancel/capacity, lazy inactive state and catch-up, camera/selection, sensory/memory fixtures, care UI and migration. Old exact-clock equality was updated to allow genuine elapsed offline milliseconds.
+- Offline/save suite passed: migration of defaults, preserved animal identity, saved graphics preferences, service-worker offline title and Continue.
+- AI edge suite passed: hidden-prey aiming, strike timing, post-molt hardening, five-species simulation soak.
+- Manually inspected controlled real-animal desktop and 390px-phone images in HD-2D and Storybook, plus launcher capture. Critters are visible and the intended style differences remain.
+
+## Background model and limits
+Only the viewed habitat receives continuous full AI. Other habitats are reconciled when visited or checked in the tank list. Reload and hidden-tab resume use elapsed wall seconds once; old saves without timestamps start the new policy without retroactive debt.
+
+Catch-up uses at most 14 lifecycle boundaries per spider, not one tick per elapsed frame/second. It advances hunger, hydration, age, local clock, existing meals, retreat weaving, premolt, molt, hardening and emergence. Existing owned food is consumed once with normal meal counters; fractional feeding duration/nutrition survives saves. Old droplets, remains and silk age without particle/weather replays. It does not fabricate hunts, cannibalism, prey deaths or exact offscreen paths.
+
+Each reconciliation is capped at three 480-second game days (24 minutes). Away-only fullness/hydration floors are 12%/25%; already-lower values are not refilled. These safeguards make absence a care reminder, not an unseen death penalty. Photo/replay/setup pauses and the holding cup are not autonomous background habitats.
+
+Springtails/isopods do not generate incidental glances, peripheral inspections, restless lunges or vibration queue noise. Short focus holds and vibration cooldowns reduce switching among real cues. Deliberate starving springtail hunting remains possible.
+
+Tests used headless Chromium/SwiftShader, not physical mobile hardware. They do not guarantee phone FPS/battery use, every possible furnished arrangement, or exact real-world biology. Existing navigation and retreat-safety rules remain authoritative. Compact JSON reports and selected screenshots are in `source/terrarium/tests/fix-results`; rerun scripts to regenerate complete screenshot sets.
+
+---
+
 # Living Tanks QA report
 
 ## Tank Setup preview checks

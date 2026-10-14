@@ -329,7 +329,9 @@
         const one = (grow, al) => {
             if (al < .003) return;
             // Shadow softness scales with height above the surface: 0 (on ground) = crisp, 1 (fully elevated) = soft.
-            const heightSf = 0 === art ? 1.5 / k : M.clamp(0.35 + 1.3 * (h / Math.max(L, 0.1)), 0.35, 2.5);
+            // soft already carries normalized elevation (castShadow passes 0.5 * height / bodyLength).
+            // h/L belong to castShadow, not this helper; referencing L here aborted every grounded HD critter.
+            const heightSf = 0 === art ? 1.5 / k : M.clamp(0.35 + 2.6 * soft, 0.35, 2.5);
             if (ctx.gpuShadow) return void ctx.gpuShadow(ells, strokes, grow, col, al, heightSf);
             if (!B) return ctx.globalAlpha = 1, ctx.fillStyle = col.replace("rgb", "rgba").replace(")", "," + al.toFixed(3) + ")"), 
             ctx.strokeStyle = ctx.fillStyle, void shapePath(ctx, ells, strokes, 0, grow);

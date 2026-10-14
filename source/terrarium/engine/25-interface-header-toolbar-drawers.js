@@ -379,7 +379,7 @@
     switchHab(i) {
       const g = this.game; if (i === g.state.active) return; this.cancelMode(); this.undoClear && this.undoClear(); const rep = g.activate(i);
       const h = g.hab; g.selectedId = h.spiders[0] ? h.spiders[0].id : null; this.R.cur = null; this.R.resetView();
-      if (rep && rep.meals.length) setTimeout(() => this.toast('While you were away: ' + rep.meals.map(([x, n]) => '<b>' + esc(x.name) + '</b> caught ' + (n === 1 ? 'a meal' : n + ' meals')).join(', ') + '.', 'quiet', 4200), 350);
+      if (rep && rep.elapsed >= 5) { const notes = []; if (rep.meals.length) notes.push(rep.meals.map(([x]) => '<b>' + esc(x.name) + '</b> finished feeding').join(', ')); if (rep.molts.length) notes.push(rep.molts.map(x => '<b>' + esc(x.name) + '</b> molted').join(', ')); if (rep.hungry.length) notes.push(rep.hungry.length + ' jumper' + (rep.hungry.length === 1 ? ' is' : 's are') + ' hungry'); if (notes.length) setTimeout(() => this.toast('While you were away: ' + notes.join('; ') + '.', 'quiet', 4200), 350); }
       this.hidePanel();
       if (this.obs) this.obs.sub = null;
       if (this.tab) this.openDrawer(this.tab); this.refreshHeader(); A().sfx('click');
@@ -1229,7 +1229,7 @@
     /** v11: every tank in one list: search, sort, favourites, status at a glance, the holding cup and a new-tank builder. */
     tanksModal() {
       const g = this.game, st = g.state; const w = el('div', 'tanks');
-      w.appendChild(el('p', 'muted', g.habs.length + ' of ' + JT.MAX_HABS + ' tanks. Only the tank you are viewing is running; the others are fully paused, including their local clock. No catch-up on return.'));
+      w.appendChild(el('p', 'muted', g.habs.length + ' of ' + JT.MAX_HABS + ' tanks. Only the viewed tank runs full AI. Other tanks catch up on needs, feeding and molts when checked or revisited. Away progress is capped at 3 game days; no unseen hunts or deaths.'));
       const tools = el('div', 'tk-tools');
       const q = el('input'); q.type = 'search'; q.placeholder = 'Find a jumper or tank'; q.value = this._tkQ || ''; q.setAttribute('aria-label', 'Find a jumper or tank');
       const sg = el('div', 'seg small'); const sorts = [['recent', 'Recent'], ['name', 'A\u2013Z'], ['care', 'Needs care'], ['favorites', 'Favorites']];
@@ -1250,7 +1250,7 @@
           const H = JT.HABITATS[h.data.type]; const r = el('div', 'tkrow' + (i === st.active ? ' on' : ''));
           const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64)));
           r.appendChild(pics);
-          let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Paused');
+          let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Background');
           if (ts.molting.length) chips += chip('molt', 'Molting: ' + names(ts.molting));
           if (ts.hungry.length) chips += chip('warn', 'Hungry: ' + names(ts.hungry));
           if (ts.thirsty.length) chips += chip('warn', 'Thirsty: ' + names(ts.thirsty));

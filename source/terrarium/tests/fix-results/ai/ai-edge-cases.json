@@ -1,0 +1,51 @@
+{
+  "hiddenAim": true,
+  "hiddenStrike": false,
+  "riskyWait": true,
+  "settledGo": true,
+  "recovery": {
+    "startSat": 0.28,
+    "afterSat": 0.20103999999999847,
+    "soft": 0,
+    "state": "stretch"
+  },
+  "simulations": [
+    {
+      "species": "bold",
+      "finite": true,
+      "state": "feed",
+      "memories": 4,
+      "visualMemories": 8
+    },
+    {
+      "species": "regal",
+      "finite": true,
+      "state": "assess",
+      "memories": 9,
+      "visualMemories": 8
+    },
+    {
+      "species": "canopy",
+      "finite": true,
+      "state": "feed",
+      "memories": 9,
+      "visualMemories": 7
+    },
+    {
+      "species": "zebra",
+      "finite": true,
+      "state": "groom",
+      "memories": 8,
+      "visualMemories": 6
+    },
+    {
+      "species": "graywall",
+      "finite": true,
+      "state": "feed",
+      "memories": 5,
+      "visualMemories": 8
+    }
+  ],
+  "result": "PASS",
+  "errors": []
+}

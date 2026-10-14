@@ -66,6 +66,7 @@
   AI.STARVING = 0.15;
   /** Live food this jumper will actually go after. Cleanup crew is ignored unless the jumper is starving. */
   AI.huntableFor = (sp, d) => !!d && (d.huntable || (d.id === 'springtail' && sp.sat < AI.STARVING)) && !(sp.species === 'bagheera' && sp.sat > 0.38); // Bagheera: mostly vegetarian
+  AI.isCleanupCrew = e => !!(e && JT.PREY_BY_ID[e.type] && JT.PREY_BY_ID[e.type].cleaner);
   AI.nutOf = (d) => d ? (d.nut || (d.id === 'springtail' ? 0.05 : 0)) : 0;
   /** Is there anything left in the habitat this jumper could eat? */
   AI.preyAvailable = (hab, sp) => hab.data.prey.some(p => !p.owner && !p.buried && !p.dead && AI.huntableFor(sp, JT.PREY_BY_ID[p.type]));
@@ -362,6 +363,7 @@
     const tid = sp.target && sp.target.id; const gl = sp._glCD || (sp._glCD = {});
     let best = null, bs = 0.3;
     const consider = (e, kind) => {
+      if (AI.isCleanupCrew(e)) return; // Colony activity is background noise, not an interruption.
       if (e.id === tid || e.id === sp.hold) return;
       const dv = M.sub(e.pos, sp.pos); const d = M.len(dv); if (d > R0 || d < 0.2) return;
       const vel = e._vel || (e._moving && e.fwd ? M.mul(e.fwd, 3) : null); const v = vel ? M.len(vel) : 0; const moving = v > 1;
@@ -1322,8 +1324,10 @@
     const def = JT.PREY_BY_ID[p.type];
     sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def);
     const big = Math.max(0, (sp._catchRatio || 0) - 1); if (big > 0) { sp._feedDur *= 1 + big * 0.6; sp._feedNut *= 1 + big * 0.3; } // a big meal: longer feeding, more filling
+    sp.feedProgress = { dur: sp._feedDur, nut: sp._feedNut };
     setState(sp, 'feed', 'Feeding on the ' + (p.type === 'jumperMeal' ? 'unlucky jumper' : preyName(def)) + '.');
   }
+  AI.startFeed = startFeed;
   H.feed = function (hab, sp, dt) {
     const p = hab.preyById(sp.hold); if (!p) { sp.hold = null; setState(sp, 'idle'); return; }
     // something came close: chewing pauses, the body turns to put itself between the intruder and the meal
@@ -1334,7 +1338,7 @@
   };
   function finishMeal(hab, sp, p) {
     const def = JT.PREY_BY_ID[p.type];
-    hab.data.prey = hab.data.prey.filter(x => x !== p); sp.hold = null;
+    hab.data.prey = hab.data.prey.filter(x => x !== p); sp.hold = null; delete sp.feedProgress;
     hab.addRemains(p.type, sp.pos, sp.sup, p.type === 'jumperMeal' ? 'spider' : 'husk', p.type === 'jumperMeal' ? { species: p.species, len: p.len } : {});
     sp.catches++; sp.meals++;
     hab.event('meal', { sp });
@@ -1483,6 +1487,8 @@
     setState(sp, 'moltSeek', spot.high ? 'Pre-molt — climbing to the safest high retreat.' : 'Pre-molt — no high shelter here, heading for a quiet sheltered refuge.');
     sp._moltReplans = 0;
   }
+  AI.startMoltSeek = startMoltSeek;
+  AI.advanceNeeds = needs;
   H.moltSeek = function (hab, sp, dt) {
     const r = move(hab, sp, dt, 0.85);
     if (r === 'done') { setState(sp, 'moltSilk', 'Weaving a silk molting hammock.'); return; }
@@ -1838,7 +1844,7 @@
     sp._scanDur = far ? 2 + JT.R() * 1.8 : 4 + JT.R() * 3.5; sp._peerT = 0;
     setState(sp, 'scan', far ? 'Very hungry — peering around, restless.' : 'Peering around for any movement.');
   }
-  /** Anything moving within reach: prey of any kind (incl. springtails), falling leaves, other jumpers. */
+  /** Meaningful movement within reach: food animals, falling leaves and other jumpers; never cleanup noise. */
   function moverNear(hab, sp) {
     const R0 = Math.max(14, AI.jump(sp) * 0.85); let best = null, bd = R0; const f = horiz(sp.fwd || [1, 0, 0]);
     const test = (pos, speed, id, kind) => {
@@ -1846,7 +1852,7 @@
       const to = horiz(M.sub(pos, sp.pos)); if (M.dot(f, to) < -0.35) return;
       best = { pos: pos.slice(), id, kind }; bd = d;
     };
-    for (const p of hab.data.prey) if (!p.owner && !p.buried) test(p.pos, p._vel ? M.len(p._vel) : 0, p.id, p.type);
+    for (const p of hab.data.prey) if (!p.owner && !p.buried && !p.dead && !AI.isCleanupCrew(p)) test(p.pos, p._vel ? M.len(p._vel) : 0, p.id, p.type);
     for (const lf of hab._leaves || []) if (lf.falling) test(lf.pos, 3, lf.id, 'leaf');
     for (const o of hab.data.spiders) if (o !== sp && o._moving) test(o.pos, 3, o.id, 'spider');
     return best;
@@ -1970,9 +1976,9 @@
     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }
     if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate', 'curious', 'fingerWatch', 'antMarch', 'semaphore', 'nectarSeek', 'sip'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
     if (sp.state === 'carry' || sp.state === 'secure') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
-    if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type]; sp._feedDur = 6 + (def.nut || 0.5) * 28; sp._feedNut = def.nut || 0.5; } else sp.state = 'idle'; }
+    if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type] || {}; const saved = sp.feedProgress; const big = Math.max(0, (sp._catchRatio || 0) - 1); sp._feedDur = saved && saved.dur > 0 ? saved.dur : (6 + (def.nut || 0.5) * 28) * (1 + big * 0.6); sp._feedNut = saved && Number.isFinite(saved.nut) ? saved.nut : (p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def)) * (1 + big * 0.3); sp.feedProgress = { dur: sp._feedDur, nut: sp._feedNut }; } else sp.state = 'idle'; }
     if (sp.state === 'subdue') sp._subdueDur = sp._subdueDur || 1;
-    if (sp.state === 'moltSeek') sp.state = 'idle';
+    if (sp.state === 'moltSeek') sp._moltReplans = 0; // Keep the biological intent; the missing route is safely replanned.
     if (sp.state === 'crouch') sp.state = 'idle';
     if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
   };

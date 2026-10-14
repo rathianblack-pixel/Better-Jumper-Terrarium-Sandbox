@@ -9,11 +9,14 @@
  function turn(sp,pos,k){const dir=M.norm([pos[0]-sp.pos[0],0,pos[2]-sp.pos[2]]);if(M.len(dir)<.01)return;const f=sp.fwd||[1,0,0],a=Math.atan2(f[2],f[0]),delta=M.wrapAngle(Math.atan2(dir[2],dir[0])-a),next=a+delta*k;sp.fwd=[Math.cos(next),0,Math.sin(next)];}
  // Peripheral motion attracts attention, but does not instantly identify a prey animal.
  AI.inspectCue=function(h,s,e,dot,motion){
+   if(AI.isCleanupCrew(e))return dot>.55 && s.sat<AI.STARVING; // Deliberate emergency hunting remains possible.
    if(dot>.55){const cue=s._attention;if(cue&&cue.id===e.id&&h.time-cue.t<.35)return false;return true;}
    if(motion<.5)return false;
+   if(s.target&&s.target.id!==e.id)return false;
+   if((s._attentionLock||0)>h.time&&(!s._attention||s._attention.id!==e.id))return false;
    if((AI.PRI[s.state]||0)>=40)return false;
    if(!s._attention||s._attention.id!==e.id||h.time-s._attention.t>3)s._attention={id:e.id,t:h.time,pos:e.pos.slice()};
-   s._attention.pos=e.pos.slice();s._glance={pos:e.pos.slice(),until:h.time+.8};
+   s._attention.pos=e.pos.slice();s._glance={id:e.id,pos:e.pos.slice(),until:h.time+.8};s._attentionLock=h.time+1.8;s._glNext=Math.max(s._glNext||0,h.time+1.8);
    s.thought='Turning to inspect a movement.';turn(s,e.pos,.65);return false;
  };
  // Patience affects time spent waiting for a fast target to settle; urgency allows riskier windows.
@@ -49,15 +52,15 @@
      return h.data.silk.some(line=>line.a&&line.b&&((M.dist(line.a,pa)<5&&M.dist(line.b,pb)<5)||(M.dist(line.b,pa)<5&&M.dist(line.a,pb)<5)));
    },
    emit(h,p,strength,kind){
-     if(!grounded(p.sup))return;
+     if(!grounded(p.sup)||AI.isCleanupCrew(p))return; // Springtails/isopods cannot flood the shared cue queue.
      const q=h._vibrations||(h._vibrations=[]);while(q.length&&h.time-q[0].t>2)q.shift();
-     q.push({seq:h._vibSeq=(h._vibSeq||0)+1,t:h.time,pos:p.pos.slice(),sup:J.deepClone(p.sup),strength,kind});if(q.length>12)q.shift();
+     q.push({seq:h._vibSeq=(h._vibSeq||0)+1,t:h.time,pos:p.pos.slice(),sup:J.deepClone(p.sup),strength,kind,source:p.id,cleanup:AI.isCleanupCrew(p)});if(q.length>12)q.shift();
    },
    sense(h,s){
-     if((AI.PRI[s.state]||0)>=40||s._air||!grounded(s.sup))return;
+     if((AI.PRI[s.state]||0)>=40||s._air||!grounded(s.sup)||s.target||(s._vibNext||0)>h.time||(s._attentionLock||0)>h.time||(s._glNext||0)>h.time)return;
      let best=null,score=0;const since=s._vibSeen||0;
      for(const q of h._vibrations||[]){
-       if(q.seq<=since||h.time-q.t>2)continue;
+       if(q.seq<=since||h.time-q.t>2||q.cleanup)continue;
        const dist=M.dist(s.pos,q.pos),range=22+q.strength*32;
        if(dist>range||!this.linked(h,s.sup,q.sup,s.pos,q.pos))continue;
        const val=q.strength*(1-dist/range);if(val>score){best=q;score=val;}
@@ -65,7 +68,8 @@
      s._vibSeen=h._vibSeq||0;
      if(!best||score<.12)return;
      // Coarse direction only; never inserts a target or a visual sighting.
-     const pos=best.pos.map(v=>Math.round(v/8)*8);turn(s,pos,.55);
+     const pos=best.pos.map(v=>Math.round(v/8)*8);turn(s,pos,.35);
+     s._vibNext=h.time+2.5+(s.seed%5)*.15;s._attentionLock=h.time+1.8;s._glNext=Math.max(s._glNext||0,h.time+1.8);
      s._glance={pos,until:h.time+1};s.thought='Felt a vibration — checking that direction.';
      s.stats.vibrations=(s.stats.vibrations||0)+1;
    }

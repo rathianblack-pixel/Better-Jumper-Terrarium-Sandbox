@@ -24,7 +24,7 @@ GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node living-tanks.test
 GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node ai-edge-cases.js
 ```
 
-Tests exercise real creation controls on desktop, phone portrait and phone landscape; full inactive-state and clock freeze; camera/selection restoration; previous-tank behavior; favorites/search; capacity checks including a shelf filled while a creation modal is open; care feedback; sensory/ambient/memory fixtures; migration; hidden-target aiming, timing and a five-species simulation soak. Structured reports are in `living-results`. Screenshots supplied with the release are samples, not physical-device performance measurements.
+Tests exercise real creation controls on desktop, phone portrait and phone landscape; lazy inactive state and biological catch-up; camera/selection restoration; previous-tank behavior; favorites/search; capacity checks including a shelf filled while a creation modal is open; care feedback; sensory/ambient/memory fixtures; migration; hidden-target aiming, timing and a five-species simulation soak. Structured reports are in `living-results`. Screenshots supplied with the release are samples, not physical-device performance measurements.
 
 `ai-comparison.js` compares deterministic forced-miss retries with the original release. For reproduction, serve an unchanged copy of the original `jumper.html` as `baseline.html` beside the updated release, then run the script. The baseline is deliberately not shipped as a second playable version. This benchmark does not measure a universal intelligence multiplier.
 
@@ -49,3 +49,8 @@ node foliage-performance.js
 `decor-audit.js` builds all 216 definitions and records full-mesh samples; decorative foliage/moss/ornamental cap overlaps are reported separately from missing surfaces. `decor-variants.js` checks hard-cap support heights across 1,728 seed/rotation/elevation cases. `decor-safety.test.js` checks retreat clearance, unsafe-site refusal, legacy occupied-retreat reconciliation, wind/cache/quality controls and both real renderer paths. It also renders all 216 catalog thumbnails into six contact sheets. `SKIP_ATLAS=1` skips regenerating those sheets.
 
 Evidence is in `living-results/decor-safety/`. `foliage-performance.js` is a small software-GPU diagnostic, not a phone-performance or zero-cost guarantee. Automated checks do not prove every possible stacked layout or animation pose is clipping-free. The release includes compact reports and selected screenshots; larger screenshot sets are generated when you rerun the tests.
+
+## Rendering and background-care follow-up
+`node rendering-background.test.js` verifies cleanup sensory filtering, attention holds, bounded hunger/hydration, partial/completed feeding, premolt/molt/hardening, save-load timestamps, safe legacy migration, no imaginary hunts/deaths, and a 30-tank active-only tick budget. It also exercises both art styles, quality presets, GPU/CPU critter paths and pixel textures, and reads actual output pixels from a controlled synthetic sprite. Screenshots and a JSON report are under `fix-results`.
+
+The catch-up model is an intentional approximation, not full offscreen navigation or hunting. Software-GPU headless tests do not establish physical-phone FPS or battery use.

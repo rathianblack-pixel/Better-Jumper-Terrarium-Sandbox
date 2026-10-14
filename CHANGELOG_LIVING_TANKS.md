@@ -1,3 +1,17 @@
+# HD-2D critters and background care — follow-up
+
+This section supersedes the older inactive-tank freeze behavior documented below.
+
+- Fixed HD-only shadow ReferenceError (`L` outside its scope) that aborted grounded animal rendering; derive shadow softness from the helper’s normalized `soft` input. Preserve the intended HD sprite/post-processing pipeline.
+- Correctly retire background texture fields instead of deleting cache objects; bind the critter atlas before every CPU fallback upload.
+- Filter springtail/isopod vibration, incidental glances and restless lunges. Keep deliberate starving springtail hunting; add short sensory focus holds/cooldowns.
+- Lazy event-boundary care simulation on tank visit/shelf check, save reload and tab resume. No inactive AI loops.
+- Advance needs and existing feeding/molt states, with persistent feeding duration/nutrition and idempotent timestamps.
+- Cap absence to three 480-second game days, gently bound away-only needs, and never invent unseen hunts/deaths.
+- Update tank labels to Background and show actual care after reconciliation.
+
+---
+
 # Living Tanks update
 
 ## Decor safety and foliage update

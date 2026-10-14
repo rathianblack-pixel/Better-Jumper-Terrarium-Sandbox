@@ -42,17 +42,47 @@
     leafmould: { name: 'Leaf Mould',     top: '#4a3a24', mid: '#382a1a', dark: '#241a10', speck: ['#8a6a3a', '#6a4a24', '#a07a40'], burrow: 0.75, moist: 0.65, litter: true },
   };
 
-  // ---------------- Natural backgrounds ----------------
+  // ---------------- Natural backgrounds (storybook HD-2D, 24 scenes) ----------------
   JT.BACKGROUNDS = {
-    hollow:   { name: 'Ancient Tree Hollow', sky: ['#2b1d12', '#4a3320', '#6b4a2c'], blobs: ['#3a2716', '#5a3d22', '#7a5530', '#2a3a1a'], light: '#ffd08a', shafts: 0.35 },
-    mossy:    { name: 'Mossy Forest Floor',  sky: ['#1e2b17', '#2f4222', '#46602d'], blobs: ['#2a3d1c', '#3f5a28', '#5c7a36', '#6e8a40'], light: '#e6f0a0', shafts: 0.3 },
-    meadow:   { name: 'Sunlit Meadow',       sky: ['#8fb3c9', '#c4d6a6', '#9cb86a'], blobs: ['#7fa050', '#a8c070', '#e8e0a0', '#c9d98a', '#f2d06a'], light: '#fff3c0', shafts: 0.5 },
-    canopy:   { name: 'Rainforest Canopy',   sky: ['#16301f', '#24502f', '#3b7040'], blobs: ['#1f4a28', '#2f6a36', '#4c8a44', '#88b860'], light: '#d8ffb0', shafts: 0.55 },
-    twilight: { name: 'Twilight Woodland',   sky: ['#1b1a33', '#3a3352', '#6a4d5e'], blobs: ['#2c2a48', '#4a3f5e', '#7a5a6a', '#c08a6a'], light: '#ffc8a0', shafts: 0.25 },
-    stone:    { name: 'Moss Stone Garden',   sky: ['#2c3330', '#46504a', '#68736a'], blobs: ['#56605a', '#3e4a40', '#6e8a54', '#8a948c'], light: '#eef6e0', shafts: 0.3 },
-    log:      { name: 'Fallen Log Interior', sky: ['#24170e', '#3c2716', '#5a3b20'], blobs: ['#4a3018', '#6a4524', '#2e2010', '#8a6a3a'], light: '#ffb870', shafts: 0.45 },
-    dusk:     { name: 'Golden Dusk Grove',   sky: ['#3a2a3a', '#8a5a4a', '#e0a060'], blobs: ['#4a3a3a', '#7a5a3a', '#c08a4a', '#e8c070'], light: '#ffd8a0', shafts: 0.6 },
-    misty:    { name: 'Misty Highland',      sky: ['#7a8a8a', '#a8b8b0', '#d0dcd4'], blobs: ['#6a7a70', '#8a9a88', '#b0c0b0', '#d8e0d8'], light: '#f4fff8', shafts: 0.35 },
+    // ── River & Water Biomes ────────────────────────────────────────────────────────
+    mossy:       { name: 'Mossy River Glade',       sky: ['#122014','#243820','#3a582c'], blobs: ['#1e3416','#2e5022','#467432','#6a9e46','#90c85c'], light: '#e4ff98', shafts: 0.45, ground: '#243b20', fog: '#344c2c', anchor: 'water_rocks', near: ['#0e1a0c','#182814'], mood: 'river' },
+    pondside:    { name: 'Lily Pond Wetland',       sky: ['#1a3440','#2a5462','#448090'], blobs: ['#1c404c','#2a6070','#3c8c94','#5cb8a8','#84d8c2'], light: '#c8fff8', shafts: 0.42, ground: '#1c424a', fog: '#2a5864', anchor: 'water_rocks', near: ['#102028','#162c36'], mood: 'pond' },
+    waterfall:   { name: 'Forest Waterfall Basin',  sky: ['#142e34','#224a52','#36727a'], blobs: ['#1a4046','#286068','#3e8c94','#62c2c0','#94e6dc'], light: '#d8ffff', shafts: 0.55, ground: '#1a3e42', fog: '#285860', anchor: 'water_rocks', near: ['#0c1e22','#142a30'], mood: 'waterfall' },
+    mangrove:    { name: 'Mangrove Shore',          sky: ['#18342e','#2d5448','#4c7c6a'], blobs: ['#224438','#355c4d','#4b7a64','#709e82','#9ac2a8'], light: '#d8f6dc', shafts: 0.38, ground: '#264438', fog: '#365a4c', anchor: 'water_rocks', near: ['#10221c','#183228'], mood: 'shore' },
+    underwater:  { name: 'Sunken Grotto Pool',      sky: ['#081822','#0e2838','#164054'], blobs: ['#0e2a3c','#14445c','#1c6482','#2ea0c0','#58cce0'], light: '#88f4ff', shafts: 0.50, ground: '#0c2636', fog: '#12384a', anchor: 'water_rocks', near: ['#040e16','#081822'], mood: 'grotto' },
+
+    // ── Forest & Woodland Biomes ────────────────────────────────────────────────────
+    canopy:      { name: 'Rainforest Canopy',       sky: ['#0a2012','#14361c','#20582a'], blobs: ['#143018','#204c24','#327434','#4ea84c','#7ad868'], light: '#ccff9c', shafts: 0.65, ground: '#1a3c1e', fog: '#1e4624', anchor: 'moss_roots',  near: ['#08160a','#102412'], mood: 'jungle' },
+    hollow:      { name: 'Ancient Tree Hollow',     sky: ['#181008','#2c1b0e','#482c16'], blobs: ['#2e1c0c','#4a2e14','#6a441e','#8e622a','#b88438'], light: '#ffc870', shafts: 0.48, ground: '#28160a', fog: '#3c2210', anchor: 'moss_roots',  near: ['#100a04','#1a1008'], mood: 'amber' },
+    log:         { name: 'Fallen Log Glade',        sky: ['#18120a','#2e2012','#4a361c'], blobs: ['#302010','#4e341a','#704e26','#987038','#baa052'], light: '#ffd07a', shafts: 0.45, ground: '#2a1a0c', fog: '#3e2814', anchor: 'moss_roots',  near: ['#120c06','#1e140a'], mood: 'decay' },
+    autumnwood:  { name: 'Golden Autumn Forest',    sky: ['#221208','#3e200c','#683416'], blobs: ['#8c3410','#b8541c','#dc7c28','#e8a834','#f6d054'], light: '#ffe2a0', shafts: 0.60, ground: '#3e1c0a', fog: '#602e12', anchor: 'moss_roots',  near: ['#180a04','#241008'], mood: 'autumn' },
+    deepjungle:  { name: 'Primeval Deep Jungle',    sky: ['#061408','#0c220e','#143416'], blobs: ['#0c200e','#143416','#205020','#32782c','#4ca840'], light: '#b8ff78', shafts: 0.70, ground: '#102612', fog: '#163418', anchor: 'moss_roots',  near: ['#040a04','#081408'], mood: 'primeval' },
+    bamboo:      { name: 'Whispering Bamboo Grove', sky: ['#0e2214','#1c3c20','#2c5c30'], blobs: ['#1c4022','#2c6430','#469442','#78cc58','#b0f074'], light: '#e0ffb8', shafts: 0.50, ground: '#204424', fog: '#28542c', anchor: 'moss_roots',  near: ['#0a180e','#122416'], mood: 'bamboo' },
+
+    // ── Meadow & Highland Biomes ────────────────────────────────────────────────────
+    meadow:      { name: 'Sunlit Wildflower Meadow',sky: ['#5aaedc','#94d2ba','#d6eaa0'], blobs: ['#5c9c38','#86c44c','#bee268','#e8f288','#f6da54'], light: '#ffffcc', shafts: 0.65, ground: '#6a9840', fog: '#a0cc6c', anchor: 'grass_earth', near: ['#2e5c18','#447a24'], mood: 'meadow' },
+    dusk:        { name: 'Golden Sunset Grove',     sky: ['#241220','#622c2a','#e08432'], blobs: ['#3a1e28','#662e24','#a04e28','#dc7832','#f2b846'], light: '#ffdf9c', shafts: 0.72, ground: '#361e14', fog: '#6a341c', anchor: 'grass_earth', near: ['#160a12','#241216'], mood: 'sunset' },
+    misty:       { name: 'Misty Mountain Highland', sky: ['#586e70','#849e9c','#b8d0ca'], blobs: ['#4c6464','#6c8484','#92aca6','#bad0c8','#d8e8e2'], light: '#effffc', shafts: 0.38, ground: '#526666', fog: '#74908e', anchor: 'stone_plinth',near: ['#324242','#445858'], mood: 'mist' },
+    cloudpeak:   { name: 'Cloud Peak Summit',       sky: ['#406ca0','#769ec8','#b8d6ec'], blobs: ['#547ca8','#769ec2','#9ec0dc','#c8deee','#e4f0fa'], light: '#ffffff', shafts: 0.60, ground: '#547698', fog: '#7c9ebd', anchor: 'stone_plinth',near: ['#284260','#3a587e'], mood: 'summit' },
+
+    // ── Stone & Cultural Gardens ────────────────────────────────────────────────────
+    stone:       { name: 'Japanese Zen Stone Garden',sky:['#1e2a24','#32443a','#4e6456'], blobs: ['#34483e','#445c50','#5e7868','#7e9e86','#a8c49e'], light: '#ecfae4', shafts: 0.35, ground: '#364840', fog: '#465c50', anchor: 'stone_plinth',near: ['#141c18','#1e2c24'], mood: 'zen' },
+    sakura:      { name: 'Cherry Blossom Valley',   sky: ['#7eaed8','#b8d0e4','#eedcee'], blobs: ['#c884a4','#e6a4c2','#f4c4dc','#d8b8d4','#baa0cc'], light: '#fff4fc', shafts: 0.58, ground: '#8a7494', fog: '#b898be', anchor: 'stone_plinth',near: ['#584264','#70567e'], mood: 'sakura' },
+    ancientruin: { name: 'Overgrown Ancient Temple', sky: ['#1a2416','#2c3822','#445434'], blobs: ['#28341e','#38482a','#52683c','#769654','#98be70'], light: '#e8f8c0', shafts: 0.40, ground: '#2e3a24', fog: '#3c4c30', anchor: 'stone_plinth',near: ['#121a10','#1c2618'], mood: 'ruins' },
+
+    // ── Arid & Desert Biomes ────────────────────────────────────────────────────────
+    dunes:       { name: 'Desert Oasis & Dunes',    sky: ['#c89658','#e6b876','#f6dc9c'], blobs: ['#b47a3e','#ce964e','#e4b868','#f2d288','#9e6428'], light: '#fff0be', shafts: 0.60, ground: '#b88242', fog: '#cca05e', anchor: 'desert_sand', near: ['#6c421a','#8a5824'], mood: 'oasis' },
+    redrock:     { name: 'Red Rock Canyon',         sky: ['#1c1a32','#362642','#6a3648'], blobs: ['#8a2e18','#b04c22','#d67032','#ea9846','#5e2014'], light: '#ffc87c', shafts: 0.52, ground: '#742c16', fog: '#5a2418', anchor: 'desert_sand', near: ['#361008','#4c1a10'], mood: 'canyon' },
+    volcanicash: { name: 'Volcanic Springs',        sky: ['#140808','#280e0c','#421410'], blobs: ['#2e0c08','#4c1610','#200806','#6a2214','#943820'], light: '#ff8834', shafts: 0.65, ground: '#220a06', fog: '#38100a', anchor: 'basalt_spring',near: ['#0c0404','#160806'], mood: 'volcanic' },
+
+    // ── Night & Mystery Biomes ──────────────────────────────────────────────────────
+    twilight:    { name: 'Twilight Woodland',       sky: ['#12102e','#261c44','#58344e'], blobs: ['#1a1634','#2e2448','#4c3456','#7e4c5e','#b06c64'], light: '#ffb480', shafts: 0.28, ground: '#241a24', fog: '#3a2434', anchor: 'moss_roots',  near: ['#0a0818','#141022'], mood: 'twilight' },
+    moonwood:    { name: 'Moonlit Deep Forest',     sky: ['#080c1e','#101830','#1c2848'], blobs: ['#0e1628','#16243a','#203652','#345274','#5076a0'], light: '#a8d4ff', shafts: 0.32, ground: '#121e30', fog: '#182840', anchor: 'stone_plinth',near: ['#040810','#0a101c'], mood: 'moon' },
+    firefly:     { name: 'Enchanted Firefly Glade', sky: ['#060c08','#0c160e','#142214'], blobs: ['#0a140c','#102012','#18321a','#244a24','#366834'], light: '#b4ff8c', shafts: 0.25, ground: '#0e1c10', fog: '#142416', anchor: 'moss_roots',  near: ['#040804','#081008'], mood: 'firefly' },
+    crystalcave: { name: 'Bioluminescent Grotto',   sky: ['#06101c','#0c1c2e','#122c44'], blobs: ['#0a2034','#10324e','#164c70','#24749e','#44a8d0'], light: '#78f0ff', shafts: 0.45, ground: '#0e2436', fog: '#123048', anchor: 'basalt_spring',near: ['#040c14','#081420'], mood: 'crystal' },
+
+    // ── Winter & Snow Biome ─────────────────────────────────────────────────────────
+    snowfield:   { name: 'Alpine Winter Forest',    sky: ['#98b4cc','#bed0e0','#e4edf6'], blobs: ['#a6bcd0','#bed0de','#d4e2ee','#e6eff6','#f4f8fc'], light: '#ffffff', shafts: 0.45, ground: '#b8c8d8', fog: '#c8d8e4', anchor: 'snow_frost',  near: ['#7a92a8','#92a8bc'], mood: 'snow' },
   };
 
   // ---------------- Spider species ----------------

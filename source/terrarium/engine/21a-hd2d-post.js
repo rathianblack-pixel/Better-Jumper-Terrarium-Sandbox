@@ -153,7 +153,9 @@ void main(){
     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
       const key = on ? 'hd' : 'off'; if (this._was === key) return; this._was = key;
       // Retire style-dependent textures explicitly rather than orphaning GPU resources.
-      if (gp.bgT) for (const t of Object.values(gp.bgT)) if (t) gp.gl.deleteTexture(t);
+      if (gp.bgT) { const retired = new Set(); for (const entry of Object.values(gp.bgT)) {
+        for (const t of entry ? [entry.far, entry.mid, entry.t] : []) if (t && !retired.has(t)) { retired.add(t); gp.gl.deleteTexture(t); }
+      } }
       if (gp.gT) { if (gp.gT.t) gp.gl.deleteTexture(gp.gT.t); if (gp.gT.s) gp.gl.deleteTexture(gp.gT.s); }
       gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg.key = null;
       const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.remove('art-sketch', 'art-ukiyo'); } },
@@ -239,16 +241,172 @@ void main(){
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       gl.enable(gl.BLEND); gl.depthMask(true);
     },
-    /** Backdrop behind the tank: a deep, dusky gradient with soft out-of-focus orbs of light (the lens blur finishes it). */
-    bgCanvas(id) {
-      const B = JT.BACKGROUNDS[id] || JT.BACKGROUNDS.mossy; const W = 768, H = 512; const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); const rng = JT.makeRng(JT.hashStr('hd' + id));
-      const dk = (h, k) => { const v = JT.GLMesh.rgb(h); return 'rgb(' + v.map(x => Math.round(Math.min(255, x * 255 * k))).join(',') + ')'; };
-      const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, dk(B.sky[0], 0.62)); gr.addColorStop(0.55, dk(B.sky[1], 0.8)); gr.addColorStop(1, dk(B.sky[2], 0.6)); g.fillStyle = gr; g.fillRect(0, 0, W, H);
-      g.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < 9; i++) { const x = rng() * W, y = rng() * H * 0.8, r = 14 + rng() * 34; const col = rng() < 0.55 ? B.light : rng.pick(B.blobs); const a = 0.025 + rng() * 0.05;
-        const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, dk(col, 1).replace('rgb', 'rgba').replace(')', ',' + a + ')')); rg.addColorStop(0.6, dk(col, 1).replace('rgb', 'rgba').replace(')', ',' + (a * 0.5) + ')')); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); }
-      g.globalCompositeOperation = 'source-over';
-      const sh = g.createRadialGradient(W * 0.25, -H * 0.1, 0, W * 0.25, -H * 0.1, H * 1.1); sh.addColorStop(0, 'rgba(255,226,170,0.22)'); sh.addColorStop(1, 'rgba(255,226,170,0)'); g.fillStyle = sh; g.fillRect(0, 0, W, H);
+    /** Backdrop behind the tank: seamless 360-degree panoramic canvases for the HD-2D storybook world.
+     *  layer='far'  → deep sky atmosphere, distant mountain ridges & horizon haze (moves at 0.35× parallax)
+     *  layer='mid'  → painterly trees, rock formations, waterfalls/streams & dappled light (moves at 1.0× parallax)
+     *  Both canvases are horizontally tileable (1536×512) for continuous 360° camera orbit. */
+    bgCanvas(id, layer) {
+      const B = JT.BACKGROUNDS[id] || JT.BACKGROUNDS.mossy;
+      const W = 1536, H = 512;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d');
+      const seed = JT.hashStr('hd360_' + id + '_' + (layer || 'far'));
+      const rng = JT.makeRng(seed);
+      const rgbArr = (h) => JT.GLMesh && JT.GLMesh.rgb ? JT.GLMesh.rgb(h) : [0.5,0.5,0.5];
+      const rgba = (h, k, a) => {
+        const v = rgbArr(h);
+        return 'rgba(' + Math.round(Math.min(255, v[0] * 255 * k)) + ',' +
+                         Math.round(Math.min(255, v[1] * 255 * k)) + ',' +
+                         Math.round(Math.min(255, v[2] * 255 * k)) + ',' + a + ')';
+      };
+      const radGlow = (x, y, r, col, k, a) => {
+        const rg = g.createRadialGradient(x, y, 0, x, y, r);
+        rg.addColorStop(0,   rgba(col, k, a));
+        rg.addColorStop(0.5, rgba(col, k, a * 0.4));
+        rg.addColorStop(1,   rgba(col, k, 0));
+        g.fillStyle = rg; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+      };
+
+      if (!layer || layer === 'far') {
+        // ── FAR LAYER: Panoramic atmospheric sky & distant mountain/canopy horizon ──
+        const gr = g.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(0,    rgba(B.sky[0], 0.65, 1));
+        gr.addColorStop(0.48, rgba(B.sky[1], 0.78, 1));
+        gr.addColorStop(1,    rgba(B.sky[2], 0.68, 1));
+        g.fillStyle = gr; g.fillRect(0, 0, W, H);
+
+        // Distant rolling mountain / hill ridges (smooth sine wave layers, horizontally seamless)
+        for (let r = 0; r < 3; r++) {
+          const ridgeY = H * (0.42 + r * 0.10);
+          const ridgeCol = rgba(B.fog || B.sky[1], 0.55 + r * 0.15, 0.40 + r * 0.15);
+          g.fillStyle = ridgeCol;
+          g.beginPath();
+          g.moveTo(0, H);
+          for (let x = 0; x <= W; x += 16) {
+            const t = (x / W) * Math.PI * 2;
+            const hWave = Math.sin(t * (2 + r) + r * 1.3) * (24 - r * 6) +
+                          Math.sin(t * (4 + r * 2) + r * 0.7) * (12 - r * 3);
+            g.lineTo(x, ridgeY + hWave);
+          }
+          g.lineTo(W, H);
+          g.closePath();
+          g.fill();
+        }
+
+        // Soft horizon mist band
+        const fogCol = B.fog || B.sky[1];
+        const mist = g.createLinearGradient(0, H * 0.40, 0, H * 0.82);
+        mist.addColorStop(0,   rgba(fogCol, 0.7, 0));
+        mist.addColorStop(0.5, rgba(fogCol, 0.85, 0.35));
+        mist.addColorStop(1,   rgba(fogCol, 0.6, 0.05));
+        g.fillStyle = mist; g.fillRect(0, H * 0.40, W, H * 0.42);
+
+        // Diffuse panoramic celestial glow / light source (wrapped seamlessly)
+        g.globalCompositeOperation = 'lighter';
+        const sunX = W * 0.32;
+        radGlow(sunX, H * 0.28, H * 0.75, B.light, 0.95, 0.12 * (B.shafts || 0.5));
+        radGlow(W * 0.78, H * 0.38, H * 0.45, B.light, 0.80, 0.06 * (B.shafts || 0.5));
+        g.globalCompositeOperation = 'source-over';
+
+      } else {
+        // ── MID LAYER: Painted 360° storybook environment masses on transparent base ──
+        g.clearRect(0, 0, W, H);
+
+        // Function to draw seamless organic painterly blobs (wrapped horizontally)
+        const drawBlob = (cx, cy, r, col, a, sq) => {
+          const v = rgbArr(col);
+          const colStr = 'rgba(' + Math.round(v[0]*225) + ',' + Math.round(v[1]*225) + ',' + Math.round(v[2]*225) + ',' + a.toFixed(3) + ')';
+          // Draw at cx and also wrapped at cx - W and cx + W for perfect horizontal tiling
+          for (const ox of [0, -W, W]) {
+            const x = cx + ox;
+            if (x + r < -50 || x - r > W + 50) continue;
+            g.save();
+            g.translate(x, cy);
+            g.scale(1, sq);
+            g.beginPath();
+            const segs = 10;
+            const pts = [];
+            const rSeed = Math.abs(Math.sin(cx * 0.01 + cy * 0.02)) * 999;
+            for (let k = 0; k < segs; k++) {
+              const ang = (k / segs) * Math.PI * 2;
+              const kr = 1 + 0.30 * Math.sin(ang * 3 + rSeed);
+              pts.push([Math.cos(ang) * r * kr, Math.sin(ang) * r * kr]);
+            }
+            g.moveTo((pts[0][0] + pts[segs-1][0]) / 2, (pts[0][1] + pts[segs-1][1]) / 2);
+            for (let k = 0; k < segs; k++) {
+              const p = pts[k], q = pts[(k + 1) % segs];
+              g.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+            }
+            g.closePath();
+            g.fillStyle = colStr;
+            g.fill();
+            g.restore();
+          }
+        };
+
+        // Midground environment silhouettes: 42 organic painted masses forming 360° world
+        const blobPalette = B.blobs || ['#2a4020','#3e6030','#548040'];
+        for (let i = 0; i < 48; i++) {
+          const cx = rng() * W;
+          const cy = H * (0.28 + 0.52 * rng());
+          const r = 45 + 135 * rng();
+          const col = blobPalette[Math.floor(rng() * blobPalette.length)];
+          const a = 0.16 + 0.22 * rng();
+          const sq = 0.65 + 0.45 * rng();
+          drawBlob(cx, cy, r, col, a, sq);
+        }
+
+        // Waterfall / Stream vertical cascade for water biomes (rendered on right sector)
+        if (B.mood === 'river' || B.mood === 'waterfall' || B.mood === 'pond') {
+          const wfX = W * 0.22;
+          const wfGrad = g.createLinearGradient(wfX, H * 0.25, wfX, H * 0.85);
+          wfGrad.addColorStop(0,   rgba('#e6ffff', 0.9, 0.45));
+          wfGrad.addColorStop(0.6, rgba('#a0e6e6', 0.85, 0.55));
+          wfGrad.addColorStop(1,   rgba('#40a0a0', 0.7, 0.15));
+          g.fillStyle = wfGrad;
+          g.beginPath();
+          g.moveTo(wfX - 12, H * 0.25);
+          g.lineTo(wfX + 16, H * 0.25);
+          g.lineTo(wfX + 28, H * 0.85);
+          g.lineTo(wfX - 22, H * 0.85);
+          g.closePath();
+          g.fill();
+          // Waterfall splash foam & mist
+          radGlow(wfX + 4, H * 0.82, 55, '#ffffff', 1.0, 0.25);
+          radGlow(wfX + 4, H * 0.82, 95, B.light, 0.8, 0.15);
+        }
+
+        // Bamboo / Tree vertical trunks for woodland/bamboo biomes
+        if (B.mood === 'bamboo' || B.mood === 'jungle' || B.mood === 'primeval') {
+          g.fillStyle = rgba(B.near ? B.near[0] : '#142010', 0.7, 0.35);
+          for (let k = 0; k < 22; k++) {
+            const bx = (k * 73 + 15) % W;
+            const bw = 4 + (k % 4) * 3;
+            g.fillRect(bx, H * 0.22, bw, H * 0.78);
+          }
+        }
+
+        // Dark foreground framing masses hugging bottom quarter (grounding horizon)
+        if (B.near) {
+          for (let i = 0; i < 24; i++) {
+            const cx = rng() * W;
+            const cy = H * (0.64 + 0.32 * rng());
+            const r = 35 + 85 * rng();
+            const col = B.near[i % B.near.length];
+            drawBlob(cx, cy, r, col, 0.30 + 0.22 * rng(), 0.55);
+          }
+        }
+
+        // Dappled light orbs, fireflies & sun specks (additive glows)
+        g.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 14; i++) {
+          const lx = rng() * W;
+          const ly = H * (0.18 + 0.60 * rng());
+          const lr = 12 + 32 * rng();
+          radGlow(lx, ly, lr, B.light, 0.95, 0.04 + 0.06 * rng());
+        }
+        g.globalCompositeOperation = 'source-over';
+      }
       return c;
     },
   };

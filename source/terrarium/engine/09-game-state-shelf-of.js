@@ -35,7 +35,7 @@
       if (tall) JT.Presets.tower(a); else JT.Presets.starter(a);
       const pip = a.addSpider(first, { name: 'Pip', stage: 1, meals: 1, sat: 0.55 }); pip.pos = a.randomFloorPoint(); pip.sup = { k: 'floor' };
       a.addPrey('aphid', 8); a.addPrey('fruitfly', 5); a.addPrey('gnat', 6);
-      this.habs = [a];
+      this.habs = [a]; a.data.backgroundAt = this.state.time;
       this.selectedId = pip.id;
       this.checkUnlocks(true);
       this.save();
@@ -55,7 +55,12 @@
         if (!this.habs.length) return false;
         for (const h of this.habs) { h.rebuild(); for (const s of h.spiders) JT.SpiderAI.restore(h, s); h.validateRefs(); }
         this.state.active = M.clamp(this.state.active | 0, 0, this.habs.length - 1);
-        this.habs.forEach((h, k) => { if (k !== this.state.active && h.data.leftAt == null) h.data.leftAt = this.state.time; }); // legacy pause stamps are retained, never simulated
+        const savedClock = Number.isFinite(this.state.time) ? this.state.time : (this.state.time = DAY * .3);
+        // Old releases had no wall stamp: start the new policy now, without charging retroactive care debt.
+        for (const h of this.habs) if (!Number.isFinite(h.data.backgroundAt)) h.data.backgroundAt = savedClock;
+        const away = Number.isFinite(data.savedAt) ? Math.max(0, (Date.now() - data.savedAt) / 1000) : 0;
+        this.state.time += Math.min(JT.DAY * 3, away);
+        this.catchUp(this.hab);
         this.checkUnlocks(true);
         return true;
       } catch (e) { console.error('Save restore failed', e); Store.set(SAVE_KEY + '.failed', raw); return false; }
@@ -75,7 +80,7 @@
       d.simRevision = 1;
       return d;
     }
-    serialize() { return JSON.stringify(Object.assign({}, this.state, { habitats: this.habs.map(h => h.data) }), replacer); }
+    serialize() { return JSON.stringify(Object.assign({}, this.state, { savedAt: Date.now(), habitats: this.habs.map(h => h.data) }), replacer); }
     save() { if (!this.state) return; try { Store.set(SAVE_KEY, this.serialize()); } catch (e) { console.warn('Save failed', e); } }
     reset() { Store.del(SAVE_KEY); this.newGame(); }
     /** Replace the save with an exported one (moving progress between the browser and the installed app). */
@@ -89,7 +94,7 @@
 
     // ---------------- time ----------------
     tod() { return ((this.hab ? this.hab.time : this.state.time) % DAY) / DAY; }
-    day() { return Math.floor((this.hab ? this.hab.time : this.state.time) / DAY) + 1; }
+    day() { const h = this._catchupHab || this.hab; return Math.floor((h ? h.time : this.state.time) / DAY) + 1; }
     daylight() { return this.hab.daylight(); }
     tick(dt) {
       this.state.time += dt;
@@ -97,7 +102,7 @@
       active.data.simTime += dt;
       active.update(dt, true);
       if (JT.Biome) JT.Biome.tick(active, dt);
-      // Only the active tank advances; inactive tanks have no simulation or catch-up.
+      active.data.backgroundAt = this.state.time; // Inactive tanks use lazy biological catch-up, never AI ticks.
       this._lite += dt;
       if (this._lite >= 1) { this._lite = 0; this.checkUnlocks(); }
       active.data.age = (active.data.age || 0) + dt / DAY;
@@ -116,7 +121,7 @@
       if (D.length && D[D.length - 1].t === text) return; D.push({ d: day, t: text }); if (D.length > 40) D.splice(1, 1);
     }
     onEvent(hab, type, info) {
-      const watched = hab === this.hab && this.viewing; const sp = info && info.sp;
+      const watched = !this._catchupHab && hab === this.hab && this.viewing; const sp = info && info.sp;
       if (type === 'meal') { this.state.catches++; if (sp && [10, 25, 50, 100, 200].includes(sp.catches)) this.diary(sp, sp.catches + ' meals caught so far.'); }
       else if (type === 'catch' && sp) { const pd = info.prey && JT.PREY_BY_ID[info.prey.type]; if (pd) this.tallyPrey(sp, info.prey);
         const Sx = JT.SPECIES_BY_ID[sp.species]; if (Sx && Sx.hybrid && pd) { if (Sx.sig === 'glass' && (info.prey.alert || 0) < 0.6) hab.event('journal', { id: 'glassGhost', sp }); if (Sx.sig === 'ember' && hab.daylight() < 0.3) hab.event('journal', { id: 'emberNight', sp }); } const nm = pd ? (JT.SpiderAI.preyName ? JT.SpiderAI.preyName(pd) : pd.name.toLowerCase()).replace(/springtail colony/, 'springtail') : 'prey';
@@ -128,7 +133,7 @@
         if (sp && e) { const js = sp.jseen || (sp.jseen = {}); if (!js[id]) { js[id] = this.day(); if (!['molt', 'adult', 'firstHunt'].includes(id)) this.diary(sp, 'You saw: ' + e.title + '.'); } }
         if (first) { const jm = this.state.jmeta || (this.state.jmeta = {}); jm[id] = { d: this.day(), n: sp ? sp.name : '', s: sp ? sp.species : '' }; if (e) this.emit('journal', { entry: e, sp }); this.checkUnlocks(); } return; }
       if (watched) this.emit(type, info);
-      if (type === 'molt' || type === 'meal' || type === 'finger') this.checkUnlocks();
+      if (type === 'molt' || type === 'meal' || type === 'finger') this.checkUnlocks(!!this._catchupHab);
     }
 
     // ---------------- collection: unlock chain ----------------
@@ -162,22 +167,32 @@
     createHabitat(type, name) {
       if (this.habs.length >= JT.MAX_HABS) return null;
       const h = new JT.Habitat({ name: name || JT.HABITATS[type].name, type }, this); // blank canvas: substrate only
-      h.data.leftAt = this.state.time; h.data.visitAt = this.state.time;
+      h.data.leftAt = this.state.time; h.data.visitAt = this.state.time; h.data.backgroundAt = this.state.time;
       this.habs.push(h); return h;
     }
-    /** Freeze the outgoing tank and resume the destination without elapsed-time catch-up. */
+    /** Store the outgoing clock and lazily reconcile the destination's biological state. */
     activate(i) {
       i = M.clamp(i | 0, 0, this.habs.length - 1); const old = this.hab, nh = this.habs[i]; if (!nh || nh === old) return null;
-      if (old) { old.data.leftAt = this.state.time; old.data.selectedId = this.selectedId; this.state.previousTankId = old.data.id; }
+      if (old) { old.data.backgroundAt = this.state.time; old.data.leftAt = this.state.time; old.data.selectedId = this.selectedId; this.state.previousTankId = old.data.id; }
+      const report = this.catchUp(nh);
       this.state.active = i; nh.data.visitAt = this.state.time; nh.data.leftAt = null;
       this.state.timeMode = nh.data.localTimeMode || 'auto';
       this.selectedId = nh.spider(nh.data.selectedId) ? nh.data.selectedId : (nh.spiders[0] ? nh.spiders[0].id : null);
-      this._activating = true; try { this.save(); } finally { this._activating = false; } return null;
+      this._activating = true; try { this.save(); } finally { this._activating = false; } return report;
     }
-    /** Compatibility entry point: intentionally never advances a frozen tank. */
-    catchUp(h) { return null; }
+    /** O(animals + saved objects), capped to three game days; no per-second ticks or imaginary hunts. */
+    catchUp(h) {
+      if (!h || !JT.Background) return null;
+      const stamp = Number.isFinite(h.data.backgroundAt) ? h.data.backgroundAt : this.state.time;
+      const elapsed = Math.min(DAY * 3, Math.max(0, this.state.time - stamp));
+      if (!(elapsed > 0)) { h.data.backgroundAt = this.state.time; return null; }
+      this._catchupHab = h;
+      try { return JT.Background.advance(h, elapsed); }
+      finally { h.data.backgroundAt = this.state.time; this._catchupHab = null; }
+    }
     /** Saved conditions only. Molting is information, not an actionable care deficit. */
     tankStatus(h) {
+      if (h !== this.hab) this.catchUp(h);
       const out = { hungry: [], thirsty: [], molting: [], food: h.livePreyCount(), score: 0 };
       for (const x of h.spiders) {
         const recovering = x.soft > 0 || /^(premolt|moltSeek|moltSilk|molting|postMolt|emerge)$/.test(x.state);
@@ -201,13 +216,15 @@
       const i = this.habs.indexOf(h); if (i < 0 || this.habs.length <= 1) return false;
       for (const x of h.spiders.slice()) this.moveSpider(x, h, 'cup', true);
       const wasActive = i === this.state.active; this.habs.splice(i, 1);
-      if (wasActive) { this.state.active = Math.min(i, this.habs.length - 1); const nh = this.hab; this.state.timeMode = nh.data.localTimeMode || 'auto'; this.selectedId = nh.spider(nh.data.selectedId) ? nh.data.selectedId : (nh.spiders[0] ? nh.spiders[0].id : null); nh.data.visitAt = this.state.time; nh.data.leftAt = null; }
+      if (wasActive) { this.state.active = Math.min(i, this.habs.length - 1); const nh = this.hab; this.catchUp(nh); this.state.timeMode = nh.data.localTimeMode || 'auto'; this.selectedId = nh.spider(nh.data.selectedId) ? nh.data.selectedId : (nh.spiders[0] ? nh.spiders[0].id : null); nh.data.visitAt = this.state.time; nh.data.leftAt = null; }
       else if (i < this.state.active) this.state.active--;
       return true;
     }
     /** Move a jumper between tanks or to/from the holding cup ('cup'). Returns { ok, reason }. */
     moveSpider(sp, from, to, force) {
       if (!sp) return { ok: false, reason: 'No jumper' };
+      if (from && from !== 'cup' && from !== this.hab) this.catchUp(from);
+      if (to && to !== 'cup' && to !== this.hab) this.catchUp(to);
       if (!force && /^(premolt|moltSilk|molting)$/.test(sp.state)) return { ok: false, reason: sp.name + ' is molting. Let it finish first.' };
       if (to && to !== 'cup') {
         if (to === from) return { ok: false, reason: 'Already here' };

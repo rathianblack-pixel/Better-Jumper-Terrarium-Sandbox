@@ -180,8 +180,8 @@
     }
     let workLast = performance.now();
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { game.save(); if (JT.Audio._silent) JT.Audio._silent.pause(); if (JT.Audio.ctx) JT.Audio.ctx.suspend().catch(() => {}); }
-      else { last = workLast = performance.now(); acc = rAcc = 0; if (JT.Audio.ctx && !settings.muted) JT.Audio.ctx.resume().catch(() => {}); }
+      if (document.hidden) { game._hiddenAt = !preview && !JT.UI.photo && !JT.UI.tankSetup && !Replay.active ? Date.now() : null; game.save(); if (JT.Audio._silent) JT.Audio._silent.pause(); if (JT.Audio.ctx) JT.Audio.ctx.suspend().catch(() => {}); }
+      else { if (game._hiddenAt != null) { const away = Math.max(0, (Date.now() - game._hiddenAt) / 1000); game._hiddenAt = null; game.state.time += Math.min(JT.DAY * 3, away); game.catchUp(game.hab); game.save(); } last = workLast = performance.now(); acc = rAcc = 0; if (JT.Audio.ctx && !settings.muted) JT.Audio.ctx.resume().catch(() => {}); }
     });
     function frame(now) {
       if (document.hidden) { last = workLast = now; acc = rAcc = 0; requestAnimationFrame(frame); return; }

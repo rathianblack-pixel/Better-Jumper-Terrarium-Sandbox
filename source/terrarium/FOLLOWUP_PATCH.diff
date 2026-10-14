@@ -1,0 +1,452 @@
+--- a/source/terrarium/engine/06-jumping-spider-runtime-state.js
++++ b/source/terrarium/engine/06-jumping-spider-runtime-state.js
+@@ -66,6 +66,7 @@
+   AI.STARVING = 0.15;
+   /** Live food this jumper will actually go after. Cleanup crew is ignored unless the jumper is starving. */
+   AI.huntableFor = (sp, d) => !!d && (d.huntable || (d.id === 'springtail' && sp.sat < AI.STARVING)) && !(sp.species === 'bagheera' && sp.sat > 0.38); // Bagheera: mostly vegetarian
++  AI.isCleanupCrew = e => !!(e && JT.PREY_BY_ID[e.type] && JT.PREY_BY_ID[e.type].cleaner);
+   AI.nutOf = (d) => d ? (d.nut || (d.id === 'springtail' ? 0.05 : 0)) : 0;
+   /** Is there anything left in the habitat this jumper could eat? */
+   AI.preyAvailable = (hab, sp) => hab.data.prey.some(p => !p.owner && !p.buried && !p.dead && AI.huntableFor(sp, JT.PREY_BY_ID[p.type]));
+@@ -362,6 +363,7 @@
+     const tid = sp.target && sp.target.id; const gl = sp._glCD || (sp._glCD = {});
+     let best = null, bs = 0.3;
+     const consider = (e, kind) => {
++      if (AI.isCleanupCrew(e)) return; // Colony activity is background noise, not an interruption.
+       if (e.id === tid || e.id === sp.hold) return;
+       const dv = M.sub(e.pos, sp.pos); const d = M.len(dv); if (d > R0 || d < 0.2) return;
+       const vel = e._vel || (e._moving && e.fwd ? M.mul(e.fwd, 3) : null); const v = vel ? M.len(vel) : 0; const moving = v > 1;
+@@ -1322,8 +1324,10 @@
+     const def = JT.PREY_BY_ID[p.type];
+     sp._feedDur = 6 + (p.type === 'jumperMeal' ? 0.8 : def.nut) * 28; sp._feedNut = p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def);
+     const big = Math.max(0, (sp._catchRatio || 0) - 1); if (big > 0) { sp._feedDur *= 1 + big * 0.6; sp._feedNut *= 1 + big * 0.3; } // a big meal: longer feeding, more filling
++    sp.feedProgress = { dur: sp._feedDur, nut: sp._feedNut };
+     setState(sp, 'feed', 'Feeding on the ' + (p.type === 'jumperMeal' ? 'unlucky jumper' : preyName(def)) + '.');
+   }
++  AI.startFeed = startFeed;
+   H.feed = function (hab, sp, dt) {
+     const p = hab.preyById(sp.hold); if (!p) { sp.hold = null; setState(sp, 'idle'); return; }
+     // something came close: chewing pauses, the body turns to put itself between the intruder and the meal
+@@ -1334,7 +1338,7 @@
+   };
+   function finishMeal(hab, sp, p) {
+     const def = JT.PREY_BY_ID[p.type];
+-    hab.data.prey = hab.data.prey.filter(x => x !== p); sp.hold = null;
++    hab.data.prey = hab.data.prey.filter(x => x !== p); sp.hold = null; delete sp.feedProgress;
+     hab.addRemains(p.type, sp.pos, sp.sup, p.type === 'jumperMeal' ? 'spider' : 'husk', p.type === 'jumperMeal' ? { species: p.species, len: p.len } : {});
+     sp.catches++; sp.meals++;
+     hab.event('meal', { sp });
+@@ -1483,6 +1487,8 @@
+     setState(sp, 'moltSeek', spot.high ? 'Pre-molt — climbing to the safest high retreat.' : 'Pre-molt — no high shelter here, heading for a quiet sheltered refuge.');
+     sp._moltReplans = 0;
+   }
++  AI.startMoltSeek = startMoltSeek;
++  AI.advanceNeeds = needs;
+   H.moltSeek = function (hab, sp, dt) {
+     const r = move(hab, sp, dt, 0.85);
+     if (r === 'done') { setState(sp, 'moltSilk', 'Weaving a silk molting hammock.'); return; }
+@@ -1838,7 +1844,7 @@
+     sp._scanDur = far ? 2 + JT.R() * 1.8 : 4 + JT.R() * 3.5; sp._peerT = 0;
+     setState(sp, 'scan', far ? 'Very hungry — peering around, restless.' : 'Peering around for any movement.');
+   }
+-  /** Anything moving within reach: prey of any kind (incl. springtails), falling leaves, other jumpers. */
++  /** Meaningful movement within reach: food animals, falling leaves and other jumpers; never cleanup noise. */
+   function moverNear(hab, sp) {
+     const R0 = Math.max(14, AI.jump(sp) * 0.85); let best = null, bd = R0; const f = horiz(sp.fwd || [1, 0, 0]);
+     const test = (pos, speed, id, kind) => {
+@@ -1846,7 +1852,7 @@
+       const to = horiz(M.sub(pos, sp.pos)); if (M.dot(f, to) < -0.35) return;
+       best = { pos: pos.slice(), id, kind }; bd = d;
+     };
+-    for (const p of hab.data.prey) if (!p.owner && !p.buried) test(p.pos, p._vel ? M.len(p._vel) : 0, p.id, p.type);
++    for (const p of hab.data.prey) if (!p.owner && !p.buried && !p.dead && !AI.isCleanupCrew(p)) test(p.pos, p._vel ? M.len(p._vel) : 0, p.id, p.type);
+     for (const lf of hab._leaves || []) if (lf.falling) test(lf.pos, 3, lf.id, 'leaf');
+     for (const o of hab.data.spiders) if (o !== sp && o._moving) test(o.pos, 3, o.id, 'spider');
+     return best;
+@@ -1970,9 +1976,9 @@
+     if (['pounce', 'fall'].includes(sp.state)) { const b = Nav.supportBelow(hab, sp.pos); sp.pos = b.pos; sp.sup = b.sup; sp.state = sp.hold ? 'subdue' : 'idle'; sp.st = 0; }
+     if (HUNT.has(sp.state) || ['explore', 'patrol', 'scan', 'lunge', 'scuttle', 'dangle', 'look', 'baskSeek', 'homeSeek', 'search', 'drinkSeek', 'sleepSeek', 'flee', 'avoid', 'investigate', 'curious', 'fingerWatch', 'antMarch', 'semaphore', 'nectarSeek', 'sip'].includes(sp.state)) { sp.state = 'idle'; sp.target = null; }
+     if (sp.state === 'carry' || sp.state === 'secure') { sp.state = 'subdue'; sp.st = 99; sp._subdueDur = 0; }
+-    if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type]; sp._feedDur = 6 + (def.nut || 0.5) * 28; sp._feedNut = def.nut || 0.5; } else sp.state = 'idle'; }
++    if (sp.state === 'feed') { const p = hab.preyById(sp.hold); if (p) { const def = JT.PREY_BY_ID[p.type] || {}; const saved = sp.feedProgress; const big = Math.max(0, (sp._catchRatio || 0) - 1); sp._feedDur = saved && saved.dur > 0 ? saved.dur : (6 + (def.nut || 0.5) * 28) * (1 + big * 0.6); sp._feedNut = saved && Number.isFinite(saved.nut) ? saved.nut : (p.type === 'jumperMeal' ? 0.25 + (p.len || 5) * 0.05 : AI.nutOf(def)) * (1 + big * 0.3); sp.feedProgress = { dur: sp._feedDur, nut: sp._feedNut }; } else sp.state = 'idle'; }
+     if (sp.state === 'subdue') sp._subdueDur = sp._subdueDur || 1;
+-    if (sp.state === 'moltSeek') sp.state = 'idle';
++    if (sp.state === 'moltSeek') sp._moltReplans = 0; // Keep the biological intent; the missing route is safely replanned.
+     if (sp.state === 'crouch') sp.state = 'idle';
+     if (sp.home && !Nav.validSup(hab, sp.home.sup)) sp.home = null;
+   };
+--- a/source/terrarium/engine/09-game-state-shelf-of.js
++++ b/source/terrarium/engine/09-game-state-shelf-of.js
+@@ -35,7 +35,7 @@
+       if (tall) JT.Presets.tower(a); else JT.Presets.starter(a);
+       const pip = a.addSpider(first, { name: 'Pip', stage: 1, meals: 1, sat: 0.55 }); pip.pos = a.randomFloorPoint(); pip.sup = { k: 'floor' };
+       a.addPrey('aphid', 8); a.addPrey('fruitfly', 5); a.addPrey('gnat', 6);
+-      this.habs = [a];
++      this.habs = [a]; a.data.backgroundAt = this.state.time;
+       this.selectedId = pip.id;
+       this.checkUnlocks(true);
+       this.save();
+@@ -55,7 +55,12 @@
+         if (!this.habs.length) return false;
+         for (const h of this.habs) { h.rebuild(); for (const s of h.spiders) JT.SpiderAI.restore(h, s); h.validateRefs(); }
+         this.state.active = M.clamp(this.state.active | 0, 0, this.habs.length - 1);
+-        this.habs.forEach((h, k) => { if (k !== this.state.active && h.data.leftAt == null) h.data.leftAt = this.state.time; }); // legacy pause stamps are retained, never simulated
++        const savedClock = Number.isFinite(this.state.time) ? this.state.time : (this.state.time = DAY * .3);
++        // Old releases had no wall stamp: start the new policy now, without charging retroactive care debt.
++        for (const h of this.habs) if (!Number.isFinite(h.data.backgroundAt)) h.data.backgroundAt = savedClock;
++        const away = Number.isFinite(data.savedAt) ? Math.max(0, (Date.now() - data.savedAt) / 1000) : 0;
++        this.state.time += Math.min(JT.DAY * 3, away);
++        this.catchUp(this.hab);
+         this.checkUnlocks(true);
+         return true;
+       } catch (e) { console.error('Save restore failed', e); Store.set(SAVE_KEY + '.failed', raw); return false; }
+@@ -75,7 +80,7 @@
+       d.simRevision = 1;
+       return d;
+     }
+-    serialize() { return JSON.stringify(Object.assign({}, this.state, { habitats: this.habs.map(h => h.data) }), replacer); }
++    serialize() { return JSON.stringify(Object.assign({}, this.state, { savedAt: Date.now(), habitats: this.habs.map(h => h.data) }), replacer); }
+     save() { if (!this.state) return; try { Store.set(SAVE_KEY, this.serialize()); } catch (e) { console.warn('Save failed', e); } }
+     reset() { Store.del(SAVE_KEY); this.newGame(); }
+     /** Replace the save with an exported one (moving progress between the browser and the installed app). */
+@@ -89,7 +94,7 @@
+ 
+     // ---------------- time ----------------
+     tod() { return ((this.hab ? this.hab.time : this.state.time) % DAY) / DAY; }
+-    day() { return Math.floor((this.hab ? this.hab.time : this.state.time) / DAY) + 1; }
++    day() { const h = this._catchupHab || this.hab; return Math.floor((h ? h.time : this.state.time) / DAY) + 1; }
+     daylight() { return this.hab.daylight(); }
+     tick(dt) {
+       this.state.time += dt;
+@@ -97,7 +102,7 @@
+       active.data.simTime += dt;
+       active.update(dt, true);
+       if (JT.Biome) JT.Biome.tick(active, dt);
+-      // Only the active tank advances; inactive tanks have no simulation or catch-up.
++      active.data.backgroundAt = this.state.time; // Inactive tanks use lazy biological catch-up, never AI ticks.
+       this._lite += dt;
+       if (this._lite >= 1) { this._lite = 0; this.checkUnlocks(); }
+       active.data.age = (active.data.age || 0) + dt / DAY;
+@@ -116,7 +121,7 @@
+       if (D.length && D[D.length - 1].t === text) return; D.push({ d: day, t: text }); if (D.length > 40) D.splice(1, 1);
+     }
+     onEvent(hab, type, info) {
+-      const watched = hab === this.hab && this.viewing; const sp = info && info.sp;
++      const watched = !this._catchupHab && hab === this.hab && this.viewing; const sp = info && info.sp;
+       if (type === 'meal') { this.state.catches++; if (sp && [10, 25, 50, 100, 200].includes(sp.catches)) this.diary(sp, sp.catches + ' meals caught so far.'); }
+       else if (type === 'catch' && sp) { const pd = info.prey && JT.PREY_BY_ID[info.prey.type]; if (pd) this.tallyPrey(sp, info.prey);
+         const Sx = JT.SPECIES_BY_ID[sp.species]; if (Sx && Sx.hybrid && pd) { if (Sx.sig === 'glass' && (info.prey.alert || 0) < 0.6) hab.event('journal', { id: 'glassGhost', sp }); if (Sx.sig === 'ember' && hab.daylight() < 0.3) hab.event('journal', { id: 'emberNight', sp }); } const nm = pd ? (JT.SpiderAI.preyName ? JT.SpiderAI.preyName(pd) : pd.name.toLowerCase()).replace(/springtail colony/, 'springtail') : 'prey';
+@@ -128,7 +133,7 @@
+         if (sp && e) { const js = sp.jseen || (sp.jseen = {}); if (!js[id]) { js[id] = this.day(); if (!['molt', 'adult', 'firstHunt'].includes(id)) this.diary(sp, 'You saw: ' + e.title + '.'); } }
+         if (first) { const jm = this.state.jmeta || (this.state.jmeta = {}); jm[id] = { d: this.day(), n: sp ? sp.name : '', s: sp ? sp.species : '' }; if (e) this.emit('journal', { entry: e, sp }); this.checkUnlocks(); } return; }
+       if (watched) this.emit(type, info);
+-      if (type === 'molt' || type === 'meal' || type === 'finger') this.checkUnlocks();
++      if (type === 'molt' || type === 'meal' || type === 'finger') this.checkUnlocks(!!this._catchupHab);
+     }
+ 
+     // ---------------- collection: unlock chain ----------------
+@@ -162,22 +167,32 @@
+     createHabitat(type, name) {
+       if (this.habs.length >= JT.MAX_HABS) return null;
+       const h = new JT.Habitat({ name: name || JT.HABITATS[type].name, type }, this); // blank canvas: substrate only
+-      h.data.leftAt = this.state.time; h.data.visitAt = this.state.time;
++      h.data.leftAt = this.state.time; h.data.visitAt = this.state.time; h.data.backgroundAt = this.state.time;
+       this.habs.push(h); return h;
+     }
+-    /** Freeze the outgoing tank and resume the destination without elapsed-time catch-up. */
++    /** Store the outgoing clock and lazily reconcile the destination's biological state. */
+     activate(i) {
+       i = M.clamp(i | 0, 0, this.habs.length - 1); const old = this.hab, nh = this.habs[i]; if (!nh || nh === old) return null;
+-      if (old) { old.data.leftAt = this.state.time; old.data.selectedId = this.selectedId; this.state.previousTankId = old.data.id; }
++      if (old) { old.data.backgroundAt = this.state.time; old.data.leftAt = this.state.time; old.data.selectedId = this.selectedId; this.state.previousTankId = old.data.id; }
++      const report = this.catchUp(nh);
+       this.state.active = i; nh.data.visitAt = this.state.time; nh.data.leftAt = null;
+       this.state.timeMode = nh.data.localTimeMode || 'auto';
+       this.selectedId = nh.spider(nh.data.selectedId) ? nh.data.selectedId : (nh.spiders[0] ? nh.spiders[0].id : null);
+-      this._activating = true; try { this.save(); } finally { this._activating = false; } return null;
+-    }
+-    /** Compatibility entry point: intentionally never advances a frozen tank. */
+-    catchUp(h) { return null; }
++      this._activating = true; try { this.save(); } finally { this._activating = false; } return report;
++    }
++    /** O(animals + saved objects), capped to three game days; no per-second ticks or imaginary hunts. */
++    catchUp(h) {
++      if (!h || !JT.Background) return null;
++      const stamp = Number.isFinite(h.data.backgroundAt) ? h.data.backgroundAt : this.state.time;
++      const elapsed = Math.min(DAY * 3, Math.max(0, this.state.time - stamp));
++      if (!(elapsed > 0)) { h.data.backgroundAt = this.state.time; return null; }
++      this._catchupHab = h;
++      try { return JT.Background.advance(h, elapsed); }
++      finally { h.data.backgroundAt = this.state.time; this._catchupHab = null; }
++    }
+     /** Saved conditions only. Molting is information, not an actionable care deficit. */
+     tankStatus(h) {
++      if (h !== this.hab) this.catchUp(h);
+       const out = { hungry: [], thirsty: [], molting: [], food: h.livePreyCount(), score: 0 };
+       for (const x of h.spiders) {
+         const recovering = x.soft > 0 || /^(premolt|moltSeek|moltSilk|molting|postMolt|emerge)$/.test(x.state);
+@@ -201,13 +216,15 @@
+       const i = this.habs.indexOf(h); if (i < 0 || this.habs.length <= 1) return false;
+       for (const x of h.spiders.slice()) this.moveSpider(x, h, 'cup', true);
+       const wasActive = i === this.state.active; this.habs.splice(i, 1);
+-      if (wasActive) { this.state.active = Math.min(i, this.habs.length - 1); const nh = this.hab; this.state.timeMode = nh.data.localTimeMode || 'auto'; this.selectedId = nh.spider(nh.data.selectedId) ? nh.data.selectedId : (nh.spiders[0] ? nh.spiders[0].id : null); nh.data.visitAt = this.state.time; nh.data.leftAt = null; }
++      if (wasActive) { this.state.active = Math.min(i, this.habs.length - 1); const nh = this.hab; this.catchUp(nh); this.state.timeMode = nh.data.localTimeMode || 'auto'; this.selectedId = nh.spider(nh.data.selectedId) ? nh.data.selectedId : (nh.spiders[0] ? nh.spiders[0].id : null); nh.data.visitAt = this.state.time; nh.data.leftAt = null; }
+       else if (i < this.state.active) this.state.active--;
+       return true;
+     }
+     /** Move a jumper between tanks or to/from the holding cup ('cup'). Returns { ok, reason }. */
+     moveSpider(sp, from, to, force) {
+       if (!sp) return { ok: false, reason: 'No jumper' };
++      if (from && from !== 'cup' && from !== this.hab) this.catchUp(from);
++      if (to && to !== 'cup' && to !== this.hab) this.catchUp(to);
+       if (!force && /^(premolt|moltSilk|molting)$/.test(sp.state)) return { ok: false, reason: sp.name + ' is molting. Let it finish first.' };
+       if (to && to !== 'cup') {
+         if (to === from) return { ok: false, reason: 'Already here' };
+--- a/source/terrarium/engine/19-volumetric-critters-field-guide.js
++++ b/source/terrarium/engine/19-volumetric-critters-field-guide.js
+@@ -329,7 +329,9 @@
+         const one = (grow, al) => {
+             if (al < .003) return;
+             // Shadow softness scales with height above the surface: 0 (on ground) = crisp, 1 (fully elevated) = soft.
+-            const heightSf = 0 === art ? 1.5 / k : M.clamp(0.35 + 1.3 * (h / Math.max(L, 0.1)), 0.35, 2.5);
++            // soft already carries normalized elevation (castShadow passes 0.5 * height / bodyLength).
++            // h/L belong to castShadow, not this helper; referencing L here aborted every grounded HD critter.
++            const heightSf = 0 === art ? 1.5 / k : M.clamp(0.35 + 2.6 * soft, 0.35, 2.5);
+             if (ctx.gpuShadow) return void ctx.gpuShadow(ells, strokes, grow, col, al, heightSf);
+             if (!B) return ctx.globalAlpha = 1, ctx.fillStyle = col.replace("rgb", "rgba").replace(")", "," + al.toFixed(3) + ")"), 
+             ctx.strokeStyle = ctx.fillStyle, void shapePath(ctx, ells, strokes, 0, grow);
+--- a/source/terrarium/engine/21-storybook-renderer-part-2.js
++++ b/source/terrarium/engine/21-storybook-renderer-part-2.js
+@@ -1527,6 +1527,8 @@
+             let upT = 0;
+             const GC = direct && this.gl2 && !1 !== R.set.gpuCrit && !this._gcOff ? this.gpuCrit() : null, later = [];
+             GC && (GC.beginFrame(), GC.aw = ATW, GC.ah = ATH);
++            // Creating GPUCrit allocates/unbinds textures. CPU fallback uploads must never rely on that state.
++            gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.atex);
+             const paintCPU = s => {
+                 let g = g0, ox = 0, oy = 0, sc0 = null;
+                 const S = 2 * s.rp + 2;
+@@ -1558,6 +1560,7 @@
+                 if (g.restore(), g.globalAlpha = 1, g.globalCompositeOperation = "source-over", 
+                 direct) {
+                     const t1 = performance.now();
++                    gl.activeTexture(gl.TEXTURE0), gl.bindTexture(gl.TEXTURE_2D, this.atex),
+                     gl.texSubImage2D(gl.TEXTURE_2D, 0, s.ax - 1, s.ay - 1, gl.RGBA, gl.UNSIGNED_BYTE, sc0.c), 
+                     upT += performance.now() - t1;
+                 }
+--- a/source/terrarium/engine/21a-hd2d-post.js
++++ b/source/terrarium/engine/21a-hd2d-post.js
+@@ -153,7 +153,9 @@
+     sync(gp, on) { // art style switched: rebuild the generated textures and the still-camera cache
+       const key = on ? 'hd' : 'off'; if (this._was === key) return; this._was = key;
+       // Retire style-dependent textures explicitly rather than orphaning GPU resources.
+-      if (gp.bgT) for (const t of Object.values(gp.bgT)) if (t) gp.gl.deleteTexture(t);
++      if (gp.bgT) { const retired = new Set(); for (const entry of Object.values(gp.bgT)) {
++        for (const t of entry ? [entry.far, entry.mid, entry.t] : []) if (t && !retired.has(t)) { retired.add(t); gp.gl.deleteTexture(t); }
++      } }
+       if (gp.gT) { if (gp.gT.t) gp.gl.deleteTexture(gp.gT.t); if (gp.gT.s) gp.gl.deleteTexture(gp.gT.s); }
+       gp.bgT = null; gp.gT = null; if (gp.cacheFree) gp.cacheFree(); if (gp.hg) gp.hg.key = null;
+       const b = root.document && root.document.body; if (b) { b.classList.toggle('hd2d', key === 'hd'); b.classList.remove('art-sketch', 'art-ukiyo'); } },
+--- a/source/terrarium/engine/25-interface-header-toolbar-drawers.js
++++ b/source/terrarium/engine/25-interface-header-toolbar-drawers.js
+@@ -379,7 +379,7 @@
+     switchHab(i) {
+       const g = this.game; if (i === g.state.active) return; this.cancelMode(); this.undoClear && this.undoClear(); const rep = g.activate(i);
+       const h = g.hab; g.selectedId = h.spiders[0] ? h.spiders[0].id : null; this.R.cur = null; this.R.resetView();
+-      if (rep && rep.meals.length) setTimeout(() => this.toast('While you were away: ' + rep.meals.map(([x, n]) => '<b>' + esc(x.name) + '</b> caught ' + (n === 1 ? 'a meal' : n + ' meals')).join(', ') + '.', 'quiet', 4200), 350);
++      if (rep && rep.elapsed >= 5) { const notes = []; if (rep.meals.length) notes.push(rep.meals.map(([x]) => '<b>' + esc(x.name) + '</b> finished feeding').join(', ')); if (rep.molts.length) notes.push(rep.molts.map(x => '<b>' + esc(x.name) + '</b> molted').join(', ')); if (rep.hungry.length) notes.push(rep.hungry.length + ' jumper' + (rep.hungry.length === 1 ? ' is' : 's are') + ' hungry'); if (notes.length) setTimeout(() => this.toast('While you were away: ' + notes.join('; ') + '.', 'quiet', 4200), 350); }
+       this.hidePanel();
+       if (this.obs) this.obs.sub = null;
+       if (this.tab) this.openDrawer(this.tab); this.refreshHeader(); A().sfx('click');
+@@ -1229,7 +1229,7 @@
+     /** v11: every tank in one list: search, sort, favourites, status at a glance, the holding cup and a new-tank builder. */
+     tanksModal() {
+       const g = this.game, st = g.state; const w = el('div', 'tanks');
+-      w.appendChild(el('p', 'muted', g.habs.length + ' of ' + JT.MAX_HABS + ' tanks. Only the tank you are viewing is running; the others are fully paused, including their local clock. No catch-up on return.'));
++      w.appendChild(el('p', 'muted', g.habs.length + ' of ' + JT.MAX_HABS + ' tanks. Only the viewed tank runs full AI. Other tanks catch up on needs, feeding and molts when checked or revisited. Away progress is capped at 3 game days; no unseen hunts or deaths.'));
+       const tools = el('div', 'tk-tools');
+       const q = el('input'); q.type = 'search'; q.placeholder = 'Find a jumper or tank'; q.value = this._tkQ || ''; q.setAttribute('aria-label', 'Find a jumper or tank');
+       const sg = el('div', 'seg small'); const sorts = [['recent', 'Recent'], ['name', 'A\u2013Z'], ['care', 'Needs care'], ['favorites', 'Favorites']];
+@@ -1250,7 +1250,7 @@
+           const H = JT.HABITATS[h.data.type]; const r = el('div', 'tkrow' + (i === st.active ? ' on' : ''));
+           const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64)));
+           r.appendChild(pics);
+-          let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Paused');
++          let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Background');
+           if (ts.molting.length) chips += chip('molt', 'Molting: ' + names(ts.molting));
+           if (ts.hungry.length) chips += chip('warn', 'Hungry: ' + names(ts.hungry));
+           if (ts.thirsty.length) chips += chip('warn', 'Thirsty: ' + names(ts.thirsty));
+--- a/source/terrarium/engine/27a-living-tanks.js
++++ b/source/terrarium/engine/27a-living-tanks.js
+@@ -9,11 +9,14 @@
+  function turn(sp,pos,k){const dir=M.norm([pos[0]-sp.pos[0],0,pos[2]-sp.pos[2]]);if(M.len(dir)<.01)return;const f=sp.fwd||[1,0,0],a=Math.atan2(f[2],f[0]),delta=M.wrapAngle(Math.atan2(dir[2],dir[0])-a),next=a+delta*k;sp.fwd=[Math.cos(next),0,Math.sin(next)];}
+  // Peripheral motion attracts attention, but does not instantly identify a prey animal.
+  AI.inspectCue=function(h,s,e,dot,motion){
++   if(AI.isCleanupCrew(e))return dot>.55 && s.sat<AI.STARVING; // Deliberate emergency hunting remains possible.
+    if(dot>.55){const cue=s._attention;if(cue&&cue.id===e.id&&h.time-cue.t<.35)return false;return true;}
+    if(motion<.5)return false;
++   if(s.target&&s.target.id!==e.id)return false;
++   if((s._attentionLock||0)>h.time&&(!s._attention||s._attention.id!==e.id))return false;
+    if((AI.PRI[s.state]||0)>=40)return false;
+    if(!s._attention||s._attention.id!==e.id||h.time-s._attention.t>3)s._attention={id:e.id,t:h.time,pos:e.pos.slice()};
+-   s._attention.pos=e.pos.slice();s._glance={pos:e.pos.slice(),until:h.time+.8};
++   s._attention.pos=e.pos.slice();s._glance={id:e.id,pos:e.pos.slice(),until:h.time+.8};s._attentionLock=h.time+1.8;s._glNext=Math.max(s._glNext||0,h.time+1.8);
+    s.thought='Turning to inspect a movement.';turn(s,e.pos,.65);return false;
+  };
+  // Patience affects time spent waiting for a fast target to settle; urgency allows riskier windows.
+@@ -49,15 +52,15 @@
+      return h.data.silk.some(line=>line.a&&line.b&&((M.dist(line.a,pa)<5&&M.dist(line.b,pb)<5)||(M.dist(line.b,pa)<5&&M.dist(line.a,pb)<5)));
+    },
+    emit(h,p,strength,kind){
+-     if(!grounded(p.sup))return;
++     if(!grounded(p.sup)||AI.isCleanupCrew(p))return; // Springtails/isopods cannot flood the shared cue queue.
+      const q=h._vibrations||(h._vibrations=[]);while(q.length&&h.time-q[0].t>2)q.shift();
+-     q.push({seq:h._vibSeq=(h._vibSeq||0)+1,t:h.time,pos:p.pos.slice(),sup:J.deepClone(p.sup),strength,kind});if(q.length>12)q.shift();
++     q.push({seq:h._vibSeq=(h._vibSeq||0)+1,t:h.time,pos:p.pos.slice(),sup:J.deepClone(p.sup),strength,kind,source:p.id,cleanup:AI.isCleanupCrew(p)});if(q.length>12)q.shift();
+    },
+    sense(h,s){
+-     if((AI.PRI[s.state]||0)>=40||s._air||!grounded(s.sup))return;
++     if((AI.PRI[s.state]||0)>=40||s._air||!grounded(s.sup)||s.target||(s._vibNext||0)>h.time||(s._attentionLock||0)>h.time||(s._glNext||0)>h.time)return;
+      let best=null,score=0;const since=s._vibSeen||0;
+      for(const q of h._vibrations||[]){
+-       if(q.seq<=since||h.time-q.t>2)continue;
++       if(q.seq<=since||h.time-q.t>2||q.cleanup)continue;
+        const dist=M.dist(s.pos,q.pos),range=22+q.strength*32;
+        if(dist>range||!this.linked(h,s.sup,q.sup,s.pos,q.pos))continue;
+        const val=q.strength*(1-dist/range);if(val>score){best=q;score=val;}
+@@ -65,7 +68,8 @@
+      s._vibSeen=h._vibSeq||0;
+      if(!best||score<.12)return;
+      // Coarse direction only; never inserts a target or a visual sighting.
+-     const pos=best.pos.map(v=>Math.round(v/8)*8);turn(s,pos,.55);
++     const pos=best.pos.map(v=>Math.round(v/8)*8);turn(s,pos,.35);
++     s._vibNext=h.time+2.5+(s.seed%5)*.15;s._attentionLock=h.time+1.8;s._glNext=Math.max(s._glNext||0,h.time+1.8);
+      s._glance={pos,until:h.time+1};s.thought='Felt a vibration — checking that direction.';
+      s.stats.vibrations=(s.stats.vibrations||0)+1;
+    }
+--- a/source/terrarium/engine/27e-background-care.js
++++ b/source/terrarium/engine/27e-background-care.js
+@@ -0,0 +1,100 @@
++/* Lazy background care. No inactive requestAnimationFrame loops, path stepping, hunts or collision replays.
++   Seconds are GAME seconds (480 = one day). Wall-clock absence is mapped 1:1 and capped to three days.
++   Existing meals/molts complete; food/hydration have gentle away-only floors, never unseen deaths. */
++(function(root){
++ 'use strict'; const J=root.JT,A=J.SpiderAI,M=J.M;
++ const EPS=.001,MAX_TRANSITIONS=14;
++ const unsettled=new Set(['notice','assess','stalk','creep','crouch','track','peek','pounce','fall','patrol','scan','lunge','explore','flee','avoid','search','investigate','curious','fingerWatch','drinkSeek','baskSeek','homeSeek','sleepSeek','nectarSeek','sip','dangle']);
++ function remaining(s,dur){return Math.max(EPS,dur-(s.st||0)+EPS);}
++ function cleanPlans(h,s){
++  s._route=s._air=s._plan=s._glance=s._attention=s._hang=s._dangleOff=s._dodge=null;
++  s._seen={};s._moving=false;s._vel=[0,0,0];s._ip=s._if=null;s._thinkT=0;
++  if(s.sup.k==='air'||!J.Nav.validSup(h,s.sup)){const b=J.Nav.supportBelow(h,s.pos);s.pos=b.pos;s.sup=b.sup;}
++  if(unsettled.has(s.state)){s.target=null;A.setState(s,'idle','Settled back into the tank while you were away.');}
++ }
++ function settleMoltSite(h,s){
++  if(A.nestOf(h,s)||A.nestSiteOK(h,s.sup,s.pos,A.nestLength(s,'molt')))return true;
++  const spot=A.nearestNestSite(h,s,'molt'); // At most once per molt, never once per elapsed second.
++  if(!spot||!spot.node||!A.nestSiteOK(h,spot.node.sup,spot.node.pos,A.nestLength(s,'molt')))return false;
++  s.pos=spot.node.pos.slice();s.sup=J.deepClone(spot.node.sup);return true;
++ }
++ function advanceSpider(h,s,dt,base,report){
++  let left=dt,offset=0,turns=0; const oldStage=s.stage,oldMeals=s.catches||0;
++  const satFloor=Math.min(Number.isFinite(s.sat)?s.sat:.5,.12),hydFloor=Math.min(Number.isFinite(s.hyd)?s.hyd:1,.25);
++  s.ageDays=s.ageDays||0;s.hyd=Number.isFinite(s.hyd)?s.hyd:1;s.st=s.st||0;
++  cleanPlans(h,s);
++  // An existing held meal has priority. We do not manufacture catches or eat unowned live prey.
++  if(s.hold&&h.preyById(s.hold)&&!['feed','subdue','secure','carry'].includes(s.state))A.startFeed(h,s);
++  while(left>EPS&&turns++<MAX_TRANSITIONS){
++   h.data.simTime=base+offset;
++   if(!s.hold&&A.moltReady(s)&&!A.MOLT.has(s.state)&&s.state!=='emerge'){
++    if(settleMoltSite(h,s)){s.retreat={d:s.sup.d||null,pos:s.pos.slice()};A.setState(s,'moltSilk','Preparing a roomy molting hammock.');}
++   }
++   let state=s.state,span=left,apply=null;
++   if(['subdue','secure','carry'].includes(state)){
++    if(!s.hold||!h.preyById(s.hold)){s.hold=null;A.setState(s,'idle');continue;}
++    const dur=state==='subdue'?(s._subdueDur||4):state==='secure'?(s._secDur||3):8;
++    span=Math.min(left,remaining(s,dur));apply=()=>{if(s.st>=dur)A.startFeed(h,s);};
++   }else if(state==='feed'){
++    const p=h.preyById(s.hold);
++    if(!p){s.hold=null;delete s.feedProgress;A.setState(s,'idle');continue;}
++    if(!(s._feedDur>0)){const fp=s.feedProgress,d=J.PREY_BY_ID[p.type]||{};s._feedDur=fp&&fp.dur>0?fp.dur:6+(d.nut||.5)*28;s._feedNut=fp&&Number.isFinite(fp.nut)?fp.nut:p.type==='jumperMeal'?.25+(p.len||5)*.05:A.nutOf(d);s.feedProgress={dur:s._feedDur,nut:s._feedNut};}
++    span=Math.min(left,remaining(s,s._feedDur));apply=step=>{s._chewPause=0;s._shield=null;A.H.feed(h,s,step);};
++   }else if(state==='moltSeek'){
++    span=Math.min(left,remaining(s,8));apply=()=>{if(s.st>=8&&settleMoltSite(h,s)){s.retreat={d:s.sup.d||null,pos:s.pos.slice()};A.setState(s,'moltSilk');}};
++   }else if(state==='moltSilk'){
++    if(!settleMoltSite(h,s)){ // Preserve premolt rather than placing a sac inside solid geometry.
++     s.thought='Pre-molt — needs a clear, roomy floor or solid perch for its hammock.';
++    }else{
++     A.H.moltSilk(h,s,0);if(s.state!==state)continue;
++     const n=A.nestOf(h,s),dur=n&&n.build?Math.max(EPS,n.build.dur-n.build.t+EPS):remaining(s,16);
++     span=Math.min(left,dur);apply=()=>{if(n&&n.build){const b=n.build;b.t+=span;n.prog=b.from+(1-b.from)*Math.min(1,b.t/b.dur);if(b.t>=b.dur){n.prog=1;n.build=null;}}A.H.moltSilk(h,s,0);};
++    }
++   }else if(state==='premolt'||state==='molting'){
++    span=Math.min(left,remaining(s,state==='premolt'?28:11));apply=()=>A.H[state](h,s,0);
++   }else if(state==='postMolt'){
++    span=Math.min(left,Math.max(EPS,s.soft||0));apply=()=>A.H.postMolt(h,s,0);
++   }else if(state==='emerge'){
++    const nest=A.nestOf(h,s),hole=nest&&nest.hole;
++    const dur=hole?Math.max(Math.max(0,.6-s.st)+(1-(hole.open||0))*1.4,Math.max(0,2.2-s.st))+(1-(hole.exit||0))*1.2+EPS:EPS;
++    span=Math.min(left,Math.max(EPS,dur));apply=step=>A.H.emerge(h,s,step);
++   }else if(state==='postFeed'){
++    span=Math.min(left,remaining(s,6+s.traits.patience*8));apply=()=>A.H.postFeed(h,s,0);
++   }
++   // Event-boundary integration: no large dt is ever passed to locomotion or decision AI.
++   A.advanceNeeds(h,s,span);s.sat=Math.max(satFloor,s.sat);s.hyd=Math.max(hydFloor,s.hyd);
++   s.st+=span;offset+=span;left-=span;h.data.simTime=base+offset;
++   if(apply)apply(span);
++   if(s.hold){const p=h.preyById(s.hold);if(p){p.pos=A.mouth(h,s);p.sup=J.deepClone(s.sup);}}
++   // A blocked molt search must not spin the event loop.
++   if(s.state===state&&state==='moltSeek'&&s.st>=8){if(left>EPS){A.advanceNeeds(h,s,left);s.sat=Math.max(satFloor,s.sat);s.hyd=Math.max(hydFloor,s.hyd);offset+=left;left=0;}break;}
++  }
++  if(left>0){A.advanceNeeds(h,s,left);s.sat=Math.max(satFloor,s.sat);s.hyd=Math.max(hydFloor,s.hyd);}
++  cleanPlans(h,s);s._bodySat=s.sat;
++  if(s.stage>oldStage)report.molts.push(s);
++  if((s.catches||0)>oldMeals)report.meals.push([s,s.catches-oldMeals]);
++  if(s.sat<.35&&!(s.soft>0)&&!A.MOLT.has(s.state))report.hungry.push(s);
++ }
++ J.Background={maxElapsed:J.DAY*3,maxTransitions:MAX_TRANSITIONS,advance(h,dt){
++  dt=M.clamp(Number.isFinite(dt)?dt:0,0,this.maxElapsed);
++  const report={elapsed:dt,meals:[],molts:[],hungry:[]};if(!(dt>0))return report;
++  const d=h.data,base=h.time,end=base+dt;
++  // Age saved environment once, before any new remains/silk are created by completed activities.
++  const dry=.0012*((1.2-(J.SUBSTRATES[d.substrate]||{}).moist)||.5);
++  d.humidity=Math.max(.15,d.humidity-dt*dry);if(J.Biome)J.Biome.climate(h,dt);
++  d.drops=d.drops.filter(w=>{w.life-=dt*(1.4-d.humidity);return w.life>0;});
++  for(const line of d.silk)line.age+=dt;d.silk=d.silk.filter(x=>x.age<(x.kind==='retreat'?1800:600));
++  h.updateRemains(dt);
++  const crew=Math.min(6,d.prey.filter(p=>!p.owner&&!p.dead&&A.isCleanupCrew(p)).length);
++  if(crew){for(const r of d.remains)r.clean-=dt*crew*.0003*(.5+d.humidity);d.remains=d.remains.filter(r=>r.clean>0);}
++  for(const n of d.nests||[])if(!n.owner)n.age=(n.age||0)+dt;
++  d.nests=(d.nests||[]).filter(n=>n.owner||(n.age||0)<1800);
++  for(const p of d.prey)if(p.weak){p.weak.t-=dt;if(p.weak.t<=0){p.weak=null;p._flip=0;if(p.state==='twitch'){p.state='idle';p.st=0;}}}
++  for(const s of d.spiders)advanceSpider(h,s,dt,base,report);
++  d.simTime=end;d.age=(d.age||0)+dt/J.DAY;
++  // Expire old weather rather than replaying missed rain/hatches and flooding the tank with particles/prey.
++  const w=d.bev;if(w){w.left=Math.max(0,(w.left||0)-dt);w.until=end+w.left;if(w.left<=0){w.phase='gap';w.id='clear';w.left=30;w.until=end+30;w.next=w.until;}}
++  h._vibrations=[];h._leaves=[];h.validateRefs();
++  return report;
++ }};
++})(window);
+--- a/source/terrarium/engine/28-boot-main-loop-fixed.js
++++ b/source/terrarium/engine/28-boot-main-loop-fixed.js
+@@ -180,8 +180,8 @@
+     }
+     let workLast = performance.now();
+     document.addEventListener('visibilitychange', () => {
+-      if (document.hidden) { game.save(); if (JT.Audio._silent) JT.Audio._silent.pause(); if (JT.Audio.ctx) JT.Audio.ctx.suspend().catch(() => {}); }
+-      else { last = workLast = performance.now(); acc = rAcc = 0; if (JT.Audio.ctx && !settings.muted) JT.Audio.ctx.resume().catch(() => {}); }
++      if (document.hidden) { game._hiddenAt = !preview && !JT.UI.photo && !JT.UI.tankSetup && !Replay.active ? Date.now() : null; game.save(); if (JT.Audio._silent) JT.Audio._silent.pause(); if (JT.Audio.ctx) JT.Audio.ctx.suspend().catch(() => {}); }
++      else { if (game._hiddenAt != null) { const away = Math.max(0, (Date.now() - game._hiddenAt) / 1000); game._hiddenAt = null; game.state.time += Math.min(JT.DAY * 3, away); game.catchUp(game.hab); game.save(); } last = workLast = performance.now(); acc = rAcc = 0; if (JT.Audio.ctx && !settings.muted) JT.Audio.ctx.resume().catch(() => {}); }
+     });
+     function frame(now) {
+       if (document.hidden) { last = workLast = now; acc = rAcc = 0; requestAnimationFrame(frame); return; }
+--- a/source/terrarium/engine/order.json
++++ b/source/terrarium/engine/order.json
+@@ -123,6 +123,7 @@
+     "27b-modal-layout.js",
+     "27c-tank-setup-preview.js",
+     "27d-decor-safety-and-foliage.js",
++    "27e-background-care.js",
+     "28-boot-main-loop-fixed.js"
+   ]
+ }

@@ -1,0 +1,42 @@
+{
+  "checks": [
+    "desktop: creation, cancel/back, recommended biome, 30 limit, inactive data remains lazy, biological catch-up on revisit, saved camera/selection, previous tank, favorites/search, care UI, only one tank updates",
+    "phone: creation, cancel/back, recommended biome, 30 limit, inactive data remains lazy, biological catch-up on revisit, saved camera/selection, previous tank, favorites/search, care UI, only one tank updates",
+    "landscape: creation, cancel/back, recommended biome, 30 limit, inactive data remains lazy, biological catch-up on revisit, saved camera/selection, previous tank, favorites/search, care UI, only one tank updates",
+    "Behavior fixtures: post-molt hunger/hardening, peripheral inspection, starving retry suppression, vibration direction without omniscient targeting, airborne/disconnected rejection, known water invalidation, calm grooming/alarm interrupt, persistent visual/place/failure memories",
+    "Legacy save migration retains identity and biological values, initializes frozen clock from last pause stamp"
+  ],
+  "errors": [],
+  "behavior": {
+    "post": {
+      "sat": 0.3,
+      "state": "postMolt",
+      "soft": 120
+    },
+    "protectedState": "postMolt",
+    "resumed": true,
+    "peripheral": false,
+    "noInstantKnown": true,
+    "inspect": true,
+    "ignoredScore": -1,
+    "vibration": {
+      "turn": true,
+      "target": null,
+      "visualCount": 0,
+      "events": 1
+    },
+    "disconnected": false,
+    "airborne": false,
+    "waterKnown": true,
+    "memoryBonus": 6,
+    "invalidated": true,
+    "ambient": "groom",
+    "animated": true,
+    "interrupted": true,
+    "loaded": true,
+    "sightRestored": true,
+    "failuresRestored": 1,
+    "clockRestored": true
+  },
+  "result": "PASS"
+}
