@@ -1,0 +1,33 @@
+{
+  "edition": "Natural seeded habitat edges and embedded substrate banks",
+  "result": "PASS",
+  "jumper_sha256": "fc69cae8bd6136a0a84a8126387f2e43e199582ce7a7a7ceb6f962671253a3d3",
+  "current_test_reports": {
+    "validation/natural-edges/shoreline-report.json": "PASS",
+    "validation/natural-edges/shoreline-persistence-report.json": "PASS",
+    "validation/natural-edges/source-audit.json": "PASS",
+    "validation/natural-edges/webgl1-report.json": "PASS",
+    "validation/natural-edges/final-check-report.json": "PASS",
+    "validation/natural-edges/revamp-test-report.json": "PASS"
+  },
+  "visual_qa": {
+    "result": "PASS",
+    "captures": [
+      "mossy-storybook-900-0.4.png",
+      "dunes-storybook-900-0.4.png",
+      "snowfield-storybook-900-0.4.png",
+      "mossy-hd2d-390-0.4.png",
+      "crystalcave-hd2d-390-0.4.png",
+      "mossy-storybook-900-1.2.png",
+      "mossy-storybook-900-0.15.png"
+    ],
+    "environment": "Headless Chromium on Linux / SwiftShader"
+  },
+  "scope": "Cosmetic, outward-only extension. Original playable boundaries and saved layouts retained.",
+  "limitations": [
+    "Not a physical-phone, Safari, FPS, battery or thermal benchmark.",
+    "Cosmetic shoulders are not legal placement/navigation space.",
+    "Existing finite-world extent can appear at extreme camera angles.",
+    "Validation files outside validation/natural-edges are historical unless listed in current_test_reports."
+  ]
+}

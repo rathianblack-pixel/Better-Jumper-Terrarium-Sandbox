@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "checks": [
+    "Legacy save imports successfully",
+    "Existing decor coordinates, IDs, rotations and seeds preserved",
+    "Older tanks receive deterministic ID-derived shoreline seeds",
+    "Updated save reimports successfully",
+    "Shoreline seeds survive actual game serialization/import",
+    "Terrain seed/shape changes preserve horizontal shoreline identity",
+    "Background changes preserve shoreline identity"
+  ]
+}

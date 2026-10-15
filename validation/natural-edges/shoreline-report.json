@@ -1,0 +1,1127 @@
+{
+  "errors": [],
+  "geometry": [
+    {
+      "id": "mossy",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "pondside",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "waterfall",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "mangrove",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "underwater",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "canopy",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "hollow",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "log",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "autumnwood",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "deepjungle",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "bamboo",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "meadow",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "dusk",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "misty",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "cloudpeak",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "stone",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "sakura",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "ancientruin",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "dunes",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "redrock",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "volcanicash",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "twilight",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "moonwood",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "firefly",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "crystalcave",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "id": "snowfield",
+      "tiers": [
+        {
+          "quality": "low",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "medium",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        },
+        {
+          "quality": "high",
+          "finite": true,
+          "indices": true,
+          "seed": 246810674
+        }
+      ],
+      "glError": 0,
+      "frameErrors": 0
+    }
+  ],
+  "renders": [
+    {
+      "name": "mossy-storybook-900-0.4",
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "name": "dunes-storybook-900-0.4",
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "name": "snowfield-storybook-900-0.4",
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "name": "mossy-hd2d-390-0.4",
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "name": "crystalcave-hd2d-390-0.4",
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "name": "mossy-storybook-900-1.2",
+      "glError": 0,
+      "frameErrors": 0
+    },
+    {
+      "name": "mossy-storybook-900-0.15",
+      "glError": 0,
+      "frameErrors": 0
+    }
+  ],
+  "invariants": [
+    {
+      "type": "standard",
+      "id": "legacy-standard-0",
+      "seed": 3674079038,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-1",
+      "seed": 3690856657,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-2",
+      "seed": 3640523800,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-3",
+      "seed": 3657301419,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-4",
+      "seed": 3741189514,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-5",
+      "seed": 3757967133,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-6",
+      "seed": 3707634276,
+      "samples": 100
+    },
+    {
+      "type": "standard",
+      "id": "legacy-standard-7",
+      "seed": 3724411895,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-0",
+      "seed": 929502487,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-1",
+      "seed": 912724868,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-2",
+      "seed": 963057725,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-3",
+      "seed": 946280106,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-4",
+      "seed": 862392011,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-5",
+      "seed": 845614392,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-6",
+      "seed": 895947249,
+      "samples": 100
+    },
+    {
+      "type": "arboreal",
+      "id": "legacy-arboreal-7",
+      "seed": 879169630,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-0",
+      "seed": 3081179288,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-1",
+      "seed": 3097956907,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-2",
+      "seed": 3114734526,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-3",
+      "seed": 3131512145,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-4",
+      "seed": 3148289764,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-5",
+      "seed": 3165067383,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-6",
+      "seed": 3181845002,
+      "samples": 100
+    },
+    {
+      "type": "wide",
+      "id": "legacy-wide-7",
+      "seed": 3198622621,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-0",
+      "seed": 424434785,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-1",
+      "seed": 407657166,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-2",
+      "seed": 390879547,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-3",
+      "seed": 374101928,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-4",
+      "seed": 491545261,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-5",
+      "seed": 474767642,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-6",
+      "seed": 457990023,
+      "samples": 100
+    },
+    {
+      "type": "nano",
+      "id": "legacy-nano-7",
+      "seed": 441212404,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-0",
+      "seed": 86116418,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-1",
+      "seed": 102894037,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-2",
+      "seed": 52561180,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-3",
+      "seed": 69338799,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-4",
+      "seed": 19005942,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-5",
+      "seed": 35783561,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-6",
+      "seed": 4280418000,
+      "samples": 100
+    },
+    {
+      "type": "cube",
+      "id": "legacy-cube-7",
+      "seed": 2228323,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-0",
+      "seed": 397779738,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-1",
+      "seed": 414557357,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-2",
+      "seed": 364224500,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-3",
+      "seed": 381002119,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-4",
+      "seed": 330669262,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-5",
+      "seed": 347446881,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-6",
+      "seed": 297114024,
+      "samples": 100
+    },
+    {
+      "type": "breeder",
+      "id": "legacy-breeder-7",
+      "seed": 313891643,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-0",
+      "seed": 2691170355,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-1",
+      "seed": 2674392736,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-2",
+      "seed": 2724725593,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-3",
+      "seed": 2707947974,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-4",
+      "seed": 2758280831,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-5",
+      "seed": 2741503212,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-6",
+      "seed": 2791836069,
+      "samples": 100
+    },
+    {
+      "type": "panoramic",
+      "id": "legacy-panoramic-7",
+      "seed": 2775058450,
+      "samples": 100
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-0",
+      "seed": 1965802054,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-1",
+      "seed": 1982579673,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-2",
+      "seed": 1932246816,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-3",
+      "seed": 1949024435,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-4",
+      "seed": 2032912530,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-5",
+      "seed": 2049690149,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-6",
+      "seed": 1999357292,
+      "samples": 96
+    },
+    {
+      "type": "jar",
+      "id": "legacy-jar-7",
+      "seed": 2016134911,
+      "samples": 96
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-0",
+      "seed": 2095394906,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-1",
+      "seed": 2112172525,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-2",
+      "seed": 2061839668,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-3",
+      "seed": 2078617287,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-4",
+      "seed": 2028284430,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-5",
+      "seed": 2045062049,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-6",
+      "seed": 1994729192,
+      "samples": 100
+    },
+    {
+      "type": "tower",
+      "id": "legacy-tower-7",
+      "seed": 2011506811,
+      "samples": 100
+    }
+  ],
+  "result": "PASS"
+}

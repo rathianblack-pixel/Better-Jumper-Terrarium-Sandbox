@@ -1,3 +1,5 @@
+> **Natural-edge rework:** see `NATURAL_EDGES_README.md` for the seeded outlines, embedded banks, preserved gameplay boundaries, and build instructions. Current release evidence is in `validation/natural-edges/`; older reports elsewhere are historical.
+
 # Terrarium — Optimized Miniature Worlds
 
 The original terrarium game, with all **26 existing backgrounds** reworked as explorable surroundings. Background IDs, names, saves, creatures, care, construction, Undo, tank management, and both existing art modes are retained. This is the game and its editable source, not an image showcase.

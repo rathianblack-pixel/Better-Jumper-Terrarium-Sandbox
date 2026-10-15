@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "engineModules": 39,
+  "inlineScripts": 44,
+  "precacheAssets": 13,
+  "jumper_sha256": "fc69cae8bd6136a0a84a8126387f2e43e199582ce7a7a7ceb6f962671253a3d3"
+}

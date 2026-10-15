@@ -340,7 +340,8 @@ function build(p,h){
   const a=rnd()*TAU,rr=S*(1.1+rnd()*1.4),x=cx+Math.cos(a)*rr,z=cz+Math.sin(a)*rr;
   ell(x,ground(x,z)+4+rnd()*24,z,.8,.8,.8,rgb('#c1d989'),G.GLOW||16);
  }
- const mesh=upload(p,base);mesh.world={id,groups,W,D,S,cx,cz,version:'2.1',quality,water:cfg.water||null,feature:cfg.feature};
+ const shoreline=J.Shoreline?J.Shoreline.append(h,base,cfg):null;
+ const mesh=upload(p,base);mesh.shoreline=shoreline;mesh.world={id,groups,W,D,S,cx,cz,version:'2.1',quality,water:cfg.water||null,feature:cfg.feature};
  // Cached habitat owns ALL buffers; the renderer's existing cache disposal deletes these.
  for(const g of groups)mesh.del.push(...g.mesh.del);
  mesh.worldStats={vertices:base.n+groups.reduce((s,g)=>s+g.mesh.n+(g.mesh.parts||[]).reduce((a,m)=>a+m.n,0),0),triangles:base.i.length/3+groups.reduce((s,g)=>s+g.mesh.idx.length/3+(g.mesh.parts||[]).reduce((a,m)=>a+m.idx.length/3,0),0),groups:groups.length};
@@ -415,6 +416,6 @@ P.drawMesh=function(program,mesh){
 // Leave a deliberate environment margin at the normal observer framing. Follow mode
 // retains the original inhabitant-focused rig and all orbit/zoom/pan gestures are kept.
 const targetView=J.Renderer.prototype.targetView;
-J.Renderer.prototype.targetView=function(h){const v=targetView.call(this,h);if(this.cam.mode!=='follow'){v.s*=.84;v.offY*=.84;}return v;};
+J.Renderer.prototype.targetView=function(h){const v=targetView.call(this,h);if(this.cam.mode!=='follow'){v.s*=.77;v.offY*=.77;}return v;};
 J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
 })(typeof window!=='undefined'?window:globalThis);

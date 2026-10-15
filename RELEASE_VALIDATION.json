@@ -1,18 +1,33 @@
 {
-  "edition": "HD-2D critter fix, calmer sensory attention, bounded background care",
+  "edition": "Natural seeded habitat edges and embedded substrate banks",
   "result": "PASS",
-  "jumper_sha256": "d22b04b96999ea31160bff3227b0470fca4bf36be3528ecff115b932a5fa524b",
+  "jumper_sha256": "fc69cae8bd6136a0a84a8126387f2e43e199582ce7a7a7ceb6f962671253a3d3",
   "current_test_reports": {
-    "source/terrarium/tests/fix-results/rendering-background-report.json": "PASS",
-    "source/terrarium/tests/fix-results/regression/revamp-test-report.json": "PASS",
-    "source/terrarium/tests/fix-results/living/living-tanks-report.json": "PASS",
-    "source/terrarium/tests/fix-results/offline/final-check-report.json": "PASS",
-    "source/terrarium/tests/fix-results/behavior-final/rendering-background-report.json": "PASS",
-    "source/terrarium/tests/fix-results/ai/ai-edge-cases.json": "PASS"
+    "validation/natural-edges/shoreline-report.json": "PASS",
+    "validation/natural-edges/shoreline-persistence-report.json": "PASS",
+    "validation/natural-edges/source-audit.json": "PASS",
+    "validation/natural-edges/webgl1-report.json": "PASS",
+    "validation/natural-edges/final-check-report.json": "PASS",
+    "validation/natural-edges/revamp-test-report.json": "PASS"
   },
+  "visual_qa": {
+    "result": "PASS",
+    "captures": [
+      "mossy-storybook-900-0.4.png",
+      "dunes-storybook-900-0.4.png",
+      "snowfield-storybook-900-0.4.png",
+      "mossy-hd2d-390-0.4.png",
+      "crystalcave-hd2d-390-0.4.png",
+      "mossy-storybook-900-1.2.png",
+      "mossy-storybook-900-0.15.png"
+    ],
+    "environment": "Headless Chromium on Linux / SwiftShader"
+  },
+  "scope": "Cosmetic, outward-only extension. Original playable boundaries and saved layouts retained.",
   "limitations": [
-    "Headless Chromium/SwiftShader, not physical-phone benchmarks",
-    "Background care is an event-based approximation, not full unseen locomotion/hunting",
-    "Absence capped to three game days with gentle away-only need floors"
+    "Not a physical-phone, Safari, FPS, battery or thermal benchmark.",
+    "Cosmetic shoulders are not legal placement/navigation space.",
+    "Existing finite-world extent can appear at extreme camera angles.",
+    "Validation files outside validation/natural-edges are historical unless listed in current_test_reports."
   ]
 }

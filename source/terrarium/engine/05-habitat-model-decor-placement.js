@@ -15,6 +15,8 @@
       this.game = game || null;
       this.data = Object.assign({ id: JT.newId('h'), name: 'Habitat', type: 'standard', substrate: 'coco', bg: 'mossy', humidity: 0.6, age: 0,
         decor: [], spiders: [], prey: [], remains: [], drops: [], silk: [] }, data || {});
+      // Stable, additive migration for existing saves; separate from terrain seed.
+      if (!Number.isFinite(this.data.shorelineSeed)) this.data.shorelineSeed = JT.hashStr('shoreline-v1:' + this.data.id) >>> 0;
       if (!Number.isFinite(this.data.simTime)) this.data.simTime = this.game && this.game.state ? this.game.state.time : 0;
       if (!this.data.localTimeMode) this.data.localTimeMode = this.game && this.game.state ? this.game.state.timeMode || 'auto' : 'day';
       this.geoms = {}; this.nav = null; this._geomVersion = 0;

@@ -21,3 +21,5 @@ Pre-existing `tests/fix-results/` and `tests/living-results/` files came with th
 ## Optimized build
 
 The performance changes are in 28b (tiered scenery, direct small-mesh uploads, projected-AABB culling, nonblocking draw-state handling and faster slow-frame fade settling), 21 (include scenery detail tier in the habitat mesh cache key), 22 (lighter initial Auto tier and subpixel observer-camera settling), 21a (Low bloom path), 25 (correct settings descriptions / Auto reset), and 28 boot (honor Battery saver’s saved value). Simulation/save modules are unchanged. The top-level README documents recommended performance settings. Historical result-image folders and duplicate dist output are omitted from the lightweight ZIP.
+
+Natural-edge rework: `engine/28c-natural-shoreline.js` defines the cosmetic shoulder/bank; the saved visual seed is initialized in the Habitat constructor. `tests/natural-shoreline.test.js` and `tests/shoreline-persistence.test.js` verify the new visual invariants. See the top-level `NATURAL_EDGES_README.md`.
