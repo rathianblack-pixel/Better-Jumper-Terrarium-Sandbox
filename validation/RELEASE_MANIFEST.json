@@ -1,0 +1,24 @@
+{
+  "html_sha256": "1fc7f352551588371f47c9374be8fa0d364df2c888a364252a73f59568a2e8b6",
+  "version": "miniature-worlds-2.1-optimized",
+  "runtime_dependencies": [],
+  "test_result": "PASS",
+  "hardware_fps_verified": false,
+  "scenery_geometry_summary": {
+    "low": {
+      "baseline_triangles": 1825701,
+      "optimized_triangles": 803758,
+      "reduction_percent": 56.0
+    },
+    "medium": {
+      "baseline_triangles": 1825701,
+      "optimized_triangles": 937595,
+      "reduction_percent": 48.6
+    },
+    "high": {
+      "baseline_triangles": 1825701,
+      "optimized_triangles": 1825701,
+      "reduction_percent": 0.0
+    }
+  }
+}

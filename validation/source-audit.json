@@ -1,0 +1,11 @@
+{
+  "result": "PASS",
+  "engineModules": 38,
+  "generatedScripts": 43,
+  "offlineFiles": 13,
+  "checks": [
+    "Ordered engine modules and generated inline JavaScript parse successfully",
+    "Final bundle includes new worlds and excludes obsolete mossy patch",
+    "Every service-worker pre-cache entry exists"
+  ]
+}

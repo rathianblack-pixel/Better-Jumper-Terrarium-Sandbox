@@ -1,0 +1,360 @@
+{
+  "checks": [
+    "Cleanup crew does not emit sensory queue noise",
+    "Cleanup crew produces no incidental awareness glance",
+    "Cleanup crew cannot cause peripheral inspection",
+    "Starving jumper can deliberately see springtails ahead",
+    "Meaningful vibration still turns without omniscient target",
+    "Vibration cooldown prevents rapid direction switching",
+    "Peripheral focus holds one cue instead of thrashing",
+    "No continuous inactive-tank AI or clock updates",
+    "Revisit advances hunger hydration age and local clock",
+    "Repeated catch-up at same timestamp is a no-op",
+    "Partial absence advances an existing meal without finishing early",
+    "Longer absence finishes one held meal with correct counters",
+    "Finished meal is not duplicated on repeat catch-up",
+    "Short absence does not prematurely finish premolt",
+    "Premolt completes once and preserves the hardening interval",
+    "Sufficient absence finishes hardening without duplicate molt",
+    "Retreat weaving premolt molt and hardening progress through bounded event transitions",
+    "Existing molt-site search settles on a safe site and finishes",
+    "Partly completed emergence finishes during a long absence",
+    "Save restore preserves molt-site-search intent with a safe replan",
+    "Long gap is capped to 3 days; needs have gentle floors; no unseen hunts/deaths; old droplets expire",
+    "Away floors do not magically refill already-low needs",
+    "Thirty tanks still run only one full simulation",
+    "New save loads successfully",
+    "Saved feeding progress survives offline load without resetting duration",
+    "Offline load is reconciled once",
+    "Legacy save migrates without retroactive absence punishment",
+    "Backward wall-clock changes never create negative elapsed time",
+    "Grounded jumper and six critter painters complete in both styles and paint opaque body pixels",
+    "Sprite contributes visible pixels in both real output pipelines"
+  ],
+  "errors": [],
+  "render": [
+    {
+      "art": "hd2d",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "medium",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "high",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "auto",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "medium",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "high",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "auto",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "medium",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "high",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "hd2d",
+      "quality": "auto",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "medium",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "high",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "art": "storybook",
+      "quality": "auto",
+      "error": 0,
+      "frameErrors": 0,
+      "hdBroken": false,
+      "gpuOff": false,
+      "items": 7
+    },
+    {
+      "gpuCrit": false,
+      "pixel": "fine",
+      "art": "hd2d",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": false,
+      "pixel": "fine",
+      "art": "storybook",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": false,
+      "pixel": "classic",
+      "art": "hd2d",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": false,
+      "pixel": "classic",
+      "art": "storybook",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": false,
+      "pixel": "chunky",
+      "art": "hd2d",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": false,
+      "pixel": "chunky",
+      "art": "storybook",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": true,
+      "pixel": "fine",
+      "art": "hd2d",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": true,
+      "pixel": "fine",
+      "art": "storybook",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": true,
+      "pixel": "classic",
+      "art": "hd2d",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": true,
+      "pixel": "classic",
+      "art": "storybook",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": true,
+      "pixel": "chunky",
+      "art": "hd2d",
+      "error": 0,
+      "frameErrors": 0
+    },
+    {
+      "gpuCrit": true,
+      "pixel": "chunky",
+      "art": "storybook",
+      "error": 0,
+      "frameErrors": 0
+    }
+  ],
+  "animalPaints": [
+    {
+      "art": "hd2d",
+      "key": "pp4g",
+      "opaque": 24
+    },
+    {
+      "art": "hd2d",
+      "key": "pp4h",
+      "opaque": 154
+    },
+    {
+      "art": "hd2d",
+      "key": "pp4i",
+      "opaque": 39
+    },
+    {
+      "art": "hd2d",
+      "key": "pp4j",
+      "opaque": 89
+    },
+    {
+      "art": "hd2d",
+      "key": "pp4k",
+      "opaque": 67
+    },
+    {
+      "art": "hd2d",
+      "key": "pp4l",
+      "opaque": 1559
+    },
+    {
+      "art": "hd2d",
+      "key": "ss4f",
+      "opaque": 5560
+    },
+    {
+      "art": "storybook",
+      "key": "pp4g",
+      "opaque": 24
+    },
+    {
+      "art": "storybook",
+      "key": "pp4h",
+      "opaque": 155
+    },
+    {
+      "art": "storybook",
+      "key": "pp4i",
+      "opaque": 39
+    },
+    {
+      "art": "storybook",
+      "key": "pp4j",
+      "opaque": 89
+    },
+    {
+      "art": "storybook",
+      "key": "pp4k",
+      "opaque": 67
+    },
+    {
+      "art": "storybook",
+      "key": "pp4l",
+      "opaque": 1571
+    },
+    {
+      "art": "storybook",
+      "key": "ss4f",
+      "opaque": 5582
+    }
+  ],
+  "pixels": [
+    {
+      "art": "storybook",
+      "px": [
+        250,
+        0,
+        237,
+        255
+      ],
+      "error": 0
+    },
+    {
+      "art": "hd2d",
+      "px": [
+        215,
+        0,
+        215,
+        255
+      ],
+      "error": 0
+    }
+  ],
+  "result": "PASS"
+}

@@ -1,0 +1,17 @@
+{
+  "low": {
+    "baseline_triangles": 1825701,
+    "optimized_triangles": 803758,
+    "reduction_percent": 56.0
+  },
+  "medium": {
+    "baseline_triangles": 1825701,
+    "optimized_triangles": 937595,
+    "reduction_percent": 48.6
+  },
+  "high": {
+    "baseline_triangles": 1825701,
+    "optimized_triangles": 1825701,
+    "reduction_percent": 0.0
+  }
+}

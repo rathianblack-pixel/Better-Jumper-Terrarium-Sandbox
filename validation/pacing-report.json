@@ -1,0 +1,27 @@
+{
+  "result": "PASS",
+  "rows": [
+    {
+      "fps": "smooth",
+      "target": 60,
+      "scheduledRenders": 1
+    },
+    {
+      "fps": "auto",
+      "target": 60,
+      "scheduledRenders": 10
+    },
+    {
+      "fps": "saver",
+      "target": 30,
+      "scheduledRenders": 10
+    }
+  ],
+  "auto": {
+    "tier": "low",
+    "scale": 1,
+    "quality": "low",
+    "thermal": 4
+  },
+  "note": "Control/scheduler check with rendering stubbed; not a GPU FPS benchmark."
+}

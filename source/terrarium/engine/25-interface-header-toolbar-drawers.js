@@ -1440,8 +1440,8 @@
       w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
-      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; this.R._thermalLevel = 0; this.R._healthySeconds = this.R._missSeconds = this.R._costSeconds = 0; this.R.softS = 1; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
-      q.appendChild(seg); q.appendChild(el('span', 'muted', 'High 2.0× · Medium 1.5× · Low 1.0×. Auto adjusts from 2.0× down to 1.0×, never below Low.')); w.appendChild(q);
+      const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; this.R._thermalLevel = v === 'auto' ? (JT.Device.tier === 'low' ? 4 : JT.Device.tier === 'high' ? 2 : 3) : 0; this.R._healthySeconds = this.R._missSeconds = this.R._costSeconds = 0; this.R.softS = 1; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
+      q.appendChild(seg); q.appendChild(el('span', 'muted', 'High 2.0× · Medium 1.5× · Low 1.0×. Auto starts light and adjusts between 1.0× and 2.0× with sustained headroom, never below Low.')); w.appendChild(q);
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Critter painting')); const sg = el('div', 'seg small'); const on = s.gpuCrit !== false; // v33
         for (const [v, l] of [[true, 'GPU (fast)'], [false, 'Classic']]) { const b = el('button', on === v ? 'on' : '', l); b.onclick = () => { s.gpuCrit = v; this.R._gcOff = false; if (this.R.gp) this.R.gp._gcOff = false; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'GPU: the graphics chip paints critters directly, which is much lighter on the processor. Classic: the original painter, for comparison.')); w.appendChild(fr); }
@@ -1459,7 +1459,7 @@
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Depth-of-field and tilt-shift blur around the edges of the view')); w.appendChild(fr); }
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Frame rate')); const sg = el('div', 'seg small');
         for (const [v, l] of [['saver', 'Battery saver'], ['auto', 'Auto'], ['smooth', 'Smooth']]) { const b = el('button', (s.fps || 'auto') === v ? 'on' : '', l); b.onclick = () => { s.fps = v; JT.Settings.save(s); this.settingsModal(); }; sg.appendChild(b); }
-        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto: steady 30 fps. Smooth: up to 60 on desktop; phones stay at 30 to reduce heat.')); w.appendChild(fr); }
+        fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Auto and Smooth target 60 fps on supported devices. Battery saver caps rendering at 30 fps. Actual speed depends on your device.')); w.appendChild(fr); }
       { const fr = el('div', 'form-row'); fr.appendChild(el('label', '', 'Surface detail')); const sg = el('div', 'seg small');
         for (const [v, l] of [['rich', 'Rich'], ['simple', 'Simple']]) { const b = el('button', (s.detail || (JT.app && JT.app.R && JT.app.R.gp && JT.app.R.gp._swGL ? 'simple' : 'rich')) === v ? 'on' : '', l); b.onclick = () => { s.detail = v; JT.Settings.save(s); try { JT.app.R.resetCaches(); } catch (e) {} this.settingsModal(); }; sg.appendChild(b); }
         fr.appendChild(sg); fr.appendChild(el('span', 'muted', 'Rich: bark, stone, moss and wood textures on decor. Simple is lighter on older devices (Battery saver uses it too)')); w.appendChild(fr); }

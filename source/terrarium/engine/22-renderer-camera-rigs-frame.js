@@ -77,6 +77,8 @@
             this.time = 0;
             {
                 const t = JT.Device.tier;
+                // Auto starts light; promote only after sustained measured headroom.
+                this._thermalLevel = t === "low" ? 4 : t === "high" ? 2 : 3;
                 "low" === t ? (this._autoLvl = 1, this._closeK = 1.4, this.softS = 1) : "mid" === t && (this._autoLvl = 0, 
                 this._closeK = 1.6, this.softS = 1);
             }
@@ -213,7 +215,17 @@
                     cu.yaw = st.yaw, cu.pitch = st.pitch, cu.s = st.s, cu.c = st.c.slice(), cu.offY += (0 - cu.offY) * k, 
                     this.cam.pan[0] *= 1 - k, this.cam.pan[1] *= 1 - k;
                 }
-            } else this.fcam && (this.fcam.st = null);
+            } else {
+                this.fcam && (this.fcam.st = null);
+                // End asymptotic sub-pixel drift. Exact view keys can then reuse the
+                // static colour/depth cache instead of redrawing an idle diorama.
+                // Thresholds are far below one physical pixel, even at max zoom.
+                if(Math.abs(M.wrapAngle(T.yaw-cu.yaw))<1e-7)cu.yaw=T.yaw;
+                if(Math.abs(T.pitch-cu.pitch)<1e-7)cu.pitch=T.pitch;
+                if(Math.abs(T.s-cu.s)<1e-7)cu.s=T.s;
+                if(Math.abs(T.offY-cu.offY)<1e-5)cu.offY=T.offY;
+                for(let i=0;i<3;i++)if(Math.abs(T.c[i]-cu.c[i])<1e-6)cu.c[i]=T.c[i];
+            }
             const kk = this.k, il = this.insetL || 0;
             return this.V.set(cu.yaw, cu.pitch, cu.s * kk, (il + (this.cssW - il) / 2 + this.cam.pan[0]) * kk, (this.cssH / 2 + this.cam.pan[1] + cu.offY + (this.attract ? -this.cssH * (this.cssH > 1.1 * this.cssW ? .12 : this.cssH < 520 ? .24 : .1) : this.cssH > 1.1 * this.cssW ? .045 * this.cssH : .02 * this.cssH)) * kk, cu.c), 
             this.V;

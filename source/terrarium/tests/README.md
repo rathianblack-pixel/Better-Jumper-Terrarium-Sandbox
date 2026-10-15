@@ -54,3 +54,21 @@ Evidence is in `living-results/decor-safety/`. `foliage-performance.js` is a sma
 `node rendering-background.test.js` verifies cleanup sensory filtering, attention holds, bounded hunger/hydration, partial/completed feeding, premolt/molt/hardening, save-load timestamps, safe legacy migration, no imaginary hunts/deaths, and a 30-tank active-only tick budget. It also exercises both art styles, quality presets, GPU/CPU critter paths and pixel textures, and reads actual output pixels from a controlled synthetic sprite. Screenshots and a JSON report are under `fix-results`.
 
 The catch-up model is an intentional approximation, not full offscreen navigation or hunting. Software-GPU headless tests do not establish physical-phone FPS or battery use.
+
+## Miniature Worlds tests
+
+Run one browser test at a time against the built release:
+
+```sh
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node world-surround.test.js
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node world-surround-views.js
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node world-input.test.js
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node world-webgl1.test.js
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node world-hd-mobile.test.js
+```
+
+These are development checks requiring Playwright and Chromium; neither is required to play or rebuild the game. `TEST_OUTPUT` sets the output folder. Coverage includes every existing background through the original Settings picker; camera presets, horizon/overhead and zoom limits; follow mode; finite meshes and WebGL errors; temporary obstruction fading and restoration; both art modes at a phone-sized viewport; real wheel, drag and keyboard input; synthetic two-touch handler events; and the WebGL 1 fallback with uint indices disabled. Synthetic touch events and desktop phone-sized viewports are not physical touch-device testing.
+
+## Performance optimization validation
+
+Run `performance-worlds.test.js` and `performance-pacing.test.js` with the same GAME_URL / TEST_OUTPUT / CHROMIUM environment variables. Worlds coverage: all 26 backgrounds × 3 detail levels, baseline geometry comparison using the small historical source fixture, 26 Low previews, six phone camera/art/quality states, conservative culling and settled idle-cache reuse. Pacing checks use stubbed drawing to verify live 60/30 targets and the Auto selection control, not hardware FPS. These tests need Playwright; playing/rebuilding does not. Historical result-image folders referenced above were omitted from this lightweight ZIP; rerun the scripts to generate new evidence.

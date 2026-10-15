@@ -81,7 +81,10 @@ void main(){
   float edgeDither = (h21(gl_FragCoord.xy) - 0.5) * 0.010 * (1.0 - coc);
   c += edgeDither;
   // --- bloom (now from Dual Kawase; bloom colours already tinted in BRIGHT pass) ---
-  vec3 bl = texture(uBloom, uv).rgb; c += bl*uFx;
+  // Energy-aware bloom: bright terrain must retain texture, not become a white wall.
+  vec3 bl = texture(uBloom, uv).rgb;
+  vec3 highlightRoom = vec3(1.0)-clamp(c,vec3(0.0),vec3(1.0));
+  c += bl*highlightRoom*0.32*uFx;
   // --- screen-space depth-edge ink rim (warm day / cool night) ---
   ivec2 lpr=clamp(lp+ivec2(1,0), ivec2(0), ivec2(uLow)-1);
   ivec2 lpu=clamp(lp+ivec2(0,1), ivec2(0), ivec2(uLow)-1);
@@ -95,8 +98,9 @@ void main(){
   float across = dot(a, pr), along = dot(a, sd);
   float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0);
   rays = smoothstep(0.18, 0.82, rays); // sharper contrast than before
-  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.18*uDay*uFx;
-  c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.09*uDay*uFx; // warm haze on the lit side
+  float lightRoom=1.0-smoothstep(0.5,0.95,max(c.r,max(c.g,c.b)));
+  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.18*uDay*uFx*lightRoom;
+  c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.09*uDay*uFx*lightRoom; // warm haze on the lit side
   // (no screen-wide motes: the engine's own dust motes and biome fireflies already float inside the tank)
   // --- colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast ---
   float lum = dot(c, vec3(0.299,0.587,0.114));
@@ -207,7 +211,7 @@ void main(){
       // --- Dual Kawase bloom  (down × 2 then up × 2, total 4 passes, 4 taps each = 16 samples vs the old 28) ---
       // Bright pass at quarter-res → tC; night threshold + night colour tint applied here
       const brightTh = night > 0.5 ? 0.38 : 0.55;
-      const isLow = JT.Device.tier === 'low';
+      const isLow = gp.R.quality === 'low' || JT.Device.tier === 'low';
       this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => { gl.uniform1f(p.u.uTh, brightTh); gl.uniform1f(p.u.uNight, M.clamp(night, 0, 1)); });
       // Down iteration: tC → tE (eighth-res), skip on low tier
       if (!isLow) {

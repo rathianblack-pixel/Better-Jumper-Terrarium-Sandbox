@@ -609,7 +609,7 @@
             }, this.gT;
         }
         habGeom(hab) {
-            const R = this.R, TR = JT.Terrain, ter = TR ? TR.get(hab) : null, tq = "low" === R.quality ? 2 : 1, bgId = hab.data.bg || "mossy", key = hab.data.id + "|" + hab._geomVersion + "|" + hab.dims.w + "|" + hab.dims.d + "|" + hab.data.type + "|" + bgId + "|" + (ter ? ter.key : "") + "|" + tq;
+            const R = this.R, TR = JT.Terrain, ter = TR ? TR.get(hab) : null, tq = "low" === R.quality ? 2 : 1, bgId = hab.data.bg || "mossy", key = hab.data.id + "|" + hab._geomVersion + "|" + hab.dims.w + "|" + hab.dims.d + "|" + hab.data.type + "|" + bgId + "|" + (ter ? ter.key : "") + "|" + tq + "|" + R.quality;
             if (this.hg && this.hg.key === key) return this.hg;
             const gl = this.gl;
             if (this.hg) {

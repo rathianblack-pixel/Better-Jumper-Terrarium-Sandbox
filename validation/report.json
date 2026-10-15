@@ -1,0 +1,1678 @@
+{
+  "errors": [],
+  "geometry": [
+    {
+      "id": "mossy",
+      "quality": "low",
+      "vertices": 68215,
+      "triangles": 50098,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "pondside",
+      "quality": "low",
+      "vertices": 34699,
+      "triangles": 23766,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "waterfall",
+      "quality": "low",
+      "vertices": 34969,
+      "triangles": 25021,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mangrove",
+      "quality": "low",
+      "vertices": 38849,
+      "triangles": 25869,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "underwater",
+      "quality": "low",
+      "vertices": 7920,
+      "triangles": 6017,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "canopy",
+      "quality": "low",
+      "vertices": 14661,
+      "triangles": 11589,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "hollow",
+      "quality": "low",
+      "vertices": 40169,
+      "triangles": 38939,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "log",
+      "quality": "low",
+      "vertices": 37755,
+      "triangles": 38618,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "autumnwood",
+      "quality": "low",
+      "vertices": 17256,
+      "triangles": 11527,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "deepjungle",
+      "quality": "low",
+      "vertices": 16360,
+      "triangles": 13222,
+      "batches": 15,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "bamboo",
+      "quality": "low",
+      "vertices": 17091,
+      "triangles": 16455,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "meadow",
+      "quality": "low",
+      "vertices": 94038,
+      "triangles": 147856,
+      "batches": 2,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dusk",
+      "quality": "low",
+      "vertices": 13153,
+      "triangles": 9402,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "misty",
+      "quality": "low",
+      "vertices": 96550,
+      "triangles": 151954,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "low",
+      "vertices": 6708,
+      "triangles": 4432,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "stone",
+      "quality": "low",
+      "vertices": 12266,
+      "triangles": 6868,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "sakura",
+      "quality": "low",
+      "vertices": 17399,
+      "triangles": 11574,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "ancientruin",
+      "quality": "low",
+      "vertices": 62634,
+      "triangles": 44409,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dunes",
+      "quality": "low",
+      "vertices": 8383,
+      "triangles": 5954,
+      "batches": 1,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "redrock",
+      "quality": "low",
+      "vertices": 9391,
+      "triangles": 6141,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "volcanicash",
+      "quality": "low",
+      "vertices": 19598,
+      "triangles": 13669,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "twilight",
+      "quality": "low",
+      "vertices": 34747,
+      "triangles": 33646,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "moonwood",
+      "quality": "low",
+      "vertices": 60348,
+      "triangles": 43489,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "firefly",
+      "quality": "low",
+      "vertices": 38197,
+      "triangles": 38296,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "crystalcave",
+      "quality": "low",
+      "vertices": 22611,
+      "triangles": 15572,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "snowfield",
+      "quality": "low",
+      "vertices": 14893,
+      "triangles": 9375,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mossy",
+      "quality": "medium",
+      "vertices": 77951,
+      "triangles": 56212,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "pondside",
+      "quality": "medium",
+      "vertices": 37798,
+      "triangles": 25801,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "waterfall",
+      "quality": "medium",
+      "vertices": 37997,
+      "triangles": 26938,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mangrove",
+      "quality": "medium",
+      "vertices": 43339,
+      "triangles": 28628,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "underwater",
+      "quality": "medium",
+      "vertices": 10976,
+      "triangles": 7968,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "canopy",
+      "quality": "medium",
+      "vertices": 18379,
+      "triangles": 14192,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "hollow",
+      "quality": "medium",
+      "vertices": 45915,
+      "triangles": 45098,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "log",
+      "quality": "medium",
+      "vertices": 43553,
+      "triangles": 44880,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "autumnwood",
+      "quality": "medium",
+      "vertices": 20660,
+      "triangles": 13596,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "deepjungle",
+      "quality": "medium",
+      "vertices": 20158,
+      "triangles": 15970,
+      "batches": 15,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "bamboo",
+      "quality": "medium",
+      "vertices": 21467,
+      "triangles": 20218,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "meadow",
+      "quality": "medium",
+      "vertices": 113647,
+      "triangles": 178268,
+      "batches": 2,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dusk",
+      "quality": "medium",
+      "vertices": 16695,
+      "triangles": 11702,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "misty",
+      "quality": "medium",
+      "vertices": 116577,
+      "triangles": 183096,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "medium",
+      "vertices": 10046,
+      "triangles": 6380,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "stone",
+      "quality": "medium",
+      "vertices": 15602,
+      "triangles": 8804,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "sakura",
+      "quality": "medium",
+      "vertices": 20820,
+      "triangles": 13676,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "ancientruin",
+      "quality": "medium",
+      "vertices": 66016,
+      "triangles": 46448,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dunes",
+      "quality": "medium",
+      "vertices": 11383,
+      "triangles": 7812,
+      "batches": 1,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "redrock",
+      "quality": "medium",
+      "vertices": 12668,
+      "triangles": 7986,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "volcanicash",
+      "quality": "medium",
+      "vertices": 22612,
+      "triangles": 15550,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "twilight",
+      "quality": "medium",
+      "vertices": 40081,
+      "triangles": 39084,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "moonwood",
+      "quality": "medium",
+      "vertices": 64078,
+      "triangles": 46118,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "firefly",
+      "quality": "medium",
+      "vertices": 44037,
+      "triangles": 44616,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "crystalcave",
+      "quality": "medium",
+      "vertices": 25604,
+      "triangles": 17418,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "snowfield",
+      "quality": "medium",
+      "vertices": 18123,
+      "triangles": 11136,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mossy",
+      "quality": "high",
+      "vertices": 129732,
+      "triangles": 98562,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "pondside",
+      "quality": "high",
+      "vertices": 59789,
+      "triangles": 49363,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "waterfall",
+      "quality": "high",
+      "vertices": 70226,
+      "triangles": 55892,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mangrove",
+      "quality": "high",
+      "vertices": 66849,
+      "triangles": 50358,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "underwater",
+      "quality": "high",
+      "vertices": 22937,
+      "triangles": 24284,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "canopy",
+      "quality": "high",
+      "vertices": 35299,
+      "triangles": 34780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "hollow",
+      "quality": "high",
+      "vertices": 76834,
+      "triangles": 85264,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "log",
+      "quality": "high",
+      "vertices": 74899,
+      "triangles": 86138,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "autumnwood",
+      "quality": "high",
+      "vertices": 36751,
+      "triangles": 33056,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "deepjungle",
+      "quality": "high",
+      "vertices": 38057,
+      "triangles": 37788,
+      "batches": 15,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "bamboo",
+      "quality": "high",
+      "vertices": 40180,
+      "triangles": 45510,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "meadow",
+      "quality": "high",
+      "vertices": 192482,
+      "triangles": 316950,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dusk",
+      "quality": "high",
+      "vertices": 32518,
+      "triangles": 30682,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "misty",
+      "quality": "high",
+      "vertices": 197444,
+      "triangles": 325558,
+      "batches": 10,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "high",
+      "vertices": 23731,
+      "triangles": 22938,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "stone",
+      "quality": "high",
+      "vertices": 29161,
+      "triangles": 25138,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "sakura",
+      "quality": "high",
+      "vertices": 36714,
+      "triangles": 32780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "ancientruin",
+      "quality": "high",
+      "vertices": 109041,
+      "triangles": 82608,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dunes",
+      "quality": "high",
+      "vertices": 22865,
+      "triangles": 23242,
+      "batches": 1,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "redrock",
+      "quality": "high",
+      "vertices": 26825,
+      "triangles": 25412,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "volcanicash",
+      "quality": "high",
+      "vertices": 34544,
+      "triangles": 31800,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "twilight",
+      "quality": "high",
+      "vertices": 69357,
+      "triangles": 76490,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "moonwood",
+      "quality": "high",
+      "vertices": 108941,
+      "triangles": 84248,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "firefly",
+      "quality": "high",
+      "vertices": 75414,
+      "triangles": 85478,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "crystalcave",
+      "quality": "high",
+      "vertices": 37491,
+      "triangles": 33594,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "snowfield",
+      "quality": "high",
+      "vertices": 31951,
+      "triangles": 27788,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    }
+  ],
+  "renders": [
+    {
+      "id": "mossy",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 5
+    },
+    {
+      "id": "pondside",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 6
+    },
+    {
+      "id": "waterfall",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 2
+    },
+    {
+      "id": "mangrove",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 5
+    },
+    {
+      "id": "underwater",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 1
+    },
+    {
+      "id": "canopy",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 6
+    },
+    {
+      "id": "hollow",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 1
+    },
+    {
+      "id": "log",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 1
+    },
+    {
+      "id": "autumnwood",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 4
+    },
+    {
+      "id": "deepjungle",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 6
+    },
+    {
+      "id": "bamboo",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 4
+    },
+    {
+      "id": "meadow",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 0
+    },
+    {
+      "id": "dusk",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 6
+    },
+    {
+      "id": "misty",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 1
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 3
+    },
+    {
+      "id": "stone",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 0
+    },
+    {
+      "id": "sakura",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 7
+    },
+    {
+      "id": "ancientruin",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 3
+    },
+    {
+      "id": "dunes",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 0
+    },
+    {
+      "id": "redrock",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 1
+    },
+    {
+      "id": "volcanicash",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 1
+    },
+    {
+      "id": "twilight",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 6
+    },
+    {
+      "id": "moonwood",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 4
+    },
+    {
+      "id": "firefly",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 6
+    },
+    {
+      "id": "crystalcave",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 3
+    },
+    {
+      "id": "snowfield",
+      "quality": "low",
+      "error": 0,
+      "frameErrors": 0,
+      "visible": 4
+    },
+    {
+      "id": "mossy",
+      "quality": "medium",
+      "art": "hd2d",
+      "mode": "observer",
+      "zoom": 1,
+      "yaw": 0,
+      "pitch": 0.4,
+      "error": 0,
+      "frameErrors": 0,
+      "worldQuality": "medium"
+    },
+    {
+      "id": "waterfall",
+      "quality": "high",
+      "art": "storybook",
+      "mode": "observer",
+      "zoom": 0.6,
+      "yaw": 3.141592653589793,
+      "pitch": 0.06,
+      "error": 0,
+      "frameErrors": 0,
+      "worldQuality": "high"
+    },
+    {
+      "id": "snowfield",
+      "quality": "medium",
+      "art": "hd2d",
+      "mode": "observer",
+      "zoom": 0.6,
+      "yaw": 1.5707963267948966,
+      "pitch": 1.4,
+      "error": 0,
+      "frameErrors": 0,
+      "worldQuality": "medium"
+    },
+    {
+      "id": "mangrove",
+      "quality": "low",
+      "art": "storybook",
+      "mode": "observer",
+      "zoom": 5,
+      "yaw": 0,
+      "pitch": 0.4,
+      "error": 0,
+      "frameErrors": 0,
+      "worldQuality": "low"
+    },
+    {
+      "id": "hollow",
+      "quality": "medium",
+      "art": "hd2d",
+      "mode": "follow",
+      "zoom": 1,
+      "yaw": 0,
+      "pitch": 0.4,
+      "error": 0,
+      "frameErrors": 0,
+      "worldQuality": "medium"
+    },
+    {
+      "id": "crystalcave",
+      "quality": "high",
+      "art": "hd2d",
+      "mode": "observer",
+      "zoom": 1,
+      "yaw": 0,
+      "pitch": 0.4,
+      "error": 0,
+      "frameErrors": 0,
+      "worldQuality": "high"
+    }
+  ],
+  "checks": [
+    "Conservative culling agrees with projected mesh vertices",
+    "Idle observer camera reuses static colour/depth cache after orbit"
+  ],
+  "cache": {
+    "firstWorldCalls": 0,
+    "secondWorldCalls": 0,
+    "builds": 1,
+    "fading": false
+  },
+  "baselineGeometry": [
+    {
+      "id": "mossy",
+      "quality": "low",
+      "vertices": 129732,
+      "triangles": 98562,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "pondside",
+      "quality": "low",
+      "vertices": 59789,
+      "triangles": 49363,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "waterfall",
+      "quality": "low",
+      "vertices": 70226,
+      "triangles": 55892,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mangrove",
+      "quality": "low",
+      "vertices": 66849,
+      "triangles": 50358,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "underwater",
+      "quality": "low",
+      "vertices": 22937,
+      "triangles": 24284,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "canopy",
+      "quality": "low",
+      "vertices": 35299,
+      "triangles": 34780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "hollow",
+      "quality": "low",
+      "vertices": 76834,
+      "triangles": 85264,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "log",
+      "quality": "low",
+      "vertices": 74899,
+      "triangles": 86138,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "autumnwood",
+      "quality": "low",
+      "vertices": 36751,
+      "triangles": 33056,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "deepjungle",
+      "quality": "low",
+      "vertices": 38057,
+      "triangles": 37788,
+      "batches": 15,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "bamboo",
+      "quality": "low",
+      "vertices": 40180,
+      "triangles": 45510,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "meadow",
+      "quality": "low",
+      "vertices": 192482,
+      "triangles": 316950,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dusk",
+      "quality": "low",
+      "vertices": 32518,
+      "triangles": 30682,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "misty",
+      "quality": "low",
+      "vertices": 197444,
+      "triangles": 325558,
+      "batches": 10,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "low",
+      "vertices": 23731,
+      "triangles": 22938,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "stone",
+      "quality": "low",
+      "vertices": 29161,
+      "triangles": 25138,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "sakura",
+      "quality": "low",
+      "vertices": 36714,
+      "triangles": 32780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "ancientruin",
+      "quality": "low",
+      "vertices": 109041,
+      "triangles": 82608,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dunes",
+      "quality": "low",
+      "vertices": 22865,
+      "triangles": 23242,
+      "batches": 1,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "redrock",
+      "quality": "low",
+      "vertices": 26825,
+      "triangles": 25412,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "volcanicash",
+      "quality": "low",
+      "vertices": 34544,
+      "triangles": 31800,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "twilight",
+      "quality": "low",
+      "vertices": 69357,
+      "triangles": 76490,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "moonwood",
+      "quality": "low",
+      "vertices": 108941,
+      "triangles": 84248,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "firefly",
+      "quality": "low",
+      "vertices": 75414,
+      "triangles": 85478,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "crystalcave",
+      "quality": "low",
+      "vertices": 37491,
+      "triangles": 33594,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "snowfield",
+      "quality": "low",
+      "vertices": 31951,
+      "triangles": 27788,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mossy",
+      "quality": "medium",
+      "vertices": 129732,
+      "triangles": 98562,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "pondside",
+      "quality": "medium",
+      "vertices": 59789,
+      "triangles": 49363,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "waterfall",
+      "quality": "medium",
+      "vertices": 70226,
+      "triangles": 55892,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mangrove",
+      "quality": "medium",
+      "vertices": 66849,
+      "triangles": 50358,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "underwater",
+      "quality": "medium",
+      "vertices": 22937,
+      "triangles": 24284,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "canopy",
+      "quality": "medium",
+      "vertices": 35299,
+      "triangles": 34780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "hollow",
+      "quality": "medium",
+      "vertices": 76834,
+      "triangles": 85264,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "log",
+      "quality": "medium",
+      "vertices": 74899,
+      "triangles": 86138,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "autumnwood",
+      "quality": "medium",
+      "vertices": 36751,
+      "triangles": 33056,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "deepjungle",
+      "quality": "medium",
+      "vertices": 38057,
+      "triangles": 37788,
+      "batches": 15,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "bamboo",
+      "quality": "medium",
+      "vertices": 40180,
+      "triangles": 45510,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "meadow",
+      "quality": "medium",
+      "vertices": 192482,
+      "triangles": 316950,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dusk",
+      "quality": "medium",
+      "vertices": 32518,
+      "triangles": 30682,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "misty",
+      "quality": "medium",
+      "vertices": 197444,
+      "triangles": 325558,
+      "batches": 10,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "medium",
+      "vertices": 23731,
+      "triangles": 22938,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "stone",
+      "quality": "medium",
+      "vertices": 29161,
+      "triangles": 25138,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "sakura",
+      "quality": "medium",
+      "vertices": 36714,
+      "triangles": 32780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "ancientruin",
+      "quality": "medium",
+      "vertices": 109041,
+      "triangles": 82608,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dunes",
+      "quality": "medium",
+      "vertices": 22865,
+      "triangles": 23242,
+      "batches": 1,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "redrock",
+      "quality": "medium",
+      "vertices": 26825,
+      "triangles": 25412,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "volcanicash",
+      "quality": "medium",
+      "vertices": 34544,
+      "triangles": 31800,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "twilight",
+      "quality": "medium",
+      "vertices": 69357,
+      "triangles": 76490,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "moonwood",
+      "quality": "medium",
+      "vertices": 108941,
+      "triangles": 84248,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "firefly",
+      "quality": "medium",
+      "vertices": 75414,
+      "triangles": 85478,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "crystalcave",
+      "quality": "medium",
+      "vertices": 37491,
+      "triangles": 33594,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "snowfield",
+      "quality": "medium",
+      "vertices": 31951,
+      "triangles": 27788,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mossy",
+      "quality": "high",
+      "vertices": 129732,
+      "triangles": 98562,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "pondside",
+      "quality": "high",
+      "vertices": 59789,
+      "triangles": 49363,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "waterfall",
+      "quality": "high",
+      "vertices": 70226,
+      "triangles": 55892,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "mangrove",
+      "quality": "high",
+      "vertices": 66849,
+      "triangles": 50358,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "underwater",
+      "quality": "high",
+      "vertices": 22937,
+      "triangles": 24284,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "canopy",
+      "quality": "high",
+      "vertices": 35299,
+      "triangles": 34780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "hollow",
+      "quality": "high",
+      "vertices": 76834,
+      "triangles": 85264,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "log",
+      "quality": "high",
+      "vertices": 74899,
+      "triangles": 86138,
+      "batches": 8,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "autumnwood",
+      "quality": "high",
+      "vertices": 36751,
+      "triangles": 33056,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "deepjungle",
+      "quality": "high",
+      "vertices": 38057,
+      "triangles": 37788,
+      "batches": 15,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "bamboo",
+      "quality": "high",
+      "vertices": 40180,
+      "triangles": 45510,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "meadow",
+      "quality": "high",
+      "vertices": 192482,
+      "triangles": 316950,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dusk",
+      "quality": "high",
+      "vertices": 32518,
+      "triangles": 30682,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "misty",
+      "quality": "high",
+      "vertices": 197444,
+      "triangles": 325558,
+      "batches": 10,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "cloudpeak",
+      "quality": "high",
+      "vertices": 23731,
+      "triangles": 22938,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "stone",
+      "quality": "high",
+      "vertices": 29161,
+      "triangles": 25138,
+      "batches": 4,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "sakura",
+      "quality": "high",
+      "vertices": 36714,
+      "triangles": 32780,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "ancientruin",
+      "quality": "high",
+      "vertices": 109041,
+      "triangles": 82608,
+      "batches": 9,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "dunes",
+      "quality": "high",
+      "vertices": 22865,
+      "triangles": 23242,
+      "batches": 1,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "redrock",
+      "quality": "high",
+      "vertices": 26825,
+      "triangles": 25412,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "volcanicash",
+      "quality": "high",
+      "vertices": 34544,
+      "triangles": 31800,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "twilight",
+      "quality": "high",
+      "vertices": 69357,
+      "triangles": 76490,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "moonwood",
+      "quality": "high",
+      "vertices": 108941,
+      "triangles": 84248,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "firefly",
+      "quality": "high",
+      "vertices": 75414,
+      "triangles": 85478,
+      "batches": 13,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "crystalcave",
+      "quality": "high",
+      "vertices": 37491,
+      "triangles": 33594,
+      "batches": 7,
+      "finite": true,
+      "indexed": true
+    },
+    {
+      "id": "snowfield",
+      "quality": "high",
+      "vertices": 31951,
+      "triangles": 27788,
+      "batches": 12,
+      "finite": true,
+      "indexed": true
+    }
+  ],
+  "result": "PASS"
+}

@@ -1,88 +1,98 @@
-# Terrarium — Living Tanks edition
+# Terrarium — Optimized Miniature Worlds
 
-## Play
-Unzip the whole folder and open **index.html** in a current browser. Keep the files together; do not run from inside the ZIP preview. For reliable mobile and offline installation, host the folder over HTTPS. Desktop local hosting:
+The original terrarium game, with all **26 existing backgrounds** reworked as explorable surroundings. Background IDs, names, saves, creatures, care, construction, Undo, tank management, and both existing art modes are retained. This is the game and its editable source, not an image showcase.
 
-```sh
-python -m http.server 8000
-```
+## Run the game
 
-Open http://localhost:8000. WebGL is required; HD-2D uses WebGL2. Older WebGL1 devices fall back to Storybook.
+1. Extract the entire ZIP into one folder.
+2. From that folder run `python -m http.server 8000` (Python 3).
+3. Open **http://localhost:8000/** in a current WebGL-capable browser, then choose Start / New or Continue.
+4. Change environments through **Menu → Settings → Background**. The existing picker is unchanged.
 
-## Living Tanks update
-Create tanks from the top left of **Jumpers**. Choose an enclosure, an unlocked species (a new jumper is spawned), and its recommended biome. Use **Switch Tank** or **Previous Tank** to move between your 30-tank shelf. Inactive tanks run no continuous AI. When you revisit or check the tank shelf, their needs and ongoing activities catch up using bounded elapsed time.
+Use HTTP rather than double-clicking the HTML: the launcher's service worker and offline cache need localhost or HTTPS. No npm install, internet connection, external asset download, or build step is needed to play. The service worker caches the release after the first successful visit. If an older copy is already installed at the same address, reload after the new worker activates (or use a different localhost port).
 
-Smarter sensory attention, remembered locations, failed-hunt adaptation, post-molt hunger/recovery, ambient prey routines and a clearer compact care card are included. See **CHANGELOG_LIVING_TANKS.md** for the complete changes and **QA_REPORT.md** for measured checks and limitations.
+The existing in-game camera help and gestures are unchanged: orbit, zoom, pan, camera presets and inhabitant-follow mode remain available. Normal observer framing now leaves a modest scenery margin. Zooming in deliberately can still crop the habitat; Reset View restores normal framing.
 
-## Decor safety and gentle foliage
-The solid tops of cork blocks, rocks, stacks, ledges and other bulky decor now match their walkable surfaces. Rounded logs have a matching crown strip, and cactus crowns match their physical top. Clear visual arches and hide entrances remain; this update does not add new interior navigation to hollow artwork.
+## Performance-focused build
 
-New molt retreats require room for the **next growth stage**, including edge and overhead clearance. Invalid saved supports are moved onto a usable exterior surface or clear floor; occupied silk follows the jumper without resetting molt progress. In a very crowded tank, provide a clear floor patch or roomy solid perch if a jumper cannot find a safe weaving site.
+All 26 environments and existing gameplay remain. This build reduces rendering work; it does not promise a hardware-independent frame rate.
 
-**Menu → Settings → Foliage sway** controls subtle leaf, stem and flower motion:
-- **Auto** (default): off on Low or Battery saver; limited to four moving plants on Medium or six on higher quality. Sustained slow rendering pauses sway temporarily.
-- **On**: at most two moving plants on Low, otherwise six.
-- **Off**: disables ambient foliage motion.
+- **Low / Medium:** lighter terrain tessellation, lower-poly distant props and fern detail, and flat contact mottling instead of tiny solid meshes. Scene landmarks and all background IDs remain. **High retains the previous scenery geometry.**
+- **Off-screen clusters:** conservative projected mesh bounds skip invisible draw calls. Panning, orbiting or zooming out immediately restores visible clusters; there is no distance cutoff.
+- **Static caching:** imperceptible observer-camera drift snaps to its target, allowing the existing colour/depth cache to be reused. Moving creatures remain live. Fades settle using wall-clock time and then release the cache.
+- **Uploads:** small meshes use a direct typed-array upload instead of a triangle-by-triangle remapping pass. Large meshes remain split into WebGL 1-safe Uint16 batches.
+- **Auto:** starts at 1.0× on lower-tier devices, 1.25× on mid-tier and 1.5× on higher-tier devices. It can still adapt up to 2.0× after sustained headroom, or down to the existing 1.0× floor. Explicit Low / Medium / High resolution multipliers remain 1.0× / 1.5× / 2.0×.
+- **Frame rate:** Auto and Smooth target 60 FPS on desktop and phones; actual delivery depends on hardware and scene load. Battery saver correctly caps rendering at 30 FPS. Settings descriptions now match this behavior.
+- **HD-2D Low:** uses the shorter bloom path, also on higher-tier devices.
 
-Motion is cosmetic and uses existing GPU mesh buffers. It does not rebuild navigation each frame; rocks, pots and rigid trunks stay still. Sway only animates in the viewed tank and is reduced on plants supporting a jumper. Animated plants still require extra rendering work, so no universal zero-cost, phone-FPS or battery guarantee is made.
+For the lightest 60-FPS-target configuration, choose **Menu → Settings → Render quality: Low → Frame rate: Smooth → Foliage sway: Off**. In HD-2D, set **Lens blur: Off**. Storybook avoids HD-2D post-processing and is another option. Enable **Show fps** to check your own device. Keep GPU critter painting enabled where supported. Auto is the balanced default; it does not force an older saved High setting down to Low.
 
-## Quick Tank Setup
-Tap the jumper name at the top left → **Tank Setup**, or use **Jumpers → Tank Setup** beside Switch Tank.
+The ZIP includes the ready-to-run game, editable source and test scripts. Historical screenshot collections and duplicate generated builds are omitted to keep the download small; rebuild with the existing Node script if needed.
 
-- **Biome only** keeps your furnishings and changes the biome/climate and ground/backdrop.
-- **Biome + recommended layout** generates a furnished arrangement for that biome.
-- **Preset layout** previews a generated preset while keeping the current biome/climate. Saved custom presets are fixed arrangements, so they do not reroll.
+## Editable source and rebuild
 
-The habitat is framed beside or above a compact tray. Preview pauses simulation; **Reroll** tries another arrangement without changing your live tank. Confirm furnishing replacement, then **Apply setup**, or **Cancel** / Escape to discard the preview. No new tank or jumper is created. Animal identities, growth, care values, progress and clocks are retained; invalid perches and interrupted movements are safely adjusted when furnishings change.
+- `source/terrarium/engine/28b-miniature-worlds.js`: scene recipes, seeded terrain/props, panoramic distance wash, temporary cluster fading, observer margin.
+- `source/terrarium/engine/02-static-content-definitions-no.js`: original names, IDs and background picker definitions.
+- `source/terrarium/engine/20-*` / `21-*`: original mesh/material/WebGL pipeline.
+- `source/terrarium/engine/22-*`: original orthographic camera and controls.
+- `source/terrarium/engine/order.json`: build order; `28b` replaces the older mossy-only patch.
+- `source/terrarium/packs/`: original HTML/CSS shell, launcher, icons and static assets.
 
-**Undo last setup** restores the last applied setup without rewinding animal progress. It is saved per tank and remains available after reload, unless later furnishing/ground/enclosure edits change the setup. Apply and Undo are locked while a jumper is molting, occupying a molt retreat or recovering; Cancel resumes time so recovery can finish.
-
-## Retained interface and rendering
-- A frameless gameplay HUD: jumper-name control at top left, discreet day/time at top right, and one five-action line-icon toolbar at the bottom.
-- Warm ivory notebook drawers and menus, charcoal text, olive selection highlights, normal-case lettering and thin dividers. No blue panels, gold frames, glass effects or heavy UI shadows.
-- Jumper details appear only when selected; they no longer open automatically at startup or when switching tanks.
-- A dark title screen with a live, muted terrarium behind a softly glowing **Terrarium** title. **Start Game** reveals **Continue** and **New Game**. Continue is disabled without a save. New Game asks for confirmation if a save exists.
-- The title preview uses a disposable simulation. It never reads, advances or writes your saved world. No opening story interrupts entry.
-
-## Clearer rendering
-Multipliers refer to **CSS viewport pixels**, not the device's reported DPR:
-
-| Setting | Render resolution |
-| --- | --- |
-| High | 2.0× viewport width and height |
-| Medium | 1.5× viewport width and height |
-| Low | 1.0× viewport width and height |
-| Auto | 2.0×, 1.75×, 1.5×, 1.25× or 1.0× |
-
-At 1280×720, High renders at 2560×1440. Fixed presets do not silently lower resolution under load. Auto backs off under sustained slow frames and can recover after sustained headroom; it never drops below 1.0×. The former device-area caps and hidden secondary scene downscaling are removed.
-
-**Fine** is the new default HD-2D pixel texture and uses the full preset scene resolution. Existing installations migrate to Fine once; later choices persist. **Classic** and **Chunky** remain optional, deliberate coarser pixel-art effects, independent of the render buffer preset. Use Fine for maximum clarity. Lens blur remains separately adjustable.
-
-Higher resolution means more GPU work: High has four times the pixels of Low. Try Medium or Auto if a device struggles. Frame-rate limits, hidden-tab pause, GPU resource cleanup and context recovery remain. No physical-device heat or battery-life guarantees are made.
-
-## Saves and updating
-The existing **jumperTerrarium.v14.save** and **jumperTerrarium.settings** keys remain unchanged. Update at the **same origin/browser** to preserve progress. Export a save from Settings before changing host, port, browser or device. Do not clear site data to update.
-
-First loading an older save creates a one-time **jumperTerrarium.v14.save.before-living** backup before adding local clocks. Biological values and animal identities are retained. Export before updating for a portable backup.
-
-Starting a new game keeps a single local backup at **jumperTerrarium.v14.save.before-new**. Each later new game replaces that backup. For dependable recovery, use the existing Export/Import controls before replacing a world.
-
-## Source and rebuild
-Editable engine and UI source are included in **source/terrarium**. With Node 18+:
+Rebuild with Node.js (no packages required):
 
 ```sh
 cd source/terrarium
 node build.js
 ```
 
-Copy **dist/terrarium** to your hosting folder. Runtime assets are local; no CDN or package download is needed to play. Browser regression tests require Playwright and Chromium; see **source/terrarium/tests/README.md**. See **QA_REPORT.md** for tested scenarios and limitations.
+The complete runnable output is `source/terrarium/dist/terrarium/`. Serve that folder to test a rebuild. The ZIP's top-level `index.html`, `jumper.html`, icons, manifest and `sw.js` are already built from this source. Do not edit only the generated HTML; change the source and rebuild instead.
 
-## HD-2D critters, calmer attention, and background care
-- Fixed an HD-only shadow helper that referenced out-of-scope body length/height variables, aborting grounded critter drawing before their bodies were painted. The intended HD-2D pixel sprites, depth occlusion and bloom remain intact. Texture cleanup and CPU fallback uploads explicitly use the correct GPU textures.
-- Springtails and isopods are ignored by incidental glances, peripheral inspection, lunges and vibration cues. Real prey still attract attention, but a short focus hold and vibration cooldown prevent constant direction switching. A starving jumper can still deliberately hunt a springtail in front of it.
-- Only the viewed tank runs full locomotion/hunting AI. Revisit or open the tank shelf to reconcile other tanks in one bounded pass; no per-second inactive simulation.
-- Hunger, hydration, age, local time, mist droplets and old remains progress. Meals already being held finish normally; premolt, weaving, molt and skin hardening advance through their existing state transitions. Fractional feeding progress is saved.
-- No invented offscreen hunts, cannibalism or deaths. Unowned live food stays available; the simplified away model does not replay animal movement or every weather event.
-- A game day lasts 480 seconds. Absence uses elapsed game time while playing, and elapsed real seconds after closing/hiding the app. Catch-up is capped at **3 game days (24 minutes)** per reconciliation. Away-only fullness/hydration floors are **12% / 25%** (already-lower values are not magically refilled). These are gentle care reminders, not an unattended death penalty.
-- Closing/reopening or hiding/resuming applies offline time once. Legacy saves without timestamps start this policy at their first load, without retroactive punishment. The holding cup is not a simulated habitat. Photo, replay and Tank Setup remain intentionally paused.
-- Rehosting: replace the whole release folder, including `sw.js`; its cache version changed. If an installed copy still shows the old behavior, close it and reopen after the update, or refresh the site. Back up an exported save before deployment.
+## What changed in each background
+
+| Existing background | Rework |
+| --- | --- |
+| Mossy River Glade | Substantial new woodland clearing; a continuous stream bends behind the habitat and continues down its side. Explicit modelled banks, broken reflections, moss stones, fern colonies, litter, fallen timber, rooted groves and lower middle-distance crowns replace the painted trunk wall. |
+| Lily Pond Wetland | A round, recessed lily pool with a shared curved shoreline, pads and blossoms; reed colonies, shore stones and leafy groves surround the clearing. |
+| Forest Waterfall Basin | Offset rock cascade and plunge pool; a modelled waterfall, fern banks and asymmetric basin boulders form the signature composition. |
+| Mangrove Shore | Continuous undulating tidal shore with exposed rooted mangrove clusters, reeds and silty ground. |
+| Sunken Grotto Pool | Cool submerged-pool colours, a recessed pool, kelp-like foliage and irregular rock outcrops. |
+| Rainforest Canopy | Broad tropical leaves, layered rooted trees, trailing vines and a lower grove beneath the taller canopy. |
+| Ancient Tree Hollow | A broken, open-centred trunk landmark with an intentional opening, fungus colonies and decaying timber on warm woodland ground. |
+| Fallen Log Glade | Several differently oriented fallen trunks, moss, fungi and stony leaf-mould clearings; no upright tree fence. |
+| Golden Autumn Forest | Ochre ground, scattered leaf patches and warm, varied tree crowns with open gaps. |
+| Primeval Deep Jungle | Stronger terrain relief, denser broadleaf colonies, taller vine-bearing trees and rooted middle-distance groves. |
+| Whispering Bamboo Grove | Separate irregular culm clusters with visible nodes and leaf sprays; grassy clearings and small stones break up the grove. |
+| Sunlit Wildflower Meadow | Rolling meadow terrain and mixed cream, lavender and gold flower patches; deliberately open rather than forested. |
+| Golden Sunset Grove | Warm earth and grass tufts beneath asymmetrically grouped amber-toned groves. |
+| Misty Mountain Highland | Cooler, stronger upland relief, heather-like flowering tufts and weathered rock groups; distant colour softens without a fog wall. |
+| Cloud Peak Summit | The strongest rocky relief, sparse low grasses and high stone outcrops, with cool distant mountain silhouettes. |
+| Japanese Zen Stone Garden | Restrained gravel clearing with curved rake marks, sparse feature stones and an offset stepping-stone path. |
+| Cherry Blossom Valley | Pink blossom crowns, scattered petals, muted valley ground and lower flowering groves. |
+| Overgrown Ancient Temple | Broken column/beam groups, a fragmentary stone path, fern colonies and moss-compatible weathered stone. |
+| Desert Oasis & Dunes | Smooth dune relief, a separate oasis pool, succulent rosettes and scattered warm rocks. |
+| Red Rock Canyon | Red earth, taller clustered sandstone-like outcrops and sparse dry rosettes. |
+| Volcanic Springs | Ash-coloured terrain, mineral clusters, dark rock groups and a pale thermal pool. |
+| Twilight Woodland | Muted mauve ground, fungi, fallen wood and purple-toned layered woodland. |
+| Moonlit Deep Forest | Cool blue-grey terrain, ferns, mossy timber, stone groups and pale groves. |
+| Enchanted Firefly Glade | Green woodland, fungi, logs and a bounded set of small emissive firefly glints (not a particle simulation). |
+| Bioluminescent Grotto | Cool pool, angular crystal clusters, rocky mineral groups and emissive-compatible surfaces. |
+| Alpine Winter Forest | Snow-coloured relief, sparse ground tufts, frosted rocks and layered snow-capped conifers rather than recoloured broadleaf trees. |
+
+## Rendering and camera design
+
+- Surrounding terrain extends well beyond ordinary viewing ranges in every direction; there is no visible narrow apron or one-sided backdrop fence.
+- Water banks and land share explicit geometry. Pools use radial shoreline topology; the stream has independently sampled curved banks. Water does not overlap a rectangular terrain cut-out.
+- Scene recipes use different landforms, ecological ground cover, landmarks, density, colour and deterministic placement. Reused low-poly primitives receive scale/orientation/grouping variation.
+- HD-2D bloom and light shafts now respect remaining highlight headroom, avoiding whiteout on snow and other bright terrain while retaining the original pixel, depth-of-field and grading pipeline.
+- Far scenery is a seamless, low-contrast wash. Near/middle depth comes from real 3D meshes and relief; distance grading is baked into the meshes. No heavy fullscreen fog or new real-time effects.
+- Only external tall scenery clusters crossing the projected habitat bounds on the camera-facing side fade. Fade state is continuous and exponential, restores after the sightline clears, and suspends static caching only during the transition. Habitat contents never participate in that fading.
+- The renderer is orthographic: it has no physical camera moving through a 3D collision volume. Sightline-aware fading is used instead of introducing artificial camera pushes, collision teleports or new orbit restrictions.
+- Ground cover is static and cosmetic. Large meshes are split into core 16-bit index batches, including on WebGL 1. Tall groups have bounded draw counts and all GPU buffers belong to the existing habitat-cache disposal path. No new production dependencies or downloaded models/textures.
+
+## Validation and limitations
+
+See `validation/TEST_REPORT.md` and the accompanying machine-readable reports for tests actually completed on this release. Selected current previews are in `validation/`; the tests can regenerate the complete capture set.
+
+Testing uses desktop Chromium with SwiftShader software WebGL, including phone-sized viewports. It is not a physical Android/iPhone GPU, touch-hardware, Safari or battery benchmark. Device frame rates are not promised. The original day/night and follow-camera systems remain in charge of the habitat. Small decorative glints and water reflections are static; there is no new fluid or tree physics. At intentional maximum zoom/pan, users can still inspect away from the habitat; reset restores framing.
+
+Historical screenshot/report collections from earlier versions are not included in this lightweight package. The current test report distinguishes geometry and compatibility checks from real-device performance testing.

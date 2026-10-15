@@ -1,0 +1,10 @@
+{
+  "errors": [],
+  "checks": [
+    "Real mouse wheel zooms the scene",
+    "Keyboard 0 resets framing",
+    "Real pointer drag orbits the habitat",
+    "Two-touch pointer handler performs pinch zoom and midpoint pan (synthetic touch events, not hardware)"
+  ],
+  "result": "PASS"
+}

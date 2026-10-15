@@ -1,0 +1,33 @@
+{
+  "errors": [],
+  "scenes": [
+    {
+      "id": "mossy",
+      "webgl2": false,
+      "error": 0,
+      "frameErrors": 0,
+      "batches": 13,
+      "all16bit": true,
+      "maxVertices": 62998
+    },
+    {
+      "id": "waterfall",
+      "webgl2": false,
+      "error": 0,
+      "frameErrors": 0,
+      "batches": 8,
+      "all16bit": true,
+      "maxVertices": 34500
+    },
+    {
+      "id": "snowfield",
+      "webgl2": false,
+      "error": 0,
+      "frameErrors": 0,
+      "batches": 12,
+      "all16bit": true,
+      "maxVertices": 8381
+    }
+  ],
+  "result": "PASS"
+}
