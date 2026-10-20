@@ -1,0 +1,33 @@
+PASS Title preview stays unsaved
+PASS Cancelling New Game preserves original save exactly
+PASS Legacy Continue does not launch onboarding
+PASS Confirmed New Game keeps exact previous-save backup
+PASS New Game has no hidden animals or furnishings
+PASS Tank, wizard step and entered name survive refresh
+PASS Escape returns one picker step
+PASS Experimental climates remain available
+PASS Simulation time is paused during explanations
+PASS Initial placement ghost is valid
+PASS Keyboard arrows move placement without advancing tutorial
+PASS Invalid placement does not advance or create decor
+PASS Reload during placement returns safely to Build without a ghost
+PASS Confirmed placement advances once
+PASS Placed furnishing survives refresh without duplication
+PASS Reloading arrival confirmation does not add a jumper
+PASS Repeated arrival activation adds only one jumper
+PASS Away-time does not age or dehydrate a tutorial jumper
+PASS Reloading food selection does not release prey
+PASS Repeated feeding activation releases only two appropriate prey
+PASS Skip confirmation survives refresh
+PASS Finishing after feeding does not duplicate entities or retain tutorial controls
+PASS Additional tank wizard retains its normal creation workflow
+PASS Cancelling additional tank does not create one
+PASS Skip during placement clears ghost, mode bar, highlight and drawer restrictions
+PASS Ordinary Build tabs work after skipping
+PASS Keyboard Enter activates picker controls
+PASS Keyboard Space activates picker controls
+PASS Focus stays in the guide or highlighted control
+PASS Reduced motion disables the glow animation
+PASS All generated live entity IDs are unique
+PASS No runtime or console errors
+PASS 32 checks

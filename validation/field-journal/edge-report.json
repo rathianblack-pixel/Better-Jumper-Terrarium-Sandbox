@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "checks": [
+    "Cleanup crew separated",
+    "Unsuitable prey blocked",
+    "Quantity defaults to two",
+    "Confirmed quantity released",
+    "Build search empty state visible",
+    "Graphics controls preserved",
+    "Mist creates drinking droplets",
+    "Clean action remains usable"
+  ],
+  "errors": []
+}

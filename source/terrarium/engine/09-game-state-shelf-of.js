@@ -58,7 +58,7 @@
         const savedClock = Number.isFinite(this.state.time) ? this.state.time : (this.state.time = DAY * .3);
         // Old releases had no wall stamp: start the new policy now, without charging retroactive care debt.
         for (const h of this.habs) if (!Number.isFinite(h.data.backgroundAt)) h.data.backgroundAt = savedClock;
-        const away = Number.isFinite(data.savedAt) ? Math.max(0, (Date.now() - data.savedAt) / 1000) : 0;
+        const away = (data.firstHome && data.firstHome.v === 1 && data.firstHome.phase !== 'done') ? 0 : Number.isFinite(data.savedAt) ? Math.max(0, (Date.now() - data.savedAt) / 1000) : 0;
         this.state.time += Math.min(JT.DAY * 3, away);
         this.catchUp(this.hab);
         this.checkUnlocks(true);

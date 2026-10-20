@@ -143,10 +143,10 @@
     const game = new JT.Game();
     // The title preview is disposable: it never reads or writes the player's save.
     if (preview) game.save = () => {};
-    if (freshEntry && !preview) { const old = localStorage.getItem('jumperTerrarium.v14.save'); if (old) localStorage.setItem('jumperTerrarium.v14.save.before-new', old); }
+    if (freshEntry && !preview) JT.FirstHome.backup(game);
     let restored = false; try { if (!preview && !freshEntry) restored = game.load(); } catch (e) { console.error(e); }
 
-    if (!restored) game.newGame();
+    if (!restored) { if (preview) game.newGame(); else game.startFirstHome(); }
     if (preview) game.state.biomeSetup = false;
     game._biomeOnboard = !restored && !preview;
     if (game._biomeOnboard) game.state.biomeSetup = true;
@@ -192,7 +192,7 @@
       if (AT.on) { try { AT.frame(dt); } catch (e) { console.error('attract', e); AT.stop(); } requestAnimationFrame(frame); return; }
       acc += dt; let n = 0;
       if (Replay.active) { acc = 0; try { Replay.step(dt); } catch (e) { console.error('replay', e); Replay.stop(); } } // paused while a slow-motion replay plays
-      else if (JT.UI.photo || JT.UI.tankSetup) acc = 0; // v11 photo mode: time stands still
+      else if (JT.UI.photo || JT.UI.tankSetup || JT.FirstHome.paused(game)) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // Smooth 60 fps pacing target
@@ -322,6 +322,7 @@
       const vis = (id) => { const e = document.getElementById(id); return !!e && !e.classList.contains('hidden'); };
       const closeTop = () => {
         const sp = document.getElementById('splash'); if (sp && !sp.classList.contains('gone')) return false;
+        if (JT.FirstHome.active(U.game) && JT.FirstHome.back()) return true;
         if (Replay.active) { Replay.stop(); return true; }
         if (U.photo) { U.photoMode(false); return true; }
         if (vis('tip')) { U.hideTip(false); return true; }

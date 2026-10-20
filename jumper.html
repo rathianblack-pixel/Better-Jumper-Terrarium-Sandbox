@@ -6238,7 +6238,7 @@ body.title-preview #app{pointer-events:none}
         const savedClock = Number.isFinite(this.state.time) ? this.state.time : (this.state.time = DAY * .3);
         // Old releases had no wall stamp: start the new policy now, without charging retroactive care debt.
         for (const h of this.habs) if (!Number.isFinite(h.data.backgroundAt)) h.data.backgroundAt = savedClock;
-        const away = Number.isFinite(data.savedAt) ? Math.max(0, (Date.now() - data.savedAt) / 1000) : 0;
+        const away = (data.firstHome && data.firstHome.v === 1 && data.firstHome.phase !== 'done') ? 0 : Number.isFinite(data.savedAt) ? Math.max(0, (Date.now() - data.savedAt) / 1000) : 0;
         this.state.time += Math.min(JT.DAY * 3, away);
         this.catchUp(this.hab);
         this.checkUnlocks(true);
@@ -16940,6 +16940,747 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
 
 </script>
 <script>
+/* First Home v1. Save-backed, action-driven onboarding. Existing games and additional tanks keep their original workflow. */
+(function (root) {
+  'use strict';
+  const J = root.JT, U = J.UI, B = J.Biome, D = root.document;
+  const KEY = 'jumperTerrarium.v14.save', VERSION = 1;
+  const el = (tag, cls, text) => { const n = D.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const button = (text, id, fn, cls) => { const b = el('button', cls || 'fh-button', text); b.type = 'button'; if (id) b.id = id; b.onclick = fn; return b; };
+  const visible = n => !!(n && !n.hidden && n.getBoundingClientRect().width && n.getBoundingClientRect().height && getComputedStyle(n).visibility !== 'hidden');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const FH = J.FirstHome = {
+    data(g) { return g && g.state && g.state.firstHome; },
+    active(g) { const s = this.data(g); return !!(s && s.v === VERSION && s.phase !== 'done'); },
+    paused(g) { const s = this.data(g); return this.active(g) && s.phase !== 'watch'; },
+    save() { U.game.save(); },
+    name() { return String(this.data(U.game).name || 'Pip').trim().slice(0, 24) || 'Pip'; },
+    phase(next) {
+      const s = this.data(U.game); if (!s || s.phase === next) return;
+      s.phase = next; this.save(); this.render();
+    },
+    backup(g) { const raw = J.Store.get(KEY); if (raw) J.Store.set(KEY + '.before-new', raw); },
+  };
+
+  // An actual empty habitat is kept for renderer/save invariants, never a hidden populated starter.
+  J.Game.prototype.startFirstHome = function () {
+    J.game = this;
+    const sid = J.UNLOCK_ORDER[0], bid = B.rank(sid)[0];
+    this.state = { v: 4, time: J.DAY * .3, catches: 0, species: [sid], best: {}, journal: {}, jmeta: {}, active: 0,
+      timeMode: 'auto', customPresets: [], nextId: 1, habitats: [], cup: [], simRevision: 1, buildVersion: 14, biomeSetup: true,
+      firstHome: { v: VERSION, phase: 'choose', step: 0, type: 'nano', sid, bid, name: 'Pip', seed: (Math.random() * 0xffffffff) >>> 0 || 1 } };
+    const h = new J.Habitat({ type: 'nano', name: 'Your first home' }, this);
+    B.setBiome(h, bid); B.applyGround(h, bid); h.data.buildSpecies = sid;
+    h.data.backgroundAt = this.state.time; this.habs = [h]; this.state.firstHome.tankId = h.data.id;
+    this.selectedId = null; this._lite = this._saveT = 0; this.save();
+  };
+  const reset0 = J.Game.prototype.reset;
+  J.Game.prototype.reset = function () {
+    if (U.game !== this) return reset0.apply(this, arguments);
+    FH.backup(this); FH.teardown(); U.cancelMode(); U.closeDrawer();
+    if (U.obs) U.toggleObserve(false);
+    this.startFirstHome(); U.R.cur = null; U.R.resetView(); U.R.resetCaches(); FH.render();
+  };
+  const tick0 = J.Game.prototype.tick;
+  J.Game.prototype.tick = function (dt) { if (FH.paused(this)) return; return tick0.call(this, dt); };
+  const catch0 = J.Game.prototype.catchUp;
+  J.Game.prototype.catchUp = function (h) { if (FH.active(this)) { if (h) h.data.backgroundAt = this.state.time; return null; } return catch0.call(this, h); };
+  const tips0 = U.tipOnce;
+  U.tipOnce = function () { if (FH.active(this.game)) return; return tips0.apply(this, arguments); };
+  const tipsPump0 = U.pumpTips;
+  if (tipsPump0) U.pumpTips = function () { if (FH.active(this.game)) return; return tipsPump0.apply(this, arguments); };
+  const wizard0 = U.biomeWizard;
+  U.biomeWizard = function (first) {
+    if (first && FH.active(this.game)) { FH.render(); return; }
+    return wizard0.apply(this, arguments);
+  };
+  const init0 = U.init;
+  U.init = function () { const out = init0.apply(this, arguments); setTimeout(() => { if (FH.active(this.game)) FH.render(); }, 0); return out; };
+
+  FH.previewTank = function (type) {
+    const h = U.hab; if (h.data.type === type) return;
+    h.data.type = type; h.rebuild(); U.R.cur = null; U.R.resetView(); U.R.resetCaches();
+  };
+  FH.tankGlyph = function (type) {
+    const t = J.HABITATS[type], cv = el('canvas', 'fh-tank-glyph'); cv.width = 200; cv.height = 128;
+    cv.setAttribute('aria-hidden', 'true'); const c = cv.getContext('2d');
+    const sc = Math.min(130 / t.w, 85 / t.h), w = t.w * sc, h = t.h * sc, x = (200 - w - 20) / 2, y = (128 - h) / 2 + 7;
+    c.lineWidth = 2; c.strokeStyle = '#66734c'; c.fillStyle = '#dce5ce';
+    c.beginPath(); c.moveTo(x,y); c.lineTo(x+20,y-12); c.lineTo(x+w+20,y-12); c.lineTo(x+w,y); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(123,151,102,.08)'; c.fillRect(x,y,w,h); c.strokeRect(x,y,w,h);
+    c.beginPath(); c.moveTo(x+w,y); c.lineTo(x+w+20,y-12); c.lineTo(x+w+20,y+h-12); c.lineTo(x+w,y+h); c.stroke();
+    c.fillStyle = '#b6a17c'; c.fillRect(x+2,y+h-8,w-4,6); return cv;
+  };
+  FH.portrait = function (sid, size) {
+    const source = U.R.speciesPortrait(sid, size || 160), cv = el('canvas', 'fh-portrait');
+    cv.width = source.width; cv.height = source.height; cv.getContext('2d').drawImage(source, 0, 0);
+    cv.setAttribute('aria-hidden', 'true'); return cv;
+  };
+  FH.picker = function () {
+    this.removeOverlay(); D.body.classList.add('fh-wizard');
+    const s = this.data(U.game), w = el('div', 'fh-picker'), stages = ['Your tank', 'Your jumper', 'Their habitat'];
+    s.step = Math.max(0, Math.min(2, s.step | 0)); w.dataset.fhStep = String(s.step);
+    w.append(el('p', 'fh-eyebrow', `YOUR FIRST HOME · ${s.step + 1} OF 3`));
+    const progress = el('div', 'fh-progress'); progress.setAttribute('aria-label', stages.map((x,i) => `${i+1}. ${x}${i===s.step?' (current)':''}`).join(', '));
+    stages.forEach((x,i) => progress.append(el('span', i <= s.step ? 'is-current' : '', x))); w.append(progress);
+    const titles = ['A small world, made by you.', 'Meet your first little resident.', `Let’s get ${this.name()}’s home ready.`];
+    w.append(el('h3', 'fh-title', titles[s.step]));
+    const grid = el('div', 'fh-choices'); w.append(grid);
+    const pick = (id, title, note, selected, fn, art) => {
+      const p = button('', '', fn, 'fh-choice' + (selected ? ' is-selected' : '')); p.dataset.fhChoice = id; p.setAttribute('aria-pressed', String(selected));
+      if (art) p.append(art); const text = el('span', 'fh-choice-copy'); text.append(el('strong','',title), el('span','fh-note',note)); p.append(text); grid.append(p); return p;
+    };
+    if (s.step === 0) {
+      w.insertBefore(el('p','fh-copy','Start small and get to know one jumper. You can create more tanks later.'), grid);
+      const ids = s.allTanks ? ['nano', ...Object.keys(J.HABITATS).filter(id => id !== 'nano')] : ['nano'];
+      for (const id of ids) {
+        const t = J.HABITATS[id];
+        const p = pick(id, t.name, id === 'nano' ? 'A cosy, focused home for one jumper.' : `${t.cap} jumper capacity · ${t.w} × ${t.d} × ${t.h} game units`, s.type === id, () => { s.type = id; this.previewTank(id); this.save(); this.picker(); }, this.tankGlyph(id));
+        if (id === 'nano') p.querySelector('.fh-choice-copy').prepend(el('span','fh-badge','Recommended first tank'));
+      }
+      w.append(button(s.allTanks ? 'Show just the recommended tank' : `See all ${Object.keys(J.HABITATS).length} tanks`, 'fhAllTanks', () => { s.allTanks = !s.allTanks; this.save(); this.picker(); }, 'fh-link'));
+      if (!s.allTanks && s.type !== 'nano') { const t = J.HABITATS[s.type]; w.append(el('p','fh-note',`Selected: ${t.name}. Open all tanks to change it.`)); }
+    } else if (s.step === 1) {
+      for (const sid of U.game.state.species) {
+        const sp = J.SPECIES_BY_ID[sid]; if (!sp) continue;
+        pick(sid, sp.name, sp.desc, s.sid === sid, () => { s.sid = sid; s.bid = B.rank(sid)[0]; this.save(); this.picker(); }, this.portrait(sid));
+      }
+      const label = el('label','fh-label','What would you like to call them?'); label.htmlFor = 'fhName';
+      const name = el('input','fh-name'); name.id = 'fhName'; name.type = 'text'; name.maxLength = 24; name.value = s.name; name.placeholder = 'Pip'; name.autocomplete = 'off';
+      name.oninput = () => { s.name = name.value; this.save(); };
+      w.append(label, name, el('p','fh-note','Optional · you can rename them later. Raise a jumper to Adult to unlock the next species.'));
+    } else {
+      const ranked = B.rank(s.sid), ids = s.allBiomes ? ranked : ranked.filter(id => B.fit(s.sid,id) >= .6);
+      if (!ids.includes(s.bid)) ids.unshift(s.bid);
+      w.insertBefore(el('p','fh-copy','A matching climate makes settling in easier. Furnishings come next—nothing living is added yet.'), grid);
+      for (const bid of ids) {
+        const b = J.BIOMES[bid], fit = B.fit(s.sid,bid);
+        pick(bid, b.name, `${fit >= .95 ? 'Recommended' : fit >= .6 ? 'Suitable' : 'Experimental · out of place'} · ${b.short}`, s.bid === bid, () => { s.bid = bid; B.setBiome(U.hab,bid); B.applyGround(U.hab,bid); U.R.resetCaches(); this.save(); this.picker(); });
+      }
+      w.append(button(s.allBiomes ? 'Show suitable habitats' : 'More options · experimental climates', 'fhAllBiomes', () => { s.allBiomes = !s.allBiomes; this.save(); this.picker(); }, 'fh-link'));
+      if (B.fit(s.sid,s.bid) < .6) w.append(el('p','fh-warning','This is not a home climate for your jumper. You can experiment, or choose a recommended habitat.'));
+    }
+    const footer = el('div','bm-actions fh-picker-actions');
+    footer.append(button(s.step ? 'Back' : 'Title screen','fhBack', () => {
+      if (s.step) { s.step--; this.save(); this.picker(); } else { this.save(); root.location.href = 'index.html'; }
+    }));
+    footer.append(button(s.step === 2 ? 'Prepare their home' : 'Continue','fhNext', () => {
+      s.name = this.name();
+      if (s.step < 2) { s.step++; this.save(); this.picker(); }
+      else this.createHome();
+    },'fh-button fh-primary')); w.append(footer);
+    U.openModal('Your first terrarium', w, {back:null, sheet:'first-home'});
+    // The existing modal layout manager moves bm-actions into non-scrolling chrome.
+    D.getElementById('modalBody').scrollTop = 0;
+    const focus = D.getElementById('fhNext'); if (focus) focus.focus({preventScroll:true});
+  };
+  FH.createHome = function () {
+    const g = U.game, s = this.data(g); if (s.phase !== 'choose') return;
+    if (!J.HABITATS[s.type] || !g.isUnlocked(s.sid) || !J.BIOMES[s.bid]) return;
+    const h = g.hab; h.data.type = s.type; h.data.buildSpecies = s.sid;
+    B.setBiome(h, s.bid); B.applyGround(h,s.bid); h.rebuild(); s.tankId = h.data.id;
+    s.name = this.name(); s.phase = 'build'; g.state.biomeSetup = false; g.state.lastBiome = s.bid;
+    D.body.classList.remove('fh-wizard'); U.closeModal(); U.R.cur = null; U.R.resetView(); U.R.resetCaches();
+    U._bmQuery = ''; U._bmFilter = 'suitable'; this.save(); this.render();
+  };
+  FH.furnish = function () {
+    const g = U.game, s = this.data(g), h = g.hab;
+    // Generate off to the side: Apply cannot erase the piece the player just placed.
+    const previous = J.game, rng = J.R, decorBefore = JSON.parse(JSON.stringify(h.data.decor)), furnishedBefore = s.furnished;
+    let fake, generated;
+    try {
+      fake = new J.Game(); fake.state = JSON.parse(JSON.stringify(g.state)); fake.habs = []; fake.save = () => {};
+      J.game = fake; J.R = J.makeRng(s.seed);
+      generated = new J.Habitat({type:h.data.type},fake); fake.habs = [generated];
+      B.setBiome(generated,s.bid);
+      if (s.bid === 'classic') { const p = J.Presets.forType(s.type)[0]; if (p) J.Presets.generate(generated,p.theme,s.seed,true); }
+      else B.layout(generated,s.bid,s.seed);
+      // Compact generated pieces are revalidated by the actual tank, including overlap with player decor.
+      for (const d of generated.decor) {
+        if (d.parent || d.wall) continue;
+        const added = h.addDecor(d.type,d.x,d.z,d.rot,d.seed,false,d.my,{bare:d.bare}); if (added) added.preset = true;
+      }
+      if (!h.decor.length) throw new Error('No furnishings could be placed. Try placing a small piece first.');
+      if (!h.decor.some(d => (J.DECOR_BY_ID[d.type]||{}).water)) {
+        for (let z = 10; z < h.dims.d-8; z += 10) {
+          let placed = false;
+          for (let x = 10; x < h.dims.w-8; x += 10) if (h.addDecor('waterdish',x,z,0,s.seed)) { placed = true; break; }
+          if (placed) break;
+        }
+      }
+      s.furnished = true; g.state.nextId = Math.max(g.state.nextId,fake.state.nextId);
+      h.rebuild(); U.R.resetCaches(); if (U.undoClear) U.undoClear();
+    } catch (error) {
+      h.data.decor = decorBefore; s.furnished = furnishedBefore; h.rebuild(); U.R.resetCaches(); throw error;
+    } finally {
+      // Restore globals even if layout generation fails; release the disposable scene's GPU geometry.
+      J.game = previous; J.R = rng;
+      if (fake) g.state.nextId = Math.max(g.state.nextId, fake.state.nextId);
+      if (generated) for (const geo of Object.values(generated.geoms||{})) if (geo._mesh && geo._mesh.gl && geo._mesh.gl.free) geo._mesh.gl.free(geo._mesh);
+    }
+  };
+  FH.ensureSpider = function () {
+    const g = U.game, s = this.data(g), h = g.hab;
+    let sp = h.spider(s.spiderId) || h.spiders.find(x => x.species === s.sid);
+    if (!sp) {
+      const check = g.canAdd(h,s.sid); if (!check.ok) throw new Error(check.reason);
+      sp = h.addSpider(s.sid,{name:this.name(),stage:1,meals:0,sat:.48});
+      if (!sp) throw new Error('Your jumper could not be added. Please try again.');
+    }
+    s.spiderId = sp.id; g.selectedId = sp.id; h.data.selectedId = sp.id;
+    g.checkUnlocks(true); U.refreshHeader(); return sp;
+  };
+  FH.prey = function () {
+    const h = U.hab, s = this.data(U.game), sp = h.spider(s.spiderId) || h.spiders[0]; if (!sp) return null;
+    const A = J.SpiderAI, len = A.len(sp), limit = Math.min(1.25,A.sizeLimit(sp));
+    const options = J.PREY.filter(p => p.huntable !== false && !p.cleaner && !(p.danger > 0) && p.nut > 0 && p.len <= len * limit && p.len >= len * .12);
+    const native = B.of(h).prey || [];
+    options.sort((a,b) => Number(native.includes(b.id))-Number(native.includes(a.id)) || a.len-b.len);
+    return options[0] || null;
+  };
+  FH.feed = function () {
+    const s = this.data(U.game), h = U.hab; if (s.fed) return;
+    const p = this.prey(); if (!p) throw new Error('No suitably sized food is available yet.');
+    const before = h.prey.length; if (before + 2 > J.PREY_CAP) throw new Error('There is already enough live food in this tank.');
+    h.addPrey(p.id,2);
+    if (h.prey.length !== before + 2) throw new Error('Food could not be released. Please try again.');
+    s.fed = true; s.preyType = p.id; this.save();
+  };
+  FH.safe = function (fn) { try { fn(); } catch (e) { U.toast(esc(e.message || 'That action could not be completed. Please try again.'),'',5000); } };
+  FH.finishSetup = function () {
+    // All three changes are explicit in the confirmation, and idempotent on retry/reload.
+    this.safe(() => {
+      const s = this.data(U.game); if (!s || s.phase === 'done') return;
+      if (s.phase === 'choose') { this.createHome(); }
+      if (!s.furnished) this.furnish(); this.ensureSpider(); if (!s.fed) this.feed();
+      this.complete(false);
+    });
+  };
+  FH.complete = function (observing) {
+    const g = U.game, s = this.data(g); if (!s || s.phase === 'done') return;
+    s.phase = 'done'; s.completed = true; g.state.biomeSetup = false;
+    const seen = U.set.tipsSeen || (U.set.tipsSeen = {}); for (const k of ['welcome','build','care','observe']) seen[k] = 1;
+    J.Settings.save(U.set); U._tipQ = []; U.hideTip();
+    const fading=this.overlay;this.teardown();U.cancelMode();U.closeDrawer();U.closeModal();U.hidePanel();
+    if(fading){fading.removeAttribute('id');fading.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));fading.inert=true;fading.setAttribute('aria-hidden','true');D.body.append(fading);fading.classList.add('fh-leaving');setTimeout(()=>fading.remove(),450);}
+    g.hab.data.backgroundAt = g.state.time; this.save(); U.refreshHeader();
+    U.toast('Your little world is ready. Build, care, or simply watch.','quiet',6500);
+    if (!observing) U.R.resetCaches();
+  };
+  FH.teardown = function () {
+    this.removeOverlay(); D.body.classList.remove('fh-wizard','fh-guided'); this.confirming = false;
+    D.querySelectorAll('.fh-muted-control').forEach(n=>n.classList.remove('fh-muted-control'));
+    const piece=this.featured||D.getElementById('fhDecor');this.featured=null;if(piece){piece.removeAttribute('id');piece.removeAttribute('role');piece.removeAttribute('tabindex');piece.onkeydown=null;piece.classList.remove('fh-featured-piece');}
+    clearTimeout(this.watchTimer); this.watchTimer = null;
+  };
+  FH.removeOverlay = function () {
+    if (this.overlay) this.overlay.remove(); this.overlay = this.card = this.target = null;
+    if (this.frame) cancelAnimationFrame(this.frame); this.frame = null;
+  };
+  FH.render = function () {
+    if (!U.game || !this.active(U.game)) { this.teardown(); return; }
+    const s = this.data(U.game);
+    U._tipQ = []; U.hideTip();
+    if (s.phase === 'choose') { this.picker(); return; }
+    D.body.classList.remove('fh-wizard'); D.body.classList.add('fh-guided');
+    if (s.phase === 'place') { s.phase = 'build'; this.save(); } // A transient placement ghost is never serialized.
+    if (s.phase === 'watch') {
+      U.toggleObserve(true,s.spiderId); this.watch(); return;
+    }
+    this.showGuide();
+  };
+  FH.control = function (kind) {
+    const selectors = kind === 'observe' ? ['#dock [data-dock="observe"]','#btnObserve'] : [`#dock [data-dock="${kind}"]`,`#toolbar [data-tool="${kind}"]`];
+    return selectors.map(s=>D.querySelector(s)).find(visible);
+  };
+  FH.recommendedPiece = function () {
+    const h = U.hab;
+    return J.DECOR.filter(d => d.cat === 'decor' && !d.mount && d.arche !== 'backwall' && !d.lamp && !d.water && U.biomeDecorFit(d) > 0)
+      .sort((a,b) => Number(!!b.small)-Number(!!a.small) || U.biomeDecorFit(b)-U.biomeDecorFit(a))
+      .find(d => h.canPlace(d.id,h.dims.w*.5,h.dims.d*.55,0,1).ok);
+  };
+  FH.showGuide = function () {
+    const s = this.data(U.game); if (!s || !this.active(U.game)) return;
+    const n = this.name(); let target, title, copy, step, action;
+    const skip = () => this.confirmSkip();
+    switch (s.phase) {
+      case 'build': step='1 OF 6 · PREPARE'; title=`A home for ${n}.`; copy='Tap Build. We’ll add one small furnishing together—then you can finish with a recommended layout.'; target=this.control('build'); break;
+      case 'piece': step='1 OF 6 · PREPARE'; title='One small piece, one big beginning.'; copy='Choose this suitable furnishing. Next, you’ll place it in the tank.'; target=D.getElementById('fhDecor'); break;
+      case 'placing': step='1 OF 6 · PREPARE'; title='Make it yours.'; copy=U.isMobile()?'Tap a clear spot inside the tank, then tap Place piece. Green means it fits.':'Click a clear spot inside the tank, or use arrow keys then Place piece. Green means it fits.'; target=D.getElementById('view'); action=button('Place piece','fhPlace',()=>{ if(U.place && U.place.ok) U.confirmPlace(); else U.toast('Choose a clear spot inside the tank first.'); },'fh-button fh-primary'); break;
+      case 'layout': step='2 OF 6 · MAKE IT COSY'; title='A lovely first touch.'; copy='Your piece stays. Add a matching arrangement around it, with shelter, climbing places and water where space allows.'; target=D.getElementById('view'); action=button('Finish with recommended layout','fhLayout',()=>this.safe(()=>{this.furnish();this.phase('jumpers');}),'fh-button fh-primary'); break;
+      case 'jumpers': step='3 OF 6 · WELCOME'; title=`Ready to meet ${n}?`; copy='Tap Jumpers to bring your chosen resident home. No jumper has been added yet.'; target=this.control('jumpers'); break;
+      case 'add': step='3 OF 6 · WELCOME'; title=`Welcome, ${n}.`; copy='Tap the highlighted button. Your chosen jumper will arrive in the home you prepared.'; target=D.getElementById('fhAddJumper'); break;
+      case 'care': step='4 OF 6 · FIRST FEEDING'; title=`${n} is settling in.`; copy='Tap Care to choose a small first meal. Food should suit your jumper’s current size—not its adult size.'; target=this.control('care'); break;
+      case 'food': step='4 OF 6 · FIRST FEEDING'; title='A little food is plenty.'; copy='Release two suitably sized prey. Your jumper will decide when to hunt; you don’t have to make it catch anything.'; target=D.getElementById('fhReleasePrey'); break;
+      case 'observe': step='5 OF 6 · OBSERVE'; title='Take a closer look.'; copy=`Tap Observe to follow ${n}. Exploring, resting and hunting all happen naturally.`; target=this.control('observe'); break;
+      case 'skip': return this.skipCard();
+      default: s.phase='build'; this.save(); return this.showGuide();
+    }
+    this.guide({step,title,copy,target,action,skip,scene:['placing','layout'].includes(s.phase)});
+  };
+  FH.guide = function ({step,title,copy,target,action,skip,scene,watch}) {
+    this.removeOverlay();
+    if(target&&!scene&&!watch)target.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+    const overlay=el('div','fh-overlay'+(watch?' fh-watching':'')); overlay.id='fhOverlay';
+    const masks=[]; for(let i=0;i<4;i++){const m=el('div','fh-shade');overlay.append(m);masks.push(m);}
+    const glow=el('div','fh-glow'); glow.setAttribute('aria-hidden','true'); overlay.append(glow);
+    const card=el('section','fh-guide');card.id='fhGuide';card.setAttribute('role','dialog');card.setAttribute('aria-modal','false');card.setAttribute('aria-labelledby','fhGuideTitle');card.setAttribute('aria-describedby','fhGuideCopy');
+    card.append(el('p','fh-eyebrow',step));const h=el('h3','',title);h.id='fhGuideTitle';const p=el('p','fh-copy',copy);p.id='fhGuideCopy';card.append(h,p);
+    const actions=el('div','fh-guide-actions');if(action)actions.append(action);
+    if(skip)actions.append(button('Skip tutorial','fhSkip',skip,'fh-link'));card.append(actions);overlay.append(card);D.body.append(overlay);
+    this.overlay=overlay;this.card=card;this.target=target;this.scene=scene;this.watchMode=watch;
+    // Clear the card without covering the interaction target, including when drawers scroll or the phone rotates.
+    const layout=()=>{
+      if(this.overlay!==overlay)return;
+      let t=this.target;
+      if(!scene&&!watch){const phase=this.data(U.game)?.phase;if(['build','jumpers','care','observe'].includes(phase))t=this.target=this.control(phase==='jumpers'?'jumpers':phase==='observe'?'observe':phase==='care'?'care':'build');}
+      const W=innerWidth,H=innerHeight,pad=8;let r=visible(t)?t.getBoundingClientRect():{left:W/2,top:H/2,right:W/2,bottom:H/2};
+      if(scene){
+        const dm=U.hab.dims,pts=[[0,0,0],[dm.w,0,0],[dm.w,0,dm.d],[0,0,dm.d],[0,dm.h,0],[dm.w,dm.h,dm.d]].map(p=>U.R.project(p));
+        if(pts.every(p=>p.every(Number.isFinite)))r={left:Math.min(...pts.map(p=>p[0]))-16,right:Math.max(...pts.map(p=>p[0]))+16,top:Math.min(...pts.map(p=>p[1]))-10,bottom:Math.max(...pts.map(p=>p[1]))+16};
+      }
+      const x=Math.max(0,Math.min(W,r.left-pad)),y=Math.max(0,Math.min(H,r.top-pad)),right=Math.max(x,Math.min(W,r.right+pad)),bottom=Math.max(y,Math.min(H,r.bottom+pad));
+      const rect=(n,x,y,w,h)=>Object.assign(n.style,{left:x+'px',top:y+'px',width:Math.max(0,w)+'px',height:Math.max(0,h)+'px'});
+      rect(masks[0],0,0,W,y);rect(masks[1],0,y,x,bottom-y);rect(masks[2],right,y,W-right,bottom-y);rect(masks[3],0,bottom,W,H-bottom);rect(glow,x,y,right-x,bottom-y);
+      const side=scene&&W>700&&x>=215;const cw=side?Math.min(340,x-28):Math.min(370,W-32);card.style.width=cw+'px';const ch=card.offsetHeight;
+      const minY=12+(parseFloat(getComputedStyle(D.documentElement).getPropertyValue('--sat'))||0),maxY=Math.max(minY,H-ch-12);
+      let cy;const horizontal=!scene&&!watch&&y-ch-18<minY&&bottom+ch+18>H-12&&(right+cw+18<=W||x-cw-18>=0);
+      if(horizontal)cy=Math.max(minY,Math.min(maxY,y));
+      else if(scene){cy=minY+12;if(!side&&y<cy+ch+14&&H-bottom>ch+28)cy=bottom+16;}
+      else if(W<600&&y>H*.55&&80+ch<y-18)cy=80;
+      else if(y-ch-18>=minY)cy=y-ch-18;
+      else if(bottom+ch+18<=H-12)cy=bottom+18;
+      else cy=minY;
+      cy=Math.max(minY,Math.min(maxY,cy));let cx=horizontal?(right+cw+18<=W?right+18:x-cw-18):side?12:Math.max(16,Math.min(W-cw-16,scene?(W-cw)/2:(x+right-cw)/2));
+      Object.assign(card.style,{left:cx+'px',top:cy+'px'});
+      if(watch){for(const m of masks)m.style.display='none';glow.style.display='none';}
+      const place=D.getElementById('fhPlace');if(place)place.disabled=!(U.place&&U.place.ok);
+      this.frame=requestAnimationFrame(layout);
+    };layout();
+    card.tabIndex=-1;card.focus({preventScroll:true});
+  };
+  FH.openPiece = function () {
+    const d=this.recommendedPiece();
+    if(!d){this.phase('layout');return;}
+    const card=U.decorCard(d);this.featured=card;card.id='fhDecor';card.classList.add('fh-featured-piece');card.setAttribute('role','button');card.tabIndex=0;
+    card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();}};
+    const body=D.getElementById('drawerBody');body.replaceChildren(card);
+    D.querySelectorAll('#drawerTabs,#drawerChips,#drawer .bm-controls').forEach(e=>e.classList.add('fh-muted-control'));
+    U.syncDrawerSpace();this.data(U.game).phase='piece';this.save();this.showGuide();
+  };
+  FH.addSheet = function () {
+    const s=this.data(U.game),w=el('div','fh-arrival');w.append(this.portrait(s.sid),el('h3','',this.name()),el('p','fh-copy',J.SPECIES_BY_ID[s.sid].name+' · A tiny sling, with growing still to do.'));
+    w.append(button(`Add ${this.name()} to this tank`,'fhAddJumper',()=>this.safe(()=>{this.ensureSpider();U.closeModal();this.phase('care');J.Audio.sfx('hatch');}),'fh-button fh-primary'));
+    U.openModal('Your chosen jumper',w,{back:null,sheet:'first-arrival'});s.phase='add';this.save();this.showGuide();
+  };
+  FH.foodCard = function () {
+    const p=this.prey();if(!p){U.toast('No suitable starter food was found.');return;}
+    const body=D.getElementById('drawerBody');body.replaceChildren();const card=el('div','fh-food');
+    const source=U.R.preyPortrait(p.id,112),cv=el('canvas');cv.width=source.width;cv.height=source.height;cv.getContext('2d').drawImage(source,0,0);cv.setAttribute('aria-hidden','true');
+    card.append(cv,el('strong','',p.name),el('p','fh-note',`${p.len} mm · Good size for ${this.name()}`),button('Release 2 small prey','fhReleasePrey',()=>this.safe(()=>{this.feed();J.Audio.sfx('feed');U.closeDrawer();this.phase('observe');}),'fh-button fh-primary'));body.append(card);
+    const h=U.hab;D.getElementById('drawerTitle').textContent=`First feeding · ${B.of(h).name}`;
+    this.data(U.game).phase='food';this.save();this.showGuide();
+  };
+  FH.confirmSkip = function () {
+    const s=this.data(U.game);this.returnPhase=s.phase;s.phase='skip';this.save();this.skipCard();
+  };
+  FH.skipCard = function () {
+    this.guide({step:'YOUR HOME, YOUR PACE',title:'Finish setup and explore?',copy:'This will complete a matching layout, add your chosen jumper if needed, and release two small prey if you haven’t fed them yet. Nothing already added is duplicated.',target:null,action:button('Finish setup & explore','fhFinishSetup',()=>this.finishSetup(),'fh-button fh-primary')});
+    this.card.querySelector('.fh-guide-actions').append(button('Keep guiding me','fhKeepGuiding',()=>{const s=this.data(U.game);s.phase=this.returnPhase||(!U.hab.decor.length?'build':!U.hab.spiders.length?'jumpers':!s.fed?'care':'observe');this.save();this.render();},'fh-link'));
+  };
+  FH.watch = function () {
+    clearTimeout(this.watchTimer);
+    this.guide({step:'6 OF 6 · A LITTLE WORLD, QUIETLY ALIVE',title:`Hello, ${this.name()}.`,copy:'There’s no rush. Your jumper may explore, rest, or hunt when ready. Later, check hydration in their profile; mist only when it’s needed for this habitat.',target:null,watch:true,action:button('Enjoy my terrarium','fhEnjoy',()=>this.complete(true),'fh-button fh-primary')});
+    // A short, resumable introduction; completion never waits for a stochastic hunt.
+    this.watchTimer=setTimeout(()=>{if(this.data(U.game)?.phase==='watch')this.complete(true);},11000);
+  };
+
+  // Adapt the real controls, not proxy buttons. Only the special first-home state takes this path.
+  const drawer0=U.openDrawer;
+  U.openDrawer=function(tab){const s=FH.data(this.game);const result=drawer0.apply(this,arguments);if(!FH.active(this.game)||!s)return result;
+    if(['build','piece'].includes(s.phase)&&tab==='decor')FH.openPiece();
+    else if(['care','food'].includes(s.phase)&&tab==='food')FH.foodCard();return result;};
+  const place0=U.startPlace;
+  U.startPlace=function(){const s=FH.data(this.game);const result=place0.apply(this,arguments);if(FH.active(this.game)&&s.phase==='piece'&&this.mode==='place'){s.phase='placing';
+      if(!this.place.ok){const h=this.hab;outer:for(let z=12;z<h.dims.d-10;z+=8)for(let x=12;x<h.dims.w-10;x+=8)if(h.canPlace(this.place.type,x,z,0,this.place.seed).ok){this.applyGhost({x,z,y:0});break outer;}}
+      FH.save();FH.showGuide();}return result;};
+  const confirm0=U.confirmPlace;
+  U.confirmPlace=function(){const s=FH.data(this.game),before=this.hab.decor.length,result=confirm0.apply(this,arguments);
+    if(FH.active(this.game)&&s.phase==='placing'&&this.hab.decor.length>before){this.cancelMode();this.closeDrawer();D.querySelectorAll('.fh-muted-control').forEach(e=>e.classList.remove('fh-muted-control'));FH.phase('layout');}return result;};
+  const cancel0=U.endMode;
+  U.endMode=function(){const s=FH.data(this.game),result=cancel0.apply(this,arguments);if(FH.active(this.game)&&s.phase==='placing'){s.phase='build';FH.save();setTimeout(()=>FH.render(),0);}return result;};
+  const jump0=U.jumpersSheet;
+  U.jumpersSheet=function(){const s=FH.data(this.game);if(FH.active(this.game)&&['jumpers','add'].includes(s.phase)){FH.addSheet();return;}return jump0.apply(this,arguments);};
+  const obs0=U.toggleObserve;
+  U.toggleObserve=function(on,id){const result=obs0.apply(this,arguments),s=FH.data(this.game);if(FH.active(this.game)&&s.phase==='observe'&&this.obs){s.phase='watch';FH.save();FH.watch();}return result;};
+  const close0=U.closeModal;
+  U.closeModal=function(){const s=FH.data(this.game);if(FH.active(this.game)&&s.phase==='choose'){FH.picker();return;}
+    const result=close0.apply(this,arguments);if(FH.active(this.game)&&s.phase==='add'){s.phase='jumpers';FH.save();setTimeout(()=>FH.render(),0);}return result;};
+  const closeDrawer0=U.closeDrawer;
+  U.closeDrawer=function(){D.querySelectorAll('.fh-muted-control').forEach(n=>n.classList.remove('fh-muted-control'));const s=FH.data(this.game),result=closeDrawer0.apply(this,arguments);if(FH.active(this.game)&&['piece','food'].includes(s.phase)){s.phase=s.phase==='piece'?'build':'care';FH.save();setTimeout(()=>FH.render(),0);}return result;};
+
+  // Restore transient panels after reload using the saved phase, without replaying mutations.
+  const render0=FH.render;
+  FH.render=function(){const s=this.data(U.game);if(s&&this.active(U.game)){
+    if(s.phase==='piece'){s.phase='build';this.save();}
+    if(s.phase==='placing'){s.phase='build';this.save();}
+    if(s.phase==='add'){s.phase='jumpers';this.save();}
+    if(s.phase==='food'){s.phase='care';this.save();}
+  }return render0.call(this);};
+
+  // Block stray actions/shortcuts outside the current spotlight; the scene still uses its own pointer handlers.
+  const allowed=n=>{
+    if(!FH.overlay)return true;
+    if(FH.card&&FH.card.contains(n))return true;
+    if(FH.watchMode)return true;
+    if(FH.target&&(FH.target===n||FH.target.contains(n)))return true;
+    return FH.scene&&FH.data(U.game)?.phase==='placing'&&!!n.closest?.('#modeBar');
+  };
+  for(const ev of ['pointerdown','click','touchstart','wheel'])D.addEventListener(ev,e=>{if(FH.overlay&&!allowed(e.target)){e.preventDefault();e.stopImmediatePropagation();}},{capture:true,passive:false});
+  root.addEventListener('keydown',e=>{
+    if(!FH.active(U.game))return;
+    const s=FH.data(U.game);
+    if(s.phase==='choose'){
+      if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();if(s.step){s.step--;FH.save();FH.picker();}return;}
+      if(e.key==='Tab'){
+        const nodes=[...D.querySelectorAll('#modal button,#modal input')].filter(visible),i=nodes.indexOf(D.activeElement);
+        if(nodes.length){e.preventDefault();e.stopImmediatePropagation();nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}return;
+      }
+      if(e.key.length===1&&!['INPUT','TEXTAREA'].includes(e.target.tagName)&&e.key!==' '){e.stopImmediatePropagation();}return;
+    }
+    if(!FH.overlay)return;
+    if(e.key==='Tab'){
+      const nodes=[...D.querySelectorAll('button,[tabindex="0"]')].filter(n=>visible(n)&&!n.disabled&&allowed(n)),i=nodes.indexOf(D.activeElement);
+      if(nodes.length){e.preventDefault();e.stopImmediatePropagation();nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}return;
+    }
+    if(s.phase==='placing'&&/^Arrow(Up|Down|Left|Right)$/.test(e.key)){
+      e.preventDefault();e.stopImmediatePropagation();const p=U.place,h=U.hab;if(p){const delta=e.shiftKey?8:3,x=Math.max(3,Math.min(h.dims.w-3,(p.x||h.dims.w/2)+(e.key==='ArrowLeft'?-delta:e.key==='ArrowRight'?delta:0))),z=Math.max(3,Math.min(h.dims.d-3,(p.z||h.dims.d/2)+(e.key==='ArrowUp'?-delta:e.key==='ArrowDown'?delta:0)));U.applyGhost({x,z,y:0});}return;
+    }
+    if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();
+      if(s.phase==='placing'){U.endMode();U.closeDrawer();FH.phase('build');}
+      else if(s.phase==='piece'){U.closeDrawer();FH.phase('build');}
+      else if(s.phase==='food'){U.closeDrawer();FH.phase('care');}
+      else if(s.phase==='add'){U.closeModal();FH.phase('jumpers');}
+      else if(s.phase==='skip')D.getElementById('fhKeepGuiding').click();
+      else if(s.phase==='watch')FH.complete(true);
+      else FH.confirmSkip();return;
+    }
+    // Let native Enter/Space activate focused real controls, but never also trigger the game's hotkeys.
+    if(e.key==='Enter'||e.key===' '){if(!allowed(e.target)){e.preventDefault();}else if(e.target.getAttribute('role')==='button'&&e.target.tagName!=='BUTTON'){e.preventDefault();e.target.click();}e.stopPropagation();return;}
+    if(e.key.length===1){e.preventDefault();e.stopImmediatePropagation();}
+  },true);
+  D.addEventListener('focusin',e=>{if(FH.overlay&&!allowed(e.target)&&FH.card)FH.card.focus({preventScroll:true});});
+  D.addEventListener('visibilitychange',()=>{
+    const s=FH.data(U.game);if(s&&s.phase==='watch'){
+      clearTimeout(FH.watchTimer);if(!D.hidden)FH.watch();
+    }
+  });
+
+  FH.back=function(){const s=this.data(U.game);if(!s||!this.active(U.game))return false;
+    if(s.phase==='choose'){if(!s.step)return false;s.step--;this.save();this.picker();return true;}
+    if(s.phase==='placing'){U.endMode();U.closeDrawer();this.phase('build');}
+    else if(s.phase==='piece'){U.closeDrawer();this.phase('build');}
+    else if(s.phase==='food'){U.closeDrawer();this.phase('care');}
+    else if(s.phase==='add'){U.closeModal();this.phase('jumpers');}
+    else if(s.phase==='skip'){D.getElementById('fhKeepGuiding').click();}
+    else if(s.phase==='watch')this.complete(true);
+    else this.confirmSkip();return true;
+  };
+  const import0=J.Game.prototype.importSave;
+  J.Game.prototype.importSave=function(){const result=import0.apply(this,arguments);if(result&&U.game===this)setTimeout(()=>FH.render(),0);return result;};
+  const css=el('style');css.textContent=`
+.fh-wizard #modalClose,.fh-wizard #modalBack{display:none!important}
+.fh-wizard #modalWrap{background:rgba(10,17,10,.64)!important}
+#app .fh-picker{font-family:system-ui,-apple-system,sans-serif;color:#30372b;max-width:680px;margin:0 auto}
+#app .fh-picker p{line-height:1.55}#app .fh-title{font:400 clamp(25px,3vw,34px)/1.2 Georgia,serif;margin:22px 0 12px;color:#30372b}
+.fh-eyebrow{font:600 11px/1.4 system-ui,sans-serif!important;letter-spacing:.12em;color:#65734e!important;margin:0 0 12px!important;text-transform:uppercase}
+.fh-progress{display:flex;gap:6px}.fh-progress span{flex:1;border-top:3px solid #d8dccd;padding-top:8px;font:12px/1.4 system-ui;color:#75786c}.fh-progress .is-current{border-color:#63774a;color:#3d5030}
+.fh-copy{font:15px/1.55 system-ui,sans-serif!important;color:#505a46!important;margin:12px 0 16px!important}
+.fh-note{display:block;font:14px/1.5 system-ui,sans-serif!important;color:#606a55!important;margin:6px 0}
+.fh-choices{display:grid;gap:12px}.fh-choice{appearance:none;width:100%;display:flex;align-items:center;gap:16px;border:1px solid #cdd2c0!important;background:#f9f8f1!important;padding:16px!important;border-radius:12px!important;text-align:left;letter-spacing:0!important;color:#30372b!important;font:15px/1.5 system-ui!important;min-height:72px;box-sizing:border-box}
+.fh-choice.is-selected{border:2px solid #687f4d!important;background:#ecf0e1!important;padding:15px!important}.fh-choice:hover{border-color:#687f4d!important}.fh-choice strong{display:block;font-weight:600;font-size:17px}.fh-choice-copy{min-width:0;flex:1}.fh-badge{display:inline-block;color:#455c32;background:#dce5ca;border-radius:5px;padding:3px 6px;font:600 11px/1.4 system-ui;margin-bottom:8px;letter-spacing:.02em}
+.fh-tank-glyph{width:120px;height:77px;flex:0 0 120px}.fh-portrait{width:142px;height:142px;object-fit:contain;flex:0 0 142px;max-width:100%;margin:0!important;animation:fh-breathe 5s ease-in-out infinite}
+.fh-label{display:block;font:600 14px/1.5 system-ui;margin:24px 0 8px}.fh-name{box-sizing:border-box;width:100%;min-height:48px;background:#fffef8!important;color:#30372b!important;border:1px solid #a7b194!important;border-radius:8px!important;padding:10px 12px!important;font:16px/1.4 system-ui!important}
+.fh-warning{padding:12px;border:1px solid #c6b190;border-radius:8px;font:14px/1.5 system-ui;color:#72522e}
+.fh-button{appearance:none;min-height:44px;max-width:100%;border:1px solid #a5ae95!important;border-radius:8px!important;padding:10px 14px!important;background:#f5f5eb!important;color:#35442d!important;font:600 14px/1.4 system-ui!important;letter-spacing:0!important;cursor:pointer;box-sizing:border-box;text-shadow:none!important}
+#app #modal .fh-button.fh-primary,.fh-button.fh-primary{background:#536a3c!important;border-color:#536a3c!important;color:#fff!important}.fh-button:disabled{opacity:.5;cursor:not-allowed}.fh-button:not(:disabled):hover{filter:brightness(.95)}
+.fh-link{appearance:none;border:0!important;background:transparent!important;color:#4b6038!important;font:500 14px/1.45 system-ui!important;letter-spacing:0!important;text-decoration:underline;text-underline-offset:3px;min-height:44px;padding:10px 4px!important;cursor:pointer;text-shadow:none!important}
+.fh-button:focus-visible,.fh-link:focus-visible,.fh-choice:focus-visible,.fh-name:focus-visible,#fhDecor:focus-visible{outline:3px solid #829a5f!important;outline-offset:3px}
+#app .fh-picker-actions{gap:16px!important}.fh-overlay{position:fixed;inset:0;z-index:2147482000;pointer-events:none;font-family:system-ui,sans-serif}.fh-shade{position:absolute;background:rgba(6,13,7,.62);pointer-events:auto;touch-action:none}
+.fh-glow{position:absolute;box-sizing:border-box;border:2px solid #dceca6;border-radius:12px;box-shadow:0 0 0 3px rgba(209,231,143,.16),0 0 28px rgba(206,231,143,.65);pointer-events:none;animation:fh-glow 2.8s ease-in-out infinite}
+.fh-guide{position:absolute;pointer-events:auto;box-sizing:border-box;padding:20px;background:#f6f3e9;color:#30372b;border:1px solid #d4dac6;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.24);max-height:calc(100dvh - 32px);overflow:auto;text-align:left;outline:none}
+.fh-guide h3{font:400 25px/1.2 Georgia,serif;color:#30372b;margin:0}.fh-guide .fh-copy{margin:12px 0!important}.fh-guide-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}.fh-guide-actions>.fh-primary{flex:1 0 100%}.fh-guide .fh-eyebrow{font-size:10px!important;margin-bottom:10px!important}
+.fh-featured-piece{width:180px!important;min-height:150px!important;margin:8px!important;cursor:pointer}.fh-muted-control{display:none!important}
+.fh-arrival{text-align:center;padding:8px 0 20px}.fh-arrival .fh-portrait{display:block;margin:0 auto!important}.fh-arrival h3{font:400 30px/1.2 Georgia;margin:12px 0}.fh-arrival .fh-button{margin-top:12px}
+.fh-food{display:flex;flex-direction:column;align-items:center;min-width:200px;max-width:100%;padding:8px 16px 16px;box-sizing:border-box;white-space:normal;color:#30372b!important}.fh-food canvas{width:80px;height:80px}.fh-food strong{font:600 16px/1.4 system-ui;color:#30372b}.fh-food .fh-note{color:#606a55!important}.fh-food .fh-primary{background:#d8e5b6!important;border-color:#d8e5b6!important;color:#29371f!important}
+.fh-guided #tip{display:none!important}.fh-overlay.fh-leaving{opacity:0;transition:opacity .4s ease}.fh-overlay.fh-leaving *{pointer-events:none!important}.fh-watching .fh-guide{animation:fh-arrive .4s ease-out}.fh-watching{pointer-events:none}.fh-watching .fh-guide{pointer-events:auto}
+@keyframes fh-glow{50%{box-shadow:0 0 0 5px rgba(209,231,143,.12),0 0 34px rgba(206,231,143,.8)}}@keyframes fh-breathe{50%{transform:translateY(-3px)}}@keyframes fh-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:560px){#app .fh-title{font-size:27px;margin-top:20px}.fh-choice{gap:10px;padding:12px!important}.fh-choice.is-selected{padding:11px!important}.fh-tank-glyph{width:88px;height:64px;flex-basis:88px}.fh-portrait{width:104px;height:104px;flex-basis:104px}.fh-choice strong{font-size:16px}.fh-guide{padding:18px}.fh-guide h3{font-size:24px}.fh-picker .fh-choice:has(.fh-portrait){align-items:flex-start}.fh-picker .fh-choice:has(.fh-portrait) .fh-note{font-size:13px!important}.fh-progress span{font-size:11px}}
+@media(max-height:500px) and (orientation:landscape){
+.fh-wizard #modal .modal-head{padding-top:0!important;padding-bottom:8px!important}.fh-wizard #modalTitle{font-size:20px!important}.fh-wizard #modal .fh-title{font-size:23px!important;margin:6px 0!important}.fh-wizard .fh-progress{display:none}.fh-wizard .fh-copy{font-size:13px!important;margin:6px 0 10px!important}.fh-wizard .fh-eyebrow{margin-bottom:6px!important}.fh-wizard .fh-tank-glyph{width:88px;height:64px;flex-basis:88px}.fh-wizard .fh-choice{padding:10px!important}.fh-wizard .fh-choice.is-selected{padding:9px!important}.fh-wizard .fh-note{font-size:13px!important}.fh-wizard .fh-picker[data-fh-step="0"]{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;align-items:start}.fh-wizard .fh-picker[data-fh-step="0"]>.fh-eyebrow{grid-column:1/-1}.fh-wizard .fh-picker[data-fh-step="0"]>.fh-title,.fh-wizard .fh-picker[data-fh-step="0"]>.fh-copy,.fh-wizard .fh-picker[data-fh-step="0"]>.fh-link{grid-column:1}.fh-wizard .fh-picker[data-fh-step="0"]>.fh-choices{grid-column:2;grid-row:2 / span 4}.fh-wizard .fh-picker[data-fh-step="0"]>.fh-link{justify-self:start}
+.fh-guide{padding:12px 16px}.fh-guide h3{font-size:21px}.fh-guide .fh-copy{font-size:13px!important;margin:6px 0!important}.fh-guide .fh-eyebrow{margin-bottom:6px!important}.fh-guide-actions{gap:4px 12px}.fh-guide-actions>.fh-primary{flex:initial}.fh-guide .fh-button,.fh-guide .fh-link{padding-top:8px!important;padding-bottom:8px!important}.fh-portrait{width:94px;height:94px;flex-basis:94px}}
+@media(prefers-reduced-motion:reduce){.fh-portrait,.fh-glow,.fh-watching .fh-guide{animation:none!important}.fh-overlay.fh-leaving{transition:none!important}}
+`;D.head.append(css);
+})(window);
+
+</script>
+<script>
+/* Living field journal UI. Presentation only: original simulation and save schema retained. */
+(function(root){
+'use strict';const J=root.JT,U=J.UI,D=root.document,$=id=>D.getElementById(id);
+const el=(tag,cls,text)=>{const e=D.createElement(tag);e.className=cls||'';if(text!=null)e.textContent=text;return e;};
+const button=(text,fn,cls)=>{const b=el('button',cls||'fj-button',text);b.type='button';b.onclick=fn;return b;};
+const guided=()=>J.FirstHome&&J.FirstHome.active(U.game);
+const fits=(p,s)=>{const L=J.SpiderAI.len(s);return p.len<=L*Math.min(1.25,J.SpiderAI.sizeLimit(s))&&p.len>=L*.12;};
+const dockOn=U.dockOn;U.dockOn=function(d){D.querySelectorAll('#dock button').forEach(b=>{const on=b.dataset.dock===d;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});};
+const originalDrawer=U.openDrawer;
+U.openDrawer=function(tab){
+ $('drawer').classList.remove('fj-care','fj-build');$('fjCareTabs')?.remove();
+ const out=originalDrawer.apply(this,arguments);if(guided()||$('drawer').classList.contains('hidden'))return out;
+ const drawer=$('drawer');drawer.classList.add(tab==='food'?'fj-care':'fj-build');drawer.setAttribute('aria-label',tab==='food'?'Care for this home':'Build this home');
+ if(tab==='food'){this._fjCare='overview';this.fieldCare();}
+ else this.fieldBuild(tab);
+ this.dockOn(tab==='food'?'care':'build');this.syncDrawerSpace();return out;
+};
+U.fieldCare=function(page){
+ this._fjCare=page||this._fjCare||'overview';const body=$('drawerBody'),tabs=$('drawerTabs'),h=this.hab,sp=h.spiders,mode=this._fjCare;body.replaceChildren();tabs.replaceChildren();$('drawerChips').classList.add('hidden');$('drawerTitle').textContent='Small actions. A comfortable home.';
+ for(const [id,label]of [['overview','Care'],['feed','Feed'],['crew','Cleanup crew']])tabs.append(button(label,()=>{this.fieldCare(id);this.syncDrawerSpace();},id===mode?'on':''));
+ const intro=el('div','fj-intro');intro.append(el('div','fj-eyebrow',h.title),el('h3','',mode==='overview'?'A little care goes a long way':mode==='feed'?'Choose a small meal':'A helping hand'));body.append(intro);
+ if(mode==='overview'){
+ const thirsty=sp.filter(s=>(s.hyd??1)<.3),hungry=sp.filter(s=>s.sat<.3),remains=(h.data.remains||[]).length;
+ body.append(el('p','fj-reassure',!sp.length?'Add a jumper when you’re ready.':thirsty.length?'A jumper could use fresh drinking droplets.':hungry.length?'A jumper is getting hungry. Check the live prey first.':'Nothing urgent. Enjoy watching.'));
+ for(const s of sp){const card=el('article','fj-status');card.append(el('h4','',s.name));const dl=el('dl','fj-stats');for(const [label,value]of [['Hydration',(s.hyd??1)<.3?'Needs water':(s.hyd??1)<.6?'Could drink':'Comfortable'],['Fullness',J.SpiderAI.hungerLabel(s.sat)]]){dl.append(el('dt','',label),el('dd','',value));}card.append(dl);body.append(card);}
+ body.append(el('p','fj-meta',h.livePreyCount()+' live prey · '+Math.round(h.data.humidity*100)+'% humidity'));
+ const actions=el('div','fj-care-actions');actions.append(button('Feed',()=>this.fieldCare('feed'),'fj-button primary'),button('Mist',()=>{this.doMist();this.game.save();this.fieldCare('overview');}),button('Clean'+(remains?' · '+remains:''),()=>{this.doClean();this.game.save();this.fieldCare('overview');}));body.append(actions,el('p','fj-note','Mist adds droplets to drink and moisture. Clean removes leftovers, old silk and empty retreats.'));
+ }else{
+ body.append(el('p','fj-note',mode==='crew'?'Springtails and isopods tidy the tank. They are not a substitute for feeding.':'Suitable sizes first. Choose a card to confirm the quantity.'));
+ let list=J.PREY.filter(p=>mode==='crew'?p.cleaner:!p.cleaner).sort((a,b)=>Number(sp.some(s=>fits(b,s)))-Number(sp.some(s=>fits(a,s)))||a.len-b.len);
+ const grid=el('div','fj-food-grid');for(const p of list){const suitable=sp.filter(s=>fits(p,s));const card=this.preyCard(p,p.cleaner?null:suitable);card.querySelector('.nm').textContent=p.name;const release=card.onclick;card.onclick=()=>this.fieldMeal(p,suitable,release);card.setAttribute('role','button');card.tabIndex=0;card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();}};if(!p.cleaner&&!suitable.length)card.append(el('div','fj-note',sp.length?'Not a suitable size for the jumpers here':'Add a jumper to check size'));grid.append(card);}body.append(grid);
+ }
+ body.scrollTop=0;this.syncDrawerSpace();
+};
+U.fieldMeal=function(p,suitable,release){
+ const body=$('drawerBody');body.replaceChildren();body.append(button('← Back to '+(p.cleaner?'cleanup crew':'food'),()=>this.fieldCare(p.cleaner?'crew':'feed')));
+ const portrait=this.R.preyPortrait(p.id,112).cloneNode(true);portrait.getContext('2d').drawImage(this.R.preyPortrait(p.id,112),0,0);body.append(portrait,el('h3','fj-meal-title',p.name),el('p','fj-note',p.cleaner?'Cleanup crew · helps tidy leftovers':suitable.length?'Suitable size for '+suitable.map(s=>s.name).join(', '):'This prey is not a suitable size for the jumpers in this tank.'));
+ const label=el('label','fj-quantity','Quantity');const select=el('select');select.id='fjQuantity';for(const n of [...new Set([1,p.count||1,2,5])].sort((a,b)=>a-b)){const o=el('option','',String(n));o.value=n;select.append(o);}select.value=2;label.append(select);body.append(label);
+ const submit=button('',()=>{const n=+select.value,h=this.hab;if(h.prey.length+n>J.PREY_CAP){this.toast('Not enough space for '+n+' more. Release fewer prey.');return;}h.addPrey(p.id,n);J.Audio.sfx('feed');this.game.save();this.toast('Released '+n+' '+p.name+'.');this.fieldCare(p.cleaner?'crew':'feed');},'fj-button primary');
+ const sync=()=>{submit.textContent='Release '+select.value+' '+p.name;submit.disabled=!p.cleaner&&!suitable.length;};select.onchange=sync;sync();body.append(submit,el('p','fj-note',this.hab.livePreyCount()+' live prey already in this home. Maximum '+J.PREY_CAP+'.'));this.syncDrawerSpace();
+};
+U.fieldBuild=function(tab){
+ const tabs=$('drawerTabs');if(tab!=='walls'){
+ const rec=button('Recommended',()=>{this._fjRecommended=true;this.openDrawer('decor');},this._fjRecommended&&tab==='decor'?'on':'');tabs.prepend(rec);
+ }
+ for(const b of tabs.querySelectorAll('button'))if(b.textContent==='Walls')b.textContent='Walls';
+ if(this._fjRecommended&&tab==='decor'){
+ tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===tabs.firstChild));
+ const cards=[...$('drawerBody').querySelectorAll('[data-decor]')];const eligible=cards.filter(c=>!c.hidden&&this.biomeDecorFit(J.DECOR_BY_ID[c.dataset.decor])>0);const chosen=[];const arches=new Set();for(const c of eligible){const d=J.DECOR_BY_ID[c.dataset.decor];if(!arches.has(d.arche)){chosen.push(c);arches.add(d.arche);}if(chosen.length===6)break;}
+ for(const c of cards)c.hidden=!chosen.includes(c);$('drawerBody').querySelectorAll('.sect').forEach(x=>x.hidden=true);$('drawerChips').classList.add('hidden');$('drawerTitle').textContent='A few pieces for this home';
+ }
+ for(const b of [...tabs.querySelectorAll('button')].slice(1)){const fn=b.onclick;b.onclick=()=>{this._fjRecommended=false;fn();};}
+ for(const c of $('drawerBody').querySelectorAll('[data-decor]')){const d=J.DECOR_BY_ID[c.dataset.decor];const pr=c.querySelector('.pr');if(pr)pr.textContent=['branch','tower','tree','vine'].includes(d.arche)?'Climbing':['hide','log'].includes(d.arche)?'Shelter':d.arche==='dish'?'Water':'Decorative';c.tabIndex=0;c.setAttribute('role','button');c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();c.click();}};}
+ const controls=$('drawer').querySelector('.bm-controls');if(controls){const empty=el('p','fj-empty fj-note','No matches. Try a different search or choose Show all.');$('drawerBody').append(empty);const check=()=>{empty.hidden=[...$('drawerBody').querySelectorAll('.card')].some(c=>!c.hidden);};controls.addEventListener('input',check);controls.addEventListener('click',()=>setTimeout(check));check();}
+};
+const init=U.init;U.init=function(){const out=init.apply(this,arguments);this._fjRecommended=true;
+ for(const [id,label]of [['modeRotate','Rotate'],['modeCancel','Cancel'],['modeDone','Place'],['obsPhoto','Photo'],['obsTv','Ambient'],['obsExit','Exit']]){const b=$(id);b.append(el('span','fj-control-label',label));b.setAttribute('aria-label',label);}
+ $('obsExit').childNodes[0].textContent='';$('obsHud').querySelector('.obs-tag').textContent='Following';
+ const wake=()=>{D.body.classList.remove('fj-observe-idle');clearTimeout(this._fjIdle);if(this.obs&&!guided())this._fjIdle=setTimeout(()=>D.body.classList.add('fj-observe-idle'),5000);};for(const ev of ['pointerdown','pointermove','keydown'])D.addEventListener(ev,wake,{passive:true});
+ $('btnMore').onclick=()=>this.moreSheet();return out;};
+const jumpers=U.jumpersSheet;U.jumpersSheet=function(tab){const out=jumpers.call(this,tab||'tank');const first=D.querySelector('#modal .sheet-tabs button');if(first)first.textContent='My Jumpers';if(!guided()){const actions=D.querySelector('#modal .living-actions'),create=actions?.querySelector('#createNewTank');if(create){const footer=el('div','fj-next');footer.append(el('p','fj-note','Need a separate home? Create a tank without replacing this one.'),create);$('modalBody').append(footer);}actions?.remove();}return out;};
+const collection=U.collectionBody;U.collectionBody=function(){const w=collection.apply(this,arguments);if(guided())return w;const locked=[...w.querySelectorAll('.entry.locked')];if(locked.length){const details=el('details','fj-discoveries');details.append(el('summary','',locked.length+' discoveries ahead'));const grid=el('div','grid');locked.forEach(c=>grid.append(c));details.append(grid);w.append(details);const next=locked[0].querySelector('button:disabled');if(next){const note=el('div','fj-next');note.append(el('h4','','Next discovery'),el('p','',next.textContent));w.prepend(note);}}return w;};
+const tankBody=U.tankJumpersBody;U.tankJumpersBody=function(){const w=tankBody.apply(this,arguments);for(const r of w.querySelectorAll('.jrow')){r.querySelector('.jb button:last-child')?.remove();const title=r.querySelector('.jm span');if(title)title.textContent='Fullness';}return w;};
+const journal=U.journalBody;U.journalBody=function(){const w=journal.apply(this,arguments);if(this._jSub==='stories')return w;for(const section of w.querySelectorAll('.jsec')){const grid=section.querySelector('.grid');if(!grid)continue;const unknown=[...grid.querySelectorAll('.locked')];if(unknown.length){const d=el('details','fj-discoveries');d.append(el('summary','',unknown.length+' behaviours to discover'));const more=el('div','grid');unknown.forEach(e=>more.append(e));d.append(more);section.append(d);}const rows=[...grid.children];rows.sort((a,b)=>{const get=e=>{const title=e.querySelector('h4')?.textContent,j=J.JOURNAL.find(j=>j.title===title);return this.game.state.jmeta?.[j?.id]?.d||0;};return get(b)-get(a);}).forEach(e=>grid.append(e));if(!rows.length)grid.remove();}return w;};
+const settings=U.settingsModal;U.settingsModal=function(){settings.apply(this,arguments);const w=$('modalBody').firstElementChild;if(!w)return;let group=null;for(const n of [...w.children]){if(n.tagName==='H4'){const title=n.textContent;group=el('details','fj-settings-group');group.open=title.startsWith('Feel');group.append(el('summary','',title==='Feel & help'?'Comfort & help':title));w.insertBefore(group,n);n.remove();}else if(group)group.append(n);}const advanced=el('details','fj-settings-group');advanced.append(el('summary','','Advanced · reset game'));for(const b of w.querySelectorAll('button'))if(b.textContent.startsWith('Reset game'))advanced.append(b);w.append(advanced);};
+const more=U.moreSheet;U.moreSheet=function(){more.apply(this,arguments);const menu=D.querySelector('#modalBody .menu');if(!menu)return;const sections=[...menu.querySelectorAll('.msect')],world=sections[0],experience=sections[1],game=sections[2],tank=sections[3];if(!world||!game)return;world.querySelector('h4').textContent='Your world';experience.querySelector('h4').textContent='Experience';const learn=el('div','msect');learn.append(el('h4','','Learn'));const advanced=el('details','msect fj-advanced');advanced.append(el('summary','','Advanced'));
+ for(const b of [...game.querySelectorAll('button')]){if(b.textContent.includes('Help'))learn.append(b);else experience.append(b);}for(const b of [...tank.querySelectorAll('button')]){(b.textContent.startsWith('Reset')?advanced:world).append(b);}world.append(button('Title screen',()=>{this.game.save();location.href='index.html';},'mrow'));world.append(button('Export save',()=>this.exportSave(),'mrow'),button('Import save',()=>this.importSave(),'mrow'));game.remove();tank.remove();menu.append(learn,advanced);};
+const observe=U.toggleObserve;U.toggleObserve=function(){const out=observe.apply(this,arguments);if(this.obs){this.updateObs(0);const s=this.hab.spider(this.obs.lock||this.game.selectedId)||this.hab.spiders[0];if(s){$('obsName').textContent=s.name+' · '+J.SPECIES_BY_ID[s.species].name+' · '+J.STAGES[s.stage];$('obsThought').textContent=J.SpiderAI.stateLine(this.hab,s);}}return out;};
+const refresh=U.refreshHeader;U.refreshHeader=function(){const out=refresh.apply(this,arguments);if(!this.game)return out;const care=D.querySelector('#dock [data-dock="care"]');const need=this.hab.spiders.some(s=>(s.hyd??1)<.3||s.sat<.3);care?.classList.toggle('fj-attention',need);care?.setAttribute('aria-label',need?'Care · needs attention':'Care');const active=this.obs?'observe':this._sheet==='menu'?'more':['jumpers','journal'].includes(this._sheet)?'jumpers':!$('drawer').classList.contains('hidden')?(this.tab==='food'?'care':'build'):null;for(const b of D.querySelectorAll('#dock button')){b.classList.toggle('on',b.dataset.dock===active);b.setAttribute('aria-pressed',String(b.dataset.dock===active));}return out;};
+const css=el('style');css.textContent=`
+#app #toasts{left:50%!important;right:auto!important;transform:translateX(-50%)!important;top:calc(70px + var(--sat))!important;bottom:auto!important;background:none!important;max-height:100px;overflow:hidden;padding:0!important;width:min(500px,90vw)!important}#app .toast{box-sizing:border-box;white-space:normal!important;overflow-wrap:anywhere;max-width:100%!important;padding:8px 12px!important;font:14px/1.4 system-ui!important}body.observe #app #toasts,body.photo #app #toasts{display:none!important}
+#app{--fj-cream:#f8f5ec;--fj-olive:#4e603e;--fj-muted:#5d6558;font-family:system-ui,-apple-system,sans-serif}
+#app #dock{background:var(--fj-cream)!important;border:1px solid #c5c8b8!important;border-radius:16px!important;padding:6px!important;gap:4px!important;box-shadow:0 4px 20px #20291818!important;height:76px;box-sizing:border-box}
+#app #dock button{animation:none!important;filter:none!important;border:0!important;border-radius:10px!important;background:transparent!important;color:#454e3f!important;min-height:60px!important;gap:4px!important;flex:1;position:relative}
+#app #dock button span{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;font:600 14px/1.3 system-ui!important;color:inherit!important}
+#app #dock button.on span{text-decoration:none!important}#app #dock button.on{background:#e2e8d7!important;color:#354a2b!important}#app #dock .lens{display:none!important}#app #dock button.on svg{stroke:currentColor!important}#app #dock button svg{width:23px;height:23px;filter:none!important}#app #dock button.obsBtn{transform:none!important;box-shadow:none!important}
+#app #dock .fj-attention:after{content:'';position:absolute;top:7px;right:12px;width:7px;height:7px;background:#a3572b;border-radius:50%}
+#app button,#app input,#app select{font-family:system-ui,sans-serif!important}#app button:focus-visible,#app [role=button]:focus-visible,#app summary:focus-visible{outline:3px solid #2783de!important;outline-offset:2px}
+#app #drawer.fj-build,#app #drawer.fj-care{background:var(--fj-cream)!important;border:1px solid #c5c8b8!important;border-radius:14px!important;display:flex;flex-direction:column;overflow:hidden;padding:16px!important;box-sizing:border-box;max-height:65dvh!important}
+#app #drawer.fj-build .drawer-head,#app #drawer.fj-care .drawer-head{flex-wrap:wrap;gap:8px;flex-shrink:0}
+#app #drawer.fj-build #drawerTabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));flex-basis:100%!important;order:2}#app #drawer.fj-build #drawerTabs button{padding:8px 2px!important;min-width:0;white-space:normal}#app #drawer.fj-build #drawerUndo{margin-left:auto}#app #drawer.fj-build #drawerClose{margin-left:0}#app #drawer.fj-build .drawer-head{align-items:center}#app #drawerTabs{min-width:0;flex-basis:calc(100% - 56px)!important;display:flex;flex-wrap:wrap;gap:4px;flex:1}#app #drawerTabs button{min-height:44px;padding:8px 10px;border-radius:8px!important;font-size:14px!important}
+#app #drawerTabs button.on{background:#e2e8d7!important;color:#354a2b!important}#app #drawerTitle{flex:0 0 100%!important;white-space:normal!important;width:100%;font:14px/1.4 system-ui!important;margin:4px 0 0;order:5}
+#app #drawer.fj-care #drawerUndo{display:none}#app #drawer.fj-care #drawerTabs{flex-wrap:nowrap!important;flex-basis:calc(100% - 44px)!important}#app #drawer.fj-care #drawerTabs button{padding:8px!important;white-space:normal}#app #drawer.fj-care #drawerBody{display:block!important;overflow-y:auto;max-height:none!important;padding:16px 0 8px!important;min-height:0;flex:1}
+#app .fj-intro h3,#app .fj-meal-title{font:26px/1.25 Georgia,serif;margin:8px 0 16px;color:#303b2a}#app .fj-eyebrow{font:600 14px/1.4 system-ui;color:var(--fj-muted)}
+#app .fj-reassure{background:#e8eedf;color:#354a2b;border-radius:8px;padding:14px;font:15px/1.5 system-ui;margin:0 0 16px}
+#app .fj-status{border:1px solid #d7dacb;border-radius:8px;padding:14px;margin:12px 0}#app .fj-status h4{margin:0 0 10px!important;padding:0!important;font:600 17px/1.3 system-ui!important}
+#app .fj-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;font:14px/1.5 system-ui;margin:0}#app .fj-stats dt{color:var(--fj-muted)}#app .fj-stats dd{margin:0;text-align:right;color:#303b2a}
+#app .fj-meta,#app .fj-note{font:14px/1.5 system-ui!important;color:var(--fj-muted)!important}#app .fj-meta{margin:16px 0}#app .fj-care-actions{display:flex;gap:8px}#app .fj-care-actions button{flex:1}
+#app .fj-button{min-height:44px;border:1px solid #b7bfaa!important;border-radius:8px!important;background:#f0f0e5!important;color:#36472c!important;padding:10px 16px;font:600 14px/1.4 system-ui!important}#app #drawer .fj-button.primary,#app .fj-button.primary{background:#4e603e!important;color:white!important;border-color:#4e603e!important}#app .fj-button:disabled{opacity:.5;cursor:not-allowed}
+#app .fj-food-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#app #drawer .fj-food-grid .card,#app #drawer.fj-build .card{background:#f2f1e8!important;border:1px solid #d4d8c8!important;border-radius:10px!important;padding:12px!important;min-width:0;box-sizing:border-box;width:auto!important}
+#app #drawer .card .nm{font:600 14px/1.4 system-ui!important}#app #drawer .card .pr{font:14px/1.4 system-ui!important}#app #drawer .card canvas{max-width:100%;margin:auto;display:block}#app #drawer.fj-build .cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;max-height:none!important;overflow-y:auto;flex:1;min-height:0;padding-bottom:12px!important;align-content:start}#app #drawer .fj-empty{grid-column:1/-1}
+#app #drawer.fj-build .bm-controls{flex-wrap:wrap;margin:12px 0;flex-shrink:0}#app #drawer.fj-build .bm-controls input{flex-basis:100%;width:100%;box-sizing:border-box}#app #drawer.fj-care #drawerBody>canvas{display:block;margin:16px auto;width:112px;height:112px}#app #drawer.fj-build .cards .sect{grid-column:1/-1;min-height:30px!important;margin-top:8px!important;padding:8px!important;box-sizing:border-box}
+#app .fj-quantity{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0;font-size:16px}#app .fj-quantity select{min-width:100px;min-height:44px}
+#app .fj-settings-group{border-bottom:1px solid #d4d8c8;padding:16px 0}#app .fj-settings-group>summary{min-height:44px;cursor:pointer;font:600 16px/1.5 system-ui}#app .fj-discoveries,#app .fj-next{margin:16px 0;padding:16px;border:1px solid #d4d8c8;border-radius:10px}#app .fj-discoveries summary,#app .fj-advanced summary{min-height:44px;cursor:pointer;font:600 16px/1.5 system-ui}#app .fj-discoveries .grid{margin-top:16px}#app .fj-next h4{margin:0 0 8px!important}#app .fj-next p{font:14px/1.5 system-ui;margin:0}
+#app #modal .sheet-tabs button{flex:1;min-height:44px!important;font-size:14px}#app #modal .jrow{padding:16px;border:1px solid #d4d8c8;border-radius:10px;margin-bottom:12px;background:#f2f1e8}#app .jrow .jb{gap:8px}#app #modal .menu{display:grid;grid-template-columns:1fr 1fr;gap:24px}#app .menu .mrow{text-align:left;width:100%;min-height:48px;font-size:15px;border-bottom:1px solid #dfe0d4!important;padding:12px 0}#app .menu .mrow small{font-size:14px;line-height:1.4}#app .fj-advanced{grid-column:1/-1;border-top:1px solid #d4d8c8;padding-top:16px}
+#app #obsHud{padding:12px 16px!important;border:1px solid #c5c8b8!important;border-radius:12px!important;gap:12px;max-width:calc(100% - 32px);box-sizing:border-box}#app #obsHud button{min-width:48px;min-height:48px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px}#app .fj-control-label{font:14px/1.2 system-ui!important}#app #obsHud .obs-tag{font:600 14px/1.3 system-ui;color:#4e603e}#app #obsName{font-size:18px}#app #obsThought{font-size:14px;color:#505a49}body.fj-observe-idle:not(:has(#obsHud:focus-within)) #obsHud button{opacity:.3}#app #obsHud button:hover,#app #obsHud button:focus{opacity:1!important}
+#app #modeBar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:12px!important}#app #modeBar.hidden{display:none!important}#app #modeBar button{min-height:44px;min-width:44px;width:auto;padding:8px!important;display:flex;gap:6px;align-items:center}#app #modeDone{background:#4e603e!important;color:white!important;border-radius:8px!important}
+@media(min-width:821px) and (min-height:501px){#app #drawer.fj-build,#app #drawer.fj-care{left:24px!important;right:auto!important;top:88px!important;bottom:110px!important;width:364px!important;max-height:none!important}#app #drawerTitle{display:block}#app #drawer.fj-build .chips{display:none!important}}
+@media(max-width:820px){#app #drawer.fj-build,#app #drawer.fj-care{left:12px!important;right:12px!important;bottom:calc(98px + var(--sab))!important;max-height:62dvh!important}#app #drawerTitle{display:none}#app #obsHud{flex-wrap:wrap;justify-content:center}#app #obsHud .obs-tag{display:none}#app #obsHud .obs-txt{flex-basis:100%;text-align:center}#app #modal .menu{grid-template-columns:1fr}#app #dock{width:calc(100% - 24px)!important}#app #modeText{flex-basis:100%;text-align:center}#app #drawer.fj-build .chips{display:none!important}}
+@media(max-height:500px) and (orientation:landscape){#app #dock{height:60px!important;width:410px!important}#app #dock button{min-height:48px!important}#app #drawer.fj-build,#app #drawer.fj-care{top:64px!important;bottom:78px!important;left:12px!important;right:auto!important;width:330px!important;max-height:none!important}#app #drawer .fj-intro h3{font-size:22px}#app #obsHud{flex-wrap:nowrap;max-width:90%;padding:6px 12px!important}#app #obsHud .obs-txt{flex-basis:auto;text-align:left}#app #modeBar{bottom:78px!important}#app #modeText{flex-basis:auto}}
+@media(max-height:500px) and (orientation:landscape){
+#app #toasts{left:auto!important;right:12px!important;transform:none!important;width:calc(100vw - 470px)!important;max-width:360px!important}#app #drawer.fj-care .fj-intro{display:none}#app #drawer.fj-care .fj-note{margin:8px 0}#app #drawer.fj-build .chips{display:none!important}#app #drawer.fj-build{width:430px!important}
+#app #drawer.fj-build #drawerUndo,#app #drawer.fj-build #drawerTitle{display:none!important}
+#app #drawer.fj-build #drawerTabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;flex-basis:calc(100% - 44px)!important;order:0;scrollbar-width:thin}
+#app #drawer.fj-build #drawerTabs button{flex:0 0 auto!important;white-space:nowrap!important;padding:8px 10px!important}
+#app #drawer.fj-build .bm-controls{flex-wrap:nowrap!important;gap:4px!important;margin:8px 0!important}
+#app #drawer.fj-build .bm-controls input{flex:1 1 100px!important;min-width:80px!important;width:80px!important}
+#app #drawer.fj-build .bm-controls button{padding:6px!important;white-space:nowrap!important}
+#app #drawer.fj-build .cards{grid-template-columns:repeat(3,minmax(0,1fr))!important;min-height:80px!important}
+#app #drawer.fj-build .card canvas{width:56px!important;height:56px!important}
+}
+@media(prefers-reduced-motion:reduce){#app *{transition:none!important}}
+`;D.head.append(css);
+})(window);
+
+</script>
+<script>
+/* Viewport-aware panel sizing. No changes to simulation state or save format. */
+(function(root){
+'use strict';const J=root.JT,U=J.UI,D=root.document,$=id=>D.getElementById(id);
+const guided=()=>J.FirstHome&&U.game&&J.FirstHome.active(U.game);
+function measure(){const v=root.visualViewport,h=Math.round(v?.height||innerHeight),w=Math.round(v?.width||innerWidth),top=Math.round(v?.offsetTop||0);const s=D.documentElement.style;s.setProperty('--ui-h',h+'px');s.setProperty('--ui-w',w+'px');s.setProperty('--ui-top',top+'px');D.body.classList.toggle('fj-short',h<600);D.body.classList.toggle('fj-wide',w>=1000&&h>=600);D.body.classList.toggle('fj-narrow',w<1000&&h>=600);if(U.game)U.syncDrawerSpace();}
+function labelExpand(){const b=$('fjExpand');if(!b)return;const on=$('drawer').classList.contains('fj-expanded');b.textContent=on?'Compact':'Expand';b.setAttribute('aria-label',on?'Compact panel':'Expand panel');b.setAttribute('aria-expanded',String(on));}
+function decorate(){const d=$('drawer');if(guided()||d.classList.contains('hidden'))return;D.body.classList.add('fj-fluid');$('drawerTitle').textContent=U.tab==='food'?'Care for this home':'Build your home';if(!$('fjExpand')){const b=D.createElement('button');b.id='fjExpand';b.className='txt';b.type='button';b.onclick=()=>{d.classList.toggle('fj-expanded');labelExpand();U.syncDrawerSpace();};$('drawerClose').before(b);}labelExpand();measure();}
+const init=U.init;U.init=function(){const out=init.apply(this,arguments);D.body.classList.add('fj-fluid');measure();root.addEventListener('resize',measure);root.visualViewport?.addEventListener('resize',measure);root.visualViewport?.addEventListener('scroll',measure);return out;};
+const open=U.openDrawer;U.openDrawer=function(){const d=$('drawer');d.querySelector('.fj-actions-footer')?.remove();d.classList.remove('fj-meal');const out=open.apply(this,arguments);decorate();return out;};
+const close=U.closeDrawer;U.closeDrawer=function(){const out=close.apply(this,arguments);$('drawer').classList.remove('fj-expanded');return out;};
+const care=U.fieldCare;U.fieldCare=function(){const d=$('drawer');d.querySelector('.fj-actions-footer')?.remove();d.classList.remove('fj-meal');const out=care.apply(this,arguments);const actions=d.querySelector('.fj-care-actions');if(actions){const footer=D.createElement('div');footer.className='fj-actions-footer';footer.append(actions);d.append(footer);}decorate();return out;};
+const meal=U.fieldMeal;U.fieldMeal=function(){const d=$('drawer');d.querySelector('.fj-actions-footer')?.remove();d.classList.add('fj-meal');const out=meal.apply(this,arguments);const submit=d.querySelector('#drawerBody>.fj-button.primary');if(submit){const footer=D.createElement('div');footer.className='fj-actions-footer';footer.append(submit);d.append(footer);}decorate();return out;};
+const modal=U.openModal;U.openModal=function(title,body,opts){const out=modal.apply(this,arguments);$('modal').dataset.fluidKind=opts?.sheet||(/Settings/.test(title)?'settings':'standard');measure();return out;};
+const css=D.createElement('style');css.textContent=`
+/* One fluid sizing system; the legacy decoration remains, not its fixed widths. */
+body.fj-fluid{--panel-gap:24px;--panel-top:80px;--panel-bottom:calc(108px + var(--sab,0px));--edge-left:max(var(--panel-gap),env(safe-area-inset-left,0px));--edge-right:max(var(--panel-gap),env(safe-area-inset-right,0px));--modal-gap:24px;--modal-top:max(var(--modal-gap),var(--sat,0px));--modal-bottom:max(var(--modal-gap),var(--sab,0px));--modal-h:calc(var(--ui-h,100dvh) - var(--modal-top) - var(--modal-bottom));--panel-width:clamp(480px,40vw,840px)}
+body.fj-fluid #app #drawer.fj-build,body.fj-fluid #app #drawer.fj-care{position:fixed!important;left:var(--edge-left)!important;right:auto!important;top:calc(var(--ui-top,0px) + var(--panel-top))!important;bottom:auto!important;width:var(--panel-width)!important;height:min(960px,calc(var(--ui-h,100dvh) - var(--panel-top) - var(--panel-bottom)))!important;max-height:min(960px,calc(var(--ui-h,100dvh) - var(--panel-top) - var(--panel-bottom)))!important;min-height:0!important;max-width:calc(var(--ui-w,100vw) - var(--edge-left) - var(--edge-right))!important;padding:20px!important;transform:none!important;display:flex;flex-direction:column;gap:0;overflow:hidden!important}
+body.fj-fluid #app #drawer.hidden{display:none!important}
+body.fj-fluid #app #drawer .drawer-head{display:grid!important;grid-template-columns:1fr auto auto auto!important;gap:8px!important;align-items:center;flex:none!important;margin:0!important;padding:0 0 12px!important;min-width:0}
+body.fj-fluid #app #drawer #drawerTitle{display:block!important;grid-row:1;grid-column:1;order:0;min-width:0;margin:0!important;width:auto!important;flex:none!important;font:600 20px/1.3 system-ui!important;color:#35422e!important;overflow-wrap:anywhere}
+body.fj-fluid #app #drawer #drawerUndo{grid-row:1;grid-column:2;display:flex!important;margin:0!important}
+body.fj-fluid #app #drawer.fj-care #drawerUndo{display:none!important}
+body.fj-fluid #app #drawer #fjExpand{grid-row:1;grid-column:3;min-height:44px;min-width:60px;font-size:14px}
+body.fj-fluid #app #drawer #drawerClose{grid-row:1;grid-column:4;min-width:44px;min-height:44px;margin:0!important}
+body.fj-fluid #app #drawer #drawerTabs{grid-row:2;grid-column:1/-1;order:0;display:flex!important;flex-wrap:wrap!important;gap:6px!important;overflow:visible!important;min-width:0;width:100%;flex:none!important;padding:0!important}
+body.fj-fluid #app #drawer #drawerTabs button{flex:1 1 auto!important;white-space:normal!important;min-height:44px!important;padding:8px 12px!important;min-width:0!important}
+body.fj-fluid #app #drawer .chips{display:none!important}
+body.fj-fluid #app #drawer .bm-controls{flex:0 0 auto!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin:12px 0!important;min-width:0}
+body.fj-fluid #app #drawer .bm-controls input{flex:1 1 180px!important;min-width:120px!important;width:auto!important;max-width:100%!important;min-height:44px!important;box-sizing:border-box}
+body.fj-fluid #app #drawer .bm-controls button{flex:0 0 auto;min-height:44px!important;padding:8px 12px!important;white-space:normal!important}
+body.fj-fluid #app #drawer #drawerBody{flex:1 1 0%!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;padding:16px 2px!important;scrollbar-gutter:stable;box-sizing:border-box;scroll-padding:16px}
+body.fj-fluid #app #drawer.fj-build #drawerBody{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(132px,1fr))!important;gap:16px!important;align-content:start!important}
+body.fj-fluid #app #drawer.fj-care #drawerBody{display:block!important}
+body.fj-fluid #app .fj-food-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))!important;gap:16px}
+body.fj-fluid #app #drawer .card{height:auto!important;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:12px!important}
+body.fj-fluid #app #drawer .card canvas{flex:0 0 auto;width:96px!important;height:96px!important;max-width:100%;margin:0 auto 12px!important;object-fit:contain}
+body.fj-fluid #app #drawer .card .nm{font-size:16px!important;line-height:1.4!important;margin:0 0 6px!important;min-height:0!important}
+body.fj-fluid #app #drawer .card .pr{display:block!important;font-size:14px!important;line-height:1.4!important;margin:0!important;min-height:0!important}
+body.fj-fluid #app #drawer .sect{display:block!important;grid-column:1/-1!important;padding:8px 0!important;min-height:30px!important;line-height:1.4!important;margin:0!important}
+body.fj-fluid #app #drawer [hidden]{display:none!important}
+body.fj-fluid #app .fj-actions-footer{flex:0 0 auto;padding:12px 0 0;border-top:1px solid #d4d8c8;background:var(--fj-cream);min-width:0}
+body.fj-fluid #app .fj-actions-footer>.fj-button{width:100%}
+body.fj-fluid #app #drawer .fj-intro h3{font-size:28px;margin:8px 0 16px}
+body.fj-fluid #app #drawer .fj-stats{font-size:16px;grid-template-columns:minmax(90px,1fr) minmax(0,1fr)}
+body.fj-fluid #app #drawer .fj-stats dd{overflow-wrap:anywhere}
+body.fj-fluid #app #drawer.fj-expanded{left:var(--edge-left)!important;width:min(1120px,calc(var(--ui-w,100vw) - var(--edge-left) - var(--edge-right)))!important}
+body.fj-fluid:not(.fj-short) #app #drawer.fj-care:not(.fj-expanded){height:min(720px,calc(var(--ui-h,100dvh) - var(--panel-top) - var(--panel-bottom)))!important}
+/* Dialogs: generous at desktop sizes, bounded to the visual viewport. */
+body.fj-fluid #app #modalWrap{position:fixed!important;inset:auto!important;left:0!important;top:var(--ui-top,0px)!important;width:var(--ui-w,100vw)!important;height:var(--ui-h,100dvh)!important;box-sizing:border-box;padding:var(--modal-top) max(var(--modal-gap),env(safe-area-inset-right,0px)) var(--modal-bottom) max(var(--modal-gap),env(safe-area-inset-left,0px))!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+body.fj-fluid #app #modal{width:min(960px,calc(var(--ui-w,100vw) - 48px))!important;max-width:100%!important;min-height:min(560px,var(--modal-h))!important;max-height:var(--modal-h)!important;box-sizing:border-box;padding:24px 28px 8px!important;display:flex;flex-direction:column;overflow:hidden!important;min-width:0}
+body.fj-fluid #app #modal[data-fluid-kind=jumpers],body.fj-fluid #app #modal[data-fluid-kind=journal],body.fj-fluid #app #modal[data-fluid-kind=menu],body.fj-fluid #app #modal[data-fluid-kind=settings]{width:min(1280px,86vw)!important;min-height:min(640px,var(--modal-h))!important}
+body.fj-fluid #app #modal>#modalBody{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;padding:20px 4px!important;margin:12px 0!important;min-width:0;overflow-wrap:anywhere}
+body.fj-fluid #app #modal>.modal-head,body.fj-fluid #app #modal>.modal-top-controls,body.fj-fluid #app #modal>.modal-bottom-controls{flex:0 0 auto!important;min-width:0}
+body.fj-fluid #app #modal .modal-head{padding-bottom:12px!important;align-items:center}
+body.fj-fluid #app #modal .modal-head h2{min-width:0;overflow-wrap:anywhere}
+body.fj-fluid #app #modal .modal-head button{min-height:44px;min-width:44px}
+body.fj-fluid #app #modal .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))!important;gap:20px!important}
+body.fj-fluid #app #modal .sheet-tabs{display:flex!important;flex-wrap:wrap!important;min-width:0;gap:8px!important}
+body.fj-fluid #app #modal .sheet-tabs button{flex:1 1 0!important;min-width:0!important;min-height:44px!important;padding:8px 12px!important;white-space:normal}
+body.fj-fluid #app #modal .jrow{min-width:0;overflow-wrap:anywhere}
+body.fj-fluid #app #modal .menu{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:32px!important}
+body.fj-fluid #app #modal .msect,body.fj-fluid #app #modal .form-row{min-width:0}
+body.fj-fluid #app #modal button,body.fj-fluid #app #modal select{max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+body.fj-fluid #app #modeBar{max-width:calc(var(--ui-w,100vw) - 24px)!important;box-sizing:border-box}
+body.fj-fluid #app #obsHud{max-width:calc(var(--ui-w,100vw) - 24px)!important}
+/* Narrow/tablet windows: taller sheets, with an explicit full-height option. */
+body.fj-fluid.fj-narrow{--panel-gap:12px;--panel-bottom:calc(100px + var(--sab,0px));--panel-top:max(70px,calc(var(--ui-h,100dvh)*.14));--panel-width:min(880px,calc(var(--ui-w,100vw) - var(--edge-left) - var(--edge-right)))}
+body.fj-fluid.fj-narrow #app #drawer.fj-build,body.fj-fluid.fj-narrow #app #drawer.fj-care{left:max(var(--edge-left),calc((var(--ui-w,100vw) - var(--panel-width))/2))!important;transform:none!important;padding:16px!important}
+body.fj-fluid.fj-narrow #app #drawer.fj-expanded{top:calc(var(--ui-top,0px) + 12px + var(--sat))!important;height:calc(var(--ui-h,100dvh) - 112px - var(--sat) - var(--sab))!important;max-height:calc(var(--ui-h,100dvh) - 112px - var(--sat) - var(--sab))!important;width:var(--panel-width)!important}
+@media(max-width:599px){
+body.fj-fluid{--modal-gap:12px}
+body.fj-fluid #app #modal{width:100%!important;min-height:min(640px,var(--modal-h))!important;max-height:var(--modal-h)!important;padding:16px 16px 4px!important}
+body.fj-fluid #app #modal[data-fluid-kind]{width:100%!important;max-height:var(--modal-h)!important}
+body.fj-fluid #app #modal .grid{grid-template-columns:1fr!important}
+body.fj-fluid #app #modal .menu{grid-template-columns:1fr!important;gap:24px!important}
+body.fj-fluid #app #drawer #drawerUndo{display:none!important}
+body.fj-fluid #app #drawer #drawerTitle{font-size:18px!important}
+body.fj-fluid #app #drawer #drawerTabs{gap:4px!important}
+body.fj-fluid #app #drawer.fj-build #drawerTabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+body.fj-fluid #app #drawer #drawerTabs button{font-size:14px!important;padding:8px 3px!important}
+body.fj-fluid #app #drawer .bm-controls input{flex-basis:100%!important}
+body.fj-fluid #app #drawer.fj-build #drawerBody,body.fj-fluid #app .fj-food-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+body.fj-fluid #app #drawer .card{padding:10px!important}
+body.fj-fluid #app #drawer .card .nm{font-size:14px!important}
+body.fj-fluid #app #drawer .card canvas{width:80px!important;height:80px!important;margin-bottom:8px!important}
+body.fj-fluid #app #drawer .fj-intro h3{font-size:24px!important}
+body.fj-fluid #app #drawer .fj-stats{font-size:14px!important}
+}
+/* Short windows, phone landscape and a reduced visual viewport from a keyboard. */
+body.fj-fluid.fj-short{--panel-gap:12px;--panel-top:56px;--panel-bottom:calc(78px + var(--sab,0px));--panel-width:calc(var(--ui-w,100vw) - var(--edge-left) - var(--edge-right))}
+body.fj-fluid.fj-short #app #drawer.fj-build,body.fj-fluid.fj-short #app #drawer.fj-care{padding:12px!important;width:var(--panel-width)!important;left:var(--edge-left)!important;transform:none!important}
+body.fj-fluid.fj-short #app #drawer .drawer-head{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;padding:0 0 8px!important}
+body.fj-fluid.fj-short #app #drawer #drawerTitle,body.fj-fluid.fj-short #app #drawer #drawerUndo,body.fj-fluid.fj-short #app #drawer #fjExpand{display:none!important}
+body.fj-fluid.fj-short #app #drawer #drawerTabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;flex:1 1 0!important;scrollbar-width:thin;grid-column:auto;min-width:0;gap:4px!important}
+body.fj-fluid.fj-short #app #drawer #drawerTabs button{flex:0 0 auto!important;white-space:nowrap!important;padding:8px 12px!important}
+body.fj-fluid.fj-short #app #drawer #drawerClose{flex:0 0 44px!important}
+body.fj-fluid.fj-short #app #drawer .bm-controls{flex-wrap:nowrap!important;margin:8px 0!important;gap:8px!important}
+body.fj-fluid.fj-short #app #drawer .bm-controls input{flex:1 1 100px!important;min-width:80px!important}
+body.fj-fluid.fj-short #app #drawer .bm-controls button{padding:8px!important}
+body.fj-fluid.fj-short #app #drawer #drawerBody{padding:8px 2px!important}
+body.fj-fluid.fj-short #app #drawer.fj-build #drawerBody,body.fj-fluid.fj-short #app .fj-food-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))!important;gap:12px!important}
+body.fj-fluid.fj-short #app #drawer .card canvas{width:56px!important;height:56px!important;margin-bottom:6px!important}
+body.fj-fluid.fj-short #app #drawer .card .nm{font-size:14px!important}
+body.fj-fluid.fj-short #app #drawer .fj-intro{display:none!important}
+body.fj-fluid.fj-short #app .fj-actions-footer{padding-top:8px}
+body.fj-fluid.fj-short #app #drawer.fj-expanded{top:calc(var(--ui-top,0px) + 12px)!important;height:calc(var(--ui-h,100dvh) - 90px)!important;max-height:calc(var(--ui-h,100dvh) - 90px)!important}
+body.fj-fluid.fj-short{--modal-gap:8px}
+body.fj-fluid.fj-short #app #modal[data-fluid-kind],body.fj-fluid.fj-short #app #modal{width:100%!important;min-height:var(--modal-h)!important;max-height:var(--modal-h)!important;padding:12px 16px 4px!important}
+body.fj-fluid.fj-short #app #modal .modal-head{padding:0 0 8px!important}
+body.fj-fluid.fj-short #app #modal>.modal-top-controls{padding:4px 0!important}
+body.fj-fluid.fj-short #app #modal>#modalBody{padding:8px 2px!important;margin:8px 0!important}
+body.fj-fluid.fj-short #app #modal .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))!important}
+body.fj-fluid.fj-short #app #toasts{display:none!important}
+@media(max-width:599px) and (orientation:portrait){body.fj-fluid.fj-short #app #drawer .bm-controls{flex-wrap:wrap!important}body.fj-fluid.fj-short #app #drawer .bm-controls input{flex-basis:100%!important}body.fj-fluid.fj-short #app #drawer .bm-controls button{flex:1 1 0!important;min-width:0!important;padding:8px 4px!important}}
+body.fj-fluid.fj-short #app #drawer.fj-meal #drawerBody{display:grid!important;grid-template-columns:max-content minmax(0,1fr);gap:6px 12px!important;align-content:start;align-items:center}
+body.fj-fluid.fj-short #app #drawer.fj-meal #drawerBody>canvas{display:none!important}
+body.fj-fluid.fj-short #app #drawer.fj-meal #drawerBody>button{grid-row:1;grid-column:1;min-height:44px}
+body.fj-fluid.fj-short #app #drawer.fj-meal .fj-meal-title{grid-row:1;grid-column:2;font-size:22px!important;margin:0!important}
+body.fj-fluid.fj-short #app #drawer.fj-meal .fj-quantity{grid-row:2;grid-column:1/-1;margin:0!important}
+body.fj-fluid.fj-short #app #drawer.fj-meal .fj-note{grid-column:1/-1;margin:0!important}
+@media(min-width:500px){
+body.fj-fluid.fj-short #app #drawer.fj-meal #drawerBody{grid-template-columns:max-content minmax(0,1fr) 160px}
+body.fj-fluid.fj-short #app #drawer.fj-meal .fj-quantity{grid-row:1/4;grid-column:3;display:flex;flex-direction:column;gap:4px;align-items:stretch}
+body.fj-fluid.fj-short #app #drawer.fj-meal .fj-note{grid-column:1/3}
+}
+@media(max-height:360px){
+body.fj-fluid.fj-short{--panel-top:8px}
+body.fj-fluid.fj-short #app #drawer.fj-build #drawerBody,body.fj-fluid.fj-short #app .fj-food-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))!important}
+body.fj-fluid.fj-short #app #drawer .card{display:grid!important;grid-template-columns:44px minmax(0,1fr);column-gap:8px;align-items:center;padding:8px!important}
+body.fj-fluid.fj-short #app #drawer .card canvas{grid-column:1;grid-row:1/3;width:44px!important;height:44px!important;margin:0!important}
+body.fj-fluid.fj-short #app #drawer .card .nm{grid-column:2;grid-row:1;margin:0!important;line-height:1.3!important}
+body.fj-fluid.fj-short #app #drawer .card .pr{grid-column:2;grid-row:2;line-height:1.3!important}
+}
+@media(min-width:1600px){body.fj-fluid #app #drawer .bm-controls input,body.fj-fluid #app #drawer #drawerTabs button{font-size:16px!important}}
+`;D.head.append(css);
+})(window);
+
+</script>
+<script>
 /* Jumper Terrarium — boot + main loop (fixed-step simulation, variable-rate rendering). */
 (function (root) {
   'use strict';
@@ -17085,10 +17826,10 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
     const game = new JT.Game();
     // The title preview is disposable: it never reads or writes the player's save.
     if (preview) game.save = () => {};
-    if (freshEntry && !preview) { const old = localStorage.getItem('jumperTerrarium.v14.save'); if (old) localStorage.setItem('jumperTerrarium.v14.save.before-new', old); }
+    if (freshEntry && !preview) JT.FirstHome.backup(game);
     let restored = false; try { if (!preview && !freshEntry) restored = game.load(); } catch (e) { console.error(e); }
 
-    if (!restored) game.newGame();
+    if (!restored) { if (preview) game.newGame(); else game.startFirstHome(); }
     if (preview) game.state.biomeSetup = false;
     game._biomeOnboard = !restored && !preview;
     if (game._biomeOnboard) game.state.biomeSetup = true;
@@ -17134,7 +17875,7 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
       if (AT.on) { try { AT.frame(dt); } catch (e) { console.error('attract', e); AT.stop(); } requestAnimationFrame(frame); return; }
       acc += dt; let n = 0;
       if (Replay.active) { acc = 0; try { Replay.step(dt); } catch (e) { console.error('replay', e); Replay.stop(); } } // paused while a slow-motion replay plays
-      else if (JT.UI.photo || JT.UI.tankSetup) acc = 0; // v11 photo mode: time stands still
+      else if (JT.UI.photo || JT.UI.tankSetup || JT.FirstHome.paused(game)) acc = 0; // v11 photo mode: time stands still
       else try { while (acc >= STEP && n < 4) { snapPrev(); game.tick(STEP); Replay.record(game); acc -= STEP; n++; } if (n >= 4) acc = 0; } catch (e) { console.error('sim', e); acc = 0; }
       try { JT.UI.update(dt); JT.Audio.update(dt, game); } catch (e) { console.error('ui', e); }
       // Smooth 60 fps pacing target
@@ -17264,6 +18005,7 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
       const vis = (id) => { const e = document.getElementById(id); return !!e && !e.classList.contains('hidden'); };
       const closeTop = () => {
         const sp = document.getElementById('splash'); if (sp && !sp.classList.contains('gone')) return false;
+        if (JT.FirstHome.active(U.game) && JT.FirstHome.back()) return true;
         if (Replay.active) { Replay.stop(); return true; }
         if (U.photo) { U.photoMode(false); return true; }
         if (vis('tip')) { U.hideTip(false); return true; }

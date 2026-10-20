@@ -1,3 +1,9 @@
+> **Responsive sizing v2:** desktop panels are wider, mobile sheets are taller and expandable, and Care actions stay pinned. See `UI_REFRESH_GUIDE.md` and `validation/RESPONSIVE_SIZING_TEST_REPORT.md`.
+
+> **UI refresh:** see `UI_REFRESH_GUIDE.md` for the Living Field Journal navigation, care, build, observation and collection changes. Current checks are in `validation/UI_REFRESH_TEST_REPORT.md`.
+
+> **New Game update:** see `NEW_GAME_GUIDE.md` for the guided First Home flow, save behavior, controls and source. Current release checks are summarised in `validation/NEW_GAME_TEST_REPORT.md`.
+
 > **Natural-edge rework:** see `NATURAL_EDGES_README.md` for the seeded outlines, embedded banks, preserved gameplay boundaries, and build instructions. Current release evidence is in `validation/natural-edges/`; older reports elsewhere are historical.
 
 # Terrarium — Optimized Miniature Worlds

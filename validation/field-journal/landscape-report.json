@@ -1,0 +1,11 @@
+{
+  "result": "PASS",
+  "checks": [
+    "landscape care",
+    "landscape build",
+    "landscape plants",
+    "landscape meal",
+    "landscape correct dock state"
+  ],
+  "errors": []
+}

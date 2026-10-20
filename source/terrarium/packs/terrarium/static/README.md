@@ -1,3 +1,5 @@
+> **New Game update:** see `NEW_GAME_GUIDE.md` for the guided First Home flow, save behavior, controls and source. Current release checks are summarised in `validation/NEW_GAME_TEST_REPORT.md`.
+
 > **Natural-edge rework:** see `NATURAL_EDGES_README.md` for the seeded outlines, embedded banks, preserved gameplay boundaries, and build instructions. Current release evidence is in `validation/natural-edges/`; older reports elsewhere are historical.
 
 # Terrarium — Optimized Miniature Worlds

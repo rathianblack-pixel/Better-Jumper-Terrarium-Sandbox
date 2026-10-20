@@ -1,3 +1,19 @@
+# First Home / New Game tests
+
+The New Game start is intentionally empty and action-driven now. Run these dedicated tests against the hosted updated build:
+
+```sh
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node first-home.test.js
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node first-home-edges.test.js
+GAME_URL=http://localhost:8000 CHROMIUM=/path/to/chromium node first-home-matrix.test.js
+```
+
+The first suite uses the real controls on desktop, phone portrait, and phone landscape. The edge suite checks legacy saves, backup/cancellation, save-backed stage/name/tank choices, pause/away behavior, rejected placement, repeated activation, skipping, ordinary additional tanks, keyboard focus and reduced motion. Reports and screenshots default to the release's `validation/first-home/` folder; `TEST_OUTPUT` overrides it.
+
+`regression.js` and `living-tanks.test.js` now create their initial gameplay fixture through the new wizard and explicit Skip/Finish controls. Selected other gameplay suites explicitly finish First Home in their setup before testing unrelated systems. The old additional-tank wizard remains covered separately.
+
+The sections below describe the existing test suites. Earlier packaged output folders are historical; consult the top-level `validation/NEW_GAME_TEST_REPORT.md` for checks actually rerun for this release.
+
 # Browser regression tests
 
 Requires Node, Playwright and Chromium. The game itself does not require these tools.

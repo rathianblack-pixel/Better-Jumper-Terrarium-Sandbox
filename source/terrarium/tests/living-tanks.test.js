@@ -8,7 +8,7 @@ const BASE=process.env.GAME_URL||'http://localhost:8000',OUT=process.env.TEST_OU
  const ctx=await browser.newContext({viewport}),p=await ctx.newPage();p.on('pageerror',e=>report.errors.push(name+': '+e.message));p.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))report.errors.push(name+': '+m.text())});
  await p.goto(BASE+'/jumper.html');await p.waitForFunction(()=>window.JT?.app);await p.waitForTimeout(150);
  await p.evaluate(()=>{JT.app.settings.tips=false;JT.UI._tipQ=[];JT.UI.hideTip();JT.app.settings.quality='low';JT.app.R.resize()});
- await p.getByRole('button',{name:'Continue',exact:true}).click();await p.getByRole('button',{name:'Continue',exact:true}).click();await p.getByRole('button',{name:'Create Tank & Enter',exact:true}).click();
+ await p.click('#fhNext');await p.click('#fhNext');await p.click('#fhNext');await p.click('#fhSkip');await p.click('#fhFinishSetup');await p.waitForTimeout(500);
  assert(await p.locator('#spiderPanel').isHidden(),'creation does not force a detail panel');
  await p.evaluate(()=>JT.UI.jumpersSheet());
  assert.equal(await p.locator('#createNewTank').count(),1);assert(await p.locator('#createNewTank').isVisible());
