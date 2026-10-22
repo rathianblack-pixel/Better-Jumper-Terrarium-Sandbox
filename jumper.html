@@ -3834,7 +3834,7 @@ body.title-preview #app{pointer-events:none}
     const used = usedNames(); const free = JT.NAMES.filter(n => !used.has(n));
     const pos = o.pos || hab.randomFloorPoint();
     const sp = {
-      id: JT.newId('s'), species: S.id, name: o.name || (free.length ? R.pick(free) : R.pick(JT.NAMES) + ' ' + (2 + Math.floor(R() * 8))),
+      id: JT.newId('s'), sex: o.sex === 'male' ? 'male' : 'female', species: S.id, name: o.name || (free.length ? R.pick(free) : R.pick(JT.NAMES) + ' ' + (2 + Math.floor(R() * 8))),
       seed: (R() * 1e9) | 0, stage: o.stage != null ? o.stage : 1, meals: o.meals || Math.floor(R() * 2), molts: 0,
       ageDays: 0, adultDays: 0, sat: o.sat != null ? o.sat : 0.7, hyd: 0.85, catches: 0, soft: 0,
       traits: { stealth: jit(S.traits.stealth, .12), patience: jit(S.traits.patience, .15), jump: jit(S.traits.jump, .1), bold: jit(S.traits.bold, .15), tactics: jit(S.traits.tactics, .12) },
@@ -9026,9 +9026,9 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         ctx.stroke();
     }
     D.spider = function(ctx, V, sp, fr, o) {
-        const S = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0], pal0 = o.palette || S.pal, L = o.len;
+        const base = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0], S = JT.Sex ? JT.Sex.species(base, sp) : base, pal0 = o.palette || S.pal, L = o.len;
         let {f: f, s: s, n: n} = fr, p = fr.p;
-        const t = o.time || 0, LK = S.look || {}, gait = LK.gait, gp = sp._gPause || 0, RG = JT.Gait ? JT.Gait.rig(sp, o, fr, L, "spider") : null, HD = RG ? JT.Gait.heading(RG, fr, !(o.airborne || o.curled || o.tucked || o.hug || o.meal || sp.hold || "pounce" === sp.state || o.hang)) : null;
+        const t = o.time || 0, LK = JT.Sex ? JT.Sex.look(S, sp) : S.look || {}, gait = LK.gait, gp = sp._gPause || 0, RG = JT.Gait ? JT.Gait.rig(sp, o, fr, L, "spider") : null, HD = RG ? JT.Gait.heading(RG, fr, !(o.airborne || o.curled || o.tucked || o.hug || o.meal || sp.hold || "pounce" === sp.state || o.hang)) : null;
         HD && (f = HD.f, s = HD.s);
         const hdA = HD ? HD.a : 0;
         if (!(o.thumb || o.airborne || o.curled || o.tucked || o.hug || o.meal)) {
@@ -9064,7 +9064,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             const sgn = M.dot(sg, V.toCam) >= 0 ? 1 : -1, ra = .3 * o.tilt * sgn, cr = Math.cos(ra), sr = Math.sin(ra), sg2 = M.norm(M.add(M.mul(sg, cr), M.mul(n, sr)));
             nh = M.norm(M.sub(M.mul(n, cr), M.mul(sg, sr))), sg = sg2;
         }
-        const stalk = [ "stalk", "creep", "crouch" ].includes(sp.state) ? .22 : "display" === sp.state ? .35 : .05, parts = [], bodyCol = (c, belly) => under ? mix(c, belly, .75) : c, cL = ant ? 1 : LK.cL || 1, cW = ant ? 1 : LK.cW || 1, cH = ant ? 1 : LK.cH || 1, dF = .375 * (cL - 1) * L, cc = W((.13 + .125 * (cL - 1)) * L, 0, h0 + L * (ant ? .06 : .1 * cH)), cph = Part(cc, M.mul(fg, L * (ant ? .2 : .25 * cL)), M.mul(sg, L * (ant ? .115 : .2 * cW)), M.mul(nh, L * (ant ? .1 : .15 * cH)));
+        const stalk = [ "stalk", "creep", "crouch" ].includes(sp.state) ? .22 : "display" === sp.state ? .35 : .05, parts = [], bodyCol = (c, belly) => under ? mix(c, belly, .75) : c, cL = LK.cL || 1, cW = LK.cW || 1, cH = LK.cH || 1, dF = .375 * (cL - 1) * L, cc = W((.13 + .125 * (cL - 1)) * L, 0, h0 + L * (ant ? .06 : .1 * cH)), cph = Part(cc, M.mul(fg, L * (ant ? .2 : .25) * cL), M.mul(sg, L * (ant ? .115 : .2) * cW), M.mul(nh, L * (ant ? .1 : .15) * cH));
         if (parts.push({
             d: V.depth(cc),
             f: () => {
@@ -9110,6 +9110,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                         ctx.stroke();
                     }
                     const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * .55)), shine = big ? .95 : .75;
+                    if(big&&rr>5){ctx.strokeStyle='rgba(172,201,189,.32)';ctx.lineWidth=Math.max(.45,rr*.055);ctx.beginPath();ctx.arc(P[0],P[1]+rr*.03,rr*.80,.15,2.65);ctx.stroke();}
                     ctx.fillStyle = "rgba(255,255,255," + shine + ")", ctx.beginPath(), 
                     ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(.5, rr * (big ? .32 : .35)), 0, 6.283), ctx.fill();
                     if (big && rr > 2.5) {
@@ -9172,7 +9173,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
         let af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta)));
         const an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
         spin && (af = M.norm(M.add(af, M.mul(s, .16 * spw)))), RG && Math.abs(RG.ay) > .001 && (af = M.norm(M.add(af, M.mul(s, .8 * -RG.ay))));
-        const aL = ant ? 1 : LK.aL || 1, aW = ant ? 1 : LK.aW || 1, aH = ant ? 1 : LK.aH || 1, ac = M.add(W(ant ? -.33 * L : -(.27 + .24 * (aL - 1) + .125 * (cL - 1)) * L, 0, h0 + .09 * L * (.6 + .4 * aH)), M.add(M.mul(an, .02 * L), M.mul(s, RG ? .8 * -RG.ay * L * .26 : 0))), abd = Part(ac, M.mul(af, L * (ant ? .23 : .3 * aL) * (.95 + .05 * fat)), M.mul(s, L * (ant ? .13 : .22 * aW) * fat), M.mul(an, L * (ant ? .13 : .19 * aH) * fat));
+        const aL = LK.aL || 1, aW = LK.aW || 1, aH = LK.aH || 1, ac = M.add(W(ant ? -(.33 + .15 * (aL - 1)) * L : -(.27 + .24 * (aL - 1) + .125 * (cL - 1)) * L, 0, h0 + .09 * L * (.6 + .4 * aH)), M.add(M.mul(an, .02 * L), M.mul(s, RG ? .8 * -RG.ay * L * .26 : 0))), abd = Part(ac, M.mul(af, L * (ant ? .23 : .3) * aL * (.95 + .05 * fat)), M.mul(s, L * (ant ? .13 : .22) * aW * fat), M.mul(an, L * (ant ? .13 : .19) * aH * fat));
         if (parts.push({
             d: V.depth(ac),
             f: () => {
@@ -9243,12 +9244,12 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             const ck = LK.chel || 1, chc = M.add(W(.33 * L + dF, sd * L * .055 * Math.sqrt(ck), h0 + .02 * L), M.mul(fg, .04 * L * ck));
             parts.push({
                 d: V.depth(chc) - .01,
-                f: () => blob(ctx, V, chc, M.mul(fg, .05 * L * ck), M.mul(sg, .045 * L * Math.sqrt(ck)), M.mul(n, .07 * L * ck), pal.chel, {
+                f: () => { if (LK.fang > 0) { const tip = M.add(chc, M.add(M.mul(fg, .075 * L * ck), M.mul(n, -.09 * L * ck))); limb(ctx, V, [chc, tip, M.add(tip, M.mul(sg, -sd * .035 * L))], [.017 * L * LK.fang, .008 * L * LK.fang], pal.chel, lod, null); } return blob(ctx, V, chc, M.mul(fg, .05 * L * ck), M.mul(sg, .045 * L * Math.sqrt(ck)), M.mul(n, .07 * L * ck), pal.chel, {
                     lod: lod,
                     gloss: 1,
                     sheen: LK.irid || 4,
                     time: t
-                })
+                }); }
             });
             let pw = ("groom" === sp.state || wipe > .2 ? .04 * Math.sin(12 * t + sd) : .01 * Math.sin(3 * t + 2 * sd)) * L, fl = flick * Math.sin(9.4 * flick + .8 * sd) * L * .06;
             if ("flag" === LK.palp && (pw += gp * Math.sin(8 * t + 1.3 * sd) * L * .05), "semaphore" === sp.state && (fl += .1 * L * Math.sin(7 * t + (sd > 0 ? 0 : Math.PI)), 
@@ -9267,7 +9268,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                         gloss: .3
                     });
                     if (0 === lod) return;
-                    const r = "pompom" === pk ? .065 : "fluffy" === pk ? .045 : .035;
+                    const r = ("pompom" === pk ? .065 : "fluffy" === pk ? .045 : .035) * (LK.palpSize || 1);
                     blob(ctx, V, c, M.mul(fg, L * r), M.mul(sg, L * r * .88), M.mul(n, L * r * .88), pc, {
                         lod: lod,
                         ink: "pompom" === pk
@@ -10149,8 +10150,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
     const c1 = pr.col2 ? rgb(pr.col2) : mixc(c0, [0.95, 0.97, 0.7], 0.12); const cb = M.mul(c0, 0.8); const vein = pr.vein ? rgb(pr.vein) : shade(pr.col, 0.22);
     const old = !litter && !pr.variegate && !pr.stripe && L > 2.5 && h3 < 0.06; const YEL = [0.8, 0.68, 0.26], BRN = [0.48, 0.32, 0.15]; const vg = pr.variegate ? rgb(pr.variegate) : null;
     const S = split ? 12 : L > 8 ? 9 : L > 5 ? 7 : L > 2.5 ? 5 : 3; const SS = split ? [-1, -0.42, 0, 0.42, 1] : L > 5 ? [-1, -0.5, 0, 0.5, 1] : [-1, 0, 1];
-    const cup = Math.min(0.7, L * 0.05) * (litter ? 0.5 : 1); const f = TWO + (pr.stripe ? PAT.bands : 0);
-    const bend = M.mul(nrm, -L * (litter ? 0.03 : 0.05 + h1 * 0.09)); const ub = M.norm(A), bb = M.len(Bv) > 1e-6 ? M.norm(Bv) : perp(ub); const twist = (h2 - 0.5) * 0.14 * L;
+    const cup = Math.min(0.85, L * 0.065) * (litter ? 0.5 : 1); const f = TWO + (pr.stripe ? PAT.bands : 0);
+    const bend = M.mul(nrm, -L * (litter ? 0.03 : 0.065 + h1 * 0.095)); const ub = M.norm(A), bb = M.len(Bv) > 1e-6 ? M.norm(Bv) : perp(ub); const twist = (h2 - 0.5) * 0.17 * L;
     const wave = L > 9 && !litter ? 0.035 * L : 0;
     const at = (u, sd) => { const w = wfn(u); const p = M.add(M.add(o0, M.mul(A, u)), M.add(M.mul(bend, u * u), M.mul(bb, twist * u * u)));
       const lift = cup * w * (sd * sd - 0.35) + (Math.abs(sd) > 0.9 ? wave * Math.sin(u * 11 + h1 * 6) : 0); return M.add(M.add(p, M.mul(Bv, w * sd)), M.mul(nrm, lift)); };
@@ -10266,10 +10267,13 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
       try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); }finally{mb.wind=null;}
     }
     try { dress(mb, g); } catch (e) { if (JT.DEV) console.warn('dress', e); }
+    // Tiny seeded material variation per furnishing; no extra meshes, uniforms or save fields.
+    const tint=hh(JT.hashStr(String(g.id)),2.1,7.3)-.5;
+    for(let i=0;i<mb.v.length;i+=STRIDE)for(const off of [9,12]){mb.v[i+off]*=1+tint*.045;mb.v[i+off+1]*=1+tint*.028;mb.v[i+off+2]*=1-tint*.025;}
     const verts = new Float32Array(mb.v); const idx = mb.n > 65000 ? new Uint32Array(mb.i) : new Uint16Array(mb.i);
     // ink strokes -> ribbon vertices (a, b, side/end, width, alpha, colour, sway a/b)
     const L = mb.lines; const lv = new Float32Array(L.length * 4 * 15); const li = (L.length * 4 > 65000 ? new Uint32Array(L.length * 6) : new Uint16Array(L.length * 6)); let o = 0;
-    L.forEach((s, i) => { const [a, b, w, al, col, windA=0, windB=0] = s; const c = col || [0.16, 0.12, 0.09]; // aSw uses low [0,2) for impulse weight, high bits for 8-bit wind weight.
+    L.forEach((s, i) => { const [a, b, w, al, col, windA=0, windB=0] = s; const c = col || [0.22, 0.25, 0.16]; // aSw uses low [0,2) for impulse weight, high bits for 8-bit wind weight.
       const wa = mb.sw(a)+Math.round(windA*255)*2, wb = mb.sw(b)+Math.round(windB*255)*2;
       for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 1]]) { lv.set([a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, c[0], c[1], c[2], wa, wb], o); o += 15; }
       const k = i * 4; li.set([k, k + 1, k + 2, k, k + 2, k + 3], i * 6); });
@@ -10285,7 +10289,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
 <script>
 !function() {
     "use strict";
-    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<uGnd.y-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; vec3 inkT=mix(uInk, vec3(0.34,0.22,0.16), 0.38); gl_FragColor=vec4(inkT*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*4.0+bay4(gl_FragCoord.xy))/4.0,0.0,1.0); } float lit=0.62+(0.38*dl+0.07*smoothstep(0.7,0.95,ndl))*uKD+0.19*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5){ col=mix(col, vec3(0.38,0.76,0.24), 0.28); col*=1.16; }\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  float rim=pow(fr, 2.6); vec3 rimCol=mix(vec3(1.0,0.84,0.54), vec3(0.55,0.72,1.0), uNight); col+=rimCol*rim*0.16*uKD; float washEdge=smoothstep(0.46,0.95,fr); col=mix(col, col*0.82+vec3(0.04,0.02,0.01), washEdge*0.32*(1.0-uHD));\n  col*=0.9+0.2*nz.r;\n  col=mix(col, vec3(0.95,0.91,0.82), 0.07*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); float mossCreep=(1.0-smoothstep(0.3,3.6+nz.g*1.6,hb))*smoothstep(-0.15,0.45,n.y)*0.46; col=mix(col, vec3(0.32,0.48,0.18), mossCreep*step(uGnd.y,0.02)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode; uniform vec2 uFloor;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec2 uv=vWP.xz/uFloor; float edge=min(min(uv.x,1.0-uv.x),min(uv.y,1.0-uv.y)); vec4 s=texture2D(uTex,uv)*smoothstep(0.0,0.025,edge); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.02,0.90,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); float h1=step(1.1,mod(gl_FragCoord.x+gl_FragCoord.y,4.0))*0.75+0.25; float h2=step(1.1,mod(gl_FragCoord.x-gl_FragCoord.y,4.0))*0.75+0.25; float hatch=mix(1.0,h1,smoothstep(0.18,0.58,e)); hatch=mix(hatch,h1*h2,smoothstep(0.55,0.88,e)); c=c*hatch; o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=floor(c*2.0+d*0.999)*0.5; o=floor(o*2.0+d*0.999)*0.5; }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float nib=0.76+0.48*abs(dot(nr,vec2(-0.7071,0.7071))); float w=max(aW*uLW*nib, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
+    const JT = ("undefined" != typeof window ? window : globalThis).JT, M = JT.M, G = JT.G, GM = JT.GLMesh, PROJ = "\nuniform vec3 uC; uniform vec4 uRot; uniform vec4 uScr; uniform vec2 uRes;\nvec3 proj(vec3 p){ vec3 d=p-uC; float xr=d.x*uRot.x-d.z*uRot.y; float zr=d.x*uRot.y+d.z*uRot.x; return vec3(uScr.y+xr*uScr.x, uScr.z-(d.y*uRot.z+zr*uRot.w)*uScr.x, zr*uRot.z-d.y*uRot.w); }\nvec2 projd(vec3 v){ float xr=v.x*uRot.x-v.z*uRot.y; float zr=v.x*uRot.y+v.z*uRot.x; return vec2(xr, -(v.y*uRot.z+zr*uRot.w)); }\nvec4 clip(vec3 q){ return vec4(q.x/uRes.x*2.0-1.0, 1.0-q.y/uRes.y*2.0, clamp(q.z*0.0011, -0.999, 0.999), 1.0); }", LAMPS = "\nuniform vec4 uLamp[4]; uniform float uNL; uniform vec3 uGrade; uniform float uNight;\nvec3 lampLight(vec3 wp){ vec3 s=vec3(0.0); for(int i=0;i<4;i++){ if(float(i)<uNL){ vec3 d=wp-uLamp[i].xyz; float a=clamp(1.0-length(d)/uLamp[i].w,0.0,1.0); s+=vec3(a*a); } } return s*vec3(1.0,0.72,0.42); }\nvec3 grade(vec3 c, vec3 wp){ return c*uGrade + c*lampLight(wp)*(0.25+1.05*uNight); }", MESH_VS = `\nattribute vec3 aP; attribute vec3 aN; attribute vec3 aO; attribute vec3 aC; attribute vec3 aC2; attribute float aW; attribute float aF;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uOut; uniform float uPass; uniform float uBoil; ${PROJ}\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nvoid main(){ vec3 p=aP+uSway*aW+uWind*(fract(aF)*4.0); vec3 q=proj(p);\n  if(uPass>0.5 && uPass<1.5){ float wob=0.78+0.24*(sin(p.x*0.9+p.y*1.3)+sin(p.z*1.1-p.y*0.7)); if(uBoil>0.5) wob=wob*1.15+0.32*sin(dot(p,vec3(1.7,1.3,2.1))+uBoil*2.39); q.xy+=projd(aO)*uOut*wob; q.z+=1.8; }\n  vN=aN; vC=aC; vC2=aC2; vWP=p; vF=aF; gl_Position=clip(q); }`, MESH_FS = `\nprecision highp float;\nvarying vec3 vN; varying vec3 vC; varying vec3 vC2; varying vec3 vWP; varying float vF;\nuniform vec3 uL; uniform vec3 uKeyC; uniform vec3 uAmbC; uniform float uKD; uniform vec3 uToCam; uniform sampler2D uNoise; uniform float uPass; uniform vec3 uInk; uniform float uAlpha; uniform vec4 uGhost; uniform vec3 uSoil; uniform vec2 uGnd; uniform float uHD; ${LAMPS}\nfloat b2(vec2 q){ return mod(2.0*q.x+3.0*q.y,4.0); }\nfloat bay4(vec2 fc){ vec2 p=mod(floor(fc),4.0); return (4.0*b2(mod(p,2.0))+b2(floor(p/2.0))+0.5)/16.0; }\n// v28 materials: world-space procedural surfaces (cork fissures, layered stone, wood grain, blocks, moss cushions, bark,\n// sandstone, leaf litter, root tangles). Side faces blend two projections so tubes and rounded rocks have no seams.\nfloat hs1(vec2 p){ p=fract(p*vec2(127.13,311.71)); p+=dot(p,p+34.53); return fract(p.x*p.y); }\nfloat tn(vec2 p){ return texture2D(uNoise,p).r; }\nuniform sampler2D uCell; uniform float uMatQ;\nvec3 cel(vec2 p){ vec3 t=texture2D(uCell, p*0.0625).rgb; return vec3(t.r*1.275, t.g, t.b); }\n// x: shade multiplier, y: mix toward the mark (crevice) colour, z: tint mix (lichen / moss / pale), w: tint id\nvec4 matAt(float mt, vec2 q, float up, float y){\n  float sh=1.0, dk=0.0, tt=0.0, ti=0.0;\n  if(mt<1.5){ // cork: deep vertical fissures between raised plates\n    float w=tn(vec2(q.x*0.021,q.y*0.006))*7.0+tn(q*0.05+0.3)*1.6; float r=abs(sin(q.x*0.42+w));\n    float brk=smoothstep(0.35,0.62,tn(vec2(q.x*0.09,q.y*0.035)+0.61));\n    dk=(1.0-smoothstep(0.0,0.32,r))*(0.55+0.45*brk); sh=0.92+0.2*smoothstep(0.55,1.0,r)+0.1*tn(q*0.16);\n    tt=smoothstep(0.66,0.8,tn(q*0.028+0.17))*0.35*up; ti=0.0; }\n  else if(mt<2.5){ // stone: soft strata, plates split by thin cracks, lichen on the tops\n    vec3 c=cel(q*0.075+vec2(0.0,y*0.02)); float st=sin(y*0.75+tn(q*0.02)*5.0);\n    sh=0.9+0.12*st+0.12*(c.z-0.5)+0.1*tn(q*0.2)-0.08*smoothstep(0.35,0.9,c.x);\n    dk=(1.0-smoothstep(0.015,0.06,c.y))*0.75+smoothstep(0.7,0.76,tn(q*0.31))*0.35;\n    tt=smoothstep(0.58,0.72,tn(q*0.045+0.5))*(0.25+0.65*up); ti=0.0; }\n  else if(mt<3.5){ // wood grain: long wavy lines, the odd knot, pale silvered ridges\n    float w=tn(vec2(q.x*0.012,q.y*0.05))*9.0; float g=sin(q.y*2.1+w); vec3 c=cel(vec2(q.x*0.06,q.y*0.22));\n    float knot=1.0-smoothstep(0.08,0.2,c.x); knot*=step(0.82,c.z);\n    dk=smoothstep(0.75,0.98,g)*0.55+knot*0.7+(1.0-smoothstep(0.0,0.05,abs(sin(q.y*0.37+w*0.4))))*0.4;\n    sh=0.94+0.12*smoothstep(-0.6,0.6,sin(q.y*0.9+w*0.7)); }\n  else if(mt<4.5){ // blocks: rows of cut stone with mortar, moss in the joints\n    float row=floor(y/4.6); float bx=q.x/7.5+0.5*mod(row,2.0)+hs1(vec2(row,3.0))*0.3; float cx=floor(bx);\n    float ex=min(fract(bx),1.0-fract(bx))*7.5, ey=min(fract(y/4.6),1.0-fract(y/4.6))*4.6; float e=min(ex,ey);\n    float mo=1.0-smoothstep(0.25,0.55,e); float id=hs1(vec2(cx,row));\n    sh=0.86+0.22*id+0.08*tn(q*0.18)-0.1*(1.0-smoothstep(0.4,1.6,e)); dk=mo*0.8+smoothstep(0.72,0.8,tn(q*0.35))*0.3;\n    tt=mo*smoothstep(0.45,0.65,tn(q*0.06))*0.9+smoothstep(0.62,0.75,tn(q*0.04+0.2))*0.4*up; ti=1.0; }\n  else if(mt<5.5){ // moss cushions: rounded clumps, dark gaps, fine fronds\n    vec3 c=cel(q*0.32); float b=1.0-smoothstep(0.1,0.75,c.x);\n    sh=0.68+0.48*b+0.14*(c.z-0.5)+0.12*(tn(q*0.9)-0.5); dk=(1.0-smoothstep(0.02,0.1,c.y))*0.45;\n    tt=step(0.86,c.z)*0.35; ti=2.0; }\n  else if(mt<6.5){ // bark: narrower interlaced ridges\n    float w=tn(vec2(q.x*0.03,q.y*0.008))*6.0; float r=abs(sin(q.x*0.75+w)); float r2=abs(sin(q.x*0.75+w+1.6+tn(q*0.02)*2.0));\n    dk=(1.0-smoothstep(0.0,0.28,min(r,r2+0.25)))*0.8; sh=0.9+0.18*smoothstep(0.4,1.0,r)+0.08*tn(q*0.2);\n    tt=smoothstep(0.7,0.82,tn(q*0.035+0.4))*0.5; ti=0.0; }\n  else if(mt<7.5){ // sandstone: wavy layers, eroded pits\n    float l=sin(y*0.55+tn(q*0.012)*7.0)*0.5+0.5; float l2=sin(y*2.4+tn(q*0.03)*4.0); vec3 c=cel(q*0.22);\n    sh=0.8+0.3*smoothstep(0.2,0.8,l)+0.07*l2+0.06*tn(q*0.3); dk=(1.0-smoothstep(0.05,0.18,c.x))*step(0.7,c.z)*0.6+smoothstep(0.85,0.98,l2*0.5+0.5)*0.3; }\n  else if(mt<8.5){ // leaf litter: overlapping leaves of different browns, each with a midrib\n    vec2 r=vec2(q.x*0.16+q.y*0.07, q.y*0.32-q.x*0.05); vec3 c=cel(r); vec3 c2=cel(r*1.7+3.1);\n    sh=0.8+0.35*c.z-0.18*(1.0-smoothstep(0.02,0.12,c.y)); dk=(1.0-smoothstep(0.0,0.08,c.y))*0.6+(1.0-smoothstep(0.0,0.05,c2.y))*0.25;\n    tt=step(0.8,c.z)*0.5; ti=3.0; }\n  else if(mt<9.5){ // soil lumps (take the substrate's colour)\n    sh=0.8+0.3*tn(q*0.4); }\n  else if(mt<10.5){ // root tangle: long sinuous roots running down and across, dark hollows between\n    float w1=tn(vec2(q.x*0.02,y*0.008))*9.0, w2=tn(vec2(q.x*0.013+0.5,y*0.011))*8.0;\n    float a=abs(sin(q.x*0.32+w1)), b=abs(sin(q.x*0.21+y*0.06+w2)), c2=abs(sin(q.x*0.5-y*0.09+w1*0.6));\n    float m=max(max(smoothstep(0.62,0.96,a), smoothstep(0.7,0.98,b)*0.9), smoothstep(0.8,0.99,c2)*0.75);\n    sh=0.55+0.6*m+0.05*tn(q*0.3); dk=(1.0-smoothstep(0.0,0.35,m))*0.6; }\n  else if(mt<11.5){ // fieldstone: rounded stones set in dark mortar, mossy joints\n    vec3 c=cel(vec2(q.x*0.085,y*0.11)); float e=c.y; float mo=1.0-smoothstep(0.06,0.16,e);\n    sh=0.82+0.3*c.z+0.14*(1.0-smoothstep(0.0,0.7,c.x))+0.08*tn(q*0.25); dk=mo*0.85;\n    tt=mo*smoothstep(0.5,0.68,tn(q*0.05))*0.8+smoothstep(0.66,0.78,tn(q*0.07+0.3))*0.3*(0.3+up); ti=1.0; }\n  return vec4(sh,dk,tt,ti); }\nvec3 tintC(float ti){ return ti<0.5 ? vec3(0.66,0.71,0.52) : ti<1.5 ? vec3(0.36,0.5,0.24) : ti<2.5 ? vec3(0.78,0.66,0.3) : vec3(0.72,0.62,0.36); }\nvoid main(){\n  if(vWP.y<uGnd.y-0.05) discard;\n  if(uPass>0.5){ float ia=uAlpha; vec3 inkT=mix(uInk, vC*vec3(0.38,0.40,0.34), mix(0.66,0.46,uHD)); gl_FragColor=vec4(inkT*mix(1.0,0.75,uNight)*ia, ia); return; }\n  float f=floor(vF+0.001); float pat=mod(f,8.0); float two=mod(floor(f/8.0),2.0); float glow=mod(floor(f/16.0),2.0); float mt=floor(f/32.0+0.01);\n  vec3 n=normalize(vN); float back=0.0; if(two>0.5 && dot(n,uToCam)<0.0){ n=-n; back=1.0; }\n  float ndl=dot(n,uL); float dl=smoothstep(-0.25,0.55,ndl); if(uHD>0.5){ dl=clamp(floor(dl*5.0+bay4(gl_FragCoord.xy))/5.0,0.0,1.0); } float lit=0.60+(0.34*dl+0.04*smoothstep(0.7,0.95,ndl))*uKD+0.21*(1.0-uKD);\n  vec3 col=vC;\n  vec2 uv = abs(n.y)>0.6 ? vWP.xz : (abs(n.x)>abs(n.z) ? vWP.zy : vWP.xy);\n  vec4 nz=texture2D(uNoise, uv*0.045);\n  if(mt>0.5 && uMatQ<0.5){ col=mix(col, vC2, smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.5); } // simple surface detail (battery saver)\n  else if(mt>0.5){ // v28 material\n    vec2 qa=vWP.zy, qb=vWP.xy; float wa=abs(n.x)/(abs(n.x)+abs(n.z)+1e-4); float up=smoothstep(0.25,0.8,n.y);\n    float bw=smoothstep(0.3,0.7,wa); vec4 A;\n    if(abs(n.y)>0.85) A=matAt(mt, vWP.xz, 1.0, vWP.y); else if(bw<0.01) A=matAt(mt, qb, up, vWP.y); else if(bw>0.99) A=matAt(mt, qa+vec2(41.0,0.0), up, vWP.y);\n    else A=mix(matAt(mt, qb, up, vWP.y), matAt(mt, qa+vec2(41.0,0.0), up, vWP.y), bw);\n    if(mt>8.5 && mt<9.5) col=uSoil*vC*1.25;\n    col=col*A.x; col=mix(col, vC2*0.8, clamp(A.y,0.0,1.0)); col=mix(col, tintC(A.w)*(0.75+0.35*dot(col,vec3(0.33))), clamp(A.z,0.0,1.0)*0.75); }\n  else if(pat>0.5){ float m=0.0;\n    if(pat<1.5) m=smoothstep(0.6,0.72,texture2D(uNoise, uv*0.17).r)*0.65;\n    else if(pat<2.5) m=smoothstep(0.72,0.95, sin(vWP.y*1.7+nz.g*5.0)*0.5+0.5)*0.55;\n    else if(pat<3.5) m=smoothstep(0.78,0.97, sin((uv.x*0.9+uv.y*0.12)*2.2+nz.b*6.0)*0.5+0.5)*0.5;\n    else if(pat<4.5) m=smoothstep(0.5,0.72,texture2D(uNoise, uv*0.25).g)*0.5;\n    else m=smoothstep(0.58,0.7,texture2D(uNoise, uv*0.32).b)*0.55;\n    col=mix(col, vC2, m); }\n  col*=lit*mix(uAmbC, uKeyC, dl*uKD); if(back>0.5){ col=mix(col, vC*vec3(1.08,1.10,0.93), 0.24); col*=1.06; }\n  float fr=1.0-abs(dot(n,uToCam)); col*=1.0-0.22*fr*fr*fr;\n  float rim=pow(fr, 2.6); vec3 rimCol=mix(vec3(1.0,0.84,0.54), vec3(0.55,0.72,1.0), uNight); col+=rimCol*rim*mix(0.10,0.065,two)*uKD; float washEdge=smoothstep(0.46,0.95,fr); col=mix(col, col*0.82+vec3(0.04,0.02,0.01), washEdge*0.32*(1.0-uHD));\n  col*=mix(0.965+0.07*nz.r,0.94+0.12*nz.r,uHD);\n  col=mix(col, vec3(0.95,0.92,0.84), 0.055*(1.0-uHD));\n  if(uGnd.x>0.5){ float hb=vWP.y-uGnd.y; col*=mix(0.6,1.0,smoothstep(0.0,4.5,hb)); col=mix(col, uSoil, (1.0-smoothstep(0.3,2.6,hb))*0.55*step(uGnd.y,0.01)); float mossCreep=(1.0-smoothstep(0.3,3.6+nz.g*1.6,hb))*smoothstep(-0.15,0.45,n.y)*0.46; col=mix(col, vec3(0.32,0.48,0.18), mossCreep*step(uGnd.y,0.02)); }\n  vec3 o=grade(col, vWP);\n  if(glow>0.5) o=mix(o, mix(vC,vC2,0.6)*(0.8+0.25*fr), uNight*0.8);\n  o=mix(o, uGhost.rgb, uGhost.a);\n  float A=uAlpha;\n  gl_FragColor=vec4(o*A, A); }`, MESH_SIMPLE = MESH_FS.slice(0, MESH_FS.indexOf("  else if(mt>0.5){ // v28 material")).replace("mt>0.5 && uMatQ<0.5", "mt>0.5") + MESH_FS.slice(MESH_FS.indexOf("  else if(pat>0.5){")), TEX_VS = `attribute vec3 aP; attribute vec2 aUV; uniform float uZ; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; void main(){ vec3 q=proj(aP); q.z+=uZ; vUV=aUV; vWP=aP; gl_Position=clip(q); }`, TEX_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform vec4 uCol; uniform float uLit; ${LAMPS}\nvoid main(){ vec4 t=texture2D(uTex,vUV)*uCol; vec3 c=t.rgb; if(uLit>0.5) c=grade(c, vWP); gl_FragColor=vec4(c*t.a, t.a); }`, SMASK_VS = "attribute vec3 aP; attribute float aA; uniform vec3 uL; uniform vec2 uDim; uniform float uFade; varying float vF; varying float vH; varying float vA;\nvoid main(){ float h=max(aP.y,0.0); vec2 g=aP.xz-uL.xz*(h/uL.y); vF=1.0-0.5*clamp(h/uFade,0.0,1.0); vH=clamp(h/uFade,0.0,1.0); vA=aA; gl_Position=vec4(g.x/uDim.x*2.0-1.0, g.y/uDim.y*2.0-1.0, 0.0, 1.0); }", SMASK_FS = "precision mediump float; varying float vF; varying float vH; varying float vA; uniform float uK;\nvoid main(){ gl_FragColor = uK<0.5 ? vec4(vF,0.0,vH,1.0) : vec4(0.0,vA,0.0,1.0); }", SBLUR_VS = "attribute vec2 aXY; attribute vec2 aUV; varying vec2 vUV; void main(){ vUV=aXY*0.5+0.5; gl_Position=vec4(aXY,0.0,1.0); }", SBLUR_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uD;\nvoid main(){ vec4 s=texture2D(uTex,vUV)*0.2270; s+=(texture2D(uTex,vUV+uD*1.3846)+texture2D(uTex,vUV-uD*1.3846))*0.3162; s+=(texture2D(uTex,vUV+uD*3.2308)+texture2D(uTex,vUV-uD*3.2308))*0.0703; gl_FragColor=s; }", SMIX_FS = "precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform sampler2D uTex2;\nvoid main(){ vec4 f=texture2D(uTex,vUV), c=texture2D(uTex2,vUV); float k=clamp(c.b*1.6,0.0,1.0); gl_FragColor=vec4(mix(f.r,c.r,k), max(f.g, c.g*0.9), c.b, 1.0); }", SHD_FS = "precision highp float; varying vec2 vUV; varying vec3 vWP; uniform sampler2D uTex; uniform sampler2D uNoise; uniform vec4 uCol; uniform vec2 uAmt; uniform float uMode; uniform vec2 uFloor;\nfloat m2(vec2 p){ return mod(2.0*p.x+3.0*p.y,4.0); }\nfloat bayer(vec2 p){ p=floor(mod(p,4.0)); return (4.0*m2(mod(p,2.0))+m2(floor(p/2.0))+0.5)/16.0; }\nvoid main(){ vec2 uv=vWP.xz/uFloor; float edge=min(min(uv.x,1.0-uv.x),min(uv.y,1.0-uv.y)); vec4 s=texture2D(uTex,uv)*smoothstep(0.0,0.025,edge); float c=s.r, o=s.g;\n  if(uMode<0.5){ float n=texture2D(uNoise, vWP.xz*0.045).r, n2=texture2D(uNoise, vWP.xz*0.21).g; float e=c+(n-0.5)*0.32*smoothstep(0.02,0.3,c)+(n2-0.5)*0.08;\n    c=smoothstep(0.02,0.90,e); c+=0.22*smoothstep(0.08,0.3,e)*(1.0-smoothstep(0.3,0.62,e)); float h1=step(1.1,mod(gl_FragCoord.x+gl_FragCoord.y,4.0))*0.75+0.25; float h2=step(1.1,mod(gl_FragCoord.x-gl_FragCoord.y,4.0))*0.75+0.25; float hatch=mix(1.0,h1,smoothstep(0.18,0.58,e)); hatch=mix(hatch,h1*h2,smoothstep(0.55,0.88,e)); c=c*mix(1.0,hatch,0.30); o=smoothstep(0.04,0.9,o+(n2-0.5)*0.12); }\n  else{ float d=bayer(gl_FragCoord.xy); c=mix(c,floor(c*4.0+d*0.999)*0.25,0.38); o=mix(o,floor(o*4.0+d*0.999)*0.25,0.25); }\n  float a=1.0-(1.0-c*uAmt.x)*(1.0-o*uAmt.y); a*=uCol.a; gl_FragColor=vec4(uCol.rgb*a, a); }", MOUND_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aA; attribute float aS; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vA=aA; vS=aS; gl_Position=clip(q); }`, MOUND_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vA; varying float vS; uniform sampler2D uTex; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec3 c=texture2D(uTex,vUV).rgb*vS; float n=texture2D(uNoise, vWP.xz*0.11).r; float a=vA*smoothstep(0.0,0.55,vA+(n-0.5)*0.5); a=clamp(a,0.0,1.0); c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, WET_VS = `attribute vec3 aP; attribute vec2 aUV; attribute float aW; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying float vW; void main(){ vec3 q=proj(aP); vUV=aUV; vWP=aP; vW=aW; gl_Position=clip(q); }`, WET_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying float vW; uniform sampler2D uTex; uniform sampler2D uNoise; uniform float uAm; ${LAMPS}\nvoid main(){ float n=texture2D(uNoise, vWP.xz*0.07).g; float a=smoothstep(0.15,0.75,vW+(n-0.5)*0.35)*uAm; if(a<0.004) discard; vec3 c=texture2D(uTex,vUV).rgb*vec3(0.5,0.53,0.58);\n  c=grade(c, vWP); gl_FragColor=vec4(c*a,a); }`, MARK_VS = `attribute vec3 aP; attribute vec2 aUV; attribute vec4 aC; attribute float aK; ${PROJ}\nvarying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; void main(){ vec3 q=proj(aP); q.z-=2.0; vUV=aUV; vWP=aP; vC=aC; vK=aK; gl_Position=clip(q); }`, MARK_FS = `precision highp float; varying vec2 vUV; varying vec3 vWP; varying vec4 vC; varying float vK; uniform sampler2D uNoise; ${LAMPS}\nvoid main(){ vec2 d=vUV*2.0-1.0; float n=texture2D(uNoise, vWP.xz*0.23).r; float r=length(d)*(0.86+0.28*n); float a;\n  if(vK<0.5) a=1.0-smoothstep(0.3,1.0,r); else if(vK<1.5) a=smoothstep(0.42,0.72,r)*(1.0-smoothstep(0.78,1.0,r)); else a=1.0-smoothstep(0.7,1.0,r);\n  if(a<0.004) discard; vec3 c=vC.rgb;\n  if(vK>1.5){ float hl=1.0-smoothstep(0.0,0.45,length(d-vec2(-0.32,-0.3))); c=mix(c*0.82, c, smoothstep(0.35,0.95,r)); c=mix(c, vec3(0.9,0.95,0.97), hl*0.55); }\n  c=grade(c, vWP); float A=a*vC.a; gl_FragColor=vec4(c*A,A); }`, LINE_VS = `attribute vec3 aA; attribute vec3 aB; attribute vec2 aS; attribute float aW; attribute float aAl; attribute vec3 aCol; attribute vec2 aSw;\nuniform vec3 uSway; uniform vec3 uWind; uniform float uLW; uniform float uMinW; ${PROJ}\nvarying vec4 vC; varying vec3 vWP;\nvoid main(){ vec3 pa=aA+uSway*mod(aSw.x,2.0)+uWind*(floor(aSw.x/2.0)/255.0), pb=aB+uSway*mod(aSw.y,2.0)+uWind*(floor(aSw.y/2.0)/255.0); vec3 qa=proj(pa), qb=proj(pb); vec2 dir=qb.xy-qa.xy; float l=length(dir); dir = l>1e-4 ? dir/l : vec2(1.0,0.0);\n  vec2 nr=vec2(-dir.y,dir.x); float nib=0.76+0.48*abs(dot(nr,vec2(-0.7071,0.7071))); float w=max(aW*uLW*nib, uMinW); vec3 q=mix(qa,qb,aS.y); q.xy+=nr*aS.x*w*0.5+dir*(aS.y*2.0-1.0)*w*0.35; q.z-=0.25; vC=vec4(aCol,aAl); vWP=mix(pa,pb,aS.y); gl_Position=clip(q); }`, LINE_FS = `precision highp float; varying vec4 vC; varying vec3 vWP; uniform float uAlpha; uniform float uLitL; ${LAMPS}\nvoid main(){ vec3 c=vC.rgb; if(uLitL>0.5) c=grade(c,vWP); else c*=mix(1.0,0.75,uNight); float a=vC.a*uAlpha; gl_FragColor=vec4(c*a,a); }`;
     const PAN_VS = `attribute vec2 aXY; attribute vec2 aUV;
       uniform float uYaw; uniform float uPitch; uniform vec2 uRes;
       varying vec2 vFarUV; varying vec2 vMidUV;
@@ -10861,37 +10865,43 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             return mesh;
         }
         groundTexture(hab) {
-            const S = JT.SUBSTRATES[hab.data.substrate] || JT.SUBSTRATES.coco, key = hab.data.substrate + "|" + hab.data.type + "|" + hab.dims.w + "x" + hab.dims.d;
-            if (this.gT && this.gT.key === key) return this.gT;
-            const W = 1024, H = Math.max(256, Math.round(1024 * hab.dims.d / hab.dims.w)), c = mkCanvas(W, H), g = c.getContext("2d"), rng = JT.makeRng(JT.hashStr(key));
-            g.fillStyle = towardPaper(S.top, .22), g.fillRect(0, 0, W, H);
-            for (let i = 0; i < 60; i++) this.wash(g, rng() * W, rng() * H, 30 + 110 * rng(), rng() < .5 ? towardPaper(S.mid, .1) : towardPaper(S.top, .4), .12 + .1 * rng(), rng, .8 + .4 * rng());
-            const n = Math.round(W * H / 380);
-            for (let i = 0; i < n; i++) {
-                const x = rng() * W, y = rng() * H, r = .8 + 2.6 * rng();
-                g.globalAlpha = .35 + .5 * rng(), g.fillStyle = rng() < .5 ? S.speck[0] : S.speck[1], 
-                g.beginPath(), g.ellipse(x, y, r, r * (.6 + .5 * rng()), 3 * rng(), 0, 6.283), g.fill();
+            const S=JT.SUBSTRATES[hab.data.substrate]||JT.SUBSTRATES.coco, hd=!!(JT.HD2D&&JT.HD2D.on),q=this.R.quality||'medium';
+            const key=['paint-ground-v3',hab.data.id,hab.data.substrate,hab.data.type,hab.dims.w,hab.dims.d,hd?'pixel':'wash',q].join('|');
+            if(this.gT&&this.gT.key===key)return this.gT;
+            const W=q==='high'?1024:q==='low'?512:768,H=Math.max(128,Math.min(1024,Math.round(W*hab.dims.d/hab.dims.w)));
+            // Work on a smaller art grid for HD-2D; upload once, never paint soil each frame.
+            const N=hd?Math.min(320,W):W,NH=Math.max(64,Math.round(N*H/W)),paint=mkCanvas(N,NH),g=paint.getContext('2d'),rng=JT.makeRng(JT.hashStr(key.replace(q,'')));
+            const hex=c=>'#'+c.map(v=>Math.round(M.clamp(v,0,1)*255).toString(16).padStart(2,'0')).join('');
+            const mix=(a,b,t)=>GM.rgb(a).map((v,i)=>v+(GM.rgb(b)[i]-v)*t);
+            const base=towardPaper(S.top,hd?.10:.25),shade=hex(mix(S.mid,base,.35)),hi=hex(mix(base,S.speck[0],.40));
+            g.fillStyle=base;g.fillRect(0,0,N,NH);
+            const patches=[];
+            for(let i=0;i<34;i++){
+                const x=rng()*N,y=rng()*NH,rx=N*(.07+rng()*.17),ry=rx*(.35+rng()*.55),angle=rng()*Math.PI;
+                patches.push([x,y,rx,ry]);g.save();g.translate(x,y);g.rotate(angle);g.scale(1,ry/rx);
+                const grad=g.createRadialGradient(0,0,0,0,0,rx),col=i%3===0?hi:shade;
+                const c=GM.rgb(col).map(v=>Math.round(v*255)).join(',');grad.addColorStop(0,'rgba('+c+','+(hd?.58:.44)+')');grad.addColorStop(.6,'rgba('+c+',.16)');grad.addColorStop(1,'rgba('+c+',0)');g.fillStyle=grad;g.fillRect(-rx,-rx,rx*2,rx*2);g.restore();
             }
-            g.globalAlpha = 1;
-            const eg = g.createRadialGradient(512, H / 2, .3 * Math.min(W, H), 512, H / 2, .55 * Math.hypot(W, H));
-            eg.addColorStop(0, "rgba(40,25,10,0)"), eg.addColorStop(1, "rgba(40,25,10,0.22)"), 
-            g.fillStyle = eg, g.fillRect(0, 0, W, H);
-            const side = mkCanvas(512, 128), s = side.getContext("2d");
-            s.fillStyle = towardPaper(S.mid, .1), s.fillRect(0, 0, 512, 60), s.fillStyle = towardPaper("#4a2e18", .12), 
-            s.fillRect(0, 60, 512, 68);
-            for (let i = 0; i < 70; i++) this.wash(s, 512 * rng(), 66 + 60 * rng(), 4 + 9 * rng(), rng() < .5 ? "#2e1d10" : towardPaper(S.mid, .3), .55, rng, .6);
-            for (let i = 0; i < 40; i++) this.wash(s, 512 * rng(), 58 * rng(), 3 + 7 * rng(), rng() < .5 ? S.speck[1] : S.speck[0], .5, rng, .6);
-            s.fillStyle = "rgba(40,25,12,0.6)", s.fillRect(0, 0, 512, 2), this.gT && (this.gl.deleteTexture(this.gT.t), 
-            this.gl.deleteTexture(this.gT.s));
-            const oc = mkCanvas(1, 1).getContext("2d");
-            oc.drawImage(c, 0, 0, 1, 1);
-            const px = oc.getImageData(0, 0, 1, 1).data;
-            return this.gT = {
-                key: key,
-                t: this.texFrom(c, !1),
-                s: this.texFrom(side, !0),
-                avg: [ px[0] / 255, px[1] / 255, px[2] / 255 ]
-            }, this.gT;
+            // Cluster fine marks around patches; leave calm, readable negative space.
+            const count=hd?1100:q==='low'?1100:1700;
+            for(let i=0;i<count;i++){
+                const p=patches[i%patches.length],x=p[0]+(rng()+rng()-1)*p[2],y=p[1]+(rng()+rng()-1)*p[3],r=(S.pebbly?1.4:.65)+rng()*(S.pebbly?1.4:1.05);
+                g.globalAlpha=.22+rng()*.32;g.fillStyle=i%3===0?hi:S.speck[i%S.speck.length];g.beginPath();g.ellipse(x,y,r,r*(.35+rng()*.45),rng()*3.14,0,6.283);g.fill();
+            }
+            if(S.litter||S.moist>.45){
+                for(let i=0;i<(S.litter?36:18);i++){
+                    const x=rng()*N,y=rng()*NH,L=1.3+rng()*3.5;g.save();g.translate(x,y);g.rotate(rng()*6.28);g.globalAlpha=S.litter?.25:.14;
+                    g.fillStyle=S.litter?(i%2?hi:shade):hex(mix(base,'#70814d',.38));g.beginPath();g.moveTo(-L,0);g.quadraticCurveTo(0,-L*.6,L,0);g.quadraticCurveTo(0,L*.6,-L,0);g.fill();g.restore();
+                }
+            }
+            g.globalAlpha=1;
+            if(!hd){g.strokeStyle='rgba(245,235,208,.035)';g.lineWidth=.6;for(let i=0;i<100;i++){const x=rng()*N,y=rng()*NH;g.beginPath();g.moveTo(x,y);g.lineTo(x+2+rng()*5,y+.4);g.stroke();}}
+            const c=mkCanvas(W,H),cg=c.getContext('2d');cg.imageSmoothingEnabled=!hd;cg.drawImage(paint,0,0,W,H);
+            const side=mkCanvas(256,96),sg=side.getContext('2d'),bank=sg.createLinearGradient(0,0,0,96);bank.addColorStop(0,base);bank.addColorStop(.32,shade);bank.addColorStop(1,hex(mix(S.dark,S.mid,.3)));sg.fillStyle=bank;sg.fillRect(0,0,256,96);
+            for(let i=0;i<38;i++)this.wash(sg,rng()*256,rng()*96,4+rng()*14,i%2?shade:hi,.15,rng,.45);
+            if(this.gT){this.gl.deleteTexture(this.gT.t);this.gl.deleteTexture(this.gT.s);}
+            const ac=mkCanvas(1,1).getContext('2d');ac.drawImage(c,0,0,1,1);const px=ac.getImageData(0,0,1,1).data;
+            return this.gT={key,t:this.texFrom(c,false),s:this.texFrom(side,true),avg:[px[0]/255,px[1]/255,px[2]/255],width:W,height:H,paintVersion:3};
         }
         habGeom(hab) {
             const R = this.R, TR = JT.Terrain, ter = TR ? TR.get(hab) : null, tq = "low" === R.quality ? 2 : 1, bgId = hab.data.bg || "mossy", key = hab.data.id + "|" + hab._geomVersion + "|" + hab.dims.w + "|" + hab.dims.d + "|" + hab.data.type + "|" + bgId + "|" + hab.data.shorelineSeed + "|" + (ter ? ter.key : "") + "|" + tq + "|" + R.quality;
@@ -11172,8 +11182,8 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             for (const {inst: inst, g: g} of hg.meshes) {
                 if (inst.parent || g.baseY > .5 || "ground" === g.def.cat || "wallmount" === g.def.arche || "scatter" === g.def.arche || "heatlamp" === inst.type) continue;
                 const back = "backwall" === g.def.arche;
-                for (const so of g.solids) rim(so, back ? 2.4 : 1.9, 1);
-                for (const so of g.soft || []) rim(so, 1.3, .85);
+                for (const so of g.solids) rim(so, back ? 2.4 : 1.65, .82);
+                for (const so of g.soft || []) rim(so, 1.2, .70);
                 if (!g.solids.length && (!g.soft || !g.soft.length) && g.contacts) for (const q of g.contacts) dab(q[0], q[1], 1.25, .8);
             }
             return v;
@@ -11214,7 +11224,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 this._mx && gl.blendEquation(gl.FUNC_ADD), gl.disable(gl.BLEND), Q = this.use(P.sblur), 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.quad), this.attribs(Q, [ [ "aXY", 2 ], [ "aUV", 2 ] ], 4), 
                 gl.activeTexture(gl.TEXTURE0), gl.uniform1i(Q.u.uTex, 0);
-                const fine = .32, wide = 1.15, pass = (src, fb, w, h, dx, dy) => {
+                const fine = .40, wide = 1.25, pass = (src, fb, w, h, dx, dy) => {
                     gl.bindFramebuffer(gl.FRAMEBUFFER, fb), gl.viewport(0, 0, w, h), gl.bindTexture(gl.TEXTURE_2D, src), 
                     gl.uniform2f(Q.u.uD, dx / dm.w, dy / dm.d), gl.drawArrays(gl.TRIANGLES, 0, 6);
                 };
@@ -11279,7 +11289,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             this._tgtFB = HDT ? HDT.fb : null, this._vpW = VW, this._vpH = VH, this._hdF = HDT ? HDT.f : 0;
             const CLR = HDT ? JT.HD2D.clear : PAPER;
             this._hd = HDT ? 1 : 0;
-            const SK = JT.SKY, grade = SK.grade.slice(), lampU = this._lampU || (this._lampU = new Float32Array(16));
+            const SK = JT.SKY, grade = SK.grade.map((v,i)=>v*(1+night*.12)+night*[.055,.048,.025][i]), lampU = this._lampU || (this._lampU = new Float32Array(16));
             lampU.fill(0);
             const LL = [];
             this.F = {
@@ -11312,13 +11322,15 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
                 for (const pass of PT.ptNoInk ? [ 1 ] : [ 0, 1 ]) {
                     gl.uniform1f(P.u.uPass, pass ? 0 : 1);
                     for (const o of list) {
+                        const soft=o.m.wind||['grass','fern','flower','broadleaf','vine','rosette'].includes(o.g.def.arche);
+                        gl.uniform1f(P.u.uOut,outPx*(soft?(HDT?.48:.38):(HDT?.86:.72)));
                         const sw = o.inst._sw, wind=o._wind||[0,0,0];gl.uniform3f(P.u.uWind,wind[0],wind[1],wind[2]);
                         gl.uniform3f(P.u.uSway, sw ? sw.x : 0, 0, sw ? sw.z : 0), gl.uniform2f(P.u.uGnd, "ground" === o.g.def.cat || "wallmount" === o.g.def.arche ? 0 : 1, o.g.baseY), 
                         this.drawMesh(P, o.m);
                     }
                 }
                 P = this.use(this.P.line), this.view(P, V), this.light(P), gl.uniform1f(P.u.uLW, lw), 
-                gl.uniform1f(P.u.uMinW, HDT ? .9 / PXF : .6 * k), gl.uniform1f(P.u.uAlpha, 1), gl.uniform1f(P.u.uLitL, 0), 
+                gl.uniform1f(P.u.uMinW, HDT ? .52 / PXF : .32 * k), gl.uniform1f(P.u.uAlpha, 1), gl.uniform1f(P.u.uLitL, 0), 
                 gl.enable(gl.BLEND), gl.depthMask(!1);
                 for (const o of list) {
                     if (!o.m.lb || PT.ptNoInk) continue;
@@ -11964,7 +11976,7 @@ JT.Presets.biome=(h,id,seed)=>B.layout(h,id,seed);
             }
             if (!v.length) return;
             const gl = this.gl, P = this.use(this.P.line);
-            this.view(P, V), this.light(P), gl.uniform1f(P.u.uLW, V.s), gl.uniform1f(P.u.uMinW, this._hdF ? .9 / this._hdF : .6 * this.R.k), 
+            this.view(P, V), this.light(P), gl.uniform1f(P.u.uLW, V.s), gl.uniform1f(P.u.uMinW, this._hdF ? .52 / this._hdF : .32 * this.R.k), 
             gl.uniform1f(P.u.uAlpha, 1), gl.uniform1f(P.u.uLitL, 1), gl.uniform3f(P.u.uWind, 0, 0, 0), gl.uniform3f(P.u.uSway, 0, 0, 0), 
             gl.enable(gl.DEPTH_TEST), gl.depthMask(!1), gl.enable(gl.BLEND), gl.bindBuffer(gl.ARRAY_BUFFER, this.dynBuf("silk", new Float32Array(v))), 
             this.attribs(P, [ [ "aA", 3 ], [ "aB", 3 ], [ "aS", 2 ], [ "aW", 1 ], [ "aAl", 1 ], [ "aCol", 3 ], [ "aSw", 2 ] ], 15), 
@@ -12384,7 +12396,7 @@ void main() {
 
    v2 improvements:
      • Dual Kawase bloom replaces Gaussian bloom (wider, softer, fewer samples, CHEAPER).
-     • Stepped / banded DoF reinforces diorama depth planes (3 bands, partial blend).
+     • Smooth, depth-aware DoF avoids focus rings and foreground/background bleed.
      • Screen-space depth-edge ink rim: warm by day, cool by night.
      • Coloured night bloom: cool-blue cast instead of white.
      • Chromatic aberration at the vignette edge (medium/high quality only).
@@ -12401,10 +12413,17 @@ precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel;
 void main(){ vec2 d=uTexel*0.5; o=(texture(uTex,vUV+vec2(-d.x,-d.y))+texture(uTex,vUV+vec2(d.x,-d.y))+texture(uTex,vUV+vec2(-d.x,d.y))+texture(uTex,vUV+vec2(d.x,d.y)))*0.25; }`;
   // separable 9-tap gaussian  (kept for DoF blur; bloom now uses Kawase)
   const BLUR_FS = `#version 300 es
-precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uDir; out vec4 o;
-void main(){ vec4 s=texture(uTex,vUV)*0.2270;
-  s+=(texture(uTex,vUV+uDir*1.3846)+texture(uTex,vUV-uDir*1.3846))*0.3162;
-  s+=(texture(uTex,vUV+uDir*3.2308)+texture(uTex,vUV-uDir*3.2308))*0.0703; o=s; }`;
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform highp sampler2D uDepth;
+uniform vec2 uDir; uniform float uDepthSigma; out vec4 o;
+// Normalised bilateral Gaussian: do not drag a sharp foreground silhouette into the far backdrop.
+void main(){ float d=texture(uDepth,vUV).r; vec4 s=texture(uTex,vUV)*0.2270; float total=0.2270;
+  for(int i=0;i<4;i++){
+    float offset=i<2?1.3846:3.2308; float base=i<2?0.3162:0.0703;
+    float side=(i==0||i==2)?-1.0:1.0; vec2 uv=clamp(vUV+uDir*offset*side,vec2(0.0),vec2(1.0));
+    float delta=abs(texture(uDepth,uv).r-d);
+    float weight=base*exp(-delta/max(uDepthSigma,0.00001));
+    s+=texture(uTex,uv)*weight; total+=weight;
+  }o=s/total; }`;
   // bright pass for bloom  — coloured at night (cool-blue cast)
   const BRIGHT_FS = `#version 300 es
 precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform float uTh; uniform float uNight; out vec4 o;
@@ -12447,13 +12466,10 @@ void main(){
   ivec2 lp=ivec2(floor(uv*uLow)); lp=clamp(lp, ivec2(0), ivec2(uLow)-1);
   vec3 sharp=texelFetch(uScene, lp, 0).rgb; float d=texelFetch(uDepth, lp, 0).r;
   vec3 blur=texture(uBlur, uv).rgb;
-  // --- depth of field: stepped bands for diorama planes ---
+  // Smooth focus falloff. Quantised CoC caused visible rings, particularly on Strong.
   float dc = d>0.99999 ? 1.0 : smoothstep(uDof.x, uDof.y, abs(d-uFocus.z));
-  float ty = abs(uv.y-uFocus.y); float tc = smoothstep(0.12, 0.45, ty)*uTilt;
-  float coc_raw = clamp(max(dc, tc), 0.0, 1.0)*uBlurK;
-  // stepped DoF (3 bands) — reinforces the diorama depth-plane feel
-  float coc_stepped = floor(coc_raw*3.0+0.5)/3.0;
-  float coc = mix(coc_raw, coc_stepped, 0.62);
+  float ty = abs(uv.y-clamp(uFocus.y,0.0,1.0)); float tc = smoothstep(0.12, 0.45, ty)*uTilt;
+  float coc = clamp(max(dc, tc)*uBlurK, 0.0, 1.0);
   vec3 c = mix(sharp, blur, coc);
   // --- sub-pixel grid dither on the pixel edge (keeps pixels crisp but softens aliasing) ---
   float edgeDither = (h21(gl_FragCoord.xy) - 0.5) * 0.010 * (1.0 - coc);
@@ -12462,7 +12478,7 @@ void main(){
   // Energy-aware bloom: bright terrain must retain texture, not become a white wall.
   vec3 bl = texture(uBloom, uv).rgb;
   vec3 highlightRoom = vec3(1.0)-clamp(c,vec3(0.0),vec3(1.0));
-  c += bl*highlightRoom*0.32*uFx;
+  c += bl*highlightRoom*0.23*uFx;
   // --- screen-space depth-edge ink rim (warm day / cool night) ---
   ivec2 lpr=clamp(lp+ivec2(1,0), ivec2(0), ivec2(uLow)-1);
   ivec2 lpu=clamp(lp+ivec2(0,1), ivec2(0), ivec2(uLow)-1);
@@ -12477,34 +12493,35 @@ void main(){
   float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0);
   rays = smoothstep(0.18, 0.82, rays); // sharper contrast than before
   float lightRoom=1.0-smoothstep(0.5,0.95,max(c.r,max(c.g,c.b)));
-  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.18*uDay*uFx*lightRoom;
-  c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.09*uDay*uFx*lightRoom; // warm haze on the lit side
+  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.115*uDay*uFx*lightRoom;
+  c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.045*uDay*uFx*lightRoom; // warm haze on the lit side
   // (no screen-wide motes: the engine's own dust motes and biome fireflies already float inside the tank)
   // --- colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast ---
   float lum = dot(c, vec3(0.299,0.587,0.114));
-  c = mix(vec3(lum), c, 1.16-0.3*uNight);
+  c = mix(vec3(lum), c, 1.07-0.14*uNight);
   c += vec3(-0.01,0.015,0.06)*(1.0-smoothstep(0.0,0.45,lum));
-  c *= mix(vec3(1.0), vec3(1.06,1.0,0.9), smoothstep(0.45,1.0,lum));
-  c = c*(1.0+c*0.12)/(1.0+c*0.12*0.9); c = clamp((c-0.5)*1.12+0.52, 0.0, 1.4);
-  c = mix(c, c*vec3(0.85,0.92,1.08)+vec3(0.025,0.035,0.06), uNight*0.6);
+  c *= mix(vec3(1.0), vec3(1.035,1.005,0.96), smoothstep(0.45,1.0,lum));
+  c = c*(1.0+c*0.12)/(1.0+c*0.12*0.9); c = clamp((c-0.5)*1.07+0.515, 0.0, 1.4);
+  c = mix(c, c*vec3(0.85,0.92,1.08)+vec3(0.025,0.035,0.06), uNight*0.42);
   // --- chromatic aberration at the vignette edge (medium/high quality only) ---
   if (uFx > 0.9) {
     float ca = length(uv - 0.5) * 0.007;
-    float rOff = texture(uBlur, uv + vec2( ca, 0.0)).r * coc + sharp.r * (1.0 - coc);
-    float bOff = texture(uBlur, uv - vec2( ca, 0.0)).b * coc + sharp.b * (1.0 - coc);
+    float rDelta = texture(uBlur, clamp(uv + vec2(ca,0.0),vec2(0.0),vec2(1.0))).r - blur.r;
+    float bDelta = texture(uBlur, clamp(uv - vec2(ca,0.0),vec2(0.0),vec2(1.0))).b - blur.b;
     float edgeCA = smoothstep(0.30, 0.68, length(uv - 0.5));
-    c = mix(c, vec3(rOff, c.g, bOff), edgeCA * 0.65);
+    // Apply only a small offset to the graded colour, never replace it with ungraded channels.
+    c.rb += vec2(rDelta,bDelta)*coc*edgeCA*0.2;
   }
   // --- diorama glass frame bevel reflection & lip gleam ---
   vec2 edgeDist = min(uv, 1.0 - uv);
-  float glassBorder = smoothstep(0.015, 0.002, edgeDist.x) + smoothstep(0.018, 0.002, edgeDist.y);
-  float glassGleam = smoothstep(0.004, 0.001, abs(uv.y - 0.985)) * smoothstep(0.1, 0.9, uv.x);
+  float glassBorder = (1.0-smoothstep(0.002, 0.015, edgeDist.x)) + (1.0-smoothstep(0.002, 0.018, edgeDist.y));
+  float glassGleam = (1.0-smoothstep(0.001, 0.004, abs(uv.y - 0.985))) * smoothstep(0.1, 0.9, uv.x);
   c += vec3(0.85, 0.95, 1.0) * (glassGleam * 0.22 + glassBorder * 0.06) * uFx;
   // --- micro-condensation gradient near bottom substrate ---
   float bottomMist = (1.0 - smoothstep(0.0, 0.11, uv.y)) * smoothstep(-0.2, 0.6, sin(uv.x * 38.0) * 0.2 + 0.8);
   c = mix(c, c * 0.88 + vec3(0.65, 0.78, 0.88) * 0.22, bottomMist * 0.35 * uFx);
   // --- vignette (heavier at the top and bottom, like a stage) ---
-  vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = smoothstep(0.98, 0.28, length(q)); c *= mix(0.58, 1.0, vg);
+  vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = (1.0-smoothstep(0.28, 0.98, length(q))); c *= mix(0.58, 1.0, vg);
   c += (h21(gl_FragCoord.xy+fract(uTime))-0.5)/255.0;
   o = vec4(c, 1.0); }`;
 
@@ -12582,15 +12599,24 @@ void main(){
       // --- DoF: half-res down-sample + 1 or 2 Gaussian passes ---
       this.pass(gp, P.down, T.fA, T.hw, T.hh, T.ct, (p) => gl.uniform2f(p.u.uTexel, 1 / T.w, 1 / T.h));
       const bk = this.blurK(gp.R);
-      for (const st of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
-        this.pass(gp, P.blur, T.fB, T.hw, T.hh, T.tA, (p) => gl.uniform2f(p.u.uDir, st / T.hw, 0));
-        this.pass(gp, P.blur, T.fA, T.hw, T.hh, T.tB, (p) => gl.uniform2f(p.u.uDir, 0, st / T.hh)); }
-
-      // --- Dual Kawase bloom  (down × 2 then up × 2, total 4 passes, 4 taps each = 16 samples vs the old 28) ---
-      // Bright pass at quarter-res → tC; night threshold + night colour tint applied here
+      // Bloom samples the unblurred downsample, so changing lens strength cannot change bloom exposure.
       const brightTh = night > 0.5 ? 0.38 : 0.55;
       const isLow = gp.R.quality === 'low' || JT.Device.tier === 'low';
       this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => { gl.uniform1f(p.u.uTh, brightTh); gl.uniform1f(p.u.uNight, M.clamp(night, 0, 1)); });
+      // Keep the radius in CSS pixels, independent of quality, device DPI and pixel-art render scale.
+      const pixelScale = (gp.R.k || 1) * T.w / W;
+      const span = H / Math.max(1e-3, V.s);
+      const depthSigma = Math.max(0.001, 0.00055 * span * 0.08);
+      const blurPass = (target, source, x, y) => this.pass(gp, P.blur, target, T.hw, T.hh, source, p => {
+        gl.uniform2f(p.u.uDir,x,y);gl.uniform1f(p.u.uDepthSigma,depthSigma);
+        gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,T.dt);gl.uniform1i(p.u.uDepth,1);gl.activeTexture(gl.TEXTURE0);
+      });
+      for (const radius of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
+        const st=radius*pixelScale;
+        blurPass(T.fB,T.tA,st/T.hw,0);blurPass(T.fA,T.tB,0,st/T.hh);
+      }
+
+      // --- Independent Dual Kawase bloom ---
       // Down iteration: tC → tE (eighth-res), skip on low tier
       if (!isLow) {
         this.pass(gp, P.kawDown, T.fE, T.ew, T.eh, T.tC, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 0); });
@@ -12613,7 +12639,7 @@ void main(){
       // focus: the watched critter in Observe / Follow, otherwise the middle of the tank
       const R = gp.R, g = R.game; let fp = V.c; if (R.cam && R.cam.mode === 'follow' && g && hab) { const sp = hab.spider && hab.spider(g.selectedId); if (sp && sp.pos && M.finite3(sp.pos)) fp = sp.pos; }
       const q = V.P(fp); const fz = 0.5 + 0.5 * M.clamp(q[2] * 0.0011, -0.999, 0.999);
-      const span = H / Math.max(1e-3, V.s); // world units visible top to bottom
+      // span is the full-resolution world-height computed above.
       const close = R.cam && R.cam.mode === 'follow';
       gl.uniform2f(C.u.uLow, T.w, T.h); gl.uniform2f(C.u.uOut, W, H); gl.uniform3f(C.u.uFocus, q[0] / W, 1 - q[1] / H, fz);
       gl.uniform2f(C.u.uDof, 0.00055 * span * (close ? 0.06 : 0.16), 0.00055 * span * (close ? 0.32 : 0.62)); gl.uniform1f(C.u.uTilt, close ? 0.75 : 1.0); gl.uniform1f(C.u.uBlurK, bk);
@@ -13878,11 +13904,13 @@ void main(){
             }
             return this.thumbs[key] = c, c;
         }
-        speciesPortrait(id, size) {
-            const key = id + "|" + (size = size || 120);
+        speciesPortrait(id, size, sex, stage) {
+            stage = stage == null ? 5 : stage;
+            const key = id + "|" + (size = size || 120) + "|" + (sex || "unassigned") + "|" + stage;
             if (this.portraits[key]) return this.portraits[key];
-            const c = mkCanvas(size, size), ctx = c.getContext("2d"), V = new JT.View(.9, .85, size / 16, size / 2, .58 * size, [ 0, 0, 0 ]), sp = {
-                species: id,
+            const S = JT.SPECIES_BY_ID[id] || JT.SPECIES[0], look = JT.Sex ? JT.Sex.look(S, {sex, stage}) : S.look || {}, reach = Math.max(1, (look.legLen || 1) * (look.front || 1));
+            const c = mkCanvas(size, size), ctx = c.getContext("2d"), V = new JT.View(.9, .85, size / (18 + 5 * (reach - 1)), size / 2, .58 * size, [ 0, 0, 0 ]), sp = {
+                species: id, sex: sex, stage: stage,
                 state: "idle",
                 _walk: 0,
                 _moving: !1,
@@ -15038,7 +15066,7 @@ void main(){
       const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
       const html = '<button class="txt x" id="pClose" title="Close" aria-label="Close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<h3 id="pHead">' + (this.renaming ? '<input id="pName" maxlength="18" value="' + esc(sp.name) + '">' : esc(sp.name)) + '</h3>' +
-        '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
+        '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i> · ' + JT.Sex.label(sp) + '</div>' +
         '<div class="state">' + esc(line) + '</div>' +
         (pz ? '<div class="ctitle">' + esc(pz.title) + ' · ' + pz.traits.map(t => esc(t.label)).join(', ') + '</div>' : '') +
         '<div class="cthought">' + esc(sp.thought || line || '…') + '</div>' +
@@ -15142,7 +15170,7 @@ void main(){
       const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
       for (const sp of h.spiders) {
         const S = JT.SPECIES_BY_ID[sp.species]; const r = el('div', 'jrow' + (sp.id === g.selectedId ? ' sel' : ''));
-        r.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96)));
+        r.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96, sp.sex, sp.stage)));
         const line = AI.stateLine ? AI.stateLine(h, sp) : AI.hungerLabel(sp.sat); const desc = AI.personality ? AI.personality(sp) : null;
         const tx = el('div', 'jtx', '<div class="jn">' + esc(sp.name) + '</div><div class="js">' + esc(S.name) + ' · ' + JT.STAGES[sp.stage] + '</div><div class="jl">' + esc(line) + '</div>' +
           (desc && desc.title ? '<div class="jp">' + esc(desc.title) + '</div>' : '') +
@@ -15192,9 +15220,12 @@ void main(){
         else b.textContent = 'Add as a Sling';
         b.onclick = () => {
           if (!g.canAdd(h, S.id).ok) return;
-          const sp = h.addSpider(S.id, { stage: 1 });
-          g.checkUnlocks(true); g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('hatch'); this.buzz('place', true);
-          this.toast('Welcome, ' + esc(sp.name) + ' the ' + esc(S.name) + '!'); g.save();
+          this.chooseJumperSex(S.id, { onConfirm: sex => {
+            if (h !== this.hab || !g.canAdd(h, S.id).ok) { this.toast('This tank is no longer available or is full.'); return; }
+            const sp = h.addSpider(S.id, { stage: 1, sex });
+            g.checkUnlocks(true); g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('hatch'); this.buzz('place', true);
+            this.toast('Welcome, ' + esc(sp.name) + ' the ' + esc(S.name) + '!'); g.save();
+          }, onCancel: () => this.jumpersSheet('collection') });
         };
         e.appendChild(b); grid.appendChild(e);
       }
@@ -15225,7 +15256,7 @@ void main(){
       const g = this.game, AI = JT.SpiderAI; const w = el('div', 'stories'); const habs = [g.hab].concat(g.habs.filter(h => h !== g.hab)); let any = false;
       for (const h of habs) for (const sp of h.spiders) { any = true;
         const S = JT.SPECIES_BY_ID[sp.species] || { name: sp.species }; const pz = AI.personality ? AI.personality(sp) : null; const D = (sp.diary || []).slice().reverse();
-        const card = el('div', 'story'); card.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96)));
+        const card = el('div', 'story'); card.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96, sp.sex, sp.stage)));
         const open = this._storyOpen === sp.id; const shown = open ? D : D.slice(0, 4);
         const tx = el('div', 'stx', '<div class="jn">' + esc(sp.name) + '</div><div class="js">' + esc(S.name) + ' · ' + JT.STAGES[sp.stage] + (h !== g.hab ? ' · ' + esc(h.title) : '') + (pz && pz.title ? ' · <i>' + esc(pz.title) + '</i>' : '') + '</div>' +
           '<ul class="diary">' + (shown.length ? shown.map(e => '<li><span class="dd">Day ' + e.d + '</span>' + esc(e.t) + '</li>').join('') : '<li class="muted">No moments recorded yet. Its story starts now.</li>') + '</ul>');
@@ -15242,10 +15273,10 @@ void main(){
       const w = el('div', 'prof'); const pz = AI.personality ? AI.personality(sp) : null; const st = sp.stats || {};
       this._profId = sp.id; const myBack = back || this._nextBack || null; this._nextBack = null; this._profBack = myBack;
       // header: portrait (or the newest photo) + the essentials
-      const hd = el('div', 'pf-head'); const pic = el('div', 'pf-pic'); pic.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 192))); hd.appendChild(pic);
+      const hd = el('div', 'pf-head'); const pic = el('div', 'pf-pic'); pic.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 192, sp.sex, sp.stage))); hd.appendChild(pic);
       const size = (S.len * JT.STAGE_SCALE[sp.stage]).toFixed(1);
       hd.appendChild(el('div', 'pf-id', '<div class="pf-sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
-        '<div class="pf-st">' + JT.STAGES[sp.stage] + ' \u00b7 ' + (sp.ageDays || 0).toFixed(1) + ' days old \u00b7 ' + size + ' mm</div>' +
+        '<div class="pf-st">' + JT.Sex.label(sp) + ' · ' + JT.STAGES[sp.stage] + ' \u00b7 ' + (sp.ageDays || 0).toFixed(1) + ' days old \u00b7 ' + size + ' mm</div>' +
         '<div class="pf-home">' + (home ? 'Lives in <b>' + esc(home.title) + '</b> (' + esc(home.dims.name) + ')' : inCup ? 'Waiting in the holding cup' : '') + '</div>' +
         (pz ? '<div class="pf-title">' + esc(pz.title) + '</div>' : '')));
       w.appendChild(hd);
@@ -15377,7 +15408,7 @@ void main(){
         if (this._ufEl || (this._unlockQ && this._unlockQ.length)) { this.toast(esc(sp.name) + ' is now an Adult.', '', 3500); return; } // an unlock is about to take the stage
         const S = JT.SPECIES_BY_ID[sp.species]; if (!S) return; const old = $('adultFx'); if (old) old.remove(); const t = this.speciesTint(S);
         const w = el('div'); w.id = 'adultFx'; w.style.setProperty('--uf', t.solid); w.style.setProperty('--ufA', t.a); w.setAttribute('role', 'status');
-        try { w.appendChild(cloneCanvas(this.R.speciesPortrait(S.id, 116))); } catch (e) { /* no picture */ }
+        try { w.appendChild(cloneCanvas(this.R.speciesPortrait(S.id, 116, sp.sex, sp.stage))); } catch (e) { /* no picture */ }
         const tx = el('div'); tx.appendChild(el('b', '', esc(sp.name) + ' is all grown up')); tx.appendChild(el('span', '', 'Now an Adult ' + esc(S.name))); w.appendChild(tx);
         document.body.appendChild(w); requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('in')));
         setTimeout(() => { w.classList.remove('in'); setTimeout(() => w.remove(), 600); }, 4200); }, 650);
@@ -15522,7 +15553,7 @@ void main(){
         if (!rows.length) list.appendChild(el('p', 'muted', 'No tank matches \u201c' + esc(term) + '\u201d.'));
         for (const { h, i, s: ts } of rows) {
           const H = JT.HABITATS[h.data.type]; const r = el('div', 'tkrow' + (i === st.active ? ' on' : ''));
-          const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64)));
+          const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64, x.sex, x.stage)));
           r.appendChild(pics);
           let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Background');
           if (ts.molting.length) chips += chip('molt', 'Molting: ' + names(ts.molting));
@@ -15549,7 +15580,7 @@ void main(){
         w.appendChild(el('p', 'muted', 'Jumpers waiting for a tank. Time stands still for them here.'));
         const cl = el('div', 'jlist');
         for (const x of cup) { const S = JT.SPECIES_BY_ID[x.species]; const r = el('div', 'jrow');
-          r.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 96)));
+          r.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 96, x.sex, x.stage)));
           r.appendChild(el('div', 'jtx', '<div class="jn">' + esc(x.name) + '</div><div class="js">' + esc(S.name) + ' \u00b7 ' + JT.STAGES[x.stage] + '</div>'));
           const bs = el('div', 'jb'); const b = el('button', 'modal-btn gold', 'Place here'); b.title = 'Move into the tank you are viewing';
           b.onclick = (e) => { e.stopPropagation(); const res = g.moveSpider(x, 'cup', g.hab); if (!res.ok) { this.toast(esc(res.reason)); A().sfx('error'); return; } A().sfx('place'); this.buzz('place', true); g.selectedId = x.id; this.refreshHeader(); g.save(); this.closeModal(); this.toast(esc(x.name) + ' moved into this tank.'); };
@@ -15708,10 +15739,6 @@ void main(){
     },
     settingsModal() {
       const s = this.set, h = this.hab; const w = el('div');
-      w.appendChild(el('h4', '', 'Background for ' + esc(h.title)));
-      const bgs = el('div', 'bgs');
-      for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.textContent = ''; b.appendChild(el('span', 'bg-label', B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { if (h === this.hab && h.data.bg !== id) this.undoPush('Background: ' + B.name); h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
-      w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
       const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; this.R._thermalLevel = v === 'auto' ? (JT.Device.tier === 'low' ? 4 : JT.Device.tier === 'high' ? 2 : 3) : 0; this.R._healthySeconds = this.R._missSeconds = this.R._costSeconds = 0; this.R.softS = 1; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }
@@ -15837,9 +15864,9 @@ const css=el('style');css.textContent=`.bm-grid{display:grid;grid-template-colum
 U.biomeWizard=function(first=false){const g=this.game;if(!first&&g.habs.length>=JT.MAX_HABS){this.toast('The tank shelf is full.');return;}const state={step:0,type:this.isMobile()?'tower':'standard',sid:g.state.species[0],bid:null,layout:'biome'};const draw=()=>{document.body.classList.add('bm-wizard');const w=el('div');w.append(el('p','bm-note',`STEP ${state.step+1} OF 3 · ENCLOSURE → JUMPER → HABITAT`));w.append(el('h4','',state.step===0?'Choose an enclosure':state.step===1?'Who will live here?':'Choose their habitat'));const grid=el('div','bm-grid');w.append(grid);
 const pick=(id,title,note,selected,fn)=>{const p=btn('',fn,'bm-pick'+(selected?' on':''));p.dataset.choice=id;p.setAttribute('aria-pressed',String(selected));p.append(el('b','',title),el('small','',note));grid.append(p);};
 if(state.step===0)for(const id in JT.HABITATS){const t=JT.HABITATS[id];pick(id,t.name,`${t.w} × ${t.d} × ${t.h} · ${t.cap} jumper${t.cap===1?'':'s'}`,state.type===id,()=>{state.type=id;draw();});}
-if(state.step===1){w.append(el('p','bm-note','The build drawer will follow this jumper and its chosen climate. Raise jumpers to unlock more species.'));for(const sid of g.state.species){const s=JT.SPECIES_BY_ID[sid];if(!s)continue;pick(sid,s.name,home(sid),state.sid===sid,()=>{state.sid=sid;state.bid=null;draw();});const source=U.R.speciesPortrait(sid,64),portrait=document.createElement('canvas');portrait.width=source.width;portrait.height=source.height;portrait.style.cssText='width:44px;height:44px;display:block;margin-bottom:6px';portrait.setAttribute('aria-hidden','true');portrait.getContext('2d').drawImage(source,0,0);grid.lastElementChild.prepend(portrait);}}
+if(state.step===1){w.append(el('p','bm-note','The build drawer will follow this jumper and its chosen climate. Raise jumpers to unlock more species.'));for(const sid of g.state.species){const s=JT.SPECIES_BY_ID[sid];if(!s)continue;pick(sid,s.name,home(sid),state.sid===sid,()=>{state.sid=sid;state.bid=null;draw();});const source=U.R.speciesPortrait(sid,64,state.sex,5),portrait=document.createElement('canvas');portrait.width=source.width;portrait.height=source.height;portrait.style.cssText='width:44px;height:44px;display:block;margin-bottom:6px';portrait.setAttribute('aria-hidden','true');portrait.getContext('2d').drawImage(source,0,0);grid.lastElementChild.prepend(portrait);}const sexes=el('div','sex-options');for(const sex of ['female','male']){const b=btn(sex==='male'?'Male':'Female',()=>{state.sex=sex;draw();});b.id='bmSex-'+sex;b.setAttribute('aria-pressed',String(state.sex===sex));sexes.append(b);}w.append(el('p','bm-note','Choose female or male. Differences develop gradually through molts; portraits show adult proportions.'),sexes);}
 if(state.step===2){if(!state.bid)state.bid=B.rank(state.sid)[0];for(const bid of B.rank(state.sid)){const b=JT.BIOMES[bid],f=B.fit(state.sid,bid);pick(bid,b.icon+' '+b.name,(f>=.95?'Recommended · ':f>=.6?'Suitable · ':'Out of place · ')+b.short,state.bid===bid,()=>{state.bid=bid;state.layout='biome';draw();});}const sel=el('select');sel.setAttribute('aria-label','Starting layout');const opt=(v,t)=>{const o=el('option','',t);o.value=v;sel.append(o);};opt('biome',state.bid==='classic'?'Classic starter layout':JT.BIOMES[state.bid].name+' layout (recommended)');opt('empty','Start from scratch — ground and background only');if(state.bid==='classic'){for(const p of JT.Presets.forType(state.type))opt('t:'+p.theme,p.name);(g.state.customPresets||[]).forEach((p,i)=>opt('c:'+i,'Custom: '+p.name));}sel.value=state.layout;sel.onchange=()=>state.layout=sel.value;w.append(sel,el('p','bm-note',B.fit(state.sid,state.bid)<.6?'This climate is not a home match. You can still experiment; comfort changes are gentle.':'You can change the biome later without removing your decor.'));}
-const row=el('div','bm-actions');row.append(btn(state.step?'Back':first?'Keep this enclosure':'Cancel',()=>{if(state.step){state.step--;draw();}else if(first){state.step=1;draw();}else{document.body.classList.remove('bm-wizard');U.closeModal();}}));const next=btn(state.step===2?'Create Tank & Enter':'Continue',()=>{if(state.step<2){state.step++;draw();return;}if(!first&&g.habs.length>=JT.MAX_HABS){U.toast('Tank limit reached (30). Delete a tank first.');return;}if(!g.isUnlocked(state.sid)){U.toast('This jumper is locked.');return;}try{const h=new JT.Habitat({type:state.type},g);B.setBiome(h,state.bid);h.data.buildSpecies=state.sid;const seed=(JT.R()*1e9)|0;if(state.layout==='biome'){if(state.bid==='classic'){const p=JT.Presets.forType(state.type)[0];if(p)JT.Presets.generate(h,p.theme,seed);}else B.layout(h,state.bid,seed);}else if(state.layout.startsWith('t:'))JT.Presets.generate(h,state.layout.slice(2),seed);else if(state.layout.startsWith('c:'))JT.Presets.applyCustom(h,g.state.customPresets[+state.layout.slice(2)]);B.applyGround(h,state.bid);const sp=h.addSpider(state.sid,{stage:1,meals:1,sat:.6,name:first?'Pip':undefined});if(!sp)throw new Error('Jumper could not be added');h.decor.forEach(x=>x.preset=true);h.addPrey((B.of(h).prey||[]).find(x=>['fruitfly','aphid','gnat','springtail'].includes(x))||'fruitfly',4);if(first)g.habs=[h];else g.habs.push(h);const targetIndex=g.habs.indexOf(h);if(first){g.state.active=targetIndex;g.selectedId=sp.id;U.R.cur=null;U.R.resetView();}else U.switchHab(targetIndex);g.selectedId=sp.id;h.data.selectedId=sp.id;g.state.biomeSetup=false;g.state.lastBiome=state.bid;g.checkUnlocks();g.save();document.body.classList.remove('bm-wizard');U._bmCreating=true;U.closeModal();U._bmCreating=false;U.switchHab(g.state.active);U.refreshHeader();U.hidePanel();U.toast('Your habitat is ready. Build, care for your jumper, or simply watch.');}catch(e){console.error('biome setup',e);U.toast('Could not create this habitat: '+e.message);}},'modal-btn gold');next.id='bmNext';row.append(next);w.append(row);U.openModal(first?'A fresh start · Biomes':'New habitat',w,{back:null});};draw();};
+const row=el('div','bm-actions');row.append(btn(state.step?'Back':first?'Keep this enclosure':'Cancel',()=>{if(state.step){state.step--;draw();}else if(first){state.step=1;draw();}else{document.body.classList.remove('bm-wizard');U.closeModal();}}));const next=btn(state.step===2?'Create Tank & Enter':'Continue',()=>{if(state.step===1&&!JT.Sex.valid(state.sex))return;if(state.step<2){state.step++;draw();return;}if(!first&&g.habs.length>=JT.MAX_HABS){U.toast('Tank limit reached (30). Delete a tank first.');return;}if(!g.isUnlocked(state.sid)){U.toast('This jumper is locked.');return;}try{const h=new JT.Habitat({type:state.type},g);B.setBiome(h,state.bid);h.data.buildSpecies=state.sid;const seed=(JT.R()*1e9)|0;if(state.layout==='biome'){if(state.bid==='classic'){const p=JT.Presets.forType(state.type)[0];if(p)JT.Presets.generate(h,p.theme,seed);}else B.layout(h,state.bid,seed);}else if(state.layout.startsWith('t:'))JT.Presets.generate(h,state.layout.slice(2),seed);else if(state.layout.startsWith('c:'))JT.Presets.applyCustom(h,g.state.customPresets[+state.layout.slice(2)]);B.applyGround(h,state.bid);const sp=h.addSpider(state.sid,{sex:state.sex,stage:1,meals:1,sat:.6,name:first?'Pip':undefined});if(!sp)throw new Error('Jumper could not be added');h.decor.forEach(x=>x.preset=true);h.addPrey((B.of(h).prey||[]).find(x=>['fruitfly','aphid','gnat','springtail'].includes(x))||'fruitfly',4);if(first)g.habs=[h];else g.habs.push(h);const targetIndex=g.habs.indexOf(h);if(first){g.state.active=targetIndex;g.selectedId=sp.id;U.R.cur=null;U.R.resetView();}else U.switchHab(targetIndex);g.selectedId=sp.id;h.data.selectedId=sp.id;g.state.biomeSetup=false;g.state.lastBiome=state.bid;g.checkUnlocks();g.save();document.body.classList.remove('bm-wizard');U._bmCreating=true;U.closeModal();U._bmCreating=false;U.switchHab(g.state.active);U.refreshHeader();U.hidePanel();U.toast('Your habitat is ready. Build, care for your jumper, or simply watch.');}catch(e){console.error('biome setup',e);U.toast('Could not create this habitat: '+e.message);}},'modal-btn gold');next.id='bmNext';next.disabled=state.step===1&&!JT.Sex.valid(state.sex);row.append(next);w.append(row);U.openModal(first?'A fresh start · Biomes':'New habitat',w,{back:null});};draw();};
 const init=U.init;U.init=function(){init.apply(this,arguments);this.game.on((type,d)=>{if(type==='biome'){this.biomeHeader();if(!d.end){this.toast(B.of(this.hab).name+' · '+(JT.BIOME_EVENTS[d.ev]||{}).line);if(JT.Audio)JT.Audio.sfx('click');}}});setTimeout(()=>{if(this.game.state.biomeSetup)this.biomeWizard(true);},0);};
 const close=U.closeModal;U.closeModal=function(){if(this.game&&this.game.state.biomeSetup&&!this._bmCreating){this.biomeWizard(true);return;}document.body.classList.remove('bm-wizard');close.apply(this,arguments);};
 U.biomeHeader=function(){if(!this.game)return;let chip=$('biomeChip');if(!chip){chip=btn('',()=>this.biomeSheet(),'bm-chip');chip.id='biomeChip';const clock=document.querySelector('.clock');if(clock)clock.append(chip);}const id=B.id(this.hab);chip.classList.toggle('hidden',id==='classic');if(id==='classic')return;const b=B.of(this.hab),v=this.hab.data.bev,ev=v&&v.id;chip.classList.toggle('active',!!ev);chip.replaceChildren(document.createTextNode(`${b.icon} ${Math.round(B.temp(this.hab))}°C`));if(ev)chip.append(el('span','bm-event',' · '+B.weather(this.hab).name));chip.setAttribute('aria-label',b.name+', '+Math.round(B.temp(this.hab))+' degrees. Habitat details');};
@@ -16155,7 +16182,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   this.closeTankNameMenu();if(J.Replay&&J.Replay.active)J.Replay.stop();if(this.photo)this.photoMode(false);if(this.tv)this.tvMode(false);if(this.obs)this.toggleObserve(false);
   this.cancelMode();this.closeDrawer();this.closeModal();this.hidePanel();this.hideTip();
   const h=this.hab,cam=copy(this.R.cam),source=plain(h.data),reference=h.spider(this.game.selectedId)||h.spiders[0];
-  this.tankSetup={tankId:h.data.id,source,sourceShape:shape(h),mode:options.mode||'biome',bid:options.bid||B.id(h),preset:options.preset||('t:'+(J.Presets.forType(h.data.type)[0]||{}).theme),sid:reference&&reference.species,seed:(Math.random()*0xffffffff)>>>0||1,preview:null,previewGame:null,cam,focus:D.activeElement,ack:false,error:null};
+  this.tankSetup={tankId:h.data.id,source,sourceShape:shape(h),mode:options.mode||'background',bg:h.data.bg,bid:options.bid||B.id(h),preset:options.preset||('t:'+(J.Presets.forType(h.data.type)[0]||{}).theme),sid:reference&&reference.species,seed:(Math.random()*0xffffffff)>>>0||1,preview:null,previewGame:null,cam,focus:D.activeElement,ack:false,error:null};
   D.body.classList.add('tank-setup');this.R.cam.mode='observer';this.R.resetView();this.R.resetCaches();this.drawTankSetup();this.regenerateTankSetup();D.getElementById('setupMode').focus();
  };
  U.regenerateTankSetup=function(){
@@ -16164,7 +16191,8 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
    const fake=new J.Game();fake.state=plain(this.game.state);fake.state.active=0;fake.selectedId=this.game.selectedId;fake.save=()=>{};fake.onEvent=()=>{};
    J.game=fake;J.R=J.makeRng(s.seed);const data=copy(s.source);data.spiders=[];data.prey=[];data.drops=[];data.remains=[];data.silk=[];data.nests=[];delete data.setupUndo;
    h=new J.Habitat(data,fake);h.event=()=>{};fake.habs=[h];
-   if(s.mode==='biome'){if(s.bid!==B.id(this.hab)){B.setBiome(h,s.bid);B.applyGround(h,s.bid);}}
+   if(s.mode==='background'){ h.data.bg=s.bg; }
+   else if(s.mode==='biome'){if(s.bid!==B.id(this.hab)){B.setBiome(h,s.bid);B.applyGround(h,s.bid);}}
    else if(s.mode==='layout'){
     if(s.bid==='classic'){B.setBiome(h,'classic');const p=J.Presets.forType(h.data.type)[0];if(!p)throw new Error('No starter layout fits this enclosure.');J.Presets.generate(h,p.theme,s.seed,true);}
     else B.layout(h,s.bid,s.seed);
@@ -16172,7 +16200,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
     if(s.preset.startsWith('c:')){const p=this.game.state.customPresets[+s.preset.slice(2)];if(!p)throw new Error('This saved preset is unavailable.');J.Presets.applyCustom(h,p);}
     else{const theme=s.preset.slice(2);if(!J.PRESET_THEMES[theme])throw new Error('Choose an available preset.');J.Presets.generate(h,theme,s.seed,true);}
    }
-   if(s.mode!=='biome')h.decor.forEach(d=>{d.preset=true;d.novel=false;});
+   if(s.mode!=='biome'&&s.mode!=='background')h.decor.forEach(d=>{d.preset=true;d.novel=false;});
    // Preview clones can be safely grounded without changing any real individual or saved reference.
    for(const key of ['spiders','prey','drops','remains','silk','nests'])h.data[key]=copy(s.source[key]||[]);
    h.rebuild();for(const sp of h.spiders){if(sp.sup.k==='air'){const q=N.supportBelow(h,sp.pos);sp.pos=q.pos;sp.sup=q.sup;}sp._ip=sp.pos.slice();}
@@ -16186,8 +16214,12 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   const head=el('div','setup-head');head.append(el('h2','', 'Tank Setup'));head.firstChild.id='setupTitle';head.append(el('span','setup-paused','Preview · paused'));tray.append(head);
   const body=el('div','setup-body');body.append(el('p','setup-tank-name',this.hab.title));
   const field=(label,id,options,value,fn)=>{const row=el('div','setup-field');const lab=el('label','',label);lab.htmlFor=id;const select=el('select');select.id=id;for(const [v,t]of options){const o=el('option','',t);o.value=v;select.append(o);}select.value=value;select.onchange=()=>fn(select.value);row.append(lab,select);body.append(row);return select;};
-  field('Change','setupMode',[['biome','Biome only · keep furnishings'],['layout','Biome + recommended layout'],['preset','Preset layout · keep climate']],s.mode,v=>{s.mode=v;s.ack=false;this.drawTankSetup();this.regenerateTankSetup();});
-  if(s.mode!=='preset'){
+  field('Change','setupMode',[['background','Appearance · background only'],['biome','Habitat · biome only · keep furnishings'],['layout','Biome + recommended layout'],['preset','Preset layout · keep climate']],s.mode,v=>{s.mode=v;s.ack=false;this.drawTankSetup();this.regenerateTankSetup();});
+  if(s.mode==='background'){
+   body.append(el('h3','','Appearance'),el('p','setup-note','Background only. Jumpers, furnishings, ground and climate stay unchanged.'));
+   const grid=el('div','setup-backgrounds');grid.setAttribute('role','group');grid.setAttribute('aria-label','Background');
+   for(const [id,bg] of Object.entries(J.BACKGROUNDS)){ const b=button(bg.name,'',()=>{s.bg=id;this.drawTankSetup();this.regenerateTankSetup();});b.className='setup-background';b.dataset.background=id;b.setAttribute('aria-pressed',String(s.bg===id));const swatch=el('span','setup-swatch');swatch.style.background=`linear-gradient(${bg.sky[0]},${bg.sky[1]} 55%,${bg.sky[2]})`;b.prepend(swatch);grid.append(b); } body.append(grid);
+  }else if(s.mode!=='preset'){
    const rank=s.sid?B.rank(s.sid):J.BIOME_ORDER;
    field('Biome','setupBiome',rank.map(id=>[id,J.BIOMES[id].name+(s.sid&&B.fit(s.sid,id)>=.95?' · Recommended':'')]),s.bid,v=>{s.bid=v;s.ack=false;this.regenerateTankSetup();});
    if(s.sid)body.append(el('p','setup-note','Recommendations for '+J.SPECIES_BY_ID[s.sid].name+'. No new jumper is spawned.'));
@@ -16196,19 +16228,22 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
    field('Preset','setupPreset',presets,s.preset,v=>{s.preset=v;s.ack=false;this.drawTankSetup();this.regenerateTankSetup();});
    body.append(el('p','setup-note','Presets replace furnishings and their ground/backdrop. Your current biome and climate stay.'));
   }
-  if(s.mode!=='biome'&&s.source.decor.length){const label=el('label','setup-confirm');const c=el('input');c.type='checkbox';c.id='setupReplace';c.checked=s.ack;c.onchange=()=>{s.ack=c.checked;this.updateTankSetupStatus();};label.append(c,el('span','',`Replace ${s.source.decor.length} current furnishings. Jumpers, prey and progress stay; positions may be adjusted safely.`));body.append(label);}
+  if(s.mode!=='biome'&&s.mode!=='background'&&s.source.decor.length){const label=el('label','setup-confirm');const c=el('input');c.type='checkbox';c.id='setupReplace';c.checked=s.ack;c.onchange=()=>{s.ack=c.checked;this.updateTankSetupStatus();};label.append(c,el('span','',`Replace ${s.source.decor.length} current furnishings. Jumpers, prey and progress stay; positions may be adjusted safely.`));body.append(label);}
+  body.append(el('h3','','Details'),el('p','setup-note',`${this.hab.dims.name} · ${this.hab.spiders.length}/${this.hab.dims.cap} jumpers · ${this.hab.decor.length} furnishings. Tank names follow their residents.`));
+  body.append(button('Enclosure & tank management…','setupManage',()=>{this.finishTankSetup(false);this.tankEditModal(this.game.state.active);}));
+  body.append(el('p','setup-note','Management opens separately and discards this unapplied preview. Duplicate layout, reset and delete remain there; destructive actions need confirmation.'));
   const status=el('p','setup-status');status.id='setupStatus';status.setAttribute('aria-live','polite');body.append(status);tray.append(body);
   const footer=el('div','setup-actions');footer.append(button('Reroll','setupReroll',()=>{s.seed=(s.seed+0x9e3779b9)>>>0||1;this.regenerateTankSetup();}),button('Undo last setup','setupUndo',()=>this.undoTankSetup()),button('Cancel','setupCancel',()=>this.finishTankSetup(false)),button('Apply setup','setupApply',()=>this.applyTankSetup()));footer.lastChild.classList.add('primary');tray.append(footer);
   D.getElementById('app').append(tray);this.updateTankSetupStatus();
  };
  U.updateTankSetupStatus=function(){
-  const s=this.tankSetup;if(!s)return;const protectedNames=protectedJumpers(this.hab).map(x=>x.name),changed=s.preview&&shape(s.preview)!==s.sourceShape;
-  const stale=this.hab.data.id!==s.tankId||shape(this.hab)!==s.sourceShape,needsAck=s.mode!=='biome'&&s.source.decor.length&&!s.ack;
+  const s=this.tankSetup;if(!s)return;const protectedNames=(s.mode==='background'?[]:protectedJumpers(this.hab)).map(x=>x.name),changed=s.preview&&shape(s.preview)!==s.sourceShape;
+  const stale=this.hab.data.id!==s.tankId||shape(this.hab)!==s.sourceShape,needsAck=s.mode!=='biome'&&s.mode!=='background'&&s.source.decor.length&&!s.ack;
   const msg=s.error?'Could not preview: '+s.error:stale?'The tank changed. Cancel and reopen Tank Setup.':protectedNames.length?'Apply/Undo locked: '+protectedNames.join(', ')+' is molting or recovering. Cancel to resume; try again after recovery.':!changed?'Choose a change to preview. Nothing has been applied.':needsAck?'Preview only. Confirm replacement above to enable Apply.':`${s.preview.decor.length} furnishings · ${B.of(s.preview).name}. Apply saves this preview; Cancel changes nothing.`;
   D.getElementById('setupStatus').textContent=msg;
   D.getElementById('setupApply').disabled=!!(s.error||stale||protectedNames.length||!changed||needsAck||!s.previewGame);
-  const fixed=s.mode==='biome'||s.mode==='preset'&&s.preset.startsWith('c:');D.getElementById('setupReroll').disabled=fixed;D.getElementById('setupReroll').title=fixed?'Biome-only changes and saved custom presets have no random arrangement.':'Try another generated arrangement';
-  D.getElementById('setupUndo').disabled=protectedNames.length>0||!canUndo(this.hab);D.getElementById('setupUndo').title=canUndo(this.hab)?'Restore the last applied setup without rewinding animal progress.':'No unchanged applied setup to undo. Later furnishing edits invalidate this shortcut.';
+  const fixed=s.mode==='background'||s.mode==='biome'||s.mode==='preset'&&s.preset.startsWith('c:');D.getElementById('setupReroll').hidden=s.mode==='background';D.getElementById('setupReroll').disabled=fixed;D.getElementById('setupReroll').title=fixed?'Backgrounds, biome-only changes and saved custom presets have no random arrangement.':'Try another generated arrangement';
+  D.getElementById('setupUndo').disabled=(!this.hab.data.setupUndo?.backgroundOnly&&protectedJumpers(this.hab).length>0)||!canUndo(this.hab);D.getElementById('setupUndo').title=canUndo(this.hab)?'Restore the last applied setup without rewinding animal progress.':'No unchanged applied setup to undo. Later furnishing edits invalidate this shortcut.';
  };
  U.finishTankSetup=function(applied){
   const s=this.tankSetup;if(!s)return;this.tankSetup=null;dispose(s.preview);const tray=D.getElementById('tankSetupTray');if(tray)tray.remove();D.body.classList.remove('tank-setup');this.R.cam=copy(s.cam);this.R.resetCaches();this.R.fx=[];this.R.particles=[];this.refreshHeader();
@@ -16218,15 +16253,15 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
   const s=this.tankSetup;if(!s)return false;this.updateTankSetupStatus();if(D.getElementById('setupApply').disabled)return false;
   const h=this.hab,previous=environment(h),previousUndo=h.data.setupUndo,rollback=copy(h.data);
   try{
-   const furnishings=h.decor;putEnvironment(h,environment(s.preview));if(s.mode==='biome')h.data.decor=furnishings;rebuildSafely(h);h.data.setupUndo={v:1,tankId:h.data.id,environment:previous,keepDecor:s.mode==='biome',expected:shape(h)};
+   const furnishings=h.decor;if(s.mode==='background')h.data.bg=s.bg;else putEnvironment(h,environment(s.preview));if(s.mode==='biome'||s.mode==='background')h.data.decor=furnishings;if(s.mode!=='background')rebuildSafely(h);h.data.setupUndo={v:1,tankId:h.data.id,environment:previous,backgroundOnly:s.mode==='background',keepDecor:s.mode==='biome'||s.mode==='background',expected:shape(h)};
    this.game.state.nextId=Math.max(this.game.state.nextId,s.previewCounter||0);clearReplay();this.undoClear&&this.undoClear();this.finishTankSetup(true);this.game.checkUnlocks();this.game.save();this.toast('Setup applied. Your jumpers and progress are kept.');return true;
   }catch(e){h.data=rollback;h.rebuild();if(previousUndo)h.data.setupUndo=previousUndo;else delete h.data.setupUndo;this.R.resetCaches();if(this.tankSetup){s.error=e.message;this.updateTankSetupStatus();}else this.toast('Could not apply setup: '+e.message);return false;}
  };
  U.undoTankSetup=function(){
-  const h=this.hab;if(protectedJumpers(h).length){this.toast('Wait until molt recovery completes before restoring a setup.');return false;}
+  const h=this.hab;if(!h.data.setupUndo?.backgroundOnly&&protectedJumpers(h).length){this.toast('Wait until molt recovery completes before restoring a setup.');return false;}
   if(!canUndo(h)){this.toast('This setup cannot be undone after later furnishing edits.');return false;}
   const previous=environment(h),undo=h.data.setupUndo,rollback=copy(h.data);
-  try{const furnishings=h.decor;putEnvironment(h,undo.environment);if(undo.keepDecor)h.data.decor=furnishings;rebuildSafely(h);delete h.data.setupUndo;clearReplay();this.undoClear&&this.undoClear();this.finishTankSetup(true);this.R.resetCaches();this.refreshHeader();this.game.save();this.toast('Previous setup restored. Animal progress was not rewound.');return true;}
+  try{const furnishings=h.decor;if(undo.backgroundOnly)h.data.bg=undo.environment.bg;else putEnvironment(h,undo.environment);if(undo.keepDecor)h.data.decor=furnishings;if(!undo.backgroundOnly)rebuildSafely(h);delete h.data.setupUndo;clearReplay();this.undoClear&&this.undoClear();this.finishTankSetup(true);this.R.resetCaches();this.refreshHeader();this.game.save();this.toast('Previous setup restored. Animal progress was not rewound.');return true;}
   catch(e){h.data=rollback;h.rebuild();h.data.setupUndo=undo;this.R.resetCaches();this.toast('Could not restore this setup: '+e.message);return false;}
  };
  // Fit the whole enclosure into the space left by the tray, not behind it.
@@ -16251,7 +16286,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
  const switchHab=U.switchHab;U.switchHab=function(){if(this.tankSetup)this.finishTankSetup(false);return switchHab.apply(this,arguments);};
  const jumpers=U.jumpersSheet;U.jumpersSheet=function(){const out=jumpers.apply(this,arguments),row=D.querySelector('#modal .living-actions');if(row){const b=button('Tank Setup','tankSetupShortcut',()=>this.beginTankSetup());b.className='modal-btn';row.insertBefore(b,D.getElementById('switchTank').nextSibling);}return out;};
  const init=U.init;U.init=function(){const out=init.apply(this,arguments),b=D.getElementById('jumperControl');b.onclick=()=>this.tankNameMenu();b.setAttribute('aria-haspopup','menu');b.setAttribute('aria-expanded','false');return out;};
- const more=U.moreSheet;U.moreSheet=function(){const out=more.apply(this,arguments),section=[...D.querySelectorAll('#modalBody .msect')].find(e=>e.querySelector('h4')?.textContent==='This tank');if(section){const b=button('Tank Setup · Preview layouts','menuTankSetup',()=>this.beginTankSetup());b.className='mrow';section.insertBefore(b,section.children[1]||null);}return out;};
+ const more=U.moreSheet;U.moreSheet=function(){const out=more.apply(this,arguments),section=[...D.querySelectorAll('#modalBody .msect')].find(e=>e.querySelector('h4')?.textContent==='This tank');if(section){const b=button('Tank Setup · Background & layouts','menuTankSetup',()=>this.beginTankSetup());b.className='mrow';section.insertBefore(b,section.children[1]||null);}return out;};
  const edit=U.tankEditModal;U.tankEditModal=function(i){const out=edit.apply(this,arguments),h=this.game.habs[i];if(!h)return out;
   const start=options=>{if(h!==this.hab)this.switchHab(this.game.habs.indexOf(h));this.beginTankSetup(options);};
   for(const b of D.querySelectorAll('#modalBody button')){
@@ -16260,7 +16295,7 @@ const panel=U.renderPanel;U.renderPanel=function(){panel.apply(this,arguments);c
    else if(b.textContent==='Recommended biome layout'){b.textContent='Preview biome layout';b.onclick=()=>start({mode:'layout',bid:B.id(h)});}
   }return out;
  };
- const biomeSheet=U.biomeSheet;U.biomeSheet=function(){const out=biomeSheet.apply(this,arguments),b=[...D.querySelectorAll('#modalBody button')].find(b=>b.textContent==='Change biome…');if(b)b.onclick=()=>this.beginTankSetup();return out;};
+ const biomeSheet=U.biomeSheet;U.biomeSheet=function(){const out=biomeSheet.apply(this,arguments),b=[...D.querySelectorAll('#modalBody button')].find(b=>b.textContent==='Change biome…');if(b)b.onclick=()=>this.beginTankSetup({mode:'biome'});return out;};
  D.addEventListener('keydown',e=>{const s=U.tankSetup;if(!s)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();U.finishTankSetup(false);return;}if(e.key==='Tab'){const items=[...D.querySelectorAll('#tankSetupTray button:not(:disabled),#tankSetupTray select,#tankSetupTray input')],first=items[0],last=items[items.length-1];if(e.shiftKey&&(D.activeElement===first||!D.getElementById('tankSetupTray').contains(D.activeElement))){e.preventDefault();last.focus();}else if(!e.shiftKey&&(D.activeElement===last||!D.getElementById('tankSetupTray').contains(D.activeElement))){e.preventDefault();first.focus();}}},true);
  for(const name of ['pointerdown','pointerup','click','wheel','touchstart'])D.addEventListener(name,e=>{if(U.tankSetup&&!e.target.closest('#tankSetupTray')){if(e.cancelable)e.preventDefault();e.stopImmediatePropagation();}}, {capture:true,passive:false});
  D.addEventListener('pointerdown',e=>{if(D.getElementById('tankNameMenu')&&!e.target.closest('#tankNameMenu,#jumperControl'))U.closeTankNameMenu();},true);
@@ -16278,6 +16313,7 @@ body.tank-setup #app #dock,body.tank-setup #app #top,body.tank-setup #app #camCt
 #app .setup-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;border-top:1px solid #d8d7c9;padding-top:10px;flex:none;background:#f6f3e9}
 #app .setup-button{padding:9px 12px;min-height:44px;border:1px solid #c9c6b8;border-radius:6px;background:#e7eadc!important;color:#53613b!important;line-height:1.4;font-size:13px;box-sizing:border-box}
 #app .setup-button.primary{background:#53613b!important;color:#fff!important;border-color:#53613b}
+#app #setupReroll[hidden]{display:none!important}
 #app .setup-button:disabled{opacity:.48}#app .setup-button:focus-visible,#app .setup-field select:focus-visible{outline:2px solid #2c302a;outline-offset:2px}
 @media(max-width:560px){#app .tank-name-menu{left:16px}#app .tank-setup-tray{left:12px;right:12px;bottom:calc(12px + var(--sab));width:auto;max-height:52dvh;padding:12px}#app .setup-field{grid-template-columns:1fr;gap:6px}#app .setup-actions{gap:6px}#app .setup-button{padding:8px 10px}}
 @media(max-height:500px) and (orientation:landscape){#app .tank-setup-tray{right:12px;bottom:12px;max-height:calc(100dvh - 24px);width:min(420px,50%)}#app .setup-head{padding-bottom:6px}#app .setup-body{margin:6px 0;padding:6px 2px}#app .setup-field{margin-bottom:8px}}
@@ -16290,12 +16326,23 @@ body.tank-setup #app #dock,body.tank-setup #app #top,body.tank-setup #app #camCt
 (function(root){
  'use strict';const J=root.JT,M=J.M,G=J.G,N=J.Nav,A=J.SpiderAI,U=J.UI;
  J.Foliage={prepare(R,h,list){
-  const setting=R.set.foliageSway||'auto',quality=R.set.quality==='auto'?R.quality:R.set.quality;let cap=setting==='off'?0:setting==='on'?(quality==='low'?2:6):(quality==='low'||R.set.fps==='saver'?0:quality==='medium'?4:6);
-  const now=performance.now();if(setting==='auto'&&cap){if(R.frameMs>26){R._windSlowAt=R._windSlowAt||now;if(now-R._windSlowAt>2500)R._windRestUntil=now+15000;}else R._windSlowAt=0;if(now<(R._windRestUntil||0))cap=0;}
-  const choices=list.filter(o=>o.m.wind).sort((a,b)=>M.dist(a.g.center||[a.inst.x,0,a.inst.z],R.V.c)-M.dist(b.g.center||[b.inst.x,0,b.inst.z],R.V.c)||String(a.inst.id).localeCompare(String(b.inst.id))).slice(0,cap),selected=new Set(choices);
-  for(const o of list){o._wind=null;if(!selected.has(o))continue;const phase=(o.inst._windPhase==null?(o.inst._windPhase=(J.hashStr(o.inst.id+'leaf')%6283)/1000):o.inst._windPhase),t=h.time;let amp=.8;
-   if(h.spiders.some(s=>s.sup&&s.sup.d===o.inst.id))amp*=.25;
-   o._wind=[amp*(.7*Math.sin(t*.72+phase)+.3*Math.sin(t*1.13+phase*.7)),0,amp*.6*Math.sin(t*.64+phase*1.3)];
+  const setting=R.set.foliageSway||'auto',quality=R.set.quality==='auto'?R.quality:R.set.quality;
+  const mq=R._foliageMotionQuery||(R._foliageMotionQuery=root.matchMedia?root.matchMedia('(prefers-reduced-motion: reduce)'):{matches:false});
+  let cap=mq.matches||setting==='off'?0:setting==='on'?(quality==='low'?2:6):(quality==='low'||R.set.fps==='saver'?0:quality==='medium'?4:6);
+  const now=performance.now(),V=R.V;
+  if(setting==='auto'&&cap){
+   if(R.frameMs>26){R._windSlowAt=R._windSlowAt||now;if(now-R._windSlowAt>2500)R._windRestUntil=now+15000;}else R._windSlowAt=0;
+   if(V){const prev=R._windCamera||(R._windCamera=[V.yaw,V.pitch,V.s,...V.c]);const moving=Math.abs(prev[0]-V.yaw)>.035||Math.abs(prev[1]-V.pitch)>.025||Math.abs(prev[2]-V.s)>V.s*.025||Math.hypot(prev[3]-V.c[0],prev[4]-V.c[1],prev[5]-V.c[2])>1.2;if(moving)R._windCameraRest=now+450;prev[0]=V.yaw;prev[1]=V.pitch;prev[2]=V.s;for(let i=0;i<3;i++)prev[i+3]=V.c[i];}
+   if(now<(R._windRestUntil||0)||now<(R._windCameraRest||0))cap=0;
+  }
+  for(const o of list)o._wind=null;
+  if(!cap){R._foliageMoving=0;return;}
+  const choices=list.filter(o=>o.m.wind).sort((a,b)=>M.dist(a.g.center||[a.inst.x,0,a.inst.z],R.V.c)-M.dist(b.g.center||[b.inst.x,0,b.inst.z],R.V.c)||String(a.inst.id).localeCompare(String(b.inst.id))).slice(0,cap);
+  const t=h.time,breeze=.7*Math.sin(t*.62)+.24*Math.sin(t*1.08+.8);
+  for(const o of choices){
+   // One shared breeze with a small spatial delay, not unrelated leaf wiggles.
+   const phase=(o.inst.x||0)*.018+(o.inst.z||0)*.013;let amp=.58;if(h.spiders.some(s=>s.sup&&s.sup.d===o.inst.id))amp*=.25;
+   const wind=o._windBuf||(o._windBuf=[0,0,0]);wind[0]=amp*(breeze+.13*Math.sin(t*.9+phase));wind[2]=amp*(.45*Math.sin(t*.62+.65)+.10*Math.sin(t*.85+phase));o._wind=wind;
   }
   R._foliageMoving=choices.length;
  }};
@@ -16476,7 +16523,7 @@ function top(h){
 }
 function append(h,mb,cfg){
  const p=profile(h),{hw,hd,rows}=p,S=J.SUBSTRATES[h.data.substrate]||J.SUBSTRATES.coco;
- const floor=G.rgb(cfg.floor),soil=mix(G.rgb(S.mid),G.rgb('#f4f0e5'),.14),topC=mix(G.rgb(S.top),G.rgb('#f4f0e5'),.20),dark=mix(soil,G.rgb('#32281e'),.25);
+ const floor=G.rgb(cfg.floor),soil=mix(G.rgb(S.mid),G.rgb('#f4f0e5'),.14),topC=mix(G.rgb(S.top),G.rgb('#f4f0e5'),J.HD2D&&J.HD2D.on?.07:.20),dark=mix(soil,G.rgb('#32281e'),.25);
  const snow=cfg.feature==='snow'||cfg.feature==='summit',dry=['dunes','canyon','basalt'].includes(cfg.feature),bare=['crystals','grotto','zen'].includes(cfg.feature);
  const ring=[];
  for(let k=0;k<6;k++){
@@ -16488,7 +16535,7 @@ function append(h,mb,cfg){
    const r=q.outer+q.apron*offsets[k],x=hw+q.dx*r,z=hd+q.dz*r;
    // Ground rises unevenly into the soil bank; no constant-height coloured ring.
    const colors=[topC,soil,mix(dark,floor,.65+.2*cover),mix(floor,soil,.04),floor,floor];
-   const c=mix(colors[k],k<2?soil:floor,.025*Math.sin(q.a*11));
+   const weather=.5+.5*Math.sin(q.a*4+p.seed%19);const c=mix(colors[k],k<2?soil:floor,k<3?.06+.12*weather:.025*Math.sin(q.a*11));
    const n=M.norm([q.dx*.45,k<2?.8:1,q.dz*.45]);
    row.push(mb.vert([x,heights[k],z],n,[0,0,0],c,c,G.TWO|G.PAT.speck));
   }ring.push(row);
@@ -16576,7 +16623,8 @@ function build(p,h){
  const quality=p.R.quality||'medium',low=quality==='low',high=quality==='high';
  const W=h.dims.w,D=h.dims.d,S=Math.max(W,D,150),cx=W/2,cz=D/2,Y=-18.35;
  const rnd=J.makeRng(J.hashStr('surround-v2-'+cfg.seed+'-'+W+'-'+D)),pick=a=>a[Math.floor(rnd()*a.length)];
- const floor=rgb(cfg.floor),stone=rgb(cfg.stone),leafC=rgb(cfg.leaf),fog=blend(floor,rgb(B.sky[1]),.48),bark=blend(stone,rgb('#5e4938'),.65);
+ const hd=!!(J.HD2D&&J.HD2D.on),paper=rgb('#e9e4d1');
+ const floor=blend(rgb(cfg.floor),paper,hd?.035:.12),stone=blend(rgb(cfg.stone),paper,hd?.04:.13),leafC=blend(rgb(cfg.leaf),paper,hd?.035:.10),fog=blend(floor,rgb(B.sky[1]),.48),bark=blend(stone,rgb('#5e4938'),.65);
  let mb=new G.MB({height:200,baseY:Y});const base=mb,groups=[];
  const quiet=(x,z,pad=12)=>x>-pad&&x<W+pad&&z>-pad&&z<D+pad;
  const dist=(x,z)=>Math.hypot((x-cx)/S,(z-cz)/S);
@@ -16601,7 +16649,7 @@ function build(p,h){
  function ell(x,y,z,sx,sy,sz,c,mat=G.PAT.speck){G.ell(mb,[x,y,z],[sx,0,0],[0,sy,0],[0,0,sz],c,blend(c,floor,.4),mat,null,high?8:low?5:6,high?4:3,true,.12);}
  function rock(x,z,s,high=1,c=stone){const y=ground(x,z);ell(x,y-1,z,s,s*.62*high,s*(.65+rnd()*.4),c);if(['woodland','logs','canopy','jungle','moon','firefly','temple'].includes(cfg.feature))ell(x-1,y+s*.48*high,z,s*.64,s*.12,s*.57,blend(leafC,floor,.35),G.PAT.moss);}
  function tube(points,a,b,col=bark){G.tube(mb,points,a,b,col,blend(col,floor,.35),G.PAT.grain,high?7:5,true,.08);}
- function leaf(a,b,w,c=leafC){const side=M.norm(M.cross(M.sub(b,a),UP)),mid=M.lerp3(a,b,.48),v=[a,M.add(mid,M.mul(side,w)),b,M.sub(mid,M.mul(side,w))].map(v=>vertex(v,c));mb.quad(...v);}
+ function leaf(a,b,w,c=leafC){const axis=M.sub(b,a),side=M.norm(M.cross(axis,UP)),mid=M.lerp3(a,b,.48);mid[1]+=Math.min(w*.24,M.len(axis)*.06);const coords=[a,M.add(mid,M.mul(side,w)),b,M.sub(mid,M.mul(side,w))],v=coords.map((p,i)=>vertex(p,blend(c,i===2?paper:floor,i===2?.12:.035)));mb.quad(...v);}
  function plant(x,z,size,kind=cfg.kind){
   const y=ground(x,z),phase=rnd()*TAU;
   if(kind==='crystal'||kind==='mineral'){
@@ -16742,7 +16790,7 @@ function build(p,h){
  // Every group shares bounded draw and fade state. No whole-scene opacity changes.
  function group(x,z,radius,height,fn){
   const keep=mb;mb=new G.MB({height:height,baseY:ground(x,z)});fn();
-  const haze=M.clamp((dist(x,z)-.9)*.18,0,.38);
+  const haze=M.clamp((dist(x,z)-.65)*.24,0,.48);
   for(let i=0;i<mb.v.length;i+=G.STRIDE)for(const off of [9,12])for(let c=0;c<3;c++)mb.v[i+off+c]=mb.v[i+off+c]*(1-haze)+fog[c]*haze;
   const bounds=[[Infinity,Infinity,Infinity],[-Infinity,-Infinity,-Infinity]];
   for(let i=0;i<mb.v.length;i+=G.STRIDE)for(let axis=0;axis<3;axis++){bounds[0][axis]=Math.min(bounds[0][axis],mb.v[i+axis]);bounds[1][axis]=Math.max(bounds[1][axis],mb.v[i+axis]);}
@@ -16859,7 +16907,8 @@ function build(p,h){
   ell(x,ground(x,z)+4+rnd()*24,z,.8,.8,.8,rgb('#c1d989'),G.GLOW||16);
  }
  const shoreline=J.Shoreline?J.Shoreline.append(h,base,cfg):null;
- const mesh=upload(p,base);mesh.shoreline=shoreline;mesh.world={id,groups,W,D,S,cx,cz,version:'2.1',quality,water:cfg.water||null,feature:cfg.feature};
+ for(let i=0;i<base.v.length;i+=G.STRIDE){const d=dist(base.v[i],base.v[i+2]),haze=M.clamp((d-.55)*.15,0,.36);for(const off of [9,12]){const l=.30*base.v[i+off]+.59*base.v[i+off+1]+.11*base.v[i+off+2];for(let c=0;c<3;c++)base.v[i+off+c]=(base.v[i+off+c]*(1-haze*.35)+l*haze*.35)*(1-haze)+fog[c]*haze;}}
+ const mesh=upload(p,base);mesh.shoreline=shoreline;mesh.world={id,groups,W,D,S,cx,cz,version:'3.0',quality,water:cfg.water||null,feature:cfg.feature};
  // Cached habitat owns ALL buffers; the renderer's existing cache disposal deletes these.
  for(const g of groups)mesh.del.push(...g.mesh.del);
  mesh.worldStats={vertices:base.n+groups.reduce((s,g)=>s+g.mesh.n+(g.mesh.parts||[]).reduce((a,m)=>a+m.n,0),0),triangles:base.i.length/3+groups.reduce((s,g)=>s+g.mesh.idx.length/3+(g.mesh.parts||[]).reduce((a,m)=>a+m.idx.length/3,0),0),groups:groups.length};
@@ -16935,7 +16984,7 @@ P.drawMesh=function(program,mesh){
 // retains the original inhabitant-focused rig and all orbit/zoom/pan gestures are kept.
 const targetView=J.Renderer.prototype.targetView;
 J.Renderer.prototype.targetView=function(h){const v=targetView.call(this,h);if(this.cam.mode!=='follow'){v.s*=.77;v.offY*=.77;}return v;};
-J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
+J.MiniatureWorlds={version:'3.0',plans,build,cosmeticOnly:true};
 })(typeof window!=='undefined'?window:globalThis);
 
 </script>
@@ -17012,7 +17061,7 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
     c.fillStyle = '#b6a17c'; c.fillRect(x+2,y+h-8,w-4,6); return cv;
   };
   FH.portrait = function (sid, size) {
-    const source = U.R.speciesPortrait(sid, size || 160), cv = el('canvas', 'fh-portrait');
+    const source = U.R.speciesPortrait(sid, size || 160, this.data(U.game).sex, 5), cv = el('canvas', 'fh-portrait');
     cv.width = source.width; cv.height = source.height; cv.getContext('2d').drawImage(source, 0, 0);
     cv.setAttribute('aria-hidden', 'true'); return cv;
   };
@@ -17045,6 +17094,9 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
         const sp = J.SPECIES_BY_ID[sid]; if (!sp) continue;
         pick(sid, sp.name, sp.desc, s.sid === sid, () => { s.sid = sid; s.bid = B.rank(sid)[0]; this.save(); this.picker(); }, this.portrait(sid));
       }
+      const sexRow = el('div','sex-options'); sexRow.setAttribute('role','group'); sexRow.setAttribute('aria-label','Jumper sex');
+      for (const sex of ['female','male']) { const b = button(sex === 'male' ? 'Male' : 'Female', 'fhSex-'+sex, () => { s.sex=sex; this.save(); this.picker(); }, 'fh-button'); b.setAttribute('aria-pressed',String(s.sex===sex)); sexRow.append(b); }
+      w.append(el('p','fh-label','Choose female or male'),sexRow,el('p','fh-note','Differences are subtle as slings and develop through molts. Species cards show adult proportions.'));
       const label = el('label','fh-label','What would you like to call them?'); label.htmlFor = 'fhName';
       const name = el('input','fh-name'); name.id = 'fhName'; name.type = 'text'; name.maxLength = 24; name.value = s.name; name.placeholder = 'Pip'; name.autocomplete = 'off';
       name.oninput = () => { s.name = name.value; this.save(); };
@@ -17069,6 +17121,7 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
       if (s.step < 2) { s.step++; this.save(); this.picker(); }
       else this.createHome();
     },'fh-button fh-primary')); w.append(footer);
+    footer.lastChild.disabled = s.step===1 && !J.Sex.valid(s.sex);
     U.openModal('Your first terrarium', w, {back:null, sheet:'first-home'});
     // The existing modal layout manager moves bm-actions into non-scrolling chrome.
     D.getElementById('modalBody').scrollTop = 0;
@@ -17077,6 +17130,7 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
   FH.createHome = function () {
     const g = U.game, s = this.data(g); if (s.phase !== 'choose') return;
     if (!J.HABITATS[s.type] || !g.isUnlocked(s.sid) || !J.BIOMES[s.bid]) return;
+    if (!J.Sex.valid(s.sex)) { s.step=1; this.picker(); U.toast('Choose female or male for your jumper first.'); return; }
     const h = g.hab; h.data.type = s.type; h.data.buildSpecies = s.sid;
     B.setBiome(h, s.bid); B.applyGround(h,s.bid); h.rebuild(); s.tankId = h.data.id;
     s.name = this.name(); s.phase = 'build'; g.state.biomeSetup = false; g.state.lastBiome = s.bid;
@@ -17124,7 +17178,8 @@ J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
     let sp = h.spider(s.spiderId) || h.spiders.find(x => x.species === s.sid);
     if (!sp) {
       const check = g.canAdd(h,s.sid); if (!check.ok) throw new Error(check.reason);
-      sp = h.addSpider(s.sid,{name:this.name(),stage:1,meals:0,sat:.48});
+      if (!J.Sex.valid(s.sex)) throw new Error('Choose female or male before adding your jumper.');
+      sp = h.addSpider(s.sid,{name:this.name(),stage:1,meals:0,sat:.48,sex:s.sex});
       if (!sp) throw new Error('Your jumper could not be added. Please try again.');
     }
     s.spiderId = sp.id; g.selectedId = sp.id; h.data.selectedId = sp.id;
@@ -17536,6 +17591,22 @@ const css=el('style');css.textContent=`
 #app #drawer.fj-build .cards{grid-template-columns:repeat(3,minmax(0,1fr))!important;min-height:80px!important}
 #app #drawer.fj-build .card canvas{width:56px!important;height:56px!important}
 }
+/* Observe: floating caption and controls, no surface over the scene. */
+#app #obsHud{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:#fff9e8!important;text-shadow:none!important;pointer-events:none}
+#app #obsHud #obsName,#app #obsHud #obsThought,#app #obsHud .obs-tag,#app #obsHud button{color:#fff9e8!important;text-shadow:0 1px 2px rgba(10,16,8,.95),0 0 3px rgba(10,16,8,.85),0 0 7px rgba(255,247,213,.45)!important}
+#app #obsHud #obsThought{color:#f5f0dd!important}
+#app #obsHud button{background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;pointer-events:auto;min-width:48px;min-height:48px;cursor:pointer;transition:opacity .15s ease,text-shadow .15s ease}
+#app #obsHud button::before,#app #obsHud button::after{display:none!important}
+#app #obsHud button svg{filter:drop-shadow(0 1px 1px rgba(10,16,8,.95)) drop-shadow(0 0 3px rgba(255,247,213,.5))!important;stroke:currentColor}
+body.fj-observe-idle:not(:has(#obsHud:focus-within)) #app #obsHud button{opacity:.75}
+#app #obsHud button:hover,#app #obsHud button:focus-visible{opacity:1!important;text-shadow:0 1px 2px #10180c,0 0 4px #10180c,0 0 9px rgba(255,247,213,.75)!important}
+#app #obsHud button:focus-visible{outline:2px solid #fff9e8!important;outline-offset:3px;border-radius:6px}
+#app #obsHud button:active{opacity:.8!important;transform:translateY(1px)}
+/* Catch replay offer: the same floating treatment, not a toast card. */
+#app .toast.replay{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:#fff9e8!important;text-shadow:0 1px 2px rgba(10,16,8,.95),0 0 3px rgba(10,16,8,.85),0 0 7px rgba(255,247,213,.45)!important;min-height:48px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:6px 12px!important;pointer-events:auto}
+#app .toast.replay .rp{font-weight:500;text-decoration:none}
+#app .toast.replay:hover .rp,#app .toast.replay:focus-visible .rp{text-decoration:underline;text-underline-offset:3px}
+#app .toast.replay:focus-visible{outline:2px solid #fff9e8;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){#app *{transition:none!important}}
 `;D.head.append(css);
 })(window);
@@ -17681,6 +17752,103 @@ body.fj-fluid.fj-short #app #drawer .card .pr{grid-column:2;grid-row:2;line-heig
 
 </script>
 <script>
+/* Individual sex identity, explicit legacy choices, and a single tank-setup entry point.
+   Identity is ordinary save data; appearance is derived, never applied to shared species definitions. */
+(function(root){
+ 'use strict';const J=root.JT,U=J.UI,D=root.document;
+ const valid=sex=>sex==='male'||sex==='female';
+ const growth=sp=>[0,.06,.18,.4,.7,1][Math.max(0,Math.min(5,sp.stage==null?5:sp.stage|0))];
+ const cache=new Map();
+ const X=J.Sex={valid,growth,label:sp=>valid(sp.sex)?sp.sex==='male'?'Male':'Female':'Sex not chosen'};
+ X.look=function(S,sp){
+  if(!valid(sp.sex))return S.look||{}; // Legacy residents keep their old appearance until chosen.
+  const key=S.id+'|'+sp.sex+'|'+(sp.stage==null?5:sp.stage);if(cache.has(key))return cache.get(key);
+  const ant=!!S.antShape,k=growth(sp),male=sp.sex==='male',look=Object.assign({},S.look||{});
+  // Ant mimics retain their narrow original body; magnolia and Portia keep their characteristic build.
+  const scale=(name,f)=>{look[name]=(ant&&['aL','aW','aH','cL','cW','cH'].includes(name)?1:look[name]||1)*f;};
+  if(male){
+   scale('front',1+(ant?.2:S.id==='magnolia'?.25:.38)*k);
+   look.frontW=(look.frontW||1.3)*(1+(ant?.2:.36)*k);
+   scale('cL',1+.09*k);scale('cW',1+(ant?.07:.19)*k);scale('cH',1+.1*k);
+   scale('aL',1+(ant?.12:.2)*k);scale('aW',1-(ant?.13:.3)*k);scale('aH',1-.18*k);
+   scale('chel',1+(ant?.65:S.id==='zebra'?.55:.4)*k);look.palpSize=1+.65*k;look.fang=.4+.65*k;
+  }else{
+   scale('aW',1+.04*k);scale('aH',1+.03*k);
+   if(S.id==='imperial')look.tufts=null;
+   if(look.palp==='flag')look.palp='plain';
+  }
+  cache.set(key,look);return look;
+ };
+ X.species=function(S,sp){
+  if(!valid(sp.sex))return S;
+  const maleAdult=sp.sex==='male'&&growth(sp)>=1;
+  // Suppress adult male-only fan/colour ornamentation on females and immature males.
+  if((S.pattern==='peacock'||S.fan)&&!maleAdult)return Object.assign({},S,{fan:null,pattern:'graywall',pal:Object.assign({},S.pal,{abd:'#806b52',mark:'#b6a081',ceph:'#66543f'})});
+  if(S.id==='regal'&&maleAdult)return Object.assign({},S,{pal:Object.assign({},S.pal,{ceph:'#202022',abd:'#202022',leg:'#272729',mark:'#e9e5dc',hair:'#a09b92'})});
+  if(S.id==='paradise'&&!maleAdult)return Object.assign({},S,{pal:Object.assign({},S.pal,{chel:'#76634b'})});
+  return S;
+ };
+ const el=(tag,cls,text)=>{const e=D.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;};
+ const button=(text,id,fn)=>{const b=el('button','modal-btn',text);b.type='button';if(id)b.id=id;b.onclick=fn;return b;};
+ const clone=c=>{const out=el('canvas');out.width=c.width;out.height=c.height;out.getContext('2d').drawImage(c,0,0);return out;};
+ U.chooseJumperSex=function(sid,opts){
+  opts=opts||{};let sex=null,stage=opts.individual?.stage??1;const w=el('div','sex-picker'),S=J.SPECIES_BY_ID[sid];
+  w.append(el('p','muted',opts.individual?`Choose once for ${opts.individual.name}. Their progress, personality and home stay unchanged.`:`${S.name} · Choose female or male before adding this sling.`));
+  const group=el('div','sex-options');group.setAttribute('role','group');group.setAttribute('aria-label','Jumper sex');
+  const preview=el('div','sex-preview');preview.setAttribute('aria-live','polite');
+  const stageButton=button('Preview adult','sexPreviewStage',()=>{stage=stage===5?(opts.individual?.stage??1):5;stageButton.textContent=stage===5?'Preview current stage':'Preview adult';draw();});
+  const status=el('p','muted','Select female or male to preview.');
+  const submit=button(opts.individual?'Save choice':'Add to tank','sexConfirm',()=>{if(!valid(sex))return;opts.onConfirm(sex);});submit.disabled=true;
+  const draw=()=>{preview.replaceChildren();if(sex){const cv=clone(this.R.speciesPortrait(sid,240,sex,stage));cv.setAttribute('role','img');cv.setAttribute('aria-label',`${sex} ${S.name}, ${J.STAGES[stage]}`);preview.append(cv);status.textContent=(sex==='male'?'Male':'Female')+' · '+J.STAGES[stage]+(stage<5?' · Differences develop with each molt.':' · Adult proportions');}for(const b of group.children)b.setAttribute('aria-pressed',String(b.dataset.sex===sex));};
+  for(const value of ['female','male']){const b=button(value==='female'?'Female':'Male','sex-'+value,()=>{sex=value;submit.disabled=false;draw();});b.dataset.sex=value;b.setAttribute('aria-pressed','false');group.append(b);}
+  w.append(group,preview,status,stageButton,el('p','muted','Visual identity only: no breeding, stat bonuses or new care requirements.'));
+  const actions=el('div','sex-actions');actions.append(button(opts.individual?'Choose later':'Cancel','sexCancel',()=>{this.closeModal();opts.onCancel?.();}),submit);w.append(actions);
+  this.openModal(opts.individual?'Choose jumper sex':'Meet your jumper',w,{back:opts.onCancel||null});group.firstChild.focus();
+ };
+ U.pendingSexChoices=function(){return this.game.habs.flatMap(h=>h.spiders).concat(this.game.state.cup||[]).filter(sp=>!valid(sp.sex));};
+ U.chooseExistingSex=function(individual){
+  const sp=individual||this.pendingSexChoices()[0];if(!sp)return false;
+  this.chooseJumperSex(sp.species,{individual:sp,onConfirm:sex=>{
+   // Guard against a stale dialog, and never overwrite an earlier confirmed choice.
+   if(!this.pendingSexChoices().includes(sp)){this.closeModal();return;}
+   if(J.Replay){if(J.Replay.active)J.Replay.stop();J.Replay.buf=[];}sp.sex=sex;delete sp._rig;this.game.save();this.R.resetCaches();
+   this.closeModal();this.refreshHeader();if(this.pendingSexChoices().length)this.chooseExistingSex();else this.toast('Choices saved. Your jumpers and progress are kept.');
+  },onCancel:()=>this.jumpersSheet('tank')});return true;
+ };
+ const profile=U.profileModal;U.profileModal=function(sp){const result=profile.apply(this,arguments);if(sp&&!valid(sp.sex)){const w=D.querySelector('#modalBody .prof');if(w)w.prepend(button('Choose female or male (one-time)','profileSexChoice',()=>this.chooseExistingSex(sp)));}return result;};
+ const jumpers=U.jumpersSheet;U.jumpersSheet=function(){const out=jumpers.apply(this,arguments);if(J.FirstHome?.active(this.game))return out;
+  const w=D.getElementById('modalBody');if(w&&!D.getElementById('quickTankSetup')){const row=el('div','sex-actions');row.append(button('Tank Setup','quickTankSetup',()=>this.beginTankSetup()),button('Switch tank','quickSwitchTank',()=>this.tanksModal()));const pending=this.pendingSexChoices();if(pending.length)row.append(button(`Choose sex · ${pending.length} remaining`,'legacySexChoices',()=>this.chooseExistingSex()));w.prepend(row);}return out;};
+ const build=U.fieldBuild;U.fieldBuild=function(){const out=build.apply(this,arguments);if(!J.FirstHome?.active(this.game)){const tabs=D.getElementById('drawerTabs');if(!D.getElementById('buildTankSetup'))tabs.append(button('Tank Setup','buildTankSetup',()=>this.beginTankSetup()));}return out;};
+ // Tap the tank name directly; switching and resident lists remain available in their own screens.
+ const init=U.init;U.init=function(){const out=init.apply(this,arguments),b=D.getElementById('jumperControl');b.onclick=()=>this.beginTankSetup();b.setAttribute('aria-label','Tank Setup for '+this.hab.title);b.setAttribute('aria-haspopup','dialog');
+  setTimeout(()=>{if(!J.FirstHome?.active(this.game)&&this.pendingSexChoices().length&&!this.tankSetup)this.chooseExistingSex();},200);return out;};
+ const refresh=U.refreshHeader;U.refreshHeader=function(){const out=refresh.apply(this,arguments);const b=D.getElementById('jumperControl');if(b&&this.game)b.setAttribute('aria-label','Tank Setup for '+this.hab.title);return out;};
+ const imported=J.Game.prototype.importSave;J.Game.prototype.importSave=function(){const ok=imported.apply(this,arguments);if(ok&&U.game===this)setTimeout(()=>{if(!J.FirstHome?.active(this)&&U.pendingSexChoices().length)U.chooseExistingSex();},100);return ok;};
+ // Resuming an old first-home setup must request sex before spawning, including Skip setup.
+ const FH=J.FirstHome,arrival=FH.addSheet,finish=FH.finishSetup;
+ FH.addSheet=function(){const s=this.data(U.game);if(!valid(s.sex))return U.chooseJumperSex(s.sid,{onConfirm:sex=>{s.sex=sex;this.save();arrival.call(this);},onCancel:()=>this.render()});return arrival.apply(this,arguments);};
+ FH.finishSetup=function(){const s=this.data(U.game);if(!valid(s.sex))return U.chooseJumperSex(s.sid,{onConfirm:sex=>{s.sex=sex;this.save();finish.call(this);},onCancel:()=>this.render()});return finish.apply(this,arguments);};
+ const complete=FH.complete;FH.complete=function(){const result=complete.apply(this,arguments);if(U.pendingSexChoices().length)setTimeout(()=>U.chooseExistingSex(),100);return result;};
+ const style=el('style');style.textContent=`
+#app .sex-options,#app .sex-actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+#app .sex-options button{flex:1;border:1px solid #b8bca9;border-radius:8px;min-height:44px;padding:10px 16px}
+#app .sex-options button[aria-pressed=true]{background:#405d3c!important;color:#fff!important;border-color:#405d3c}
+#app .sex-preview{display:flex;align-items:center;justify-content:center;min-height:120px;background:#e9e9df;border-radius:12px}
+#app .sex-preview:empty{display:none}#app .sex-preview canvas{width:200px;max-width:100%;height:auto}
+#app .sex-picker{max-width:550px;margin:auto}#app .sex-picker p{line-height:1.5}
+#app #sexConfirm:not(:disabled){background:#405d3c;color:#fff;border-radius:8px;padding:8px 16px}
+#app .setup-backgrounds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#app .setup-background{display:flex;flex-direction:column;gap:6px;align-items:stretch;text-align:center;min-width:0;padding:6px;border:1px solid #bfc3b3;border-radius:8px;font:13px/1.3 system-ui;color:#2c302a}
+#app .setup-background[aria-pressed=true]{outline:2px solid #405d3c;outline-offset:1px}
+#app .setup-swatch{height:38px;border-radius:4px;display:block;flex:none}
+#app .setup-background:focus-visible,#app .sex-options button:focus-visible{outline:3px solid #3d6a95;outline-offset:2px}
+#app #buildTankSetup{font-weight:600;flex:none;white-space:nowrap}
+#app .setup-body h3{font:600 15px/1.4 system-ui;margin:12px 0 6px}
+`;D.head.append(style);
+})(typeof window!=='undefined'?window:globalThis);
+
+</script>
+<script>
 /* Jumper Terrarium — boot + main loop (fixed-step simulation, variable-rate rendering). */
 (function (root) {
   'use strict';
@@ -17754,8 +17922,11 @@ body.fj-fluid.fj-short #app #drawer .card .pr{grid-column:2;grid-row:2;line-heig
     R.onCatch = function (UI, sp, tc) {
       if (R.active || !sp) return; const id = sp.id; if (tc == null) tc = UI.game.hab.time;
       if (R.offer && R.offer.el) R.offer.el.remove(); // a newer catch replaces the older offer
-      const t = UI.toast('<b>Nice catch!</b> <span class="rp">Watch it in slow motion \u25B6</span>', 'replay', 3200); R.offer = { id, tc, el: t };
-      if (t) t.onclick = (ev) => { ev.stopPropagation(); t.remove(); R.start(UI, id, tc); };
+      const t = UI.toast('<span class="rp">Watch in slow motion</span>', 'replay', 3200); R.offer = { id, tc, el: t };
+      if (t) { t.setAttribute('role', 'button'); t.tabIndex = 0;
+        t.onclick = (ev) => { ev.stopPropagation(); t.remove(); R.start(UI, id, tc); };
+        t.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); t.click(); } };
+      }
     };
     R.start = function (UI, id, tc) {
       if (R.active) return; const g = UI.game, h = g.hab; if (!h || h !== R.habId) return; const rg = range(id, tc);

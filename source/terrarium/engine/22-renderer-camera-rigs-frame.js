@@ -1077,11 +1077,13 @@
             }
             return this.thumbs[key] = c, c;
         }
-        speciesPortrait(id, size) {
-            const key = id + "|" + (size = size || 120);
+        speciesPortrait(id, size, sex, stage) {
+            stage = stage == null ? 5 : stage;
+            const key = id + "|" + (size = size || 120) + "|" + (sex || "unassigned") + "|" + stage;
             if (this.portraits[key]) return this.portraits[key];
-            const c = mkCanvas(size, size), ctx = c.getContext("2d"), V = new JT.View(.9, .85, size / 16, size / 2, .58 * size, [ 0, 0, 0 ]), sp = {
-                species: id,
+            const S = JT.SPECIES_BY_ID[id] || JT.SPECIES[0], look = JT.Sex ? JT.Sex.look(S, {sex, stage}) : S.look || {}, reach = Math.max(1, (look.legLen || 1) * (look.front || 1));
+            const c = mkCanvas(size, size), ctx = c.getContext("2d"), V = new JT.View(.9, .85, size / (18 + 5 * (reach - 1)), size / 2, .58 * size, [ 0, 0, 0 ]), sp = {
+                species: id, sex: sex, stage: stage,
                 state: "idle",
                 _walk: 0,
                 _moving: !1,

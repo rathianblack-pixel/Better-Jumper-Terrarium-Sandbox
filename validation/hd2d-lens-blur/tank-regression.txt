@@ -1,0 +1,1 @@
+PASS final phone: background Reroll hidden, Apply/Cancel/Undo one row, Apply succeeds

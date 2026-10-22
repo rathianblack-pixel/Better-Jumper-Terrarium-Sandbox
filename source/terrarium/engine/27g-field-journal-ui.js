@@ -109,6 +109,22 @@ const css=el('style');css.textContent=`
 #app #drawer.fj-build .cards{grid-template-columns:repeat(3,minmax(0,1fr))!important;min-height:80px!important}
 #app #drawer.fj-build .card canvas{width:56px!important;height:56px!important}
 }
+/* Observe: floating caption and controls, no surface over the scene. */
+#app #obsHud{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:#fff9e8!important;text-shadow:none!important;pointer-events:none}
+#app #obsHud #obsName,#app #obsHud #obsThought,#app #obsHud .obs-tag,#app #obsHud button{color:#fff9e8!important;text-shadow:0 1px 2px rgba(10,16,8,.95),0 0 3px rgba(10,16,8,.85),0 0 7px rgba(255,247,213,.45)!important}
+#app #obsHud #obsThought{color:#f5f0dd!important}
+#app #obsHud button{background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;pointer-events:auto;min-width:48px;min-height:48px;cursor:pointer;transition:opacity .15s ease,text-shadow .15s ease}
+#app #obsHud button::before,#app #obsHud button::after{display:none!important}
+#app #obsHud button svg{filter:drop-shadow(0 1px 1px rgba(10,16,8,.95)) drop-shadow(0 0 3px rgba(255,247,213,.5))!important;stroke:currentColor}
+body.fj-observe-idle:not(:has(#obsHud:focus-within)) #app #obsHud button{opacity:.75}
+#app #obsHud button:hover,#app #obsHud button:focus-visible{opacity:1!important;text-shadow:0 1px 2px #10180c,0 0 4px #10180c,0 0 9px rgba(255,247,213,.75)!important}
+#app #obsHud button:focus-visible{outline:2px solid #fff9e8!important;outline-offset:3px;border-radius:6px}
+#app #obsHud button:active{opacity:.8!important;transform:translateY(1px)}
+/* Catch replay offer: the same floating treatment, not a toast card. */
+#app .toast.replay{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;color:#fff9e8!important;text-shadow:0 1px 2px rgba(10,16,8,.95),0 0 3px rgba(10,16,8,.85),0 0 7px rgba(255,247,213,.45)!important;min-height:48px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:6px 12px!important;pointer-events:auto}
+#app .toast.replay .rp{font-weight:500;text-decoration:none}
+#app .toast.replay:hover .rp,#app .toast.replay:focus-visible .rp{text-decoration:underline;text-underline-offset:3px}
+#app .toast.replay:focus-visible{outline:2px solid #fff9e8;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){#app *{transition:none!important}}
 `;D.head.append(css);
 })(window);

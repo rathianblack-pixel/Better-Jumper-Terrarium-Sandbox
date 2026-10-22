@@ -1,0 +1,389 @@
+{
+  "environment": "Headless Chromium / Linux / SwiftShader",
+  "errors": [],
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 960,
+      "height": 640,
+      "mode": "off",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "desktop",
+      "width": 960,
+      "height": 640,
+      "mode": "light",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "desktop",
+      "width": 960,
+      "height": 640,
+      "mode": "strong",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 844,
+      "mode": "off",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 844,
+      "mode": "light",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 844,
+      "mode": "strong",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "mode": "off",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "mode": "light",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    },
+    {
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "mode": "strong",
+      "glError": 0,
+      "broken": false,
+      "active": true
+    }
+  ],
+  "synthetic": [
+    {
+      "kind": "uniform",
+      "mode": "off",
+      "maxUniformError": 0,
+      "bleed": 64,
+      "transition": 720,
+      "bloomHash": 488618693,
+      "glError": 0
+    },
+    {
+      "kind": "uniform",
+      "mode": "light",
+      "maxUniformError": 0,
+      "bleed": 64,
+      "transition": 720,
+      "bloomHash": 488618693,
+      "glError": 0
+    },
+    {
+      "kind": "uniform",
+      "mode": "strong",
+      "maxUniformError": 0,
+      "bleed": 64,
+      "transition": 720,
+      "bloomHash": 488618693,
+      "glError": 0
+    },
+    {
+      "kind": "depth",
+      "mode": "off",
+      "maxUniformError": 0,
+      "bleed": 0,
+      "transition": 0,
+      "bloomHash": 771501765,
+      "glError": 0
+    },
+    {
+      "kind": "depth",
+      "mode": "light",
+      "maxUniformError": 0,
+      "bleed": 0,
+      "transition": 2,
+      "bloomHash": 771501765,
+      "glError": 0
+    },
+    {
+      "kind": "depth",
+      "mode": "strong",
+      "maxUniformError": 0,
+      "bleed": 1,
+      "transition": 0,
+      "bloomHash": 771501765,
+      "glError": 0
+    },
+    {
+      "kind": "step",
+      "mode": "off",
+      "maxUniformError": 0,
+      "bleed": 255,
+      "transition": 0,
+      "bloomHash": 351897285,
+      "glError": 0
+    },
+    {
+      "kind": "step",
+      "mode": "light",
+      "maxUniformError": 0,
+      "bleed": 255,
+      "transition": 10,
+      "bloomHash": 351897285,
+      "glError": 0
+    },
+    {
+      "kind": "step",
+      "mode": "strong",
+      "maxUniformError": 0,
+      "bleed": 255,
+      "transition": 24,
+      "bloomHash": 351897285,
+      "glError": 0
+    }
+  ],
+  "settingsMatrix": [
+    {
+      "quality": "low",
+      "pixel": "fine",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "fine",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "fine",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "classic",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "classic",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "classic",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "chunky",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "chunky",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "low",
+      "pixel": "chunky",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "fine",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "fine",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "fine",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "classic",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "classic",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "classic",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "chunky",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "chunky",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "medium",
+      "pixel": "chunky",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "fine",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "fine",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "fine",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "classic",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "classic",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "classic",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "chunky",
+      "mode": "off",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "chunky",
+      "mode": "light",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    },
+    {
+      "quality": "high",
+      "pixel": "chunky",
+      "mode": "strong",
+      "glError": 0,
+      "active": true,
+      "broken": false
+    }
+  ],
+  "result": "PASS"
+}

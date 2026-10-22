@@ -1,0 +1,10 @@
+{
+  "errors": [],
+  "checks": [
+    "Actual old-save load asks once; choice persists and does not ask again",
+    "Additional-tank wizard requires and saves explicit male/female choice",
+    "Imported legacy save prompts for its unassigned jumper",
+    "Tank Setup links to existing enclosure and confirmed management controls"
+  ],
+  "result": "PASS"
+}

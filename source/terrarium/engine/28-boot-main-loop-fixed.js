@@ -71,8 +71,11 @@
     R.onCatch = function (UI, sp, tc) {
       if (R.active || !sp) return; const id = sp.id; if (tc == null) tc = UI.game.hab.time;
       if (R.offer && R.offer.el) R.offer.el.remove(); // a newer catch replaces the older offer
-      const t = UI.toast('<b>Nice catch!</b> <span class="rp">Watch it in slow motion \u25B6</span>', 'replay', 3200); R.offer = { id, tc, el: t };
-      if (t) t.onclick = (ev) => { ev.stopPropagation(); t.remove(); R.start(UI, id, tc); };
+      const t = UI.toast('<span class="rp">Watch in slow motion</span>', 'replay', 3200); R.offer = { id, tc, el: t };
+      if (t) { t.setAttribute('role', 'button'); t.tabIndex = 0;
+        t.onclick = (ev) => { ev.stopPropagation(); t.remove(); R.start(UI, id, tc); };
+        t.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); t.click(); } };
+      }
     };
     R.start = function (UI, id, tc) {
       if (R.active) return; const g = UI.game, h = g.hab; if (!h || h !== R.habId) return; const rg = range(id, tc);

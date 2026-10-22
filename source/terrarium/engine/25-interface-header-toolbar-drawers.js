@@ -764,7 +764,7 @@
       const meter = (lab, val, v, cls) => '<div class="meter ' + (cls || '') + '"><span class="ml">' + lab + '</span><span class="mv">' + val + '</span><i style="--v:' + pct(v) + '%"></i></div>';
       const html = '<button class="txt x" id="pClose" title="Close" aria-label="Close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<h3 id="pHead">' + (this.renaming ? '<input id="pName" maxlength="18" value="' + esc(sp.name) + '">' : esc(sp.name)) + '</h3>' +
-        '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
+        '<div class="sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i> · ' + JT.Sex.label(sp) + '</div>' +
         '<div class="state">' + esc(line) + '</div>' +
         (pz ? '<div class="ctitle">' + esc(pz.title) + ' · ' + pz.traits.map(t => esc(t.label)).join(', ') + '</div>' : '') +
         '<div class="cthought">' + esc(sp.thought || line || '…') + '</div>' +
@@ -868,7 +868,7 @@
       const pct = (v) => Math.round(M.clamp(v, 0, 1) * 100);
       for (const sp of h.spiders) {
         const S = JT.SPECIES_BY_ID[sp.species]; const r = el('div', 'jrow' + (sp.id === g.selectedId ? ' sel' : ''));
-        r.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96)));
+        r.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96, sp.sex, sp.stage)));
         const line = AI.stateLine ? AI.stateLine(h, sp) : AI.hungerLabel(sp.sat); const desc = AI.personality ? AI.personality(sp) : null;
         const tx = el('div', 'jtx', '<div class="jn">' + esc(sp.name) + '</div><div class="js">' + esc(S.name) + ' · ' + JT.STAGES[sp.stage] + '</div><div class="jl">' + esc(line) + '</div>' +
           (desc && desc.title ? '<div class="jp">' + esc(desc.title) + '</div>' : '') +
@@ -918,9 +918,12 @@
         else b.textContent = 'Add as a Sling';
         b.onclick = () => {
           if (!g.canAdd(h, S.id).ok) return;
-          const sp = h.addSpider(S.id, { stage: 1 });
-          g.checkUnlocks(true); g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('hatch'); this.buzz('place', true);
-          this.toast('Welcome, ' + esc(sp.name) + ' the ' + esc(S.name) + '!'); g.save();
+          this.chooseJumperSex(S.id, { onConfirm: sex => {
+            if (h !== this.hab || !g.canAdd(h, S.id).ok) { this.toast('This tank is no longer available or is full.'); return; }
+            const sp = h.addSpider(S.id, { stage: 1, sex });
+            g.checkUnlocks(true); g.selectedId = sp.id; this.closeModal(); this.showPanel(sp.id); this.refreshHeader(); A().sfx('hatch'); this.buzz('place', true);
+            this.toast('Welcome, ' + esc(sp.name) + ' the ' + esc(S.name) + '!'); g.save();
+          }, onCancel: () => this.jumpersSheet('collection') });
         };
         e.appendChild(b); grid.appendChild(e);
       }
@@ -951,7 +954,7 @@
       const g = this.game, AI = JT.SpiderAI; const w = el('div', 'stories'); const habs = [g.hab].concat(g.habs.filter(h => h !== g.hab)); let any = false;
       for (const h of habs) for (const sp of h.spiders) { any = true;
         const S = JT.SPECIES_BY_ID[sp.species] || { name: sp.species }; const pz = AI.personality ? AI.personality(sp) : null; const D = (sp.diary || []).slice().reverse();
-        const card = el('div', 'story'); card.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96)));
+        const card = el('div', 'story'); card.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 96, sp.sex, sp.stage)));
         const open = this._storyOpen === sp.id; const shown = open ? D : D.slice(0, 4);
         const tx = el('div', 'stx', '<div class="jn">' + esc(sp.name) + '</div><div class="js">' + esc(S.name) + ' · ' + JT.STAGES[sp.stage] + (h !== g.hab ? ' · ' + esc(h.title) : '') + (pz && pz.title ? ' · <i>' + esc(pz.title) + '</i>' : '') + '</div>' +
           '<ul class="diary">' + (shown.length ? shown.map(e => '<li><span class="dd">Day ' + e.d + '</span>' + esc(e.t) + '</li>').join('') : '<li class="muted">No moments recorded yet. Its story starts now.</li>') + '</ul>');
@@ -968,10 +971,10 @@
       const w = el('div', 'prof'); const pz = AI.personality ? AI.personality(sp) : null; const st = sp.stats || {};
       this._profId = sp.id; const myBack = back || this._nextBack || null; this._nextBack = null; this._profBack = myBack;
       // header: portrait (or the newest photo) + the essentials
-      const hd = el('div', 'pf-head'); const pic = el('div', 'pf-pic'); pic.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 192))); hd.appendChild(pic);
+      const hd = el('div', 'pf-head'); const pic = el('div', 'pf-pic'); pic.appendChild(cloneCanvas(this.R.speciesPortrait(sp.species, 192, sp.sex, sp.stage))); hd.appendChild(pic);
       const size = (S.len * JT.STAGE_SCALE[sp.stage]).toFixed(1);
       hd.appendChild(el('div', 'pf-id', '<div class="pf-sci">' + esc(S.name) + ', <i>' + esc(S.sci) + '</i></div>' +
-        '<div class="pf-st">' + JT.STAGES[sp.stage] + ' \u00b7 ' + (sp.ageDays || 0).toFixed(1) + ' days old \u00b7 ' + size + ' mm</div>' +
+        '<div class="pf-st">' + JT.Sex.label(sp) + ' · ' + JT.STAGES[sp.stage] + ' \u00b7 ' + (sp.ageDays || 0).toFixed(1) + ' days old \u00b7 ' + size + ' mm</div>' +
         '<div class="pf-home">' + (home ? 'Lives in <b>' + esc(home.title) + '</b> (' + esc(home.dims.name) + ')' : inCup ? 'Waiting in the holding cup' : '') + '</div>' +
         (pz ? '<div class="pf-title">' + esc(pz.title) + '</div>' : '')));
       w.appendChild(hd);
@@ -1103,7 +1106,7 @@
         if (this._ufEl || (this._unlockQ && this._unlockQ.length)) { this.toast(esc(sp.name) + ' is now an Adult.', '', 3500); return; } // an unlock is about to take the stage
         const S = JT.SPECIES_BY_ID[sp.species]; if (!S) return; const old = $('adultFx'); if (old) old.remove(); const t = this.speciesTint(S);
         const w = el('div'); w.id = 'adultFx'; w.style.setProperty('--uf', t.solid); w.style.setProperty('--ufA', t.a); w.setAttribute('role', 'status');
-        try { w.appendChild(cloneCanvas(this.R.speciesPortrait(S.id, 116))); } catch (e) { /* no picture */ }
+        try { w.appendChild(cloneCanvas(this.R.speciesPortrait(S.id, 116, sp.sex, sp.stage))); } catch (e) { /* no picture */ }
         const tx = el('div'); tx.appendChild(el('b', '', esc(sp.name) + ' is all grown up')); tx.appendChild(el('span', '', 'Now an Adult ' + esc(S.name))); w.appendChild(tx);
         document.body.appendChild(w); requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('in')));
         setTimeout(() => { w.classList.remove('in'); setTimeout(() => w.remove(), 600); }, 4200); }, 650);
@@ -1248,7 +1251,7 @@
         if (!rows.length) list.appendChild(el('p', 'muted', 'No tank matches \u201c' + esc(term) + '\u201d.'));
         for (const { h, i, s: ts } of rows) {
           const H = JT.HABITATS[h.data.type]; const r = el('div', 'tkrow' + (i === st.active ? ' on' : ''));
-          const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64)));
+          const pics = el('div', 'tkpics' + (h.spiders.length ? '' : ' none')); for (const x of h.spiders.slice(0, 3)) pics.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 64, x.sex, x.stage)));
           r.appendChild(pics);
           let chips = i === st.active ? chip('view', 'Viewing') : chip('view', 'Background');
           if (ts.molting.length) chips += chip('molt', 'Molting: ' + names(ts.molting));
@@ -1275,7 +1278,7 @@
         w.appendChild(el('p', 'muted', 'Jumpers waiting for a tank. Time stands still for them here.'));
         const cl = el('div', 'jlist');
         for (const x of cup) { const S = JT.SPECIES_BY_ID[x.species]; const r = el('div', 'jrow');
-          r.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 96)));
+          r.appendChild(cloneCanvas(this.R.speciesPortrait(x.species, 96, x.sex, x.stage)));
           r.appendChild(el('div', 'jtx', '<div class="jn">' + esc(x.name) + '</div><div class="js">' + esc(S.name) + ' \u00b7 ' + JT.STAGES[x.stage] + '</div>'));
           const bs = el('div', 'jb'); const b = el('button', 'modal-btn gold', 'Place here'); b.title = 'Move into the tank you are viewing';
           b.onclick = (e) => { e.stopPropagation(); const res = g.moveSpider(x, 'cup', g.hab); if (!res.ok) { this.toast(esc(res.reason)); A().sfx('error'); return; } A().sfx('place'); this.buzz('place', true); g.selectedId = x.id; this.refreshHeader(); g.save(); this.closeModal(); this.toast(esc(x.name) + ' moved into this tank.'); };
@@ -1434,10 +1437,6 @@
     },
     settingsModal() {
       const s = this.set, h = this.hab; const w = el('div');
-      w.appendChild(el('h4', '', 'Background for ' + esc(h.title)));
-      const bgs = el('div', 'bgs');
-      for (const id in JT.BACKGROUNDS) { const B = JT.BACKGROUNDS[id]; const b = el('button', h.data.bg === id ? 'on' : '', esc(B.name)); b.textContent = ''; b.appendChild(el('span', 'bg-label', B.name)); b.style.background = 'linear-gradient(' + B.sky[0] + ',' + B.sky[1] + ' 55%,' + B.sky[2] + ')'; b.onclick = () => { if (h === this.hab && h.data.bg !== id) this.undoPush('Background: ' + B.name); h.data.bg = id; this.R.bgCache = {}; this.settingsModal(); }; bgs.appendChild(b); }
-      w.appendChild(bgs);
       w.appendChild(el('h4', '', 'Graphics'));
       const q = el('div', 'form-row'); q.appendChild(el('label', '', 'Render quality'));
       const seg = el('div', 'seg small'); for (const [v, l] of [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']]) { const b = el('button', s.quality === v ? 'on' : '', l); b.onclick = () => { s.quality = v; this.R._autoLow = false; this.R._autoLvl = 0; this.R._thermalLevel = v === 'auto' ? (JT.Device.tier === 'low' ? 4 : JT.Device.tier === 'high' ? 2 : 3) : 0; this.R._healthySeconds = this.R._missSeconds = this.R._costSeconds = 0; this.R.softS = 1; JT.Settings.save(s); this.R.resize(); this.settingsModal(); }; seg.appendChild(b); }

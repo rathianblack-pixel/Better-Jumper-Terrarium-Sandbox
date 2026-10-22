@@ -53,7 +53,7 @@ function top(h){
 }
 function append(h,mb,cfg){
  const p=profile(h),{hw,hd,rows}=p,S=J.SUBSTRATES[h.data.substrate]||J.SUBSTRATES.coco;
- const floor=G.rgb(cfg.floor),soil=mix(G.rgb(S.mid),G.rgb('#f4f0e5'),.14),topC=mix(G.rgb(S.top),G.rgb('#f4f0e5'),.20),dark=mix(soil,G.rgb('#32281e'),.25);
+ const floor=G.rgb(cfg.floor),soil=mix(G.rgb(S.mid),G.rgb('#f4f0e5'),.14),topC=mix(G.rgb(S.top),G.rgb('#f4f0e5'),J.HD2D&&J.HD2D.on?.07:.20),dark=mix(soil,G.rgb('#32281e'),.25);
  const snow=cfg.feature==='snow'||cfg.feature==='summit',dry=['dunes','canyon','basalt'].includes(cfg.feature),bare=['crystals','grotto','zen'].includes(cfg.feature);
  const ring=[];
  for(let k=0;k<6;k++){
@@ -65,7 +65,7 @@ function append(h,mb,cfg){
    const r=q.outer+q.apron*offsets[k],x=hw+q.dx*r,z=hd+q.dz*r;
    // Ground rises unevenly into the soil bank; no constant-height coloured ring.
    const colors=[topC,soil,mix(dark,floor,.65+.2*cover),mix(floor,soil,.04),floor,floor];
-   const c=mix(colors[k],k<2?soil:floor,.025*Math.sin(q.a*11));
+   const weather=.5+.5*Math.sin(q.a*4+p.seed%19);const c=mix(colors[k],k<2?soil:floor,k<3?.06+.12*weather:.025*Math.sin(q.a*11));
    const n=M.norm([q.dx*.45,k<2?.8:1,q.dz*.45]);
    row.push(mb.vert([x,heights[k],z],n,[0,0,0],c,c,G.TWO|G.PAT.speck));
   }ring.push(row);

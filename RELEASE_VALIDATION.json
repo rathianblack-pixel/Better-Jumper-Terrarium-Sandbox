@@ -1,33 +1,64 @@
 {
-  "edition": "Natural seeded habitat edges and embedded substrate banks",
+  "edition": "HD-2D and Storybook art direction polish",
   "result": "PASS",
-  "jumper_sha256": "fc69cae8bd6136a0a84a8126387f2e43e199582ce7a7a7ceb6f962671253a3d3",
+  "jumper_sha256": "9f7dd1f7283c6f8163f32c145be2e937ed430ea0374dd17c82aab73ed3e7305c",
+  "root_matches_built_release": true,
   "current_test_reports": {
-    "validation/natural-edges/shoreline-report.json": "PASS",
-    "validation/natural-edges/shoreline-persistence-report.json": "PASS",
-    "validation/natural-edges/source-audit.json": "PASS",
-    "validation/natural-edges/webgl1-report.json": "PASS",
-    "validation/natural-edges/final-check-report.json": "PASS",
-    "validation/natural-edges/revamp-test-report.json": "PASS"
+    "validation/art-polish/before/report.json": "PASS",
+    "validation/art-polish/after/report.json": "PASS",
+    "validation/art-polish/regression-report.json": "PASS",
+    "validation/art-polish/compatibility/webgl1-report.json": "PASS",
+    "validation/art-polish/compatibility/report.json": "PASS",
+    "validation/replay-floating-prompt/report.json": "PASS",
+    "validation/hd2d-lens-blur/report.json": "PASS",
+    "validation/art-polish/compatibility/final-check-report.json": "PASS"
   },
-  "visual_qa": {
+  "visual_review": {
+    "views": 10,
     "result": "PASS",
-    "captures": [
-      "mossy-storybook-900-0.4.png",
-      "dunes-storybook-900-0.4.png",
-      "snowfield-storybook-900-0.4.png",
-      "mossy-hd2d-390-0.4.png",
-      "crystalcave-hd2d-390-0.4.png",
-      "mossy-storybook-900-1.2.png",
-      "mossy-storybook-900-0.15.png"
-    ],
-    "environment": "Headless Chromium on Linux / SwiftShader"
+    "scope": "Mossy day/night observer and follow in both styles, waterfall desktop and dunes phone in both styles"
   },
-  "scope": "Cosmetic, outward-only extension. Original playable boundaries and saved layouts retained.",
+  "syntax": "PASS: all engine JavaScript files",
+  "prior_validation": {
+    "edition": "Floating Observe controls and simplified catch-replay prompt",
+    "result": "PASS",
+    "jumper_sha256": "cab6f14ef7253c637cfedd7707817f0b7d7b15509ce3f7925d1133487567ad6e",
+    "root_matches_built_release": true,
+    "current_test_reports": {
+      "validation/replay-floating-prompt/report.json": "PASS"
+    },
+    "checks": {
+      "responsive_day_night_combinations": 6,
+      "actions": [
+        "Click starts actual recorded replay",
+        "Space starts actual recorded replay without shortcut propagation",
+        "Stop returns to live simulation"
+      ],
+      "errors": [],
+      "syntax": "PASS"
+    },
+    "prior_validation": {
+      "edition": "Floating Observe caption and controls",
+      "reports": {
+        "validation/observe-floating-hud/report.json": "PASS",
+        "validation/observe-floating-hud/final-check-report.json": "PASS"
+      },
+      "note": "Prior full suites retained, not rerun for this scoped prompt update."
+    },
+    "retained_updates": [
+      "Floating Observe HUD",
+      "HD-2D lens blur fix",
+      "Jumper sex and growth visuals",
+      "Direct Tank Setup"
+    ],
+    "limitations": [
+      "Headless Chromium / Linux / SwiftShader; not physical-phone or Safari testing.",
+      "Screenshot fixture holds offer longer; production expiry remains 3200ms."
+    ]
+  },
   "limitations": [
-    "Not a physical-phone, Safari, FPS, battery or thermal benchmark.",
-    "Cosmetic shoulders are not legal placement/navigation space.",
-    "Existing finite-world extent can appear at extreme camera angles.",
-    "Validation files outside validation/natural-edges are historical unless listed in current_test_reports."
+    "Chromium / Linux / SwiftShader; no physical-phone, Safari or sustained thermal validation.",
+    "Short matched route diagnostics are not a hardware FPS or performance improvement claim.",
+    "Not every background has a new screenshot; all 26 were mesh-budget tested at all three explicit qualities."
   ]
 }

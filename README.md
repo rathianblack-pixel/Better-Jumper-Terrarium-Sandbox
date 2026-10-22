@@ -1,3 +1,11 @@
+> **Latest update — art direction polish:** distinct HD-2D texture and Storybook washes, refined ground/banks, softer foliage edges and contact shading, restrained bloom, quieter distant scenery and bounded plant motion. See `ART_DIRECTION_POLISH.md` and `validation/art-polish/`. Includes prior game updates.
+
+> **Latest update — floating Observe controls:** removed the Observe box and the catch-replay prompt box; the prompt now says “Watch in slow motion.” Warm-white text and icons use a subtle glow and dark contrast shadow. Photo, Ambient, Exit and mobile tap areas remain. See `OBSERVE_FLOATING_HUD.md`. Includes all preceding blur, jumper and Tank Setup changes.
+
+> **HD-2D lens blur:** smooth, depth-aware Light/Strong blur, stable bloom and corrected edge colour handling. Includes the preceding jumper sex and Tank Setup changes. See `HD2D_LENS_BLUR_FIX.md` and `validation/HD2D_LENS_BLUR_TEST_REPORT.md`.
+
+> **Jumper sex & tank access:** male/female choices, gradual dimorphism, one-time existing-resident choices, and backgrounds directly in Tank Setup. See `JUMPER_SEX_TANK_SETUP.md`. Current test evidence: `validation/SEX_AND_TANK_SETUP_TEST_REPORT.md`; reports linked by older update notes below are historical.
+
 > **Responsive sizing v2:** desktop panels are wider, mobile sheets are taller and expandable, and Care actions stay pinned. See `UI_REFRESH_GUIDE.md` and `validation/RESPONSIVE_SIZING_TEST_REPORT.md`.
 
 > **UI refresh:** see `UI_REFRESH_GUIDE.md` for the Living Field Journal navigation, care, build, observation and collection changes. Current checks are in `validation/UI_REFRESH_TEST_REPORT.md`.
@@ -15,7 +23,7 @@ The original terrarium game, with all **26 existing backgrounds** reworked as ex
 1. Extract the entire ZIP into one folder.
 2. From that folder run `python -m http.server 8000` (Python 3).
 3. Open **http://localhost:8000/** in a current WebGL-capable browser, then choose Start / New or Continue.
-4. Change environments through **Menu → Settings → Background**. The existing picker is unchanged.
+4. Change environments through **tap the current tank name → Tank Setup → Appearance** (also available from Build and Jumpers). Preview, then Apply or Cancel.
 
 Use HTTP rather than double-clicking the HTML: the launcher's service worker and offline cache need localhost or HTTPS. No npm install, internet connection, external asset download, or build step is needed to play. The service worker caches the release after the first successful visit. If an older copy is already installed at the same address, reload after the new worker activates (or use a different localhost port).
 

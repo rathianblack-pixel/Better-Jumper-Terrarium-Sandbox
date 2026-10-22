@@ -6,7 +6,7 @@
 
    v2 improvements:
      • Dual Kawase bloom replaces Gaussian bloom (wider, softer, fewer samples, CHEAPER).
-     • Stepped / banded DoF reinforces diorama depth planes (3 bands, partial blend).
+     • Smooth, depth-aware DoF avoids focus rings and foreground/background bleed.
      • Screen-space depth-edge ink rim: warm by day, cool by night.
      • Coloured night bloom: cool-blue cast instead of white.
      • Chromatic aberration at the vignette edge (medium/high quality only).
@@ -23,10 +23,17 @@ precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uTexel;
 void main(){ vec2 d=uTexel*0.5; o=(texture(uTex,vUV+vec2(-d.x,-d.y))+texture(uTex,vUV+vec2(d.x,-d.y))+texture(uTex,vUV+vec2(-d.x,d.y))+texture(uTex,vUV+vec2(d.x,d.y)))*0.25; }`;
   // separable 9-tap gaussian  (kept for DoF blur; bloom now uses Kawase)
   const BLUR_FS = `#version 300 es
-precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform vec2 uDir; out vec4 o;
-void main(){ vec4 s=texture(uTex,vUV)*0.2270;
-  s+=(texture(uTex,vUV+uDir*1.3846)+texture(uTex,vUV-uDir*1.3846))*0.3162;
-  s+=(texture(uTex,vUV+uDir*3.2308)+texture(uTex,vUV-uDir*3.2308))*0.0703; o=s; }`;
+precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform highp sampler2D uDepth;
+uniform vec2 uDir; uniform float uDepthSigma; out vec4 o;
+// Normalised bilateral Gaussian: do not drag a sharp foreground silhouette into the far backdrop.
+void main(){ float d=texture(uDepth,vUV).r; vec4 s=texture(uTex,vUV)*0.2270; float total=0.2270;
+  for(int i=0;i<4;i++){
+    float offset=i<2?1.3846:3.2308; float base=i<2?0.3162:0.0703;
+    float side=(i==0||i==2)?-1.0:1.0; vec2 uv=clamp(vUV+uDir*offset*side,vec2(0.0),vec2(1.0));
+    float delta=abs(texture(uDepth,uv).r-d);
+    float weight=base*exp(-delta/max(uDepthSigma,0.00001));
+    s+=texture(uTex,uv)*weight; total+=weight;
+  }o=s/total; }`;
   // bright pass for bloom  — coloured at night (cool-blue cast)
   const BRIGHT_FS = `#version 300 es
 precision highp float; in vec2 vUV; uniform sampler2D uTex; uniform float uTh; uniform float uNight; out vec4 o;
@@ -69,13 +76,10 @@ void main(){
   ivec2 lp=ivec2(floor(uv*uLow)); lp=clamp(lp, ivec2(0), ivec2(uLow)-1);
   vec3 sharp=texelFetch(uScene, lp, 0).rgb; float d=texelFetch(uDepth, lp, 0).r;
   vec3 blur=texture(uBlur, uv).rgb;
-  // --- depth of field: stepped bands for diorama planes ---
+  // Smooth focus falloff. Quantised CoC caused visible rings, particularly on Strong.
   float dc = d>0.99999 ? 1.0 : smoothstep(uDof.x, uDof.y, abs(d-uFocus.z));
-  float ty = abs(uv.y-uFocus.y); float tc = smoothstep(0.12, 0.45, ty)*uTilt;
-  float coc_raw = clamp(max(dc, tc), 0.0, 1.0)*uBlurK;
-  // stepped DoF (3 bands) — reinforces the diorama depth-plane feel
-  float coc_stepped = floor(coc_raw*3.0+0.5)/3.0;
-  float coc = mix(coc_raw, coc_stepped, 0.62);
+  float ty = abs(uv.y-clamp(uFocus.y,0.0,1.0)); float tc = smoothstep(0.12, 0.45, ty)*uTilt;
+  float coc = clamp(max(dc, tc)*uBlurK, 0.0, 1.0);
   vec3 c = mix(sharp, blur, coc);
   // --- sub-pixel grid dither on the pixel edge (keeps pixels crisp but softens aliasing) ---
   float edgeDither = (h21(gl_FragCoord.xy) - 0.5) * 0.010 * (1.0 - coc);
@@ -84,7 +88,7 @@ void main(){
   // Energy-aware bloom: bright terrain must retain texture, not become a white wall.
   vec3 bl = texture(uBloom, uv).rgb;
   vec3 highlightRoom = vec3(1.0)-clamp(c,vec3(0.0),vec3(1.0));
-  c += bl*highlightRoom*0.32*uFx;
+  c += bl*highlightRoom*0.23*uFx;
   // --- screen-space depth-edge ink rim (warm day / cool night) ---
   ivec2 lpr=clamp(lp+ivec2(1,0), ivec2(0), ivec2(uLow)-1);
   ivec2 lpu=clamp(lp+ivec2(0,1), ivec2(0), ivec2(uLow)-1);
@@ -99,34 +103,35 @@ void main(){
   float rays = vn(across*9.0+uTime*0.05)*vn(across*23.0-uTime*0.08+3.0);
   rays = smoothstep(0.18, 0.82, rays); // sharper contrast than before
   float lightRoom=1.0-smoothstep(0.5,0.95,max(c.r,max(c.g,c.b)));
-  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.18*uDay*uFx*lightRoom;
-  c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.09*uDay*uFx*lightRoom; // warm haze on the lit side
+  float rf = smoothstep(-0.2, 0.75, along); c += vec3(1.0,0.84,0.58)*rays*rf*0.115*uDay*uFx*lightRoom;
+  c += vec3(1.0,0.86,0.62)*smoothstep(0.1,1.0,along)*0.045*uDay*uFx*lightRoom; // warm haze on the lit side
   // (no screen-wide motes: the engine's own dust motes and biome fireflies already float inside the tank)
   // --- colour grade: saturate, cool shadows, warm highlights, gentle filmic contrast ---
   float lum = dot(c, vec3(0.299,0.587,0.114));
-  c = mix(vec3(lum), c, 1.16-0.3*uNight);
+  c = mix(vec3(lum), c, 1.07-0.14*uNight);
   c += vec3(-0.01,0.015,0.06)*(1.0-smoothstep(0.0,0.45,lum));
-  c *= mix(vec3(1.0), vec3(1.06,1.0,0.9), smoothstep(0.45,1.0,lum));
-  c = c*(1.0+c*0.12)/(1.0+c*0.12*0.9); c = clamp((c-0.5)*1.12+0.52, 0.0, 1.4);
-  c = mix(c, c*vec3(0.85,0.92,1.08)+vec3(0.025,0.035,0.06), uNight*0.6);
+  c *= mix(vec3(1.0), vec3(1.035,1.005,0.96), smoothstep(0.45,1.0,lum));
+  c = c*(1.0+c*0.12)/(1.0+c*0.12*0.9); c = clamp((c-0.5)*1.07+0.515, 0.0, 1.4);
+  c = mix(c, c*vec3(0.85,0.92,1.08)+vec3(0.025,0.035,0.06), uNight*0.42);
   // --- chromatic aberration at the vignette edge (medium/high quality only) ---
   if (uFx > 0.9) {
     float ca = length(uv - 0.5) * 0.007;
-    float rOff = texture(uBlur, uv + vec2( ca, 0.0)).r * coc + sharp.r * (1.0 - coc);
-    float bOff = texture(uBlur, uv - vec2( ca, 0.0)).b * coc + sharp.b * (1.0 - coc);
+    float rDelta = texture(uBlur, clamp(uv + vec2(ca,0.0),vec2(0.0),vec2(1.0))).r - blur.r;
+    float bDelta = texture(uBlur, clamp(uv - vec2(ca,0.0),vec2(0.0),vec2(1.0))).b - blur.b;
     float edgeCA = smoothstep(0.30, 0.68, length(uv - 0.5));
-    c = mix(c, vec3(rOff, c.g, bOff), edgeCA * 0.65);
+    // Apply only a small offset to the graded colour, never replace it with ungraded channels.
+    c.rb += vec2(rDelta,bDelta)*coc*edgeCA*0.2;
   }
   // --- diorama glass frame bevel reflection & lip gleam ---
   vec2 edgeDist = min(uv, 1.0 - uv);
-  float glassBorder = smoothstep(0.015, 0.002, edgeDist.x) + smoothstep(0.018, 0.002, edgeDist.y);
-  float glassGleam = smoothstep(0.004, 0.001, abs(uv.y - 0.985)) * smoothstep(0.1, 0.9, uv.x);
+  float glassBorder = (1.0-smoothstep(0.002, 0.015, edgeDist.x)) + (1.0-smoothstep(0.002, 0.018, edgeDist.y));
+  float glassGleam = (1.0-smoothstep(0.001, 0.004, abs(uv.y - 0.985))) * smoothstep(0.1, 0.9, uv.x);
   c += vec3(0.85, 0.95, 1.0) * (glassGleam * 0.22 + glassBorder * 0.06) * uFx;
   // --- micro-condensation gradient near bottom substrate ---
   float bottomMist = (1.0 - smoothstep(0.0, 0.11, uv.y)) * smoothstep(-0.2, 0.6, sin(uv.x * 38.0) * 0.2 + 0.8);
   c = mix(c, c * 0.88 + vec3(0.65, 0.78, 0.88) * 0.22, bottomMist * 0.35 * uFx);
   // --- vignette (heavier at the top and bottom, like a stage) ---
-  vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = smoothstep(0.98, 0.28, length(q)); c *= mix(0.58, 1.0, vg);
+  vec2 q = (uv-0.5)*vec2(1.05,1.3); float vg = (1.0-smoothstep(0.28, 0.98, length(q))); c *= mix(0.58, 1.0, vg);
   c += (h21(gl_FragCoord.xy+fract(uTime))-0.5)/255.0;
   o = vec4(c, 1.0); }`;
 
@@ -204,15 +209,24 @@ void main(){
       // --- DoF: half-res down-sample + 1 or 2 Gaussian passes ---
       this.pass(gp, P.down, T.fA, T.hw, T.hh, T.ct, (p) => gl.uniform2f(p.u.uTexel, 1 / T.w, 1 / T.h));
       const bk = this.blurK(gp.R);
-      for (const st of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
-        this.pass(gp, P.blur, T.fB, T.hw, T.hh, T.tA, (p) => gl.uniform2f(p.u.uDir, st / T.hw, 0));
-        this.pass(gp, P.blur, T.fA, T.hw, T.hh, T.tB, (p) => gl.uniform2f(p.u.uDir, 0, st / T.hh)); }
-
-      // --- Dual Kawase bloom  (down × 2 then up × 2, total 4 passes, 4 taps each = 16 samples vs the old 28) ---
-      // Bright pass at quarter-res → tC; night threshold + night colour tint applied here
+      // Bloom samples the unblurred downsample, so changing lens strength cannot change bloom exposure.
       const brightTh = night > 0.5 ? 0.38 : 0.55;
       const isLow = gp.R.quality === 'low' || JT.Device.tier === 'low';
       this.pass(gp, P.bright, T.fC, T.qw, T.qh, T.tA, (p) => { gl.uniform1f(p.u.uTh, brightTh); gl.uniform1f(p.u.uNight, M.clamp(night, 0, 1)); });
+      // Keep the radius in CSS pixels, independent of quality, device DPI and pixel-art render scale.
+      const pixelScale = (gp.R.k || 1) * T.w / W;
+      const span = H / Math.max(1e-3, V.s);
+      const depthSigma = Math.max(0.001, 0.00055 * span * 0.08);
+      const blurPass = (target, source, x, y) => this.pass(gp, P.blur, target, T.hw, T.hh, source, p => {
+        gl.uniform2f(p.u.uDir,x,y);gl.uniform1f(p.u.uDepthSigma,depthSigma);
+        gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,T.dt);gl.uniform1i(p.u.uDepth,1);gl.activeTexture(gl.TEXTURE0);
+      });
+      for (const radius of (bk === 0 ? [] : bk < 0.5 ? [1.0] : [1.0, 2.2])) {
+        const st=radius*pixelScale;
+        blurPass(T.fB,T.tA,st/T.hw,0);blurPass(T.fA,T.tB,0,st/T.hh);
+      }
+
+      // --- Independent Dual Kawase bloom ---
       // Down iteration: tC → tE (eighth-res), skip on low tier
       if (!isLow) {
         this.pass(gp, P.kawDown, T.fE, T.ew, T.eh, T.tC, (p) => { gl.uniform2f(p.u.uTexel, 1/T.qw, 1/T.qh); gl.uniform1f(p.u.uOff, 0); });
@@ -235,7 +249,7 @@ void main(){
       // focus: the watched critter in Observe / Follow, otherwise the middle of the tank
       const R = gp.R, g = R.game; let fp = V.c; if (R.cam && R.cam.mode === 'follow' && g && hab) { const sp = hab.spider && hab.spider(g.selectedId); if (sp && sp.pos && M.finite3(sp.pos)) fp = sp.pos; }
       const q = V.P(fp); const fz = 0.5 + 0.5 * M.clamp(q[2] * 0.0011, -0.999, 0.999);
-      const span = H / Math.max(1e-3, V.s); // world units visible top to bottom
+      // span is the full-resolution world-height computed above.
       const close = R.cam && R.cam.mode === 'follow';
       gl.uniform2f(C.u.uLow, T.w, T.h); gl.uniform2f(C.u.uOut, W, H); gl.uniform3f(C.u.uFocus, q[0] / W, 1 - q[1] / H, fz);
       gl.uniform2f(C.u.uDof, 0.00055 * span * (close ? 0.06 : 0.16), 0.00055 * span * (close ? 0.32 : 0.62)); gl.uniform1f(C.u.uTilt, close ? 0.75 : 1.0); gl.uniform1f(C.u.uBlurK, bk);

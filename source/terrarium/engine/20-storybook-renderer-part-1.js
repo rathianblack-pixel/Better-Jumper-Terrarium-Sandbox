@@ -278,8 +278,8 @@
     const c1 = pr.col2 ? rgb(pr.col2) : mixc(c0, [0.95, 0.97, 0.7], 0.12); const cb = M.mul(c0, 0.8); const vein = pr.vein ? rgb(pr.vein) : shade(pr.col, 0.22);
     const old = !litter && !pr.variegate && !pr.stripe && L > 2.5 && h3 < 0.06; const YEL = [0.8, 0.68, 0.26], BRN = [0.48, 0.32, 0.15]; const vg = pr.variegate ? rgb(pr.variegate) : null;
     const S = split ? 12 : L > 8 ? 9 : L > 5 ? 7 : L > 2.5 ? 5 : 3; const SS = split ? [-1, -0.42, 0, 0.42, 1] : L > 5 ? [-1, -0.5, 0, 0.5, 1] : [-1, 0, 1];
-    const cup = Math.min(0.7, L * 0.05) * (litter ? 0.5 : 1); const f = TWO + (pr.stripe ? PAT.bands : 0);
-    const bend = M.mul(nrm, -L * (litter ? 0.03 : 0.05 + h1 * 0.09)); const ub = M.norm(A), bb = M.len(Bv) > 1e-6 ? M.norm(Bv) : perp(ub); const twist = (h2 - 0.5) * 0.14 * L;
+    const cup = Math.min(0.85, L * 0.065) * (litter ? 0.5 : 1); const f = TWO + (pr.stripe ? PAT.bands : 0);
+    const bend = M.mul(nrm, -L * (litter ? 0.03 : 0.065 + h1 * 0.095)); const ub = M.norm(A), bb = M.len(Bv) > 1e-6 ? M.norm(Bv) : perp(ub); const twist = (h2 - 0.5) * 0.17 * L;
     const wave = L > 9 && !litter ? 0.035 * L : 0;
     const at = (u, sd) => { const w = wfn(u); const p = M.add(M.add(o0, M.mul(A, u)), M.add(M.mul(bend, u * u), M.mul(bb, twist * u * u)));
       const lift = cup * w * (sd * sd - 0.35) + (Math.abs(sd) > 0.9 ? wave * Math.sin(u * 11 + h1 * 6) : 0); return M.add(M.add(p, M.mul(Bv, w * sd)), M.mul(nrm, lift)); };
@@ -395,10 +395,13 @@
       try { f(mb, pr, g); } catch (e) { if (JT.DEV) console.warn('mesh', pr.t, e); }finally{mb.wind=null;}
     }
     try { dress(mb, g); } catch (e) { if (JT.DEV) console.warn('dress', e); }
+    // Tiny seeded material variation per furnishing; no extra meshes, uniforms or save fields.
+    const tint=hh(JT.hashStr(String(g.id)),2.1,7.3)-.5;
+    for(let i=0;i<mb.v.length;i+=STRIDE)for(const off of [9,12]){mb.v[i+off]*=1+tint*.045;mb.v[i+off+1]*=1+tint*.028;mb.v[i+off+2]*=1-tint*.025;}
     const verts = new Float32Array(mb.v); const idx = mb.n > 65000 ? new Uint32Array(mb.i) : new Uint16Array(mb.i);
     // ink strokes -> ribbon vertices (a, b, side/end, width, alpha, colour, sway a/b)
     const L = mb.lines; const lv = new Float32Array(L.length * 4 * 15); const li = (L.length * 4 > 65000 ? new Uint32Array(L.length * 6) : new Uint16Array(L.length * 6)); let o = 0;
-    L.forEach((s, i) => { const [a, b, w, al, col, windA=0, windB=0] = s; const c = col || [0.16, 0.12, 0.09]; // aSw uses low [0,2) for impulse weight, high bits for 8-bit wind weight.
+    L.forEach((s, i) => { const [a, b, w, al, col, windA=0, windB=0] = s; const c = col || [0.22, 0.25, 0.16]; // aSw uses low [0,2) for impulse weight, high bits for 8-bit wind weight.
       const wa = mb.sw(a)+Math.round(windA*255)*2, wb = mb.sw(b)+Math.round(windB*255)*2;
       for (const [sd, en] of [[-1, 0], [1, 0], [1, 1], [-1, 1]]) { lv.set([a[0], a[1], a[2], b[0], b[1], b[2], sd, en, w, al, c[0], c[1], c[2], wa, wb], o); o += 15; }
       const k = i * 4; li.set([k, k + 1, k + 2, k, k + 2, k + 3], i * 6); });

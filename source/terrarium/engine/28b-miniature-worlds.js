@@ -58,7 +58,8 @@ function build(p,h){
  const quality=p.R.quality||'medium',low=quality==='low',high=quality==='high';
  const W=h.dims.w,D=h.dims.d,S=Math.max(W,D,150),cx=W/2,cz=D/2,Y=-18.35;
  const rnd=J.makeRng(J.hashStr('surround-v2-'+cfg.seed+'-'+W+'-'+D)),pick=a=>a[Math.floor(rnd()*a.length)];
- const floor=rgb(cfg.floor),stone=rgb(cfg.stone),leafC=rgb(cfg.leaf),fog=blend(floor,rgb(B.sky[1]),.48),bark=blend(stone,rgb('#5e4938'),.65);
+ const hd=!!(J.HD2D&&J.HD2D.on),paper=rgb('#e9e4d1');
+ const floor=blend(rgb(cfg.floor),paper,hd?.035:.12),stone=blend(rgb(cfg.stone),paper,hd?.04:.13),leafC=blend(rgb(cfg.leaf),paper,hd?.035:.10),fog=blend(floor,rgb(B.sky[1]),.48),bark=blend(stone,rgb('#5e4938'),.65);
  let mb=new G.MB({height:200,baseY:Y});const base=mb,groups=[];
  const quiet=(x,z,pad=12)=>x>-pad&&x<W+pad&&z>-pad&&z<D+pad;
  const dist=(x,z)=>Math.hypot((x-cx)/S,(z-cz)/S);
@@ -83,7 +84,7 @@ function build(p,h){
  function ell(x,y,z,sx,sy,sz,c,mat=G.PAT.speck){G.ell(mb,[x,y,z],[sx,0,0],[0,sy,0],[0,0,sz],c,blend(c,floor,.4),mat,null,high?8:low?5:6,high?4:3,true,.12);}
  function rock(x,z,s,high=1,c=stone){const y=ground(x,z);ell(x,y-1,z,s,s*.62*high,s*(.65+rnd()*.4),c);if(['woodland','logs','canopy','jungle','moon','firefly','temple'].includes(cfg.feature))ell(x-1,y+s*.48*high,z,s*.64,s*.12,s*.57,blend(leafC,floor,.35),G.PAT.moss);}
  function tube(points,a,b,col=bark){G.tube(mb,points,a,b,col,blend(col,floor,.35),G.PAT.grain,high?7:5,true,.08);}
- function leaf(a,b,w,c=leafC){const side=M.norm(M.cross(M.sub(b,a),UP)),mid=M.lerp3(a,b,.48),v=[a,M.add(mid,M.mul(side,w)),b,M.sub(mid,M.mul(side,w))].map(v=>vertex(v,c));mb.quad(...v);}
+ function leaf(a,b,w,c=leafC){const axis=M.sub(b,a),side=M.norm(M.cross(axis,UP)),mid=M.lerp3(a,b,.48);mid[1]+=Math.min(w*.24,M.len(axis)*.06);const coords=[a,M.add(mid,M.mul(side,w)),b,M.sub(mid,M.mul(side,w))],v=coords.map((p,i)=>vertex(p,blend(c,i===2?paper:floor,i===2?.12:.035)));mb.quad(...v);}
  function plant(x,z,size,kind=cfg.kind){
   const y=ground(x,z),phase=rnd()*TAU;
   if(kind==='crystal'||kind==='mineral'){
@@ -224,7 +225,7 @@ function build(p,h){
  // Every group shares bounded draw and fade state. No whole-scene opacity changes.
  function group(x,z,radius,height,fn){
   const keep=mb;mb=new G.MB({height:height,baseY:ground(x,z)});fn();
-  const haze=M.clamp((dist(x,z)-.9)*.18,0,.38);
+  const haze=M.clamp((dist(x,z)-.65)*.24,0,.48);
   for(let i=0;i<mb.v.length;i+=G.STRIDE)for(const off of [9,12])for(let c=0;c<3;c++)mb.v[i+off+c]=mb.v[i+off+c]*(1-haze)+fog[c]*haze;
   const bounds=[[Infinity,Infinity,Infinity],[-Infinity,-Infinity,-Infinity]];
   for(let i=0;i<mb.v.length;i+=G.STRIDE)for(let axis=0;axis<3;axis++){bounds[0][axis]=Math.min(bounds[0][axis],mb.v[i+axis]);bounds[1][axis]=Math.max(bounds[1][axis],mb.v[i+axis]);}
@@ -341,7 +342,8 @@ function build(p,h){
   ell(x,ground(x,z)+4+rnd()*24,z,.8,.8,.8,rgb('#c1d989'),G.GLOW||16);
  }
  const shoreline=J.Shoreline?J.Shoreline.append(h,base,cfg):null;
- const mesh=upload(p,base);mesh.shoreline=shoreline;mesh.world={id,groups,W,D,S,cx,cz,version:'2.1',quality,water:cfg.water||null,feature:cfg.feature};
+ for(let i=0;i<base.v.length;i+=G.STRIDE){const d=dist(base.v[i],base.v[i+2]),haze=M.clamp((d-.55)*.15,0,.36);for(const off of [9,12]){const l=.30*base.v[i+off]+.59*base.v[i+off+1]+.11*base.v[i+off+2];for(let c=0;c<3;c++)base.v[i+off+c]=(base.v[i+off+c]*(1-haze*.35)+l*haze*.35)*(1-haze)+fog[c]*haze;}}
+ const mesh=upload(p,base);mesh.shoreline=shoreline;mesh.world={id,groups,W,D,S,cx,cz,version:'3.0',quality,water:cfg.water||null,feature:cfg.feature};
  // Cached habitat owns ALL buffers; the renderer's existing cache disposal deletes these.
  for(const g of groups)mesh.del.push(...g.mesh.del);
  mesh.worldStats={vertices:base.n+groups.reduce((s,g)=>s+g.mesh.n+(g.mesh.parts||[]).reduce((a,m)=>a+m.n,0),0),triangles:base.i.length/3+groups.reduce((s,g)=>s+g.mesh.idx.length/3+(g.mesh.parts||[]).reduce((a,m)=>a+m.idx.length/3,0),0),groups:groups.length};
@@ -417,5 +419,5 @@ P.drawMesh=function(program,mesh){
 // retains the original inhabitant-focused rig and all orbit/zoom/pan gestures are kept.
 const targetView=J.Renderer.prototype.targetView;
 J.Renderer.prototype.targetView=function(h){const v=targetView.call(this,h);if(this.cam.mode!=='follow'){v.s*=.77;v.offY*=.77;}return v;};
-J.MiniatureWorlds={version:'2.1',plans,build,cosmeticOnly:true};
+J.MiniatureWorlds={version:'3.0',plans,build,cosmeticOnly:true};
 })(typeof window!=='undefined'?window:globalThis);

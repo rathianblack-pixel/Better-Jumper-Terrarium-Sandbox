@@ -1,0 +1,102 @@
+{
+  "checks": [
+    {
+      "name": "desktop",
+      "background": {
+        "apply": true,
+        "kept": true,
+        "undoEnabled": true,
+        "undo": true,
+        "stable": true
+      },
+      "layout": {
+        "guard": true,
+        "apply": true,
+        "animals": true,
+        "undo": true,
+        "restore": true,
+        "biome": true,
+        "decor": true,
+        "moltGuard": true
+      },
+      "persist": {
+        "ok": true,
+        "sex": true,
+        "stage": true,
+        "cup": true,
+        "sameIdentity": true
+      },
+      "visuals": {
+        "count": 384,
+        "species": 32
+      },
+      "legacyChoices": 3
+    },
+    {
+      "name": "phone",
+      "background": {
+        "apply": true,
+        "kept": true,
+        "undoEnabled": true,
+        "undo": true,
+        "stable": true
+      },
+      "layout": {
+        "guard": true,
+        "apply": true,
+        "animals": true,
+        "undo": true,
+        "restore": true,
+        "biome": true,
+        "decor": true,
+        "moltGuard": true
+      },
+      "persist": {
+        "ok": true,
+        "sex": true,
+        "stage": true,
+        "cup": true,
+        "sameIdentity": true
+      },
+      "visuals": {
+        "count": 384,
+        "species": 32
+      },
+      "legacyChoices": 3
+    },
+    {
+      "name": "landscape",
+      "background": {
+        "apply": true,
+        "kept": true,
+        "undoEnabled": true,
+        "undo": true,
+        "stable": true
+      },
+      "layout": {
+        "guard": true,
+        "apply": true,
+        "animals": true,
+        "undo": true,
+        "restore": true,
+        "biome": true,
+        "decor": true,
+        "moltGuard": true
+      },
+      "persist": {
+        "ok": true,
+        "sex": true,
+        "stage": true,
+        "cup": true,
+        "sameIdentity": true
+      },
+      "visuals": {
+        "count": 384,
+        "species": 32
+      },
+      "legacyChoices": 3
+    }
+  ],
+  "errors": [],
+  "result": "PASS"
+}

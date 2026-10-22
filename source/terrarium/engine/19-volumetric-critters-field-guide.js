@@ -463,9 +463,9 @@
         ctx.stroke();
     }
     D.spider = function(ctx, V, sp, fr, o) {
-        const S = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0], pal0 = o.palette || S.pal, L = o.len;
+        const base = JT.SPECIES_BY_ID[sp.species] || JT.SPECIES[0], S = JT.Sex ? JT.Sex.species(base, sp) : base, pal0 = o.palette || S.pal, L = o.len;
         let {f: f, s: s, n: n} = fr, p = fr.p;
-        const t = o.time || 0, LK = S.look || {}, gait = LK.gait, gp = sp._gPause || 0, RG = JT.Gait ? JT.Gait.rig(sp, o, fr, L, "spider") : null, HD = RG ? JT.Gait.heading(RG, fr, !(o.airborne || o.curled || o.tucked || o.hug || o.meal || sp.hold || "pounce" === sp.state || o.hang)) : null;
+        const t = o.time || 0, LK = JT.Sex ? JT.Sex.look(S, sp) : S.look || {}, gait = LK.gait, gp = sp._gPause || 0, RG = JT.Gait ? JT.Gait.rig(sp, o, fr, L, "spider") : null, HD = RG ? JT.Gait.heading(RG, fr, !(o.airborne || o.curled || o.tucked || o.hug || o.meal || sp.hold || "pounce" === sp.state || o.hang)) : null;
         HD && (f = HD.f, s = HD.s);
         const hdA = HD ? HD.a : 0;
         if (!(o.thumb || o.airborne || o.curled || o.tucked || o.hug || o.meal)) {
@@ -501,7 +501,7 @@
             const sgn = M.dot(sg, V.toCam) >= 0 ? 1 : -1, ra = .3 * o.tilt * sgn, cr = Math.cos(ra), sr = Math.sin(ra), sg2 = M.norm(M.add(M.mul(sg, cr), M.mul(n, sr)));
             nh = M.norm(M.sub(M.mul(n, cr), M.mul(sg, sr))), sg = sg2;
         }
-        const stalk = [ "stalk", "creep", "crouch" ].includes(sp.state) ? .22 : "display" === sp.state ? .35 : .05, parts = [], bodyCol = (c, belly) => under ? mix(c, belly, .75) : c, cL = ant ? 1 : LK.cL || 1, cW = ant ? 1 : LK.cW || 1, cH = ant ? 1 : LK.cH || 1, dF = .375 * (cL - 1) * L, cc = W((.13 + .125 * (cL - 1)) * L, 0, h0 + L * (ant ? .06 : .1 * cH)), cph = Part(cc, M.mul(fg, L * (ant ? .2 : .25 * cL)), M.mul(sg, L * (ant ? .115 : .2 * cW)), M.mul(nh, L * (ant ? .1 : .15 * cH)));
+        const stalk = [ "stalk", "creep", "crouch" ].includes(sp.state) ? .22 : "display" === sp.state ? .35 : .05, parts = [], bodyCol = (c, belly) => under ? mix(c, belly, .75) : c, cL = LK.cL || 1, cW = LK.cW || 1, cH = LK.cH || 1, dF = .375 * (cL - 1) * L, cc = W((.13 + .125 * (cL - 1)) * L, 0, h0 + L * (ant ? .06 : .1 * cH)), cph = Part(cc, M.mul(fg, L * (ant ? .2 : .25) * cL), M.mul(sg, L * (ant ? .115 : .2) * cW), M.mul(nh, L * (ant ? .1 : .15) * cH));
         if (parts.push({
             d: V.depth(cc),
             f: () => {
@@ -547,6 +547,7 @@
                         ctx.stroke();
                     }
                     const gp = V.J(M.mul(M.norm(M.add(LG, V.toCam)), r * L * .55)), shine = big ? .95 : .75;
+                    if(big&&rr>5){ctx.strokeStyle='rgba(172,201,189,.32)';ctx.lineWidth=Math.max(.45,rr*.055);ctx.beginPath();ctx.arc(P[0],P[1]+rr*.03,rr*.80,.15,2.65);ctx.stroke();}
                     ctx.fillStyle = "rgba(255,255,255," + shine + ")", ctx.beginPath(), 
                     ctx.arc(P[0] + gp[0], P[1] + gp[1], Math.max(.5, rr * (big ? .32 : .35)), 0, 6.283), ctx.fill();
                     if (big && rr > 2.5) {
@@ -609,7 +610,7 @@
         let af = M.add(M.mul(f, Math.cos(ta)), M.mul(n, Math.sin(ta)));
         const an = M.sub(M.mul(n, Math.cos(ta)), M.mul(f, Math.sin(ta)));
         spin && (af = M.norm(M.add(af, M.mul(s, .16 * spw)))), RG && Math.abs(RG.ay) > .001 && (af = M.norm(M.add(af, M.mul(s, .8 * -RG.ay))));
-        const aL = ant ? 1 : LK.aL || 1, aW = ant ? 1 : LK.aW || 1, aH = ant ? 1 : LK.aH || 1, ac = M.add(W(ant ? -.33 * L : -(.27 + .24 * (aL - 1) + .125 * (cL - 1)) * L, 0, h0 + .09 * L * (.6 + .4 * aH)), M.add(M.mul(an, .02 * L), M.mul(s, RG ? .8 * -RG.ay * L * .26 : 0))), abd = Part(ac, M.mul(af, L * (ant ? .23 : .3 * aL) * (.95 + .05 * fat)), M.mul(s, L * (ant ? .13 : .22 * aW) * fat), M.mul(an, L * (ant ? .13 : .19 * aH) * fat));
+        const aL = LK.aL || 1, aW = LK.aW || 1, aH = LK.aH || 1, ac = M.add(W(ant ? -(.33 + .15 * (aL - 1)) * L : -(.27 + .24 * (aL - 1) + .125 * (cL - 1)) * L, 0, h0 + .09 * L * (.6 + .4 * aH)), M.add(M.mul(an, .02 * L), M.mul(s, RG ? .8 * -RG.ay * L * .26 : 0))), abd = Part(ac, M.mul(af, L * (ant ? .23 : .3) * aL * (.95 + .05 * fat)), M.mul(s, L * (ant ? .13 : .22) * aW * fat), M.mul(an, L * (ant ? .13 : .19) * aH * fat));
         if (parts.push({
             d: V.depth(ac),
             f: () => {
@@ -680,12 +681,12 @@
             const ck = LK.chel || 1, chc = M.add(W(.33 * L + dF, sd * L * .055 * Math.sqrt(ck), h0 + .02 * L), M.mul(fg, .04 * L * ck));
             parts.push({
                 d: V.depth(chc) - .01,
-                f: () => blob(ctx, V, chc, M.mul(fg, .05 * L * ck), M.mul(sg, .045 * L * Math.sqrt(ck)), M.mul(n, .07 * L * ck), pal.chel, {
+                f: () => { if (LK.fang > 0) { const tip = M.add(chc, M.add(M.mul(fg, .075 * L * ck), M.mul(n, -.09 * L * ck))); limb(ctx, V, [chc, tip, M.add(tip, M.mul(sg, -sd * .035 * L))], [.017 * L * LK.fang, .008 * L * LK.fang], pal.chel, lod, null); } return blob(ctx, V, chc, M.mul(fg, .05 * L * ck), M.mul(sg, .045 * L * Math.sqrt(ck)), M.mul(n, .07 * L * ck), pal.chel, {
                     lod: lod,
                     gloss: 1,
                     sheen: LK.irid || 4,
                     time: t
-                })
+                }); }
             });
             let pw = ("groom" === sp.state || wipe > .2 ? .04 * Math.sin(12 * t + sd) : .01 * Math.sin(3 * t + 2 * sd)) * L, fl = flick * Math.sin(9.4 * flick + .8 * sd) * L * .06;
             if ("flag" === LK.palp && (pw += gp * Math.sin(8 * t + 1.3 * sd) * L * .05), "semaphore" === sp.state && (fl += .1 * L * Math.sin(7 * t + (sd > 0 ? 0 : Math.PI)), 
@@ -704,7 +705,7 @@
                         gloss: .3
                     });
                     if (0 === lod) return;
-                    const r = "pompom" === pk ? .065 : "fluffy" === pk ? .045 : .035;
+                    const r = ("pompom" === pk ? .065 : "fluffy" === pk ? .045 : .035) * (LK.palpSize || 1);
                     blob(ctx, V, c, M.mul(fg, L * r), M.mul(sg, L * r * .88), M.mul(n, L * r * .88), pc, {
                         lod: lod,
                         ink: "pompom" === pk

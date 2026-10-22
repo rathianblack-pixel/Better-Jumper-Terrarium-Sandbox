@@ -70,7 +70,7 @@
     c.fillStyle = '#b6a17c'; c.fillRect(x+2,y+h-8,w-4,6); return cv;
   };
   FH.portrait = function (sid, size) {
-    const source = U.R.speciesPortrait(sid, size || 160), cv = el('canvas', 'fh-portrait');
+    const source = U.R.speciesPortrait(sid, size || 160, this.data(U.game).sex, 5), cv = el('canvas', 'fh-portrait');
     cv.width = source.width; cv.height = source.height; cv.getContext('2d').drawImage(source, 0, 0);
     cv.setAttribute('aria-hidden', 'true'); return cv;
   };
@@ -103,6 +103,9 @@
         const sp = J.SPECIES_BY_ID[sid]; if (!sp) continue;
         pick(sid, sp.name, sp.desc, s.sid === sid, () => { s.sid = sid; s.bid = B.rank(sid)[0]; this.save(); this.picker(); }, this.portrait(sid));
       }
+      const sexRow = el('div','sex-options'); sexRow.setAttribute('role','group'); sexRow.setAttribute('aria-label','Jumper sex');
+      for (const sex of ['female','male']) { const b = button(sex === 'male' ? 'Male' : 'Female', 'fhSex-'+sex, () => { s.sex=sex; this.save(); this.picker(); }, 'fh-button'); b.setAttribute('aria-pressed',String(s.sex===sex)); sexRow.append(b); }
+      w.append(el('p','fh-label','Choose female or male'),sexRow,el('p','fh-note','Differences are subtle as slings and develop through molts. Species cards show adult proportions.'));
       const label = el('label','fh-label','What would you like to call them?'); label.htmlFor = 'fhName';
       const name = el('input','fh-name'); name.id = 'fhName'; name.type = 'text'; name.maxLength = 24; name.value = s.name; name.placeholder = 'Pip'; name.autocomplete = 'off';
       name.oninput = () => { s.name = name.value; this.save(); };
@@ -127,6 +130,7 @@
       if (s.step < 2) { s.step++; this.save(); this.picker(); }
       else this.createHome();
     },'fh-button fh-primary')); w.append(footer);
+    footer.lastChild.disabled = s.step===1 && !J.Sex.valid(s.sex);
     U.openModal('Your first terrarium', w, {back:null, sheet:'first-home'});
     // The existing modal layout manager moves bm-actions into non-scrolling chrome.
     D.getElementById('modalBody').scrollTop = 0;
@@ -135,6 +139,7 @@
   FH.createHome = function () {
     const g = U.game, s = this.data(g); if (s.phase !== 'choose') return;
     if (!J.HABITATS[s.type] || !g.isUnlocked(s.sid) || !J.BIOMES[s.bid]) return;
+    if (!J.Sex.valid(s.sex)) { s.step=1; this.picker(); U.toast('Choose female or male for your jumper first.'); return; }
     const h = g.hab; h.data.type = s.type; h.data.buildSpecies = s.sid;
     B.setBiome(h, s.bid); B.applyGround(h,s.bid); h.rebuild(); s.tankId = h.data.id;
     s.name = this.name(); s.phase = 'build'; g.state.biomeSetup = false; g.state.lastBiome = s.bid;
@@ -182,7 +187,8 @@
     let sp = h.spider(s.spiderId) || h.spiders.find(x => x.species === s.sid);
     if (!sp) {
       const check = g.canAdd(h,s.sid); if (!check.ok) throw new Error(check.reason);
-      sp = h.addSpider(s.sid,{name:this.name(),stage:1,meals:0,sat:.48});
+      if (!J.Sex.valid(s.sex)) throw new Error('Choose female or male before adding your jumper.');
+      sp = h.addSpider(s.sid,{name:this.name(),stage:1,meals:0,sat:.48,sex:s.sex});
       if (!sp) throw new Error('Your jumper could not be added. Please try again.');
     }
     s.spiderId = sp.id; g.selectedId = sp.id; h.data.selectedId = sp.id;

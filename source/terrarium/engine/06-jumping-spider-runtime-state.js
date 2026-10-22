@@ -118,7 +118,7 @@
     const used = usedNames(); const free = JT.NAMES.filter(n => !used.has(n));
     const pos = o.pos || hab.randomFloorPoint();
     const sp = {
-      id: JT.newId('s'), species: S.id, name: o.name || (free.length ? R.pick(free) : R.pick(JT.NAMES) + ' ' + (2 + Math.floor(R() * 8))),
+      id: JT.newId('s'), sex: o.sex === 'male' ? 'male' : 'female', species: S.id, name: o.name || (free.length ? R.pick(free) : R.pick(JT.NAMES) + ' ' + (2 + Math.floor(R() * 8))),
       seed: (R() * 1e9) | 0, stage: o.stage != null ? o.stage : 1, meals: o.meals || Math.floor(R() * 2), molts: 0,
       ageDays: 0, adultDays: 0, sat: o.sat != null ? o.sat : 0.7, hyd: 0.85, catches: 0, soft: 0,
       traits: { stealth: jit(S.traits.stealth, .12), patience: jit(S.traits.patience, .15), jump: jit(S.traits.jump, .1), bold: jit(S.traits.bold, .15), tactics: jit(S.traits.tactics, .12) },
